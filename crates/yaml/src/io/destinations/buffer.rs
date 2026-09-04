@@ -56,7 +56,7 @@ mod tests {
     fn to_string_handles_non_utf8() {
         let mut buffer = Buffer::new();
         buffer.add_byte(0xFF);
-        assert_eq!(buffer.to_string(), "");
+        assert_eq!(buffer.to_string(), "\u{FFFD}");
     }
 
     #[test]
@@ -98,6 +98,6 @@ mod tests {
         let mut buffer = Buffer::new();
         buffer.add_bytes("abc");
         buffer.add_byte(0xFF);
-        assert_eq!(buffer.to_string(), "abc");
+        assert_eq!(buffer.to_string(), "abc\u{FFFD}");
     }
 }
