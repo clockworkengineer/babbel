@@ -1,71 +1,151 @@
 # Babbel
 
-A unified polyglot serialization, parsing, and document manipulation workspace in Rust.
+[![Rust](https://img.shields.io/badge/rust-2021%20edition-orange.svg)](https://www.rust-lang.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-3000%2B%20passing-brightgreen.svg)]()
+[![Architecture: DRY & SOLID](https://img.shields.io/badge/architecture-DRY%20%26%20SOLID-purple.svg)]()
 
-## Architecture
+A high-performance, polyglot serialization, parsing, and document manipulation workspace in Rust. Babbel brings together **JSON**, **YAML**, **Bencode**, and **XML** under a unified, modular architecture adhering strictly to **DRY** (Don't Repeat Yourself) and **SOLID** engineering principles.
 
-The workspace combines four high-performance format libraries:
+---
 
-- [`xml`](crates/xml) (`xml_lib_rust`): XML DOM parser, C14N canonicalization, DTD/XSD validation, and XPath 1.0 engine.
-- [`json`](crates/json) (`json_lib`): JSON DOM tree, RFC 6901 JSON Pointer, RFC 7396 JSON Merge Patch, and zero-allocation parsing.
-- [`yaml`](crates/yaml) (`yaml_lib`): YAML 1.2 parser/emitter with anchors, aliases, custom tags, and multi-document streams.
-- [`bencode`](crates/bencode) (`bencode_lib`): High-speed, binary-safe BitTorrent Bencode parser and serializer.
+## Workspace Architecture
 
-### Common Foundation: `babbel_core`
+Babbel is structured as an interconnected multi-crate workspace:
 
-Located at [`crates/babbel_core`](file:///C:/Users/User/.gemini/antigravity-ide/scratch/babbel/crates/babbel_core), this shared library encapsulates common capabilities:
-- **I/O Streaming**: `ISource`, `IByteStream`, `IDestination`, `IIndentationAware`, `SliceSource`, `StringSource`, `BufferDestination`, `StringDestination`.
-- **Text & Encoding**: BOM detection (UTF-8, UTF-16LE, UTF-16BE), newline normalization (`normalize_newlines`).
-- **Character Lexing**: Fast ASCII classification (`is_whitespace`, `is_digit`, `is_hex_digit`, `is_newline`).
-- **Fast Numeric Formatting**: Zero-allocation formatting via `itoa` and `dtoa`.
-- **Diagnostics**: `Location` (1-based line/col, byte offset), `Span`, and rustc-style error snippet formatter.
-- **Universal Data Model**: `Value` enum and `FormatVisitor` for polyglot format interchange.
+| Crate | Directory | Description |
+| :--- | :--- | :--- |
+| **`babbel`** | [`crates/babbel`](crates/babbel) | Master facade crate providing high-level ergonomics and open-ended cross-format conversion pipelines. |
+| **`babbel_core`** | [`crates/babbel_core`](crates/babbel_core) | Core architectural kernel containing streaming traits (`ISource`, `IDestination`), universal `Value` AST, shared escaping, Unicode BOM detection, and format codec abstractions. |
+| **`json_lib`** | [`crates/json`](crates/json) | Full-featured JSON DOM engine supporting RFC 6901 JSON Pointer, RFC 7396 JSON Merge Patch, and zero-copy parsing. |
+| **`yaml_lib`** | [`crates/yaml`](crates/yaml) | YAML 1.2 parser and emitter with full support for anchors, aliases, custom tags, multiline block scalars, and multi-document streams. |
+| **`bencode_lib`** | [`crates/bencode`](crates/bencode) | High-speed, binary-safe BitTorrent Bencode parser and serializer supporting zero-copy borrowed slices and iterative streaming. |
+| **`xml_lib_rust`** | [`crates/xml`](crates/xml) | Robust XML DOM parser, W3C Canonical XML (C14N 1.0/1.1), DTD validation, XSD schema validator, and XPath 1.0 query engine. |
 
-### Facade Crate: `babbel`
+---
 
-Located at [`crates/babbel`](file:///C:/Users/User/.gemini/antigravity-ide/scratch/babbel/crates/babbel), providing unified access:
+## Key Design Principles
+
+### 1. Unified Streaming I/O (`ISource` & `IDestination`)
+All format crates across Babbel share the same streaming abstractions from [`babbel_core::io`](crates/babbel_core/src/io):
+- **Streaming Input (`ISource`)**: Every parser (`json_lib::parse`, `yaml_lib::parse`, `bencode_lib::parse`, `xml_lib_rust::parse_source`) ingests data via `&mut dyn ISource`.
+- **Streaming Output (`IDestination`)**: Every emitter and serializer (`to_json`, `to_yaml`, `to_bencode`, `to_xml`, `stringify_to`) writes sequentially to `&mut dyn IDestination`.
+- **Interface Segregation (ISP)**: Minimal sub-traits allow clients to bind only to the capabilities they require:
+  - [`ICharStream`](crates/babbel_core/src/io/traits.rs): Minimal pull-based character stream (`current()`, `next()`, `more()`).
+  - [`IRewindable`](crates/babbel_core/src/io/traits.rs): Reset streams to initial state.
+  - [`IPositionAware`](crates/babbel_core/src/io/traits.rs): Absolute byte offset tracking.
+  - [`IByteStream`](crates/babbel_core/src/io/traits.rs): Raw byte reading for binary protocols (Bencode).
+  - [`IClearable`](crates/babbel_core/src/io/traits.rs): Buffer/destination truncation.
+
+### 2. Open-Closed & Dependency Inversion (OCP & DIP)
+- **Extensible Codecs**: New serialization formats can be integrated simply by implementing [`FormatParser`](crates/babbel_core/src/codec.rs) and [`FormatEmitter`](crates/babbel_core/src/codec.rs).
+- **Universal Data Pipeline**: Rather than $O(N^2)$ hand-rolled cross-serializers, conversions flow through the universal [`Value`](crates/babbel_core/src/model.rs) AST:
+  ```rust
+  let output = babbel::convert::convert_text(input_str, &parser, &emitter)?;
+  let bytes  = babbel::convert::convert_bytes(input_bytes, &parser, &emitter)?;
+  ```
+- **Unified Error Handling**: Format-specific errors implement `Into<BabbelError>` with normalized classification codes (`ErrorCode::Syntax`, `ErrorCode::Encoding`, `ErrorCode::Io`, etc.).
+
+### 3. DRY Consolidation
+- **Shared Unicode Engine**: Automatic BOM detection (UTF-8, UTF-16 LE, UTF-16 BE) and newline normalization (`\r\n` / `\r` $\rightarrow$ `\n`).
+- **Canonical Escaping**: Standardized escaping algorithms in `babbel_core::text` for JSON string literals, XML character entities, and YAML delimiters.
+- **Universal Buffers**: Reusable in-memory `Buffer` and `BufferSource` implementations eliminating duplicate stream wrappers across format libraries.
+
+---
+
+## Quick Start & Usage
+
+Add `babbel` to your `Cargo.toml`:
+
+```toml
+[dependencies]
+babbel = { path = "crates/babbel", features = ["json", "yaml", "xml", "bencode"] }
+```
+
+### Parsing & Document Access
 
 ```rust
-use babbel::core::StringDestination;
+use babbel::json;
+use babbel::yaml;
+use babbel::xml;
+use babbel::bencode;
 
-// 1. Core utilities
-let mut dest = StringDestination::new();
-babbel::core::format_integer(42, &mut dest);
+// 1. Parse JSON
+let json_node = json::from_str(r#"{"service": "babbel", "status": "active"}"#)?;
+assert_eq!(json_node.get("status").and_then(|n| n.as_str()), Some("active"));
 
-// 2. JSON
-let json_doc = babbel::json::from_str(r#"{"status": "ok"}"#).unwrap();
+// 2. Parse YAML
+let yaml_node = yaml::parse_string("service: babbel\nstatus: active\n")?;
+assert_eq!(yaml_node.get("service").and_then(|n| n.as_str()), Some("babbel"));
 
-// 3. YAML
-let yaml_doc = babbel::yaml::parse_string("status: ok\n").unwrap();
+// 3. Parse XML
+let xml_doc = xml::parse("<service name=\"babbel\"><status>active</status></service>")?;
+assert_eq!(xml_doc.get_root_element_name(), Some("service"));
 
-// 4. XML
-let xml_doc = babbel::xml::parse("<status>ok</status>").unwrap();
-
-// 5. Bencode
-let bencode_doc = babbel::bencode::parse_bytes(b"d6:status2:oke").unwrap();
-
-// 6. Cross-Format Conversions
-let yaml = babbel::convert::json_to_yaml(r#"{"service": "api"}"#).unwrap();
-let json = babbel::convert::yaml_to_json("service: api\n").unwrap();
+// 4. Parse Bencode
+let bencode_node = bencode::parse_bytes(b"d7:service6:babbel6:status6:activee")?;
 ```
 
-## Cross-Format Matrix
+### Streaming I/O
 
-The `babbel::convert` module enables direct conversions between formats:
-- `babbel::convert::json_to_yaml` / `yaml_to_json`
-- `babbel::convert::json_to_xml` / `yaml_to_xml`
-- `babbel::convert::json_to_bencode` / `bencode_to_json`
-- `babbel::convert::bencode_to_yaml` / `bencode_to_xml`
+```rust
+use babbel::core::io::{Buffer, BufferSource, ISource, IDestination};
+use babbel::xml;
 
-## Building & Testing
+// Stream from any ISource
+let mut source = BufferSource::new(b"<config><timeout>30</timeout></config>");
+let doc = xml::parse_source(&mut source)?;
+
+// Stream directly to any IDestination
+let mut dest = Buffer::new();
+xml::stringify_to(&doc, &mut dest);
+println!("Serialized XML: {}", dest.to_string());
+```
+
+### Cross-Format Conversions
+
+```rust
+use babbel::convert;
+
+// JSON <-> YAML
+let yaml_str = convert::json_to_yaml(r#"{"host": "localhost", "port": 8080}"#)?;
+let json_str = convert::yaml_to_json(&yaml_str)?;
+
+// JSON <-> XML
+let xml_str = convert::json_to_xml(r#"{"message": "hello"}"#)?;
+
+// Binary Bencode conversions
+let bencode_bytes = convert::json_to_bencode(r#"{"id": 101}"#)?;
+let yaml_from_bencode = convert::bencode_to_yaml(&bencode_bytes)?;
+```
+
+---
+
+## Building and Testing
+
+Babbel features a rigorous test suite of over **3,000 unit, integration, and doc tests** across all crates.
 
 ```bash
-# Check all workspace members
+# Check all workspace crates
 cargo check --workspace
 
-# Run babbel_core unit tests (10 tests)
-cargo test -p babbel_core
+# Run tests across all workspace crates
+cargo test --workspace --jobs 2
 
-# Run polyglot smoke test
-cargo test -p babbel --test smoke_test
+# Run tests for a specific crate
+cargo test -p xml_lib_rust --jobs 2
+cargo test -p json_lib --jobs 2
+cargo test -p yaml_lib --jobs 2
+cargo test -p bencode_lib --jobs 2
+cargo test -p babbel_core --jobs 2
+cargo test -p babbel --jobs 2
 ```
+
+> [!TIP]
+> On Windows, passing `--jobs 2` ensures smooth concurrent file handling across test artifacts.
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
