@@ -17,7 +17,7 @@ std = ["alloc", "rand?/std", "babbel_core/std"]
 alloc = ["babbel_core/alloc"]
 
 # Optional I/O capabilities
-file-io = ["std"]
+file-io = ["std", "babbel_core/file-io"]
 
 # Optional format converters
 format-bencode = []

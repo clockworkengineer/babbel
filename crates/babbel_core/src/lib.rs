@@ -12,6 +12,9 @@ extern crate alloc;
 pub mod chars;
 pub mod encoding;
 pub mod error;
+pub mod escape;
+#[cfg(feature = "file-io")]
+pub mod file;
 pub mod io;
 pub mod model;
 pub mod num;
@@ -20,6 +23,12 @@ pub mod num;
 pub use chars::{is_digit, is_hex_digit, is_newline, is_whitespace};
 pub use encoding::{detect_encoding_and_strip_bom, normalize_newlines, Encoding};
 pub use error::{format_error_snippet, Location, Span};
+pub use escape::{
+    escape_for_json, escape_for_xml, json_needs_escaping, write_json_escaped_string,
+    write_xml_escaped_string,
+};
+#[cfg(feature = "file-io")]
+pub use file::{detect_format, read_file_to_string, write_file_from_string, Format};
 pub use io::{
     BufferDestination, ByteSliceSource, IByteStream, IDestination, IIndentationAware, ISource,
     SliceSource, StringDestination, StringSource,
