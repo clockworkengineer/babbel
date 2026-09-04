@@ -163,30 +163,36 @@ pub fn run_yaml_test_suite() {
 }
 
 fn load_suite_paths() -> Vec<PathBuf> {
-    let suite_paths_file = Path::new(env!("CARGO_MANIFEST_DIR"))
+    let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let mut paths = vec![
+        manifest_dir.join("yaml-test-suite"),
+        manifest_dir.join("tests").join("yaml-test-suite"),
+    ];
+
+    let suite_paths_file = manifest_dir
         .join("tests")
         .join("suite_paths.txt");
     if suite_paths_file.exists() {
-        match fs::read_to_string(&suite_paths_file) {
-            Ok(contents) => contents
-                .lines()
-                .filter_map(|line| {
-                    let trimmed = line.trim();
-                    if trimmed.is_empty() {
-                        None
+        if let Ok(contents) = fs::read_to_string(&suite_paths_file) {
+            for line in contents.lines() {
+                let trimmed = line.trim();
+                if !trimmed.is_empty() {
+                    let p = PathBuf::from(trimmed);
+                    if p.is_absolute() {
+                        paths.push(p);
                     } else {
-                        Some(PathBuf::from(trimmed))
+                        paths.push(manifest_dir.join(&p));
+                        paths.push(manifest_dir.join("tests").join(&p));
+                        paths.push(p);
                     }
-                })
-                .collect(),
-            Err(_) => vec![],
+                }
+            }
         }
-    } else {
-        vec![
-            PathBuf::from("c:/Projects/yaml/yaml-test-suite"),
-            PathBuf::from("../yaml-test-suite"),
-        ]
     }
+
+    paths.push(PathBuf::from("c:/Projects/yaml/yaml-test-suite"));
+    paths.push(PathBuf::from("../yaml-test-suite"));
+    paths
 }
 
 fn select_suite_dir(possible_paths: &[PathBuf]) -> Option<PathBuf> {
