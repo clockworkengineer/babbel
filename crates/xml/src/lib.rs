@@ -34,12 +34,18 @@ pub use document::Document;
 pub use dtd::{DtdAttributeRule, DtdElementRule, DtdValidator, ExternalSubsetResolver};
 pub use entity::{EntityMapper, EntityResolver};
 pub use error::{Result, XmlError};
-pub use io::{Format, XmlDestination, XmlSource};
+pub use io::{
+    DestinationExt, Format, IByteStream, ICharStream, IClearable, IDestination, IPositionAware,
+    IRewindable, ISource, XmlDestination, XmlSource,
+};
 pub use namespace::{Namespace, NamespaceScope, QName};
 pub use node::{Attribute, NodeData, NodeId, NodeKind};
 pub use options::ParseOptions;
 pub use parser::{XmlParser, XmlPullAttribute, XmlPullEvent, XmlPullParser};
-pub use stringify::{canonicalize, CanonicalOptions, CanonicalSerializer, SerializeOptions, XmlSerializer};
+pub use stringify::{
+    canonicalize, canonicalize_to, canonicalize_to_with_options, stringify_to,
+    stringify_to_with_options, CanonicalOptions, CanonicalSerializer, SerializeOptions, XmlSerializer,
+};
 pub use validator::XmlValidator;
 pub use xsd::{
     Compositor, XsdAttributeRule, XsdComplexType, XsdElementRule, XsdRestriction, XsdValidator,
@@ -115,6 +121,28 @@ pub fn parse_reader<R: std::io::Read>(reader: R) -> Result<Document> {
     parser.parse()
 }
 
+/// Parse an XML input stream implementing [`ISource`] into a DOM `Document` using default parsing options.
+///
+/// # Examples
+///
+/// ```
+/// use xml_lib_rust::{parse_source, ISource, XmlSource};
+///
+/// let mut source = XmlSource::from_string("<root><child/></root>");
+/// let doc = parse_source(&mut source).unwrap();
+/// assert_eq!(doc.get_root_element_name(), Some("root"));
+/// ```
+pub fn parse_source(source: &mut dyn ISource) -> Result<Document> {
+    parse_source_with_options(source, ParseOptions::default())
+}
+
+/// Parse an XML input stream implementing [`ISource`] into a DOM `Document` with custom options.
+pub fn parse_source_with_options(source: &mut dyn ISource, options: ParseOptions) -> Result<Document> {
+    let xml_source = XmlSource::from_source(source);
+    let mut parser = XmlParser::new(xml_source, options);
+    parser.parse()
+}
+
 /// Serialize a DOM `Document` into a formatted UTF-8 XML string representation.
 ///
 /// # Examples
@@ -132,6 +160,7 @@ pub fn parse_reader<R: std::io::Read>(reader: R) -> Result<Document> {
 pub fn stringify(doc: &Document) -> String {
     XmlSerializer::serialize_to_string(doc, &SerializeOptions::default())
 }
+
 
 /// Parse an XML file from disk into a DOM `Document` with automatic UTF-8 / UTF-16 BOM detection.
 ///

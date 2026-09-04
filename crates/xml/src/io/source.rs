@@ -225,4 +225,42 @@ impl XmlSource {
             }
         }
     }
+
+    /// Creates an `XmlSource` by consuming an arbitrary character stream implementing [`babbel_core::io::traits::ISource`].
+    pub fn from_source(source: &mut dyn babbel_core::io::traits::ISource) -> Self {
+        let mut content = String::new();
+        while source.more() {
+            if let Some(ch) = source.current() {
+                content.push(ch);
+            }
+            source.next();
+        }
+        Self::from_string(&content)
+    }
+}
+
+impl babbel_core::io::traits::ISource for XmlSource {
+    fn next(&mut self) {
+        let _ = self.next_char();
+    }
+
+    fn current(&mut self) -> Option<char> {
+        self.peek()
+    }
+
+    fn more(&mut self) -> bool {
+        !self.is_eof()
+    }
+
+    fn reset(&mut self) {
+        self.pos = 0;
+        self.line = 1;
+        self.col = 1;
+    }
+}
+
+impl babbel_core::io::traits::IPositionAware for XmlSource {
+    fn position(&self) -> usize {
+        self.pos
+    }
 }

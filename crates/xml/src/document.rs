@@ -56,6 +56,16 @@ impl Document {
         crate::parse(xml)
     }
 
+    /// Parse a DOM [`Document`] from an input source implementing [`babbel_core::io::traits::ISource`].
+    pub fn parse_source(source: &mut dyn babbel_core::io::traits::ISource) -> Result<Self> {
+        crate::parse_source(source)
+    }
+
+    /// Serializes this document to an output destination implementing [`babbel_core::io::traits::IDestination`].
+    pub fn stringify_to(&self, dest: &mut dyn babbel_core::io::traits::IDestination) {
+        crate::stringify_to(self, dest);
+    }
+
     /// Returns the tag name of the root element if one exists.
     pub fn get_root_element_name(&self) -> Option<&str> {
         self.root_element_id().and_then(|id| self.get_node(id)).map(|n| n.kind.name())

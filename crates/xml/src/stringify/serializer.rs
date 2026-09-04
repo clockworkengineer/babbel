@@ -4,8 +4,9 @@
 
 use crate::alloc_prelude::*;
 use crate::document::Document;
-use crate::io::destination::XmlDestination;
+use crate::io::destination::{DestinationExt, XmlDestination};
 use crate::node::{NodeId, NodeKind};
+use babbel_core::io::traits::IDestination;
 
 /// Formatting options for XML serialization.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -44,7 +45,12 @@ impl XmlSerializer {
     /// Serializes a [`Document`] DOM tree into a formatted string.
     pub fn serialize_to_string(doc: &Document, options: &SerializeOptions) -> String {
         let mut dest = XmlDestination::new();
+        Self::serialize(doc, &mut dest, options);
+        dest.into_string()
+    }
 
+    /// Serializes a [`Document`] DOM tree directly into an output destination implementing [`IDestination`].
+    pub fn serialize(doc: &Document, dest: &mut dyn IDestination, options: &SerializeOptions) {
         if !options.omit_xml_declaration {
             if let Some(decl_id) = doc.declaration_id() {
                 if let Some(node) = doc.get_node(decl_id) {
@@ -77,14 +83,12 @@ impl XmlSerializer {
         }
 
         if let Some(prolog_id) = doc.prolog_id() {
-            Self::serialize_children(doc, prolog_id, 0, options, &mut dest);
+            Self::serialize_children(doc, prolog_id, 0, options, dest);
         }
 
         if let Some(root_id) = doc.root_id() {
-            Self::serialize_children(doc, root_id, 0, options, &mut dest);
+            Self::serialize_children(doc, root_id, 0, options, dest);
         }
-
-        dest.into_string()
     }
 
     /// Serializes a [`Document`] directly to an I/O writer.
@@ -113,7 +117,7 @@ impl XmlSerializer {
         parent_id: NodeId,
         indent_level: usize,
         options: &SerializeOptions,
-        dest: &mut XmlDestination,
+        dest: &mut dyn IDestination,
     ) {
         if let Some(node) = doc.get_node(parent_id) {
             for &c_id in &node.children {
@@ -130,7 +134,7 @@ impl XmlSerializer {
         node_id: NodeId,
         indent_level: usize,
         options: &SerializeOptions,
-        dest: &mut XmlDestination,
+        dest: &mut dyn IDestination,
     ) {
         if indent_level > Self::MAX_SERIALIZE_DEPTH {
             return;
@@ -253,7 +257,7 @@ impl XmlSerializer {
         }
     }
 
-    fn write_escaped(s: &str, quote_char: Option<char>, dest: &mut XmlDestination) {
+    fn write_escaped(s: &str, quote_char: Option<char>, dest: &mut dyn IDestination) {
         let mut last = 0;
         let bytes = s.as_bytes();
         for (i, &b) in bytes.iter().enumerate() {
@@ -272,11 +276,11 @@ impl XmlSerializer {
         dest.write_str(&s[last..]);
     }
 
-    fn write_escaped_text(s: &str, dest: &mut XmlDestination) {
+    fn write_escaped_text(s: &str, dest: &mut dyn IDestination) {
         Self::write_escaped(s, None, dest);
     }
 
-    fn write_escaped_attr(s: &str, quote_char: char, dest: &mut XmlDestination) {
+    fn write_escaped_attr(s: &str, quote_char: char, dest: &mut dyn IDestination) {
         Self::write_escaped(s, Some(quote_char), dest);
     }
 }

@@ -4,8 +4,9 @@
 
 use crate::alloc_prelude::*;
 use crate::document::Document;
-use crate::io::destination::XmlDestination;
+use crate::io::destination::{DestinationExt, XmlDestination};
 use crate::node::{NodeId, NodeKind};
+use babbel_core::io::traits::IDestination;
 
 /// Configuration options for Canonical XML (C14N) serialization.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,17 +33,26 @@ impl CanonicalSerializer {
     /// Serializes a [`Document`] to a canonical XML string according to W3C C14N rules.
     pub fn canonicalize(doc: &Document, options: &CanonicalOptions) -> String {
         let mut dest = XmlDestination::new();
-        if let Some(root_elem_id) = doc.root_element_id() {
-            Self::serialize_canonical_node(doc, root_elem_id, options, &mut dest, 0);
-        }
+        Self::serialize_canonical(doc, options, &mut dest);
         dest.into_string()
+    }
+
+    /// Serializes a [`Document`] to an output destination implementing [`IDestination`] according to W3C C14N rules.
+    pub fn serialize_canonical(
+        doc: &Document,
+        options: &CanonicalOptions,
+        dest: &mut dyn IDestination,
+    ) {
+        if let Some(root_elem_id) = doc.root_element_id() {
+            Self::serialize_canonical_node(doc, root_elem_id, options, dest, 0);
+        }
     }
 
     fn serialize_canonical_node(
         doc: &Document,
         node_id: NodeId,
         options: &CanonicalOptions,
-        dest: &mut XmlDestination,
+        dest: &mut dyn IDestination,
         depth: usize,
     ) {
         if depth > Self::MAX_CANONICAL_DEPTH {
@@ -122,7 +132,7 @@ impl CanonicalSerializer {
         }
     }
 
-    fn write_canonical_text(text: &str, dest: &mut XmlDestination) {
+    fn write_canonical_text(text: &str, dest: &mut dyn IDestination) {
         for ch in text.chars() {
             match ch {
                 '&' => dest.write_str("&amp;"),
@@ -134,7 +144,7 @@ impl CanonicalSerializer {
         }
     }
 
-    fn write_canonical_attr(value: &str, dest: &mut XmlDestination) {
+    fn write_canonical_attr(value: &str, dest: &mut dyn IDestination) {
         for ch in value.chars() {
             match ch {
                 '&' => dest.write_str("&amp;"),

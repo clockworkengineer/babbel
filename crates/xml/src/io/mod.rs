@@ -6,8 +6,10 @@ pub mod char_utils;
 pub mod destination;
 pub mod encoding;
 pub mod source;
+pub mod traits;
 
 pub use char_utils::{is_valid_xml_char, is_xml_name_char, is_xml_name_start, is_xml_whitespace};
-pub use destination::XmlDestination;
+pub use destination::{DestinationExt, XmlDestination};
 pub use encoding::Format;
 pub use source::XmlSource;
+pub use traits::{IByteStream, ICharStream, IClearable, IDestination, IPositionAware, IRewindable, ISource};
