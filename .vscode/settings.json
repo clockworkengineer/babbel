@@ -2,5 +2,8 @@
     "rust-analyzer.cargo.extraArgs": [
         "--target-dir",
         "target/analyzer"
-    ]
+    ],
+    "files.exclude": {
+        ".vscode": true
+    }
 }

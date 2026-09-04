@@ -12,4 +12,7 @@ pub use sources::{BufferSource, ByteSliceSource, SliceSource, StringSource};
 #[cfg(feature = "file-io")]
 pub use sources::FileSource;
 
-pub use traits::{IByteStream, IDestination, IIndentationAware, ISource};
+pub use traits::{
+    IByteStream, ICharStream, IClearable, IDestination, IIndentationAware, IPositionAware,
+    IRewindable, ISource,
+};

@@ -60,6 +60,12 @@ impl<'a> ISource for SliceSource<'a> {
     }
 }
 
+impl<'a> super::traits::IPositionAware for SliceSource<'a> {
+    fn position(&self) -> usize {
+        self.pos
+    }
+}
+
 /// Owned string input source.
 #[derive(Debug, Clone)]
 pub struct StringSource {
@@ -74,6 +80,17 @@ impl StringSource {
             content: content.into(),
             pos: 0,
         }
+    }
+
+    /// Returns current byte offset in source string.
+    pub fn position(&self) -> usize {
+        self.pos
+    }
+}
+
+impl super::traits::IPositionAware for StringSource {
+    fn position(&self) -> usize {
+        self.pos
     }
 }
 
@@ -114,6 +131,17 @@ impl<'a> ByteSliceSource<'a> {
     /// Creates a new byte slice source.
     pub fn new(slice: &'a [u8]) -> Self {
         Self { slice, pos: 0 }
+    }
+
+    /// Returns current byte offset.
+    pub fn position(&self) -> usize {
+        self.pos
+    }
+}
+
+impl<'a> super::traits::IPositionAware for ByteSliceSource<'a> {
+    fn position(&self) -> usize {
+        self.pos
     }
 }
 
@@ -177,6 +205,12 @@ impl BufferSource {
     /// Resets the position to 0.
     pub fn reset(&mut self) {
         self.position = 0;
+    }
+}
+
+impl super::traits::IPositionAware for BufferSource {
+    fn position(&self) -> usize {
+        self.position
     }
 }
 

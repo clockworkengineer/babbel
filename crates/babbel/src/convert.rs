@@ -9,6 +9,8 @@ use yaml_lib;
 #[cfg(feature = "bencode")]
 use bencode_lib;
 
+use babbel_core::{BabbelError, Buffer, FormatEmitter, FormatParser, Value};
+
 /// Supported serialization format identifiers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Format {
@@ -16,6 +18,73 @@ pub enum Format {
     Yaml,
     Xml,
     Bencode,
+}
+
+/// Generic, open-ended conversion pipeline from any format parser to any format emitter (OCP & DIP).
+pub fn convert_text<P: FormatParser, E: FormatEmitter>(
+    input: &str,
+    parser: &P,
+    emitter: &E,
+) -> Result<String, BabbelError> {
+    let value = parser.parse_str(input)?;
+    let mut dest = Buffer::new();
+    emitter.emit(&value, &mut dest)?;
+    Ok(dest.to_string())
+}
+
+/// Generic, open-ended conversion pipeline from byte inputs to byte outputs (OCP & DIP).
+pub fn convert_bytes<P: FormatParser, E: FormatEmitter>(
+    input: &[u8],
+    parser: &P,
+    emitter: &E,
+) -> Result<Vec<u8>, BabbelError> {
+    let value = parser.parse_bytes(input)?;
+    let mut dest = Buffer::new();
+    emitter.emit(&value, &mut dest)?;
+    Ok(dest.into_vec())
+}
+
+/// JSON parser implementing `FormatParser`.
+#[cfg(feature = "json")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct JsonParser;
+
+#[cfg(feature = "json")]
+impl FormatParser for JsonParser {
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        let node = json_lib::from_str(input).map_err(|e| BabbelError::syntax(e.to_string()))?;
+        Ok(Value::from(&node))
+    }
+}
+
+/// YAML parser implementing `FormatParser`.
+#[cfg(feature = "yaml")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct YamlParser;
+
+#[cfg(feature = "yaml")]
+impl FormatParser for YamlParser {
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        let node = yaml_lib::parse_string(input).map_err(|e| BabbelError::syntax(e.to_string()))?;
+        Ok(Value::from(&node))
+    }
+}
+
+/// Bencode parser implementing `FormatParser`.
+#[cfg(feature = "bencode")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct BencodeParser;
+
+#[cfg(feature = "bencode")]
+impl FormatParser for BencodeParser {
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        self.parse_bytes(input.as_bytes())
+    }
+
+    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
+        let node = bencode_lib::parse_bytes(input).map_err(|e| BabbelError::syntax(e.to_string()))?;
+        Ok(Value::from(&node))
+    }
 }
 
 /// Convert JSON string to YAML string.

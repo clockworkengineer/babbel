@@ -76,6 +76,7 @@ pub fn is_boolean_node(node: &Node) -> bool {
     matches!(node, Node::Boolean(_))
 }
 
+#[allow(dead_code)]
 #[inline]
 pub fn is_none_node(node: &Node) -> bool {
     matches!(node, Node::None)
