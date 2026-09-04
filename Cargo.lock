@@ -66,6 +66,7 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 name = "bencode_lib"
 version = "0.2.1"
 dependencies = [
+ "babbel_core",
  "rand",
 ]
 
@@ -333,6 +334,7 @@ name = "json_lib"
 version = "0.2.1"
 dependencies = [
  "arrayvec",
+ "babbel_core",
  "dtoa",
  "itoa",
  "rand",
@@ -723,6 +725,7 @@ dependencies = [
 name = "xml_lib_rust"
 version = "1.2.2"
 dependencies = [
+ "babbel_core",
  "criterion",
  "serde",
  "thiserror",
@@ -732,6 +735,7 @@ dependencies = [
 name = "yaml_lib"
 version = "0.2.1"
 dependencies = [
+ "babbel_core",
  "base64",
  "log",
  "rand",

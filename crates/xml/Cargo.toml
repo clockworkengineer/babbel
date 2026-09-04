@@ -1,0 +1,127 @@
+[package]
+name = "xml_lib_rust"
+version = "1.2.2"
+edition = "2021"
+authors = ["ClockworkEngineer", "Rust Port Team"]
+description = "Full-featured XML parser, validator, stringifier, and XPath 1.0 engine in pure Rust"
+license = "MIT"
+repository = "https://github.com/clockworkengineer/xml"
+documentation = "https://docs.rs/xml_lib_rust"
+readme = "../README.md"
+
+[features]
+default = ["std", "dtd", "xsd", "xpath", "stringify"]
+std = ["alloc", "babbel_core/std"]
+alloc = ["babbel_core/alloc"]
+dtd = []
+xsd = []
+xpath = []
+stringify = []
+embedded = []
+small_nodes = []
+serde = ["dep:serde"]
+
+[dependencies]
+babbel_core = { path = "../babbel_core", default-features = false }
+thiserror = "1.0"
+serde = { version = "1.0", default-features = false, features = ["alloc", "derive"], optional = true }
+
+[dev-dependencies]
+criterion = "0.5"
+serde = { version = "1.0", features = ["derive"] }
+
+[[example]]
+name = "analyze_file"
+path = "../examples/analyze_file.rs"
+
+[[example]]
+name = "create_at_runtime"
+path = "../examples/create_at_runtime.rs"
+
+[[example]]
+name = "deep_nesting"
+path = "../examples/deep_nesting.rs"
+
+[[example]]
+name = "dtd_validation"
+path = "../examples/dtd_validation.rs"
+
+[[example]]
+name = "encoding"
+path = "../examples/encoding.rs"
+
+[[example]]
+name = "entity_reference"
+path = "../examples/entity_reference.rs"
+
+[[example]]
+name = "fibonacci"
+path = "../examples/fibonacci.rs"
+
+[[example]]
+name = "large_attributes"
+path = "../examples/large_attributes.rs"
+
+[[example]]
+name = "malformed"
+path = "../examples/malformed.rs"
+
+[[example]]
+name = "mixed_content"
+path = "../examples/mixed_content.rs"
+
+[[example]]
+name = "parse_file"
+path = "../examples/parse_file.rs"
+
+[[example]]
+name = "whitespace"
+path = "../examples/whitespace.rs"
+
+[[example]]
+name = "xpath_basic"
+path = "../examples/xpath_basic.rs"
+
+[[example]]
+name = "xpath_functions"
+path = "../examples/xpath_functions.rs"
+
+[[example]]
+name = "xpath_predicates"
+path = "../examples/xpath_predicates.rs"
+
+[[example]]
+name = "xsd_attributes"
+path = "../examples/xsd_attributes.rs"
+
+[[example]]
+name = "xsd_basic_validation"
+path = "../examples/xsd_basic_validation.rs"
+
+[[example]]
+name = "xsd_file_validation"
+path = "../examples/xsd_file_validation.rs"
+
+[[example]]
+name = "xsd_type_restrictions"
+path = "../examples/xsd_type_restrictions.rs"
+
+[[example]]
+name = "canonical_xml"
+path = "../examples/canonical_xml.rs"
+
+[[example]]
+name = "namespaces"
+path = "../examples/namespaces.rs"
+
+[[example]]
+name = "dom_mutations"
+path = "../examples/dom_mutations.rs"
+
+[[example]]
+name = "xpath_advanced"
+path = "../examples/xpath_advanced.rs"
+
+[[example]]
+name = "streaming_io"
+path = "../examples/streaming_io.rs"

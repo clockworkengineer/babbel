@@ -1,0 +1,35 @@
+//! Module: parser/utils/indentation.rs
+//!
+//! Shared token-based indentation and whitespace validation utilities
+//! used by the document parser. This is the canonical home for
+//! indentation rules; document helpers should delegate here.
+
+use crate::parser::utils::context::ParsingContext;
+use crate::parser::token_stream::TokenStream;
+
+/// Token-based indentation validation using `TokenStream`.
+///
+/// At the moment this function is intentionally minimal and only set up as a
+/// customization point; it will be extended to enforce stricter
+/// indentation/whitespace rules (using `ParsingContext`) as we work through
+/// the official YAML test suite false positives.
+pub(crate) fn validate_indentation_tokens(
+    stream: &TokenStream,
+    ctx: &ParsingContext,
+) -> crate::parser::ParseResult<()> {
+    use crate::parser::lexer::Token;
+
+    if ctx.in_flow {
+        return Ok(());
+    }
+    if !ctx.should_validate_tab_indentation() {
+        return Ok(());
+    }
+    // At token level we don't mutate or inspect raw source; validation occurs
+    // at call sites that can safely snapshot and peek the underlying source.
+    // Keep this as a no-op hook for future token-encoded indentation metadata.
+    if let Some(Token::Indent(_)) = stream.current() {
+        return Ok(());
+    }
+    Ok(())
+}

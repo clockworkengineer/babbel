@@ -1,0 +1,623 @@
+//! Default YAML Stringification
+//!
+//! Provides functions for converting YAML nodes to their default string representations,
+//! including escaping, formatting, and output to destinations.
+//!
+//! Copyright (c) 2026 YAML Library Developers
+
+use crate::constants::*;
+use crate::error::YamlError;
+use crate::io::traits::IDestination;
+use crate::nodes::node::*;
+use crate::stringify::traits::NodeSerializer;
+
+/// Default YAML Serializer implementing `NodeSerializer` (OCP & DIP)
+#[derive(Debug, Default, Clone, Copy)]
+pub struct YamlSerializer;
+
+impl NodeSerializer for YamlSerializer {
+    fn serialize(&self, node: &Node, dest: &mut dyn IDestination) -> crate::error::Result<()> {
+        stringify(node, dest)
+    }
+}
+
+/// Escapes special characters in a string for double-quoted YAML representation.
+///
+/// Processes characters that need escaping in double-quoted strings including
+/// newlines, carriage returns, tabs, and backslashes. Preserves existing
+/// escape sequences when appropriate.
+///
+/// # Arguments
+///
+/// * `s` - The string to escape
+///
+/// # Returns
+///
+/// A new String with appropriate escape sequences
+fn escape_double(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut iter = s.chars().peekable();
+    while let Some(c) = iter.next() {
+        match c {
+            CHAR_NEWLINE => out.push(CHAR_NEWLINE),
+            CHAR_CARRIAGE_RETURN => {
+                out.push(CHAR_BACKSLASH);
+                out.push('r');
+            }
+            CHAR_TAB => {
+                out.push(CHAR_BACKSLASH);
+                out.push('t');
+            }
+            CHAR_BACKSLASH => {
+                if let Some(&next) = iter.peek() {
+                    match next {
+                        'n' | 'r' | 't' | 'b' | 'x' => {
+                            out.push(CHAR_BACKSLASH);
+                            out.push(next);
+                            iter.next();
+                        }
+                        _ => {
+                            out.push(CHAR_BACKSLASH);
+                            out.push(CHAR_BACKSLASH);
+                        }
+                    }
+                } else {
+                    out.push(CHAR_BACKSLASH);
+                    out.push(CHAR_BACKSLASH);
+                }
+            }
+            '"' => {
+                out.push(CHAR_BACKSLASH);
+                out.push(CHAR_DOUBLE_QUOTE);
+            }
+            c if (c as u32) < 0x20 || (c as u32) == 0x7f => {
+                out.push_str(&format!("\\u{:04x}", c as u32));
+            }
+            other => out.push(other),
+        }
+    }
+    out
+}
+
+/// Escapes single quotes in a string for single-quoted YAML representation.
+///
+/// Handles the single quote escaping rule where single quotes are escaped
+/// by doubling them ('') in single-quoted YAML strings.
+///
+/// # Arguments
+///
+/// * `s` - The string to escape
+///
+/// # Returns
+///
+/// A new String with single quotes properly escaped
+fn escape_single(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        if c == CHAR_SINGLE_QUOTE {
+            out.push(CHAR_SINGLE_QUOTE);
+            out.push(CHAR_SINGLE_QUOTE);
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
+/// Normalizes newline characters in a string to use Unix-style line endings.
+///
+/// Converts Windows-style CRLF sequences to LF for consistent output.
+///
+/// # Arguments
+///
+/// * `s` - The string to normalize
+///
+/// # Returns
+///
+/// A new String with normalized line endings
+use crate::nodes::node::{BlockStyle, Node, QuoteType};
+
+fn normalize_newlines(s: &str) -> String {
+    // Restore original CR removal logic for test compatibility
+    s.replace(CHAR_CARRIAGE_RETURN, "")
+}
+
+/// Recursively stringifies a YAML node with the specified indentation level.
+///
+/// Handles all node types including scalars, arrays, mappings, documents,
+/// anchors, aliases, and comments. Applies proper indentation and formatting
+/// rules based on the node type and content.
+///
+/// # Arguments
+///
+/// * `node` - The Node to stringify
+/// * `destination` - The output destination for the YAML content
+/// * `indent` - The current indentation level (number of spaces)
+///
+/// # Returns
+///
+/// Result indicating success or an error string
+fn stringify_document_with_indent(
+    node: &Node,
+    destination: &mut dyn IDestination,
+    indent: usize,
+) -> Result<(), YamlError> {
+    let indent_str = "  ".repeat(indent);
+    match node {
+        Node::None => destination.add_bytes(&format!("{indent_str}null")),
+        Node::Boolean(b) => destination.add_bytes(&format!("{indent_str}{b}")),
+        Node::Str(s, qt, style) => {
+            let s = normalize_newlines(s);
+            match qt {
+                QuoteType::Double => destination.add_bytes(&format!(
+                    "{}{}{}{}",
+                    indent_str,
+                    CHAR_DOUBLE_QUOTE,
+                    escape_double(&s),
+                    CHAR_DOUBLE_QUOTE
+                )),
+                QuoteType::Single => {
+                    if !s.contains(CHAR_NEWLINE)
+                        && (s.contains(CHAR_SINGLE_QUOTE) || s.contains(CHAR_BACKSLASH))
+                    {
+                        destination.add_bytes(&format!(
+                            "{}{}{}{}",
+                            indent_str,
+                            CHAR_DOUBLE_QUOTE,
+                            escape_double(&s),
+                            CHAR_DOUBLE_QUOTE
+                        ))
+                    } else {
+                        destination.add_bytes(&format!(
+                            "{}{}{}{}",
+                            indent_str,
+                            CHAR_SINGLE_QUOTE,
+                            escape_single(&s),
+                            CHAR_SINGLE_QUOTE
+                        ))
+                    }
+                }
+                QuoteType::Unquoted => {
+                    if s.contains(CHAR_NEWLINE) || matches!(style, BlockStyle::Literal) {
+                        let is_literal = matches!(style, BlockStyle::Literal);
+
+                        let lines: Vec<&str> = s.split(CHAR_NEWLINE).collect();
+                        let needs_indent = if is_literal {
+                            lines.iter().any(|l| !l.is_empty() && !l.starts_with(' '))
+                        } else {
+                            true
+                        };
+                        let content_indent = if needs_indent {
+                            "  ".repeat(indent + 1)
+                        } else {
+                            String::new()
+                        };
+                        destination
+                            .add_bytes(&format!("{indent_str}{STR_LITERAL_BLOCK}{CHAR_NEWLINE}"));
+
+                        if !s.contains(CHAR_NEWLINE) && is_literal {
+                            destination.add_bytes(&format!("{content_indent}{s}{CHAR_NEWLINE}"));
+                        } else {
+                            for line in lines {
+                                if line.is_empty() {
+                                    destination.add_bytes(&CHAR_NEWLINE.to_string());
+                                } else {
+                                    destination.add_bytes(&format!(
+                                        "{content_indent}{line}{CHAR_NEWLINE}"
+                                    ));
+                                }
+                            }
+                        }
+                    } else {
+                        destination.add_bytes(&format!("{indent_str}{s}"))
+                    }
+                }
+            }
+        }
+        Node::Comment(c) => {
+            let c = normalize_newlines(c);
+            destination.add_bytes(&format!("{indent_str}{CHAR_HASH}{CHAR_SPACE}{c}"))
+        }
+        Node::Number(num) => match num {
+            Numeric::Integer(i) => destination.add_bytes(&format!("{indent_str}{i}")),
+            Numeric::Float(f) => destination.add_bytes(&format!("{indent_str}{f}")),
+            _ => destination.add_bytes(&format!("{indent_str}{num:?}")),
+        },
+        Node::Array(items) => {
+            for item in items {
+                destination.add_bytes(&format!("{indent_str}{CHAR_DASH}{CHAR_SPACE}"));
+                match item {
+                    Node::Mapping(_) => {
+                        let mut buf = crate::io::destinations::buffer::Buffer::new();
+                        stringify_document_with_indent(item, &mut buf, indent + 1)?;
+                        let mut out = buf.to_string();
+                        let child_indent = "  ".repeat(indent + 1);
+                        if out.starts_with(&child_indent) {
+                            out = out.split_off(child_indent.len());
+                        }
+                        destination.add_bytes(&out);
+                    }
+                    Node::Array(_) => {
+                        let mut buf = crate::io::destinations::buffer::Buffer::new();
+                        stringify_document_with_indent(item, &mut buf, indent + 1)?;
+                        let mut out = buf.to_string();
+                        let child_indent = "  ".repeat(indent + 1);
+                        if out.starts_with(&child_indent) {
+                            out = out.split_off(child_indent.len());
+                        }
+                        destination.add_bytes(&out);
+                    }
+                    _ => {
+                        stringify_document_with_indent(item, destination, 0)?;
+                        destination.add_bytes(&CHAR_NEWLINE.to_string());
+                    }
+                }
+            }
+        }
+
+        Node::Set(items) => {
+            // Render sets as plain sequences (without !!set tag)
+            for item in items {
+                destination.add_bytes(&format!("{indent_str}{CHAR_DASH}{CHAR_SPACE}"));
+                match item {
+                    Node::Mapping(_) | Node::Array(_) | Node::Set(_) => {
+                        destination.add_bytes(&CHAR_NEWLINE.to_string());
+                        stringify_document_with_indent(item, destination, indent + 1)?;
+                    }
+                    _ => {
+                        stringify_document_with_indent(item, destination, 0)?;
+                        destination.add_bytes(&CHAR_NEWLINE.to_string());
+                    }
+                }
+            }
+        }
+
+        Node::Mapping(pairs) => {
+            for (key_node, value) in pairs {
+                let key_str = match key_node {
+                    Node::Number(Numeric::Float(f)) => format!("\"{}\"", f),
+                    Node::Number(Numeric::Integer(i)) => format!("{}", i),
+                    _ => {
+                        let mut key_buf = crate::io::destinations::buffer::Buffer::new();
+                        stringify_document_with_indent(key_node, &mut key_buf, 0)?;
+                        key_buf.to_string()
+                    }
+                };
+
+                destination.add_bytes(&format!("{indent_str}{key_str}{CHAR_COLON}{CHAR_SPACE}"));
+
+                match value {
+                    Node::Array(_) | Node::Mapping(_) | Node::Set(_) => {
+                        destination.add_bytes(&CHAR_NEWLINE.to_string());
+                        stringify_document_with_indent(value, destination, indent + 1)?;
+                    }
+                    Node::Str(_, QuoteType::Unquoted, BlockStyle::Literal) => {
+                        stringify_document_with_indent(value, destination, 0)?;
+                    }
+                    _ => {
+                        stringify_document_with_indent(value, destination, 0)?;
+                        destination.add_bytes(&CHAR_NEWLINE.to_string());
+                    }
+                }
+            }
+        }
+        Node::Document(nodes) => {
+            for node in nodes {
+                stringify_document_with_indent(node, destination, indent)?;
+            }
+        }
+        Node::Anchored(inner, name) => {
+            destination.add_bytes(&format!("{CHAR_AMPERSAND}{name}{CHAR_SPACE}"));
+            stringify_document_with_indent(inner, destination, indent)?;
+        }
+        Node::Tagged(inner, tag) => {
+            destination.add_bytes(&format!("{indent_str}{tag}{CHAR_SPACE}"));
+            stringify_document_with_indent(inner, destination, indent)?;
+        }
+        Node::Alias(name) => {
+            destination.add_bytes(&format!("{CHAR_ASTERISK}{name}"));
+        }
+        _ => {
+            return Err(crate::error::messages::ERR_UNSUPPORTED_NODE_TYPE
+                .to_string()
+                .into());
+        }
+    }
+    Ok(())
+}
+
+/// Determines if a node represents blank content that should be omitted.
+///
+/// Checks if a node is considered blank for stringification purposes,
+/// such as None nodes, empty arrays, or empty strings.
+///
+/// # Arguments
+///
+/// * `node` - The Node to check
+///
+/// # Returns
+///
+/// true if the node is considered blank, false otherwise
+
+/// Stringifies a single YAML document to the destination.
+///
+/// Converts a document node to its YAML string representation,
+/// starting with zero indentation. This is typically used for
+/// individual documents within a multi-document stream.
+///
+/// # Arguments
+///
+/// * `node` - The Document Node to stringify
+/// * `destination` - The output destination for the YAML content
+///
+/// # Returns
+///
+/// Result indicating success or an error string
+pub fn stringify_document(
+    node: &Node,
+    destination: &mut dyn IDestination,
+) -> Result<(), YamlError> {
+    stringify_document_with_indent(node, destination, 0)
+}
+
+/// Main entry point for stringifying YAML nodes to their text representation.
+///
+/// Converts any YAML node structure (documents, individual nodes) to
+/// properly formatted YAML text. Handles multi-document streams by
+/// adding appropriate document separators.
+///
+/// # Arguments
+///
+/// * `node` - The root Node to stringify
+/// * `destination` - The output destination for the YAML content
+///
+/// # Returns
+///
+/// Result indicating success or an error string
+pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), YamlError> {
+    match node {
+        Node::Documents(docs) => {
+            for doc in docs {
+                if let Node::Document(nodes) = doc {
+                    if nodes.iter().all(|n| n.is_blank()) {
+                        destination.add_bytes(&format!(
+                            "{}{}",
+                            crate::constants::STR_DOC_START,
+                            crate::constants::CHAR_NEWLINE
+                        ));
+                        continue;
+                    }
+                }
+
+                if let Node::Document(nodes) = doc {
+                    if nodes.len() == 1 {
+                        if let Node::Str(s, QuoteType::Unquoted, BlockStyle::Literal) = &nodes[0] {
+                            let s = normalize_newlines(s);
+                            destination.add_bytes(&format!(
+                                "{} {}{}",
+                                crate::constants::STR_DOC_START,
+                                STR_LITERAL_BLOCK,
+                                CHAR_NEWLINE
+                            ));
+                            for line in s.split(CHAR_NEWLINE) {
+                                destination.add_bytes(&format!("{line}{CHAR_NEWLINE}"));
+                            }
+                            destination.add_bytes(&format!(
+                                "{}{}",
+                                crate::constants::STR_DOC_END,
+                                CHAR_NEWLINE
+                            ));
+                            continue;
+                        }
+                    }
+                }
+
+                destination.add_bytes(&format!(
+                    "{}{}",
+                    crate::constants::STR_DOC_START,
+                    crate::constants::CHAR_NEWLINE
+                ));
+                stringify_document(doc, destination)?;
+                // Add newline before ... if not already present
+                if destination.last() != Some(b'\n') {
+                    destination.add_bytes("\n");
+                }
+                destination.add_bytes(&format!(
+                    "{}{}",
+                    crate::constants::STR_DOC_END,
+                    crate::constants::CHAR_NEWLINE
+                ));
+            }
+        }
+        _ => {
+            stringify_document(node, destination)?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_stringify_empty_document() {
+        let node = Node::Documents(vec![Node::Document(vec![])]);
+        let mut buf = Buffer::new();
+        stringify(&node, &mut buf).expect("stringify failed");
+        assert_eq!(buf.to_string(), "---\n");
+    }
+
+    #[test]
+    fn test_stringify_boolean_values() {
+        let node = Node::Documents(vec![Node::Document(vec![
+            Node::Boolean(true),
+            Node::Boolean(false),
+        ])]);
+        let mut buf = Buffer::new();
+        stringify(&node, &mut buf).expect("stringify failed");
+        assert_eq!(buf.to_string(), "---\ntruefalse\n...\n");
+    }
+
+    #[test]
+    fn test_stringify_quoted_strings() {
+        let node = Node::Documents(vec![Node::Document(vec![
+            Node::Str("quoted".to_string(), QuoteType::Double, BlockStyle::None),
+            Node::Str("single".to_string(), QuoteType::Single, BlockStyle::None),
+        ])]);
+        let mut buf = Buffer::new();
+        stringify(&node, &mut buf).expect("stringify failed");
+        assert!(buf.to_string().contains("\"quoted\""));
+        assert!(buf.to_string().contains("'single'"));
+    }
+
+    #[test]
+    fn test_stringify_nested_array_and_mapping() {
+        let node = Node::Documents(vec![Node::Document(vec![Node::Array(vec![
+            Node::Mapping(vec![
+                (Node::from("key1"), Node::from("val1")),
+                (Node::from("key2"), Node::from("val2")),
+            ]),
+            Node::Array(vec![
+                Node::Number(Numeric::Integer(10)),
+                Node::Number(Numeric::Integer(20)),
+            ]),
+        ])])]);
+        let mut buf = Buffer::new();
+        stringify(&node, &mut buf).expect("stringify failed");
+        let out = buf.to_string();
+        assert!(out.contains("key1: val1"));
+        assert!(out.contains("key2: val2"));
+        assert!(out.contains("- 10"));
+        assert!(out.contains("- 20"));
+    }
+
+    #[test]
+    fn test_stringify_tagged_and_anchored() {
+        let tagged = Node::Tagged(
+            Box::new(Node::Str(
+                "tagged".to_string(),
+                QuoteType::Unquoted,
+                BlockStyle::None,
+            )),
+            "!tag".to_string(),
+        );
+        let anchored = Node::Anchored(
+            Box::new(Node::Str(
+                "anchored".to_string(),
+                QuoteType::Unquoted,
+                BlockStyle::None,
+            )),
+            "anchor1".to_string(),
+        );
+        let node = Node::Documents(vec![Node::Document(vec![tagged, anchored])]);
+        let mut buf = Buffer::new();
+        stringify(&node, &mut buf).expect("stringify failed");
+        let out = buf.to_string();
+        assert!(out.contains("!tag tagged"));
+        assert!(out.contains("&anchor1 anchored"));
+    }
+
+    #[test]
+    fn test_stringify_alias() {
+        let alias = Node::Alias("anchor1".to_string());
+        let node = Node::Documents(vec![Node::Document(vec![alias])]);
+        let mut buf = Buffer::new();
+        stringify(&node, &mut buf).expect("stringify failed");
+        assert!(buf.to_string().contains("*anchor1"));
+    }
+    use super::*;
+    use crate::io::destinations::buffer::Buffer;
+    use crate::nodes::node::{BlockStyle, Node, Numeric, QuoteType};
+
+    #[test]
+    fn test_escape_double_basic() {
+        assert_eq!(escape_double("a\"b"), "a\\\"b");
+
+        assert_eq!(escape_double("\\n"), "\\n");
+
+        assert_eq!(escape_double("\u{0001}"), "\\u0001");
+    }
+
+    #[test]
+    fn test_escape_single_basic() {
+        assert_eq!(escape_single("a'b"), "a''b");
+        assert_eq!(escape_single("noquote"), "noquote");
+    }
+
+    #[test]
+    fn test_normalize_newlines_removes_cr() {
+        assert_eq!(normalize_newlines("line1\r\nline2\r"), "line1\nline2");
+    }
+
+    #[test]
+    fn test_stringify_integer_sequence() {
+        let docs = Node::Documents(vec![Node::Document(vec![Node::Array(vec![
+            Node::Number(Numeric::Integer(1)),
+            Node::Number(Numeric::Integer(2)),
+            Node::Number(Numeric::Integer(3)),
+        ])])]);
+
+        let mut buf = Buffer::new();
+        stringify(&docs, &mut buf).expect("stringify failed");
+        assert_eq!(buf.to_string(), "---\n- 1\n- 2\n- 3\n...\n");
+    }
+
+    #[test]
+    fn test_stringify_mapping_simple() {
+        let mapping = Node::Documents(vec![Node::Document(vec![Node::Mapping(vec![(
+            Node::from("key"),
+            Node::from("value"),
+        )])])]);
+
+        let mut buf = Buffer::new();
+        stringify(&mapping, &mut buf).expect("stringify failed");
+        assert_eq!(buf.to_string(), "---\nkey: value\n...\n");
+    }
+
+    #[test]
+    fn test_stringify_single_line_literal_document_emits_pipe() {
+        let lit = Node::Documents(vec![Node::Document(vec![Node::Str(
+            "line1\nline2".to_string(),
+            QuoteType::Unquoted,
+            BlockStyle::Literal,
+        )])]);
+
+        let mut buf = Buffer::new();
+        stringify(&lit, &mut buf).expect("stringify failed");
+        assert_eq!(buf.to_string(), "--- |\nline1\nline2\n...\n");
+    }
+
+    #[test]
+    fn test_stringify_set_simple() {
+        let set_doc = Node::Documents(vec![Node::Document(vec![Node::Set(vec![
+            Node::from("item1"),
+            Node::from("item2"),
+            Node::from("item3"),
+        ])])]);
+
+        let mut buf = Buffer::new();
+        stringify(&set_doc, &mut buf).expect("stringify failed");
+        assert_eq!(buf.to_string(), "---\n- item1\n- item2\n- item3\n...\n");
+    }
+
+    #[test]
+    fn test_stringify_set_empty() {
+        let set_doc = Node::Documents(vec![Node::Document(vec![Node::Set(vec![])])]);
+
+        let mut buf = Buffer::new();
+        stringify(&set_doc, &mut buf).expect("stringify failed");
+        assert_eq!(buf.to_string(), "---\n...\n");
+    }
+
+    #[test]
+    fn test_stringify_set_with_numbers() {
+        let set_doc = Node::Documents(vec![Node::Document(vec![Node::Set(vec![
+            Node::Number(Numeric::Integer(1)),
+            Node::Number(Numeric::Integer(2)),
+            Node::Number(Numeric::Integer(3)),
+        ])])]);
+
+        let mut buf = Buffer::new();
+        stringify(&set_doc, &mut buf).expect("stringify failed");
+        assert_eq!(buf.to_string(), "---\n- 1\n- 2\n- 3\n...\n");
+    }
+}

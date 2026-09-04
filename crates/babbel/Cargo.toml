@@ -18,7 +18,7 @@ convert = ["json", "yaml", "xml", "bencode"]
 
 [dependencies]
 babbel_core = { path = "../babbel_core" }
-json_lib = { path = "../../projects/json/library", optional = true }
-yaml_lib = { path = "../../projects/yaml/library", optional = true }
-xml_lib_rust = { path = "../../projects/xml/library", optional = true }
-bencode_lib = { path = "../../projects/bencode/library", optional = true }
+json_lib = { path = "../json", optional = true }
+yaml_lib = { path = "../yaml", optional = true }
+xml_lib_rust = { path = "../xml", optional = true }
+bencode_lib = { path = "../bencode", optional = true }

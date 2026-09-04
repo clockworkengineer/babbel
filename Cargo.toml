@@ -3,11 +3,15 @@ resolver = "3"
 members = [
     "crates/babbel_core",
     "crates/babbel",
-    "projects/xml/library",
-    "projects/json/library",
-    "projects/yaml/library",
-    "projects/bencode/library",
+    "crates/xml",
+    "crates/json",
+    "crates/yaml",
+    "crates/bencode",
 ]
+
+[workspace.dependencies]
+babbel_core = { path = "crates/babbel_core", version = "0.1.0" }
+
 
 [workspace.package]
 version = "0.1.0"

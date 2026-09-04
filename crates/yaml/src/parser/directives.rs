@@ -1,0 +1,246 @@
+//! YAML Directives Parsing
+//!
+//! Implements parsing logic for YAML directives (%YAML, %TAG) at the start of documents.
+//! Handles version specification, tag shorthands, and reserved directives.
+//!
+//! Copyright (c) 2026 YAML Library Developers
+
+use crate::error::YamlError;
+use crate::parser::errors::directive_errors::DirectiveErrors;
+use crate::utils::is_line_terminator;
+/// Parses YAML directives (%YAML, %TAG) at the start of a document.
+/// Returns a DirectiveContext or error string.
+/// YAML directive parsing (%YAML and %TAG)
+///
+/// Handles parsing of directives that appear at the start of YAML documents:
+/// - %YAML major.minor - Specifies YAML version
+/// - %TAG !handle! prefix - Defines tag shorthand
+/// - %RESERVED - Reserved directives (ignored with warning)
+pub fn parse_directives(
+    source: &mut dyn crate::io::traits::ISource,
+) -> Result<DirectiveContext, YamlError> {
+    // Inline parse_line since helpers is private
+    fn parse_line(source: &mut dyn crate::io::traits::ISource) -> String {
+        let mut line = String::new();
+        while let Some(c) = source.current() {
+            if is_line_terminator(c) {
+                break;
+            }
+            line.push(c);
+            source.next();
+        }
+        // Skip newline
+        if let Some(c) = source.current() {
+            if is_line_terminator(c) {
+                source.next();
+            }
+        }
+        line
+    }
+    let mut directives = DirectiveContext::new();
+    crate::utils::skip_whitespace_and_comments(source);
+    while let Some('%') = source.current() {
+        let line = parse_line(source);
+        let parts: Vec<_> = line.trim().split_whitespace().collect();
+        if parts.is_empty() {
+            continue;
+        }
+        match parts[0] {
+            "%YAML" => {
+                if parts.len() < 2 {
+                    return Err(DirectiveErrors::missing_yaml_version());
+                }
+                // Allow comments after version (YAML 1.2/1.1 spec)
+                if parts.len() > 2 {
+                    // If the third part is a comment, allow it; otherwise, error
+                    let third = parts[2];
+                    if !third.starts_with('#') {
+                        return Err(YamlError::new(
+                            crate::error::ErrorKind::ParseError,
+                            "Invalid %YAML directive: extra content after version is not allowed",
+                        ));
+                    }
+                }
+                let version = parts[1];
+                let mut split = version.split('.');
+                let major = split
+                    .next()
+                    .and_then(|s| s.parse::<u8>().ok())
+                    .ok_or_else(|| DirectiveErrors::invalid_yaml_major_version_generic())?;
+                let minor = split
+                    .next()
+                    .and_then(|s| s.parse::<u8>().ok())
+                    .ok_or_else(|| DirectiveErrors::invalid_yaml_minor_version_generic())?;
+                directives.set_version(major, minor)?;
+            }
+            "%TAG" => {
+                if parts.len() < 3 {
+                    // Debug trace for malformed %TAG directive
+                    #[cfg(debug_assertions)]
+                    eprintln!("DEBUG: Malformed %TAG directive: parts = {:?}", parts);
+                    return Err(DirectiveErrors::malformed_tag_directive());
+                }
+                let handle = parts[1].to_string();
+                let prefix = parts[2].to_string();
+                directives.add_tag_prefix(handle, prefix);
+            }
+            _ => {
+                // Reserved or unknown directive, skip or warn
+            }
+        }
+        crate::utils::skip_whitespace_and_comments(source);
+    }
+    Ok(directives)
+}
+
+#[cfg(feature = "std")]
+use std::collections::HashMap;
+#[cfg(feature = "std")]
+use std::string::String;
+
+#[cfg(not(feature = "std"))]
+use alloc::collections::BTreeMap as HashMap;
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+
+/// Stores directive information for a YAML document
+#[derive(Clone, Debug, Default)]
+pub struct DirectiveContext {
+    /// YAML version (e.g., "1.2")
+    pub yaml_version: Option<(u8, u8)>,
+
+    /// Tag prefix mappings: handle -> prefix
+    /// Example: "!e!" -> "tag:example.com,2000:app/"
+    pub tag_prefixes: HashMap<String, String>,
+}
+
+impl DirectiveContext {
+    /// Create a new directive context with default tag prefixes
+    ///
+    /// Per YAML 1.2 spec, two tag handles are defined by default:
+    /// - `!!` resolves to `tag:yaml.org,2002:` (standard YAML types)
+    /// - `!` resolves to `!` (local tags)
+    pub fn new() -> Self {
+        let mut tag_prefixes = HashMap::new();
+
+        // Add default tag prefixes per YAML 1.2 specification
+        tag_prefixes.insert("!!".to_string(), "tag:yaml.org,2002:".to_string());
+        tag_prefixes.insert("!".to_string(), "!".to_string());
+
+        Self {
+            yaml_version: None,
+            tag_prefixes,
+        }
+    }
+
+    /// Set the YAML version
+    pub fn set_version(&mut self, major: u8, minor: u8) -> Result<(), YamlError> {
+        // Check for duplicate YAML directive
+        if self.yaml_version.is_some() {
+            return Err(DirectiveErrors::duplicate_yaml_directive());
+        }
+
+        // Only YAML major version 1 is supported (error on others)
+        if major != 1 {
+            return Err(DirectiveErrors::invalid_yaml_major_version_num(major));
+        }
+        // Accept but warn on future minor versions (treat as 1.2 behavior)
+        if minor > 2 {
+            #[cfg(feature = "std")]
+            eprintln!(
+                "Warning: Unrecognized YAML minor version {}. Proceeding as YAML 1.2.",
+                minor
+            );
+        }
+        self.yaml_version = Some((major, minor));
+        Ok(())
+    }
+
+    /// Register a tag prefix mapping
+    pub fn add_tag_prefix(&mut self, handle: String, prefix: String) {
+        self.tag_prefixes.insert(handle, prefix);
+    }
+
+    /// Resolve a tag handle to its full prefix
+    ///
+    /// Expands tag handles like `!e!mytype` to full URIs like `tag:example.com,2000:app/mytype`
+    /// based on registered %TAG directives. If no handle matches, returns the tag as-is.
+    ///
+    /// Longer handles are matched first (e.g., `!e!` before `!`) to ensure correct resolution.
+    pub fn resolve_tag(&self, tag: &str) -> String {
+        // Resolve default !! handle to the YAML 1.2 prefix
+        if tag.starts_with("!!") {
+            let suffix = &tag[2..];
+            let default_prefix = self
+                .tag_prefixes
+                .get("!!")
+                .cloned()
+                .unwrap_or_else(|| "tag:yaml.org,2002:".to_string());
+            return alloc::format!("{}{}", default_prefix, suffix);
+        }
+        // Find the longest matching handle
+        let mut best_match: Option<(&str, &str)> = None;
+
+        for (handle, prefix) in &self.tag_prefixes {
+            if tag.starts_with(handle.as_str()) {
+                // Prefer longer handles (more specific matches)
+                if let Some((existing_handle, _)) = best_match {
+                    if handle.len() > existing_handle.len() {
+                        best_match = Some((handle, prefix));
+                    }
+                } else {
+                    best_match = Some((handle, prefix));
+                }
+            }
+        }
+
+        // Apply the best match if found
+        if let Some((handle, prefix)) = best_match {
+            let suffix = &tag[handle.len()..];
+            // If the prefix looks like a URI (starts with "tag:"), join as URI, else join as local tag
+            if prefix.starts_with("tag:") {
+                return alloc::format!("{}{}", prefix, suffix);
+            } else {
+                // Local tag prefix, join with no separator
+                return alloc::format!("{}{}", prefix, suffix);
+            }
+        }
+
+        // If no handle matches, return as-is
+        tag.to_string()
+    }
+
+    /// Validate that a tag using an explicit handle is defined in this document.
+    ///
+    /// YAML allows local tags like `!foo` without a handle, and the default
+    /// `!!` handle. However, tags of the form `!handle!suffix` require that
+    /// `handle` be declared via a `%TAG` directive in the same document.
+    /// If such a handle is not present, this should be a parse error.
+    pub fn validate_tag_handle_usage(&self, tag: &str) -> Result<(), YamlError> {
+        // Verbatim tag form `!<...>` does not use handles; always allowed
+        if tag.starts_with("!<") {
+            return Ok(());
+        }
+        // Default handle is allowed
+        if tag.starts_with("!!") {
+            return Ok(());
+        }
+        // Local tag without handle (e.g., !foo) is allowed
+        if tag.starts_with('!') {
+            // Look for a second '!' that would terminate an explicit handle
+            if let Some(idx) = tag[1..].find('!') {
+                let handle_end = 1 + idx; // position of the second '!'
+                let handle = &tag[..=handle_end]; // include both '!'
+                if !self.tag_prefixes.contains_key(handle) {
+                    return Err(DirectiveErrors::undefined_tag_handle(handle));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Returns true if the YAML version is 1.1
+    pub fn is_yaml_11(&self) -> bool {
+        matches!(self.yaml_version, Some((1, 1)))
+    }
+}
