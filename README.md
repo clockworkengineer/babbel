@@ -4,12 +4,12 @@ A unified polyglot serialization, parsing, and document manipulation workspace i
 
 ## Architecture
 
-The workspace combines four high-performance format libraries while keeping their original upstream codebases disjoint:
+The workspace combines four high-performance format libraries:
 
-- [`xml`](file:///C:/Users/User/.gemini/antigravity-ide/scratch/babbel/projects/xml) (`xml_lib_rust`): XML DOM parser, C14N canonicalization, DTD/XSD validation, and XPath 1.0 engine.
-- [`json`](file:///C:/Users/User/.gemini/antigravity-ide/scratch/babbel/projects/json) (`json_lib`): JSON DOM tree, RFC 6901 JSON Pointer, RFC 7396 JSON Merge Patch, and zero-allocation parsing.
-- [`yaml`](file:///C:/Users/User/.gemini/antigravity-ide/scratch/babbel/projects/yaml) (`yaml_lib`): YAML 1.2 parser/emitter with anchors, aliases, custom tags, and multi-document streams.
-- [`bencode`](file:///C:/Users/User/.gemini/antigravity-ide/scratch/babbel/projects/bencode) (`bencode_lib`): High-speed, binary-safe BitTorrent Bencode parser and serializer.
+- [`xml`](crates/xml) (`xml_lib_rust`): XML DOM parser, C14N canonicalization, DTD/XSD validation, and XPath 1.0 engine.
+- [`json`](crates/json) (`json_lib`): JSON DOM tree, RFC 6901 JSON Pointer, RFC 7396 JSON Merge Patch, and zero-allocation parsing.
+- [`yaml`](crates/yaml) (`yaml_lib`): YAML 1.2 parser/emitter with anchors, aliases, custom tags, and multi-document streams.
+- [`bencode`](crates/bencode) (`bencode_lib`): High-speed, binary-safe BitTorrent Bencode parser and serializer.
 
 ### Common Foundation: `babbel_core`
 
