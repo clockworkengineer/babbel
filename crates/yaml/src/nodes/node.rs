@@ -298,6 +298,52 @@ impl Numeric {
     }
 }
 
+#[cfg(feature = "alloc")]
+impl From<&Node> for babbel_core::model::Value {
+    fn from(node: &Node) -> Self {
+        match node {
+            Node::None => babbel_core::model::Value::Null,
+            Node::Boolean(b) => babbel_core::model::Value::Bool(*b),
+            Node::Str(s, _, _) => babbel_core::model::Value::String(s.clone()),
+            Node::Number(n) => match n {
+                Numeric::Integer(i) => babbel_core::model::Value::Integer(*i as i128),
+                Numeric::UInteger(u) => babbel_core::model::Value::Integer(*u as i128),
+                Numeric::Byte(b) => babbel_core::model::Value::Integer(*b as i128),
+                Numeric::Int32(i) => babbel_core::model::Value::Integer(*i as i128),
+                Numeric::UInt32(u) => babbel_core::model::Value::Integer(*u as i128),
+                Numeric::Int16(i) => babbel_core::model::Value::Integer(*i as i128),
+                Numeric::UInt16(u) => babbel_core::model::Value::Integer(*u as i128),
+                Numeric::Int8(i) => babbel_core::model::Value::Integer(*i as i128),
+                Numeric::UInt8(u) => babbel_core::model::Value::Integer(*u as i128),
+                Numeric::Float(f) => babbel_core::model::Value::Float(*f),
+            },
+            Node::Array(arr) | Node::Set(arr) | Node::Document(arr) | Node::Documents(arr) => {
+                babbel_core::model::Value::Array(arr.iter().map(babbel_core::model::Value::from).collect())
+            }
+            Node::Mapping(pairs) => {
+                let entries: alloc::vec::Vec<(alloc::string::String, babbel_core::model::Value)> = pairs
+                    .iter()
+                    .map(|(k, v)| (k.to_string_lossy(), babbel_core::model::Value::from(v)))
+                    .collect();
+                babbel_core::model::Value::Object(entries)
+            }
+            Node::Anchored(inner, _) | Node::Tagged(inner, _) => {
+                babbel_core::model::Value::from(&**inner)
+            }
+            Node::Alias(s) => babbel_core::model::Value::String(s.clone()),
+            Node::Comment(_) => babbel_core::model::Value::Null,
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl From<Node> for babbel_core::model::Value {
+    fn from(node: Node) -> Self {
+        babbel_core::model::Value::from(&node)
+    }
+}
+
+
 /// Embedded systems helper methods for Numeric
 #[cfg(feature = "embedded")]
 impl Numeric {

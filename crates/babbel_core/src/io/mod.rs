@@ -4,11 +4,11 @@ pub mod destinations;
 pub mod sources;
 pub mod traits;
 
-pub use destinations::{BufferDestination, StringDestination};
+pub use destinations::{Buffer, BufferDestination, StringDestination};
 #[cfg(feature = "file-io")]
 pub use destinations::FileDestination;
 
-pub use sources::{ByteSliceSource, SliceSource, StringSource};
+pub use sources::{BufferSource, ByteSliceSource, SliceSource, StringSource};
 #[cfg(feature = "file-io")]
 pub use sources::FileSource;
 

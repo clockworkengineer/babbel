@@ -1,100 +1,14 @@
 //! Implementation of bencode serialization format.
-//! Bencode is the encoding used by the peer-to-peer file sharing system BitTorrent
-//! for storing and transmitting loosely structured data.
+//!
+//! Powered by universal `babbel_core::model::Value` serialization.
 
 use crate::io::traits::IDestination;
 use crate::nodes::node::*;
 
-#[cfg(feature = "std")]
-use std::string::String;
-
-#[cfg(not(feature = "std"))]
-use alloc::{format, string::String, vec::Vec};
-
-/// Helper function to write a bencode string directly
-#[inline]
-fn write_bencode_string(s: &str, destination: &mut dyn IDestination) {
-    // Use stack-allocated buffer for length
-    let mut buf = itoa::Buffer::new();
-    destination.add_bytes(buf.format(s.len()));
-    destination.add_bytes(":");
-    destination.add_bytes(s);
-}
-
 /// Serializes a `Node` into Bencode and writes it to the given destination.
-///
-/// # Arguments
-///
-/// * `node` - The Bencode node to serialize.
-/// * `destination` - The destination to write the Bencode string to.
-
 pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), String> {
-    match node {
-        Node::None => destination.add_bytes(""),
-        Node::Boolean(value) => destination.add_bytes(if *value { "i1e" } else { "i0e" }),
-        Node::Number(value) => match value {
-            Numeric::Integer(n) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes("i");
-                destination.add_bytes(buf.format(*n));
-                destination.add_bytes("e");
-            }
-            Numeric::UInteger(n) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes("i");
-                destination.add_bytes(buf.format(*n));
-                destination.add_bytes("e");
-            }
-            Numeric::Float(f) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes("i");
-                destination.add_bytes(buf.format(f.round() as i64));
-                destination.add_bytes("e");
-            }
-            Numeric::Byte(b) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes("i");
-                destination.add_bytes(buf.format(*b));
-                destination.add_bytes("e");
-            }
-            Numeric::Int32(i) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes("i");
-                destination.add_bytes(buf.format(*i));
-                destination.add_bytes("e");
-            }
-            Numeric::UInt32(u) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes("i");
-                destination.add_bytes(buf.format(*u));
-                destination.add_bytes("e");
-            }
-            #[allow(unreachable_patterns)]
-            _ => {
-                destination.add_bytes("i");
-                destination.add_bytes(&format!("{:?}", value));
-                destination.add_bytes("e");
-            }
-        },
-        Node::Str(value) => write_bencode_string(value, destination),
-        Node::Array(items) => {
-            destination.add_bytes("l");
-            for item in items {
-                stringify(item, destination)?;
-            }
-            destination.add_bytes("e");
-        }
-        Node::Object(entries) => {
-            destination.add_bytes("d");
-            let mut sorted_entries: Vec<_> = entries.iter().collect();
-            sorted_entries.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
-            for (key, value) in sorted_entries {
-                write_bencode_string(key, destination);
-                stringify(value, destination)?;
-            }
-            destination.add_bytes("e");
-        }
-    }
+    let val = babbel_core::model::Value::from(node);
+    val.serialize_bencode(destination);
     Ok(())
 }
 

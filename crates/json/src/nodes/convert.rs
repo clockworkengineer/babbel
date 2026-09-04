@@ -330,3 +330,42 @@ impl TryFrom<&Node> for bool {
     }
 }
 
+impl From<&Node> for babbel_core::model::Value {
+    fn from(node: &Node) -> Self {
+        match node {
+            Node::None => babbel_core::model::Value::Null,
+            Node::Boolean(b) => babbel_core::model::Value::Bool(*b),
+            Node::Str(s) => babbel_core::model::Value::String(s.clone()),
+            Node::Number(n) => match n {
+                Numeric::Integer(i) => babbel_core::model::Value::Integer(*i as i128),
+                Numeric::UInteger(u) => babbel_core::model::Value::Integer(*u as i128),
+                Numeric::Byte(b) => babbel_core::model::Value::Integer(*b as i128),
+                Numeric::Int32(i) => babbel_core::model::Value::Integer(*i as i128),
+                Numeric::UInt32(u) => babbel_core::model::Value::Integer(*u as i128),
+                Numeric::Int16(i) => babbel_core::model::Value::Integer(*i as i128),
+                Numeric::UInt16(u) => babbel_core::model::Value::Integer(*u as i128),
+                Numeric::Int8(i) => babbel_core::model::Value::Integer(*i as i128),
+                Numeric::Float(f) => babbel_core::model::Value::Float(*f),
+            },
+            Node::Array(arr) => {
+                babbel_core::model::Value::Array(arr.iter().map(babbel_core::model::Value::from).collect())
+            }
+            Node::Object(map) => {
+                let mut entries: alloc::vec::Vec<(alloc::string::String, babbel_core::model::Value)> = map
+                    .iter()
+                    .map(|(k, v)| (k.clone(), babbel_core::model::Value::from(v)))
+                    .collect();
+                entries.sort_by(|a, b| a.0.cmp(&b.0));
+                babbel_core::model::Value::Object(entries)
+            }
+        }
+    }
+}
+
+impl From<Node> for babbel_core::model::Value {
+    fn from(node: Node) -> Self {
+        babbel_core::model::Value::from(&node)
+    }
+}
+
+

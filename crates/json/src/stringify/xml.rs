@@ -18,26 +18,9 @@ use alloc::{
 /// # Arguments
 /// * `s` - The string to escape
 /// * `destination` - The output destination implementing IDestination
+#[inline]
 fn escape_xml_string(s: &str, destination: &mut dyn IDestination) {
-    for c in s.chars() {
-        match c {
-            '<' => destination.add_bytes("&lt;"),
-            '>' => destination.add_bytes("&gt;"),
-            '&' => destination.add_bytes("&amp;"),
-            '"' => destination.add_bytes("&quot;"),
-            '\'' => destination.add_bytes("&apos;"),
-            c if c.is_ascii() => {
-                let mut buf = [0u8; 4];
-                let s = c.encode_utf8(&mut buf);
-                destination.add_bytes(s);
-            }
-            c => {
-                let mut buf = [0u8; 4];
-                let s = c.encode_utf8(&mut buf);
-                destination.add_bytes(s);
-            }
-        }
-    }
+    babbel_core::escape::write_xml_escaped_string(s, destination);
 }
 
 /// Converts a JSON node to XML format and writes it to the destination

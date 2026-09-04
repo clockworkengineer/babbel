@@ -30,8 +30,8 @@ pub use escape::{
 #[cfg(feature = "file-io")]
 pub use file::{detect_format, read_file_to_string, write_file_from_string, Format};
 pub use io::{
-    BufferDestination, ByteSliceSource, IByteStream, IDestination, IIndentationAware, ISource,
-    SliceSource, StringDestination, StringSource,
+    Buffer, BufferDestination, BufferSource, ByteSliceSource, IByteStream, IDestination,
+    IIndentationAware, ISource, SliceSource, StringDestination, StringSource,
 };
 #[cfg(feature = "file-io")]
 pub use io::{FileDestination, FileSource};

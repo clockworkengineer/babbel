@@ -329,6 +329,33 @@ impl fmt::Display for Node {
     }
 }
 
+impl From<&Node> for babbel_core::model::Value {
+    fn from(node: &Node) -> Self {
+        match node {
+            Node::None => babbel_core::model::Value::Null,
+            Node::Integer(i) => babbel_core::model::Value::Integer(*i as i128),
+            Node::Str(s) => babbel_core::model::Value::String(s.clone()),
+            Node::List(list) => {
+                babbel_core::model::Value::Array(list.iter().map(babbel_core::model::Value::from).collect())
+            }
+            Node::Dictionary(dict) => {
+                let mut entries: Vec<(String, babbel_core::model::Value)> = dict
+                    .iter()
+                    .map(|(k, v)| (k.clone(), babbel_core::model::Value::from(v)))
+                    .collect();
+                entries.sort_by(|a, b| a.0.cmp(&b.0));
+                babbel_core::model::Value::Object(entries)
+            }
+        }
+    }
+}
+
+impl From<Node> for babbel_core::model::Value {
+    fn from(node: Node) -> Self {
+        babbel_core::model::Value::from(&node)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Node, make_node};

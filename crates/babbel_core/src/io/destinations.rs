@@ -8,11 +8,12 @@ use alloc::vec::Vec;
 
 /// In-memory byte buffer destination (`Vec<u8>`).
 #[derive(Debug, Clone, Default)]
-pub struct BufferDestination {
-    buffer: Vec<u8>,
+pub struct Buffer {
+    /// Internal vector storing the raw bytes
+    pub buffer: Vec<u8>,
 }
 
-impl BufferDestination {
+impl Buffer {
     /// Creates a new buffer destination.
     pub fn new() -> Self {
         Self { buffer: Vec::new() }
@@ -25,6 +26,20 @@ impl BufferDestination {
         }
     }
 
+    /// Converts the buffer content to a String.
+    pub fn to_string(&self) -> String {
+        #[cfg(feature = "std")]
+        return String::from_utf8_lossy(&self.buffer).into_owned();
+        #[cfg(not(feature = "std"))]
+        {
+            if let Ok(s) = core::str::from_utf8(&self.buffer) {
+                alloc::string::ToString::to_string(s)
+            } else {
+                alloc::string::ToString::to_string(&alloc::string::String::from_utf8_lossy(&self.buffer))
+            }
+        }
+    }
+
     /// Returns byte slice of written content.
     pub fn as_bytes(&self) -> &[u8] {
         &self.buffer
@@ -34,9 +49,14 @@ impl BufferDestination {
     pub fn into_vec(self) -> Vec<u8> {
         self.buffer
     }
+
+    /// Clears all content from the buffer.
+    pub fn clear(&mut self) {
+        self.buffer.clear();
+    }
 }
 
-impl IDestination for BufferDestination {
+impl IDestination for Buffer {
     fn add_byte(&mut self, byte: u8) {
         self.buffer.push(byte);
     }
@@ -53,6 +73,9 @@ impl IDestination for BufferDestination {
         self.buffer.last().copied()
     }
 }
+
+/// Type alias for backward compatibility.
+pub type BufferDestination = Buffer;
 
 /// In-memory UTF-8 string destination (`String`).
 #[derive(Debug, Clone, Default)]

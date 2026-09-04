@@ -1,112 +1,15 @@
 //! YAML string conversion module for Node structures
-//! Provides functionality to convert Node types into YAML formatted strings
+//!
+//! Powered by universal `babbel_core::model::Value` serialization.
 
 use crate::io::traits::IDestination;
 use crate::nodes::node::*;
 
-#[cfg(feature = "std")]
-use std::string::String;
-
-#[cfg(not(feature = "std"))]
-use alloc::{
-    format,
-    string::{String, ToString},
-};
-
 /// Converts a Node into a YAML formatted string and writes it to the destination
-///
-/// # Arguments
-/// * `node` - The Node to convert
-/// * `destination` - The output destination implementing IDestination
 pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), String> {
-    stringify_with_indent(node, destination, 0);
+    let val = babbel_core::model::Value::from(node);
+    val.serialize_yaml(destination, 0);
     Ok(())
-}
-
-/// Converts a Node into a YAML formatted string with proper indentation
-///
-/// # Arguments
-/// * `node` - The Node to convert
-/// * `destination` - The output destination implementing IDestination
-/// * `indent` - Current indentation level in spaces
-fn stringify_with_indent(node: &Node, destination: &mut dyn IDestination, indent: usize) {
-    match node {
-        // Handle null values
-        Node::None => destination.add_bytes("null"),
-        // Handle boolean values
-        Node::Boolean(value) => destination.add_bytes(if *value { "true" } else { "false" }),
-        // Handle different numeric types
-        Node::Number(value) => match value {
-            Numeric::Integer(n) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes(buf.format(*n));
-            }
-            Numeric::UInteger(n) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes(buf.format(*n));
-            }
-            Numeric::Float(f) => {
-                let mut buf = dtoa::Buffer::new();
-                destination.add_bytes(buf.format(*f));
-            }
-            Numeric::Byte(b) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes(buf.format(*b as u64));
-            }
-            Numeric::Int32(i) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes(buf.format(*i));
-            }
-            Numeric::UInt32(u) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes(buf.format(*u));
-            }
-            #[allow(unreachable_patterns)]
-            _ => destination.add_bytes(&format!("{:?}", value)),
-        },
-        // Handle string values with special treatment for multi-line and quoted strings
-        Node::Str(value) => {
-            if value.contains('\n') || value.contains('"') {
-                destination.add_bytes("|\n");
-                for line in value.lines() {
-                    destination.add_bytes(&" ".repeat(indent + 2));
-                    destination.add_bytes(line);
-                    destination.add_bytes("\n");
-                }
-            } else {
-                destination.add_bytes(value);
-            }
-        }
-        // Handle arrays with proper YAML list formatting
-        Node::Array(items) => {
-            if items.is_empty() {
-                destination.add_bytes("[]");
-                return;
-            }
-            destination.add_bytes("\n");
-            for item in items {
-                destination.add_bytes(&" ".repeat(indent));
-                destination.add_bytes("- ");
-                stringify_with_indent(item, destination, indent + 2);
-                destination.add_bytes("\n");
-            }
-        }
-        // Handle objects/maps with proper YAML mapping formatting
-        Node::Object(entries) => {
-            if entries.is_empty() {
-                destination.add_bytes("{}");
-                return;
-            }
-            destination.add_bytes("\n");
-            for (key, value) in entries {
-                destination.add_bytes(&" ".repeat(indent));
-                destination.add_bytes(key);
-                destination.add_bytes(": ");
-                stringify_with_indent(value, destination, indent + 2);
-                destination.add_bytes("\n");
-            }
-        }
-    }
 }
 
 #[cfg(test)]

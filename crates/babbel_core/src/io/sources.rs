@@ -3,6 +3,8 @@
 use super::traits::{IByteStream, ISource};
 #[cfg(not(feature = "std"))]
 use alloc::string::String;
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 
 /// Zero-copy input source reading from an in-memory byte or UTF-8 slice.
 #[derive(Debug, Clone)]
@@ -134,6 +136,93 @@ impl<'a> IByteStream for ByteSliceSource<'a> {
 
     fn has_more(&mut self) -> bool {
         self.pos < self.slice.len()
+    }
+}
+
+/// In-memory byte vector input source.
+#[derive(Debug, Clone, Default)]
+pub struct BufferSource {
+    buffer: Vec<u8>,
+    position: usize,
+}
+
+impl BufferSource {
+    /// Creates a new BufferSource from a byte slice.
+    pub fn new(data: &[u8]) -> Self {
+        Self {
+            buffer: data.to_vec(),
+            position: 0,
+        }
+    }
+
+    /// Converts the buffer to a UTF-8 string.
+    pub fn to_string(&self) -> String {
+        #[cfg(feature = "std")]
+        return String::from_utf8_lossy(&self.buffer).into_owned();
+        #[cfg(not(feature = "std"))]
+        {
+            if let Ok(s) = core::str::from_utf8(&self.buffer) {
+                alloc::string::ToString::to_string(s)
+            } else {
+                alloc::string::ToString::to_string(&alloc::string::String::from_utf8_lossy(&self.buffer))
+            }
+        }
+    }
+
+    /// Returns current byte offset.
+    pub fn position(&self) -> usize {
+        self.position
+    }
+
+    /// Resets the position to 0.
+    pub fn reset(&mut self) {
+        self.position = 0;
+    }
+}
+
+impl ISource for BufferSource {
+    fn next(&mut self) {
+        self.position += 1;
+    }
+
+    fn current(&mut self) -> Option<char> {
+        if self.more() {
+            Some(self.buffer[self.position] as char)
+        } else {
+            None
+        }
+    }
+
+    fn more(&mut self) -> bool {
+        self.position < self.buffer.len()
+    }
+
+    fn reset(&mut self) {
+        self.position = 0;
+    }
+}
+
+impl IByteStream for BufferSource {
+    fn peek_byte(&mut self) -> Option<u8> {
+        self.buffer.get(self.position).copied()
+    }
+
+    fn read_byte(&mut self) -> Option<u8> {
+        if self.position < self.buffer.len() {
+            let b = self.buffer[self.position];
+            self.position += 1;
+            Some(b)
+        } else {
+            None
+        }
+    }
+
+    fn advance(&mut self) {
+        self.position += 1;
+    }
+
+    fn has_more(&mut self) -> bool {
+        self.position < self.buffer.len()
     }
 }
 
