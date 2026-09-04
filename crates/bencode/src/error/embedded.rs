@@ -148,6 +148,25 @@ impl From<&str> for BencodeError {
     }
 }
 
+impl From<BencodeError> for babbel_core::BabbelError {
+    fn from(err: BencodeError) -> Self {
+        let code = match err {
+            BencodeError::EmptyInput => babbel_core::ErrorCode::UnexpectedEof,
+            BencodeError::InvalidInteger
+            | BencodeError::UnterminatedInteger
+            | BencodeError::InvalidStringLength
+            | BencodeError::StringTooShort
+            | BencodeError::UnterminatedList
+            | BencodeError::UnterminatedDictionary
+            | BencodeError::DictKeysOutOfOrder
+            | BencodeError::DictKeyMustBeString
+            | BencodeError::UnexpectedCharacter(_) => babbel_core::ErrorCode::SyntaxError,
+            BencodeError::FileNotFound | BencodeError::IoError => babbel_core::ErrorCode::IoError,
+        };
+        babbel_core::BabbelError::new(code, err.as_str()).with_format("bencode")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

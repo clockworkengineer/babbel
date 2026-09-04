@@ -72,6 +72,25 @@ impl Value {
         }
     }
 
+    /// Emits this value using a pluggable format emitter adhering to OCP.
+    pub fn emit<E: crate::codec::FormatEmitter + ?Sized>(
+        &self,
+        emitter: &E,
+        dest: &mut dyn crate::io::IDestination,
+    ) -> Result<(), crate::error::BabbelError> {
+        emitter.emit(self, dest)
+    }
+
+    /// Emits this value with pretty printing using a pluggable format emitter adhering to OCP.
+    pub fn emit_pretty<E: crate::codec::FormatEmitter + ?Sized>(
+        &self,
+        emitter: &E,
+        dest: &mut dyn crate::io::IDestination,
+        indent: usize,
+    ) -> Result<(), crate::error::BabbelError> {
+        emitter.emit_pretty(self, dest, indent)
+    }
+
     /// Serializes value to JSON representation into `dest`.
     pub fn serialize_json(&self, dest: &mut dyn crate::io::IDestination) {
         match self {

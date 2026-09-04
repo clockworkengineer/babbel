@@ -8,6 +8,8 @@ use json_lib;
 use yaml_lib;
 #[cfg(feature = "bencode")]
 use bencode_lib;
+#[cfg(feature = "xml")]
+use xml_lib_rust;
 
 use babbel_core::{BabbelError, Buffer, FormatEmitter, FormatParser, Value};
 
@@ -52,7 +54,7 @@ pub struct JsonParser;
 #[cfg(feature = "json")]
 impl FormatParser for JsonParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        let node = json_lib::from_str(input).map_err(|e| BabbelError::syntax(e.to_string()))?;
+        let node = json_lib::from_str(input)?;
         Ok(Value::from(&node))
     }
 }
@@ -65,7 +67,7 @@ pub struct YamlParser;
 #[cfg(feature = "yaml")]
 impl FormatParser for YamlParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        let node = yaml_lib::parse_string(input).map_err(|e| BabbelError::syntax(e.to_string()))?;
+        let node = yaml_lib::parse_string(input)?;
         Ok(Value::from(&node))
     }
 }
@@ -82,8 +84,22 @@ impl FormatParser for BencodeParser {
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        let node = bencode_lib::parse_bytes(input).map_err(|e| BabbelError::syntax(e.to_string()))?;
+        let node = bencode_lib::parse_bytes(input)?;
         Ok(Value::from(&node))
+    }
+}
+
+/// XML parser implementing `FormatParser`.
+#[cfg(feature = "xml")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct XmlParser;
+
+#[cfg(feature = "xml")]
+impl FormatParser for XmlParser {
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        let doc = xml_lib_rust::parse(input)?;
+        let name = doc.get_root_element_name().unwrap_or("xml").to_string();
+        Ok(Value::Object(vec![(name, Value::String(input.to_string()))]))
     }
 }
 

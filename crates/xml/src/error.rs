@@ -63,3 +63,27 @@ impl fmt::Display for XmlError {
 
 #[cfg(feature = "std")]
 impl std::error::Error for XmlError {}
+
+impl From<XmlError> for babbel_core::BabbelError {
+    fn from(err: XmlError) -> Self {
+        match err {
+            XmlError::SyntaxError { message, line, col } => {
+                babbel_core::BabbelError::syntax(message)
+                    .with_format("xml")
+                    .with_span(babbel_core::Span::new(
+                        babbel_core::Location::new(line, col, 0),
+                        babbel_core::Location::new(line, col, 0),
+                    ))
+            }
+            XmlError::XsdError(msg) | XmlError::DtdError(msg) => {
+                babbel_core::BabbelError::new(babbel_core::ErrorCode::SchemaValidation, msg)
+                    .with_format("xml")
+            }
+            XmlError::Io(msg) => {
+                babbel_core::BabbelError::new(babbel_core::ErrorCode::IoError, msg)
+                    .with_format("xml")
+            }
+            _ => babbel_core::BabbelError::custom(err.to_string()).with_format("xml"),
+        }
+    }
+}

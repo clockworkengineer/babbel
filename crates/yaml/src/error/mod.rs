@@ -226,6 +226,31 @@ impl From<&str> for YamlError {
     }
 }
 
+impl From<YamlError> for babbel_core::BabbelError {
+    fn from(err: YamlError) -> Self {
+        let code = match err.kind() {
+            ErrorKind::SyntaxError | ErrorKind::ParseError | ErrorKind::UnterminatedString => {
+                babbel_core::ErrorCode::SyntaxError
+            }
+            ErrorKind::UnexpectedEof => babbel_core::ErrorCode::UnexpectedEof,
+            ErrorKind::InvalidEscape => babbel_core::ErrorCode::InvalidEncoding,
+            ErrorKind::ValidationError => babbel_core::ErrorCode::SchemaValidation,
+            ErrorKind::IoError => babbel_core::ErrorCode::IoError,
+            ErrorKind::Unsupported => babbel_core::ErrorCode::UnsupportedType,
+            _ => babbel_core::ErrorCode::Custom,
+        };
+        let span = err.line().map(|l| babbel_core::Span::new(
+            babbel_core::Location::new(l, err.column().unwrap_or(1), 0),
+            babbel_core::Location::new(l, err.column().unwrap_or(1), 0),
+        ));
+        let mut berr = babbel_core::BabbelError::new(code, err.message()).with_format("yaml");
+        if let Some(s) = span {
+            berr = berr.with_span(s);
+        }
+        berr
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

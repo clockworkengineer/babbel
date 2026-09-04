@@ -11,4 +11,5 @@ pub mod util;
 pub mod node;
 pub mod node_utils;
 pub mod builders;
+pub mod search;
 

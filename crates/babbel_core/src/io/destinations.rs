@@ -167,7 +167,12 @@ impl IDestination for FileDestination {
     }
 
     fn clear(&mut self) {
-        // Files cannot easily be cleared without re-opening; no-op
+        use std::io::{Seek, SeekFrom, Write};
+        let _ = self.writer.flush();
+        let file = self.writer.get_mut();
+        let _ = file.set_len(0);
+        let _ = file.seek(SeekFrom::Start(0));
+        self.last_byte = None;
     }
 
     fn last(&self) -> Option<u8> {

@@ -173,6 +173,73 @@ impl From<ParseError> for String {
     }
 }
 
+impl From<ParseError> for babbel_core::BabbelError {
+    fn from(err: ParseError) -> Self {
+        let (code, msg, span) = match &err {
+            ParseError::Syntax { message, line, column } => {
+                let span = line.map(|l| babbel_core::Span::new(
+                    babbel_core::Location::new(l, column.unwrap_or(1), 0),
+                    babbel_core::Location::new(l, column.unwrap_or(1), 0),
+                ));
+                (babbel_core::ErrorCode::SyntaxError, message.clone(), span)
+            }
+            ParseError::UnexpectedEof { expected } => {
+                #[cfg(feature = "alloc")]
+                let m = alloc::format!("unexpected EOF, expected {expected}");
+                #[cfg(not(feature = "alloc"))]
+                let m = expected.clone();
+                (babbel_core::ErrorCode::UnexpectedEof, m, None)
+            }
+            ParseError::UnexpectedChar { found, expected, position } => {
+                let span = position.map(|p| babbel_core::Span::new(
+                    babbel_core::Location::new(1, p + 1, p),
+                    babbel_core::Location::new(1, p + 1, p),
+                ));
+                #[cfg(feature = "alloc")]
+                let m = alloc::format!("unexpected character '{found}', expected {expected}");
+                #[cfg(not(feature = "alloc"))]
+                let m = expected.clone();
+                (babbel_core::ErrorCode::SyntaxError, m, span)
+            }
+            ParseError::InvalidEscape { sequence, position } => {
+                let span = position.map(|p| babbel_core::Span::new(
+                    babbel_core::Location::new(1, p + 1, p),
+                    babbel_core::Location::new(1, p + 1, p),
+                ));
+                #[cfg(feature = "alloc")]
+                let m = alloc::format!("invalid escape sequence '{sequence}'");
+                #[cfg(not(feature = "alloc"))]
+                let m = sequence.clone();
+                (babbel_core::ErrorCode::SyntaxError, m, span)
+            }
+            ParseError::InvalidUnicode { sequence, position } => {
+                let span = position.map(|p| babbel_core::Span::new(
+                    babbel_core::Location::new(1, p + 1, p),
+                    babbel_core::Location::new(1, p + 1, p),
+                ));
+                #[cfg(feature = "alloc")]
+                let m = alloc::format!("invalid Unicode escape '{sequence}'");
+                #[cfg(not(feature = "alloc"))]
+                let m = sequence.clone();
+                (babbel_core::ErrorCode::InvalidEncoding, m, span)
+            }
+            ParseError::InvalidNumber { value, reason } => {
+                #[cfg(feature = "alloc")]
+                let m = alloc::format!("invalid number '{value}': {reason}");
+                #[cfg(not(feature = "alloc"))]
+                let m = reason.clone();
+                (babbel_core::ErrorCode::SyntaxError, m, None)
+            }
+            _ => (babbel_core::ErrorCode::Custom, err.to_string(), None),
+        };
+        let mut berr = babbel_core::BabbelError::new(code, msg).with_format("json");
+        if let Some(s) = span {
+            berr = berr.with_span(s);
+        }
+        berr
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
