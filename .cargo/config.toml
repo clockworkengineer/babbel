@@ -1,0 +1,4 @@
+[build]
+# Limit parallel compilation jobs to 2 on Windows to prevent NTFS file-locking collisions (os error 32)
+# caused by concurrent rustc processes and Windows Defender / real-time scanner.
+jobs = 2

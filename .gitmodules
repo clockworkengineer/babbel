@@ -1,0 +1,12 @@
+[submodule "projects/xml"]
+	path = projects/xml
+	url = https://github.com/clockworkengineer/xml.git
+[submodule "projects/json"]
+	path = projects/json
+	url = https://github.com/clockworkengineer/json.git
+[submodule "projects/yaml"]
+	path = projects/yaml
+	url = https://github.com/clockworkengineer/yaml.git
+[submodule "projects/bencode"]
+	path = projects/bencode
+	url = https://github.com/clockworkengineer/bencode.git

@@ -1,0 +1,30 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/babbel_core",
+    "crates/babbel",
+    "projects/xml/library",
+    "projects/json/library",
+    "projects/yaml/library",
+    "projects/bencode/library",
+]
+
+[workspace.package]
+version = "0.1.0"
+authors = ["ClockworkEngineer", "Babbel Contributors"]
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/clockworkengineer/babbel"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+
+[profile.dev]
+opt-level = 1
+incremental = false
+
+[profile.test]
+incremental = false

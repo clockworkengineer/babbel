@@ -1,0 +1,24 @@
+[package]
+name = "babbel"
+version = "0.1.0"
+edition = "2024"
+description = "Fast, modular, multi-format serialization and document processing toolkit for Rust"
+license = "MIT"
+authors = ["ClockworkEngineer", "Babbel Contributors"]
+
+[features]
+default = ["std", "json", "yaml", "xml", "bencode", "convert"]
+std = ["babbel_core/std"]
+alloc = ["babbel_core/alloc"]
+json = ["dep:json_lib", "json_lib/format-yaml", "json_lib/format-xml", "json_lib/format-bencode"]
+yaml = ["dep:yaml_lib"]
+xml = ["dep:xml_lib_rust"]
+bencode = ["dep:bencode_lib"]
+convert = ["json", "yaml", "xml", "bencode"]
+
+[dependencies]
+babbel_core = { path = "../babbel_core" }
+json_lib = { path = "../../projects/json/library", optional = true }
+yaml_lib = { path = "../../projects/yaml/library", optional = true }
+xml_lib_rust = { path = "../../projects/xml/library", optional = true }
+bencode_lib = { path = "../../projects/bencode/library", optional = true }

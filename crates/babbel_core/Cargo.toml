@@ -1,0 +1,19 @@
+[package]
+name = "babbel_core"
+version = "0.1.0"
+edition = "2024"
+description = "Shared core I/O, encoding, numeric, error, and AST primitives for the Babbel data format family"
+license = "MIT"
+authors = ["ClockworkEngineer", "Babbel Contributors"]
+
+[features]
+default = ["std", "file-io"]
+std = ["alloc"]
+alloc = []
+file-io = ["std"]
+
+[dependencies]
+itoa = "1.0.17"
+dtoa = "1.0.11"
+smallvec = { version = "1.15.1", default-features = false }
+arrayvec = { version = "0.7.6", default-features = false }
