@@ -5,6 +5,7 @@ edition = "2024"
 description = "Shared core I/O, encoding, numeric, error, and AST primitives for the Babbel data format family"
 license = "MIT"
 authors = ["ClockworkEngineer", "Babbel Contributors"]
+readme = "README.md"
 
 [features]
 default = ["std", "file-io"]

@@ -5,6 +5,7 @@ edition = "2024"
 description = "Fast, modular, multi-format serialization and document processing toolkit for Rust"
 license = "MIT"
 authors = ["ClockworkEngineer", "Babbel Contributors"]
+readme = "README.md"
 
 [features]
 default = ["std", "json", "yaml", "xml", "bencode", "convert"]

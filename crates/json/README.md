@@ -55,19 +55,28 @@ Disable default features and enable `alloc` for embedded / bare-metal targets:
 
 ```toml
 [dependencies]
-json_lib = { path = "library", default-features = false, features = ["alloc"] }
+json_lib = { version = "0.2.1", default-features = false, features = ["alloc"] }
+# Or within the workspace:
+# json_lib = { path = "crates/json", default-features = false, features = ["alloc"] }
 ```
 
 ## Installation
 
-Add the library to a workspace member or use a path dependency:
+Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-json_lib = { path = "library" }
+json_lib = "0.2.1"
 ```
 
-If publishing to crates.io or using a Git dependency, adjust accordingly.
+Or as a workspace path dependency:
+
+```toml
+[dependencies]
+json_lib = { path = "crates/json" }
+```
+
+All streaming I/O in `json_lib` (`FileSource`, `FileDestination`, `BufferSource`, `Buffer`) is unified with and powered by [`babbel_core::io`](../babbel_core).
 
 ## Embedding Guide
 

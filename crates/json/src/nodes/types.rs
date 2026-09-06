@@ -52,7 +52,7 @@ impl Node {
         Node::Array(slice.to_vec())
     }
 
-    /// Creates a Node::Array from a Vec<Node> without cloning (zero-copy).
+    /// Creates a Node::Array from a `Vec<Node>` without cloning (zero-copy).
     pub fn from_vec(vec: Vec<Node>) -> Self {
         Node::Array(vec)
     }

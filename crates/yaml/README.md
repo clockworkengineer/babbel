@@ -112,6 +112,15 @@ Add this to your `Cargo.toml`:
 yaml_lib = "0.2.1"
 ```
 
+Or as a workspace path dependency:
+
+```toml
+[dependencies]
+yaml_lib = { path = "crates/yaml" }
+```
+
+Streaming I/O in `yaml_lib` is unified with and powered by [`babbel_core::io`](../babbel_core) (`FileDestination`, `Buffer`, `ICharStream`, `IIndentationAware`).
+
 ## 🚀 Quick Start
 
 ### Basic Parsing

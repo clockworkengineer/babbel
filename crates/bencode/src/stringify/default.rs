@@ -132,7 +132,7 @@ pub fn stringify_to_string(node: &Node) -> Result<String, String> {
     Ok(destination.to_string())
 }
 
-/// Converts a bencode Node into its byte representation and returns it as a Vec<u8>.
+/// Converts a bencode Node into its byte representation and returns it as a `Vec<u8>`.
 /// This is a convenience function that creates a BufferDestination internally.
 ///
 /// # Arguments

@@ -178,7 +178,7 @@ where
     value.into()
 }
 
-/// Implement FromStr to enable "string".parse::<Node>()
+/// Implement FromStr to enable `"string".parse::<Node>()`
 impl FromStr for Node {
     type Err = String;
 

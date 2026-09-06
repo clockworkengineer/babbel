@@ -33,8 +33,10 @@ Or as a path dependency within this workspace:
 
 ```toml
 [dependencies]
-bencode_lib = { path = "library" }
+bencode_lib = { path = "crates/bencode" }
 ```
+
+All binary-safe streaming I/O (`IByteStream`, `FileSource`, `FileDestination`, `Buffer`) is unified with and powered by [`babbel_core::io`](../babbel_core).
 
 To minimise binary size, disable unused format-conversion features:
 

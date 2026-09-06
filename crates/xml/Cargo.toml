@@ -7,7 +7,7 @@ description = "Full-featured XML parser, validator, stringifier, and XPath 1.0 e
 license = "MIT"
 repository = "https://github.com/clockworkengineer/xml"
 documentation = "https://docs.rs/xml_lib_rust"
-readme = "../README.md"
+readme = "README.md"
 
 [features]
 default = ["std", "dtd", "xsd", "xpath", "stringify"]
