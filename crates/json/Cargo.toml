@@ -12,7 +12,15 @@ keywords = ["json", "serialization", "parser", "rust", "library"]
 categories = ["encoding", "parser-implementations", "data-structures"]
 
 [features]
-default = ["std", "file-io"]
+default = [
+    "std",
+    "file-io",
+    "format-bencode",
+    "format-yaml",
+    "format-xml",
+    "format-toml",
+    "json-pointer",
+]
 std = ["alloc", "rand?/std", "babbel_core/std"]
 alloc = ["babbel_core/alloc"]
 
