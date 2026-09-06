@@ -136,10 +136,37 @@ pub fn write_json_escaped_string(s: &str, dest: &mut dyn IDestination) {
     dest.add_bytes(STR_QUOTE);
 }
 
-/// Writes an escaped XML string directly to `dest`.
+/// Writes an escaped XML string directly to `dest` without heap allocations.
 pub fn write_xml_escaped_string(s: &str, dest: &mut dyn IDestination) {
-    let escaped = escape_for_xml(s);
-    dest.add_bytes(&escaped);
+    let bytes = s.as_bytes();
+    let mut start = 0;
+    let mut i = 0;
+
+    while i < bytes.len() {
+        let esc = match bytes[i] {
+            b'&' => Some("&amp;"),
+            b'<' => Some("&lt;"),
+            b'>' => Some("&gt;"),
+            b'"' => Some("&quot;"),
+            b'\'' => Some("&apos;"),
+            _ => None,
+        };
+
+        if let Some(replacement) = esc {
+            if i > start {
+                dest.add_bytes(core::str::from_utf8(&bytes[start..i]).unwrap_or(""));
+            }
+            dest.add_bytes(replacement);
+            i += 1;
+            start = i;
+        } else {
+            i += 1;
+        }
+    }
+
+    if start < bytes.len() {
+        dest.add_bytes(core::str::from_utf8(&bytes[start..]).unwrap_or(""));
+    }
 }
 
 #[cfg(test)]

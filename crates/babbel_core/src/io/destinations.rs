@@ -63,6 +63,16 @@ impl Buffer {
         }
     }
 
+    /// Converts the buffer content into an owned String without reallocating if valid UTF-8.
+    pub fn into_string(self) -> Result<String, alloc::string::FromUtf8Error> {
+        String::from_utf8(self.buffer)
+    }
+
+    /// Returns a string slice of the buffer if it contains valid UTF-8 without allocating.
+    pub fn as_str(&self) -> Result<&str, core::str::Utf8Error> {
+        core::str::from_utf8(&self.buffer)
+    }
+
     /// Returns byte slice of written content.
     pub fn as_bytes(&self) -> &[u8] {
         &self.buffer
@@ -215,9 +225,9 @@ impl IDestination for StringDestination {
 }
 
 #[cfg(feature = "file-io")]
-/// File output destination writing directly to a file on disk.
+/// File output destination writing to a buffered file on disk (32KB write buffer).
 pub struct FileDestination {
-    file: std::fs::File,
+    writer: std::io::BufWriter<std::fs::File>,
     path: std::path::PathBuf,
     last_byte: Option<u8>,
     bytes_written: usize,
@@ -225,44 +235,50 @@ pub struct FileDestination {
 
 #[cfg(feature = "file-io")]
 impl FileDestination {
-    /// Creates or opens a file for writing.
+    /// 32KB buffer for optimal disk write throughput
+    const BUFFER_CAPACITY: usize = 32 * 1024;
+
+    /// Creates or opens a file for writing with 32KB buffer.
     pub fn new(path: impl AsRef<std::path::Path>) -> std::io::Result<Self> {
         Self::create(path)
     }
 
-    /// Creates or opens a file for writing.
+    /// Creates or opens a file for writing with 32KB buffer.
     pub fn create(path: impl AsRef<std::path::Path>) -> std::io::Result<Self> {
         let p = path.as_ref().to_path_buf();
         let file = std::fs::File::create(&p)?;
+        let writer = std::io::BufWriter::with_capacity(Self::BUFFER_CAPACITY, file);
         Ok(Self {
-            file,
+            writer,
             path: p,
             last_byte: None,
             bytes_written: 0,
         })
     }
 
-    /// Writes a single byte to the destination.
+    /// Writes a single byte to the buffered destination.
     pub fn add_byte(&mut self, byte: u8) {
         use std::io::Write;
-        let _ = self.file.write_all(&[byte]);
+        let _ = self.writer.write_all(&[byte]);
         self.last_byte = Some(byte);
         self.bytes_written += 1;
     }
 
-    /// Writes multiple bytes from a string slice.
+    /// Writes multiple bytes from a string slice to the buffered destination.
     pub fn add_bytes(&mut self, bytes: &str) {
         use std::io::Write;
-        let _ = self.file.write_all(bytes.as_bytes());
+        let _ = self.writer.write_all(bytes.as_bytes());
         self.last_byte = bytes.as_bytes().last().copied();
         self.bytes_written += bytes.len();
     }
 
     /// Clears all content from the file.
     pub fn clear(&mut self) {
-        use std::io::{Seek, SeekFrom};
-        let _ = self.file.set_len(0);
-        let _ = self.file.seek(SeekFrom::Start(0));
+        use std::io::{Seek, SeekFrom, Write};
+        let _ = self.writer.flush();
+        let file = self.writer.get_mut();
+        let _ = file.set_len(0);
+        let _ = file.seek(SeekFrom::Start(0));
         self.last_byte = None;
         self.bytes_written = 0;
     }
@@ -282,28 +298,38 @@ impl FileDestination {
         self.path.to_str().unwrap_or("")
     }
 
-    /// Flushes the underlying file.
+    /// Flushes the underlying buffered writer and syncs file data.
     pub fn flush(&mut self) -> std::io::Result<()> {
-        self.file.sync_data()
+        use std::io::Write;
+        self.writer.flush()?;
+        self.writer.get_ref().sync_data()
     }
 
-    /// Closes the file handle.
+    /// Closes the file handle (auto-flushed on drop).
     pub fn close(&self) -> std::io::Result<()> {
         Ok(())
     }
 
-    /// Writes all bytes to the file.
+    /// Writes all bytes to the buffered file.
     pub fn write_all_bytes(&mut self, data: &[u8]) -> std::io::Result<()> {
         use std::io::Write;
-        self.file.write_all(data)?;
+        self.writer.write_all(data)?;
         self.last_byte = data.last().copied();
         self.bytes_written += data.len();
         Ok(())
     }
 
-    /// Writes a string slice to the file.
+    /// Writes a string slice to the buffered file.
     pub fn write_str(&mut self, data: &str) -> std::io::Result<()> {
         self.write_all_bytes(data.as_bytes())
+    }
+}
+
+#[cfg(feature = "file-io")]
+impl Drop for FileDestination {
+    fn drop(&mut self) {
+        use std::io::Write;
+        let _ = self.writer.flush();
     }
 }
 
@@ -311,7 +337,7 @@ impl FileDestination {
 impl IByteWriter for FileDestination {
     fn write_byte(&mut self, byte: u8) -> Result<(), ErrorCode> {
         use std::io::Write;
-        self.file.write_all(&[byte]).map_err(|_| ErrorCode::IoError)?;
+        self.writer.write_all(&[byte]).map_err(|_| ErrorCode::IoError)?;
         self.last_byte = Some(byte);
         self.bytes_written += 1;
         Ok(())
@@ -319,7 +345,7 @@ impl IByteWriter for FileDestination {
 
     fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), ErrorCode> {
         use std::io::Write;
-        self.file.write_all(bytes).map_err(|_| ErrorCode::IoError)?;
+        self.writer.write_all(bytes).map_err(|_| ErrorCode::IoError)?;
         self.last_byte = bytes.last().copied();
         self.bytes_written += bytes.len();
         Ok(())

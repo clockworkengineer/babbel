@@ -278,7 +278,7 @@ impl<'a> XPathEvaluator<'a> {
             NodeTest::Name(target_name) => match &node.kind {
                 NodeKind::Element { name, .. } => &**name == target_name,
                 NodeKind::ProcessingInstruction { target, .. } => &**target == target_name,
-                NodeKind::DocTypeDefinition { name, .. } => &**name == target_name,
+                NodeKind::DocTypeDefinition(dt) => &*dt.name == target_name,
                 _ => false,
             },
             _ => true,

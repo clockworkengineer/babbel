@@ -153,24 +153,20 @@ fn test_processing_instruction_node() {
 #[test]
 fn test_declaration_node() {
     let mut doc = Document::new();
-    let decl_id = doc.add_node(NodeKind::Declaration {
+    let decl_id = doc.add_node(NodeKind::Declaration(Box::new(xml_lib_rust::DeclarationData {
         version: "1.0".into(),
         encoding: Some("UTF-8".into()),
         standalone: Some(true),
-    });
+    })));
 
     let node = doc.get_node(decl_id).unwrap();
     assert_eq!(node.kind.name(), "xml");
 
-    if let NodeKind::Declaration {
-        version,
-        encoding,
-        standalone,
-    } = &node.kind
+    if let NodeKind::Declaration(decl) = &node.kind
     {
-        assert_eq!(&**version, "1.0");
-        assert_eq!(encoding.as_deref(), Some("UTF-8"));
-        assert_eq!(*standalone, Some(true));
+        assert_eq!(&*decl.version, "1.0");
+        assert_eq!(decl.encoding.as_deref(), Some("UTF-8"));
+        assert_eq!(decl.standalone, Some(true));
     } else {
         panic!("Expected NodeKind::Declaration");
     }
@@ -179,11 +175,11 @@ fn test_declaration_node() {
 #[test]
 fn test_declaration_stringify_output() {
     let mut doc = Document::new();
-    let decl_id = doc.add_node(NodeKind::Declaration {
+    let decl_id = doc.add_node(NodeKind::Declaration(Box::new(xml_lib_rust::DeclarationData {
         version: "1.0".into(),
         encoding: Some("UTF-8".into()),
         standalone: Some(true),
-    });
+    })));
     doc.set_declaration_id(decl_id);
 
     let root_id = doc.root_id().unwrap();

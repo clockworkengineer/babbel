@@ -34,7 +34,7 @@ fn test_document_node_traversal_and_counting() {
             NodeKind::CData(_) => stats.cdatas += 1,
             NodeKind::Comment(_) => stats.comments += 1,
             NodeKind::ProcessingInstruction { .. } => stats.pis += 1,
-            NodeKind::Declaration { .. } => stats.declarations += 1,
+            NodeKind::Declaration(_) => stats.declarations += 1,
             NodeKind::EntityReference(_) => stats.entity_refs += 1,
             _ => {}
         }

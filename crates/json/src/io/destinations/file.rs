@@ -7,7 +7,6 @@ pub use babbel_core::io::FileDestination as File;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::io::traits::IDestination;
     use std::fs;
     use std::sync::atomic::{AtomicU32, Ordering};
 

@@ -37,7 +37,6 @@ mod tests {
 
     use crate::Node;
     use crate::io::sources::buffer::Buffer;
-    use crate::io::traits::ISource;
     use crate::parser::directives::DirectiveContext;
     use crate::parser::document::contents::parse_document_contents;
 

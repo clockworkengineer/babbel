@@ -7,7 +7,6 @@ pub use babbel_core::io::BufferSource as Buffer;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::io::traits::ISource;
 
     #[test]
     fn create_source_buffer_works() {

@@ -56,6 +56,7 @@ mod tests {
         let path = "test_byte.txt";
         let mut file = File::new(path)?;
         file.add_byte(b'A');
+        file.flush()?;
 
         let mut content = String::new();
         StdFile::open(path)?.read_to_string(&mut content)?;
@@ -70,6 +71,7 @@ mod tests {
         let path = "test_bytes.txt";
         let mut file = File::new(path)?;
         file.add_bytes("test");
+        file.flush()?;
 
         let mut content = String::new();
         StdFile::open(path)?.read_to_string(&mut content)?;

@@ -54,26 +54,22 @@ impl XmlSerializer {
         if !options.omit_xml_declaration {
             if let Some(decl_id) = doc.declaration_id() {
                 if let Some(node) = doc.get_node(decl_id) {
-                    if let NodeKind::Declaration {
-                        version,
-                        encoding,
-                        standalone,
-                    } = &node.kind
+                    if let NodeKind::Declaration(decl) = &node.kind
                     {
                         dest.write_str("<?xml version=");
                         dest.write_char(options.quote_char);
-                        dest.write_str(version);
+                        dest.write_str(&decl.version);
                         dest.write_char(options.quote_char);
-                        if let Some(enc) = encoding {
+                        if let Some(enc) = &decl.encoding {
                             dest.write_str(" encoding=");
                             dest.write_char(options.quote_char);
                             dest.write_str(enc);
                             dest.write_char(options.quote_char);
                         }
-                        if let Some(st) = standalone {
+                        if let Some(st) = decl.standalone {
                             dest.write_str(" standalone=");
                             dest.write_char(options.quote_char);
-                            dest.write_str(if *st { "yes" } else { "no" });
+                            dest.write_str(if st { "yes" } else { "no" });
                             dest.write_char(options.quote_char);
                         }
                         dest.write_str("?>\n");

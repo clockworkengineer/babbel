@@ -7,7 +7,6 @@ pub use babbel_core::io::FileSource as File;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::io::traits::ISource;
     use std::fs;
     use std::io::Write;
     use std::sync::atomic::{AtomicU32, Ordering};

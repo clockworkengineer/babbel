@@ -24,7 +24,6 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::io::traits::IDestination;
     use crate::nodes::node::{BlockStyle, QuoteType};
     use crate::{BufferDestination, Node, Numeric};
 

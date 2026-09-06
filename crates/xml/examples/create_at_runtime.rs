@@ -3,18 +3,18 @@
 //! Demonstrates constructing an XML DOM tree dynamically at runtime using `Document::new()`,
 //! `doc.add_node()`, `Attribute::new()`, and `doc.append_child()`.
 
-use xml_lib_rust::{stringify, Attribute, Document, NodeKind};
+use xml_lib_rust::{stringify, Attribute, DeclarationData, Document, NodeKind};
 
 fn main() {
     println!("--- XML Create At Runtime Example ---");
     let mut doc = Document::new();
 
     // Set XML Declaration (<?xml version="1.0" encoding="UTF-8" standalone="yes"?>)
-    let decl_id = doc.add_node(NodeKind::Declaration {
+    let decl_id = doc.add_node(NodeKind::Declaration(Box::new(DeclarationData {
         version: "1.0".into(),
         encoding: Some("UTF-8".into()),
         standalone: Some(true),
-    });
+    })));
     doc.set_declaration_id(decl_id);
 
     // Create Root Element (<library location="Main Campus">)

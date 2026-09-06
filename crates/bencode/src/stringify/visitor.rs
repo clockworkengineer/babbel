@@ -49,11 +49,27 @@ impl BencodeVisitable for Node {
             }
             Node::Dictionary(items) => {
                 visitor.visit_dict_start()?;
-                let mut sorted: Vec<_> = items.iter().collect();
-                sorted.sort_by(|a, b| a.0.cmp(b.0));
-                for (key, value) in sorted {
-                    visitor.visit_dict_key(key)?;
-                    value.accept(visitor)?;
+                if items.len() <= 16 {
+                    let mut stack: [Option<(&String, &Node)>; 16] = [None; 16];
+                    let mut count = 0;
+                    for pair in items {
+                        stack[count] = Some((pair.0, pair.1));
+                        count += 1;
+                    }
+                    let slice = &mut stack[..count];
+                    slice.sort_unstable_by(|a, b| a.unwrap().0.cmp(b.unwrap().0));
+                    for item in slice.iter() {
+                        let (key, value) = item.unwrap();
+                        visitor.visit_dict_key(key)?;
+                        value.accept(visitor)?;
+                    }
+                } else {
+                    let mut sorted: Vec<_> = items.iter().collect();
+                    sorted.sort_unstable_by(|a, b| a.0.cmp(b.0));
+                    for (key, value) in sorted {
+                        visitor.visit_dict_key(key)?;
+                        value.accept(visitor)?;
+                    }
                 }
                 visitor.visit_dict_end()
             }

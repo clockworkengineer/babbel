@@ -50,8 +50,8 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
 /// assert!(node.is_object());
 /// ```
 pub fn from_str(s: &str) -> Result<Node, String> {
-    use crate::io::sources::buffer::Buffer as BufferSource;
-    let mut source = BufferSource::new(s.as_bytes());
+    use babbel_core::io::SliceSource;
+    let mut source = SliceSource::new(s);
     parse(&mut source)
 }
 
@@ -72,9 +72,15 @@ pub fn from_str(s: &str) -> Result<Node, String> {
 /// assert!(node.is_object());
 /// ```
 pub fn from_bytes(bytes: &[u8]) -> Result<Node, String> {
-    use crate::io::sources::buffer::Buffer as BufferSource;
-    let mut source = BufferSource::new(bytes);
-    parse(&mut source)
+    if let Ok(s) = core::str::from_utf8(bytes) {
+        use babbel_core::io::SliceSource;
+        let mut source = SliceSource::new(s);
+        parse(&mut source)
+    } else {
+        use crate::io::sources::buffer::Buffer as BufferSource;
+        let mut source = BufferSource::new(bytes);
+        parse(&mut source)
+    }
 }
 
 /// Parses JSON input with custom configuration for resource limits

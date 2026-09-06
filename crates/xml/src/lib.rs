@@ -39,7 +39,7 @@ pub use io::{
     IRewindable, ISource, XmlDestination, XmlSource,
 };
 pub use namespace::{Namespace, NamespaceScope, QName};
-pub use node::{Attribute, NodeData, NodeId, NodeKind};
+pub use node::{Attribute, DeclarationData, DocTypeData, NodeData, NodeId, NodeKind};
 pub use options::ParseOptions;
 pub use parser::{XmlParser, XmlPullAttribute, XmlPullEvent, XmlPullParser};
 pub use stringify::{

@@ -194,22 +194,17 @@ impl DtdValidator {
     pub fn validate(&self, doc: &Document) -> Result<()> {
         if let Some(dtd_id) = doc.dtd_id() {
             if let Some(node) = doc.get_node(dtd_id) {
-                if let NodeKind::DocTypeDefinition {
-                    name: _,
-                    public_id,
-                    system_id,
-                    internal_subset,
-                } = &node.kind
+                if let NodeKind::DocTypeDefinition(dt) = &node.kind
                 {
                     let mut mut_self = self.clone();
-                    if let Some(sys) = system_id {
+                    if let Some(sys) = &dt.system_id {
                         if let Some(resolver) = &self.external_resolver {
-                            if let Some(ext_subset) = resolver(sys, public_id.as_deref()) {
+                            if let Some(ext_subset) = resolver(sys, dt.public_id.as_deref()) {
                                 mut_self.parse_subset(&ext_subset)?;
                             }
                         }
                     }
-                    if let Some(subset) = internal_subset {
+                    if let Some(subset) = &dt.internal_subset {
                         mut_self.parse_subset(subset)?;
                     }
                     return mut_self.validate_doc(doc);

@@ -9,7 +9,6 @@ pub use babbel_core::io::Buffer;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::io::traits::IDestination;
 
     #[test]
     fn new_creates_empty_buffer() {

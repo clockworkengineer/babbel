@@ -28,17 +28,30 @@ impl Attribute {
     }
 }
 
+/// XML Declaration data payload (`<?xml version="..." encoding="..." standalone="..."?>`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeclarationData {
+    pub version: Box<str>,
+    pub encoding: Option<Box<str>>,
+    pub standalone: Option<bool>,
+}
+
+/// DTD DOCTYPE Definition payload (`<!DOCTYPE name ...>`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocTypeData {
+    pub name: Box<str>,
+    pub public_id: Option<Box<str>>,
+    pub system_id: Option<Box<str>>,
+    pub internal_subset: Option<Box<str>>,
+}
+
 /// Enum representing all supported XML node variants stored with memory-compact boxed types.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NodeKind {
     /// Top-level Prolog virtual container.
     Prolog,
     /// XML Declaration (`<?xml version="..." encoding="..." standalone="..."?>`).
-    Declaration {
-        version: Box<str>,
-        encoding: Option<Box<str>>,
-        standalone: Option<bool>,
-    },
+    Declaration(Box<DeclarationData>),
     /// Top-level Root virtual container.
     Root,
     /// XML Element tag (`<name attr="val">...</name>`).
@@ -58,12 +71,7 @@ pub enum NodeKind {
         data: Box<str>,
     },
     /// DTD DOCTYPE Definition (`<!DOCTYPE name ...>`).
-    DocTypeDefinition {
-        name: Box<str>,
-        public_id: Option<Box<str>>,
-        system_id: Option<Box<str>>,
-        internal_subset: Option<Box<str>>,
-    },
+    DocTypeDefinition(Box<DocTypeData>),
     /// Entity Reference (`&name;`).
     EntityReference(Box<str>),
 }
@@ -74,9 +82,9 @@ impl NodeKind {
         match self {
             NodeKind::Element { name, .. } => name,
             NodeKind::ProcessingInstruction { target, .. } => target,
-            NodeKind::DocTypeDefinition { name, .. } => name,
+            NodeKind::DocTypeDefinition(dt) => &dt.name,
             NodeKind::EntityReference(name) => name,
-            NodeKind::Declaration { .. } => "xml",
+            NodeKind::Declaration(_) => "xml",
             NodeKind::CData(_) => "#cdata",
             NodeKind::Comment(_) => "#comment",
             NodeKind::Text(_) => "#text",

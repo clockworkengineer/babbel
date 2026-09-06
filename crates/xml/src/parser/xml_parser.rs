@@ -102,11 +102,11 @@ impl<'a> XmlParser<'a> {
             });
         }
 
-        let decl_id = doc.add_node(NodeKind::Declaration {
+        let decl_id = doc.add_node(NodeKind::Declaration(Box::new(crate::node::DeclarationData {
             version: version.into_boxed_str(),
             encoding: encoding.map(String::into_boxed_str),
             standalone,
-        });
+        })));
         doc.set_declaration_id(decl_id);
 
         let prolog_id = doc.prolog_id().unwrap_or(0);
@@ -499,12 +499,12 @@ impl<'a> XmlParser<'a> {
             }
         }
 
-        Ok(doc.add_node(NodeKind::DocTypeDefinition {
+        Ok(doc.add_node(NodeKind::DocTypeDefinition(Box::new(crate::node::DocTypeData {
             name: name.into_boxed_str(),
             public_id: public_id.map(String::into_boxed_str),
             system_id: system_id.map(String::into_boxed_str),
             internal_subset: internal_subset.map(String::into_boxed_str),
-        }))
+        }))))
     }
 
     /// Helper parsing an identifier / tag name string.

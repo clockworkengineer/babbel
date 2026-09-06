@@ -260,6 +260,14 @@ impl BufferSource {
         }
     }
 
+    /// Creates a new BufferSource by taking ownership of a byte vector (zero-copy).
+    pub fn from_vec(buffer: Vec<u8>) -> Self {
+        Self {
+            buffer,
+            position: 0,
+        }
+    }
+
     /// Advances to the next character.
     pub fn next(&mut self) {
         if self.position < self.buffer.len() {
@@ -405,13 +413,13 @@ impl FileSource {
         Self::open(path)
     }
 
-    /// Opens and reads an entire file into memory as raw bytes.
+    /// Opens and reads an entire file into memory as raw bytes (zero copy).
     pub fn open(path: impl AsRef<std::path::Path>) -> std::io::Result<Self> {
         let p = path.as_ref().to_path_buf();
         let bytes = std::fs::read(&p)?;
         Ok(Self {
             path: p,
-            inner: BufferSource::new(&bytes),
+            inner: BufferSource::from_vec(bytes),
         })
     }
 
