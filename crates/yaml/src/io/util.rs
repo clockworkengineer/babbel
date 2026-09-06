@@ -15,11 +15,13 @@ pub fn read_all<R: Read>(mut reader: R) -> Result<Vec<u8>> {
 }
 
 /// Write all bytes from a slice to a writer
+#[allow(dead_code)]
 pub fn write_all<W: Write>(mut writer: W, data: &[u8]) -> Result<()> {
     writer.write_all(data)
 }
 
 /// Write all bytes from a string to a writer
+#[allow(dead_code)]
 pub fn write_str<W: Write>(mut writer: W, data: &str) -> Result<()> {
     writer.write_all(data.as_bytes())
 }

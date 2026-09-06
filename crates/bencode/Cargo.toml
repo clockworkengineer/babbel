@@ -10,7 +10,7 @@ repository = "https://github.com/clockworkengineer/bencode"
 # For minimal binary size, disable unused features in your dependent crate:
 # bencode_lib = { version = "...", default-features = false, features = ["std"] }
 default = ["std", "json", "toml", "xml", "yaml"]
-std = ["babbel_core/std"]
+std = ["babbel_core/std", "babbel_core/file-io"]
 # Optional format conversion features (reduce binary size)
 json = []
 toml = []

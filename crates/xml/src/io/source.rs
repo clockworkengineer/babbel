@@ -264,3 +264,36 @@ impl babbel_core::io::traits::IPositionAware for XmlSource {
         self.pos
     }
 }
+
+impl babbel_core::io::traits::ICharStream for XmlSource {
+    fn next(&mut self) {
+        let _ = self.next_char();
+    }
+
+    fn current(&mut self) -> Option<char> {
+        self.peek()
+    }
+
+    fn more(&mut self) -> bool {
+        !self.is_eof()
+    }
+}
+
+impl babbel_core::io::traits::IRewindable for XmlSource {
+    fn reset(&mut self) {
+        self.pos = 0;
+        self.line = 1;
+        self.col = 1;
+    }
+}
+
+impl babbel_core::io::traits::ILocationAware for XmlSource {
+    fn line(&self) -> usize {
+        self.line
+    }
+
+    fn column(&self) -> usize {
+        self.col
+    }
+}
+

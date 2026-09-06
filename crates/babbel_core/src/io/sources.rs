@@ -1,6 +1,6 @@
-//! Concrete implementations of input sources.
+//! Concrete implementations of input sources adhering to SOLID principles.
 
-use super::traits::{IByteStream, ISource};
+use super::traits::{IByteStream, ICharStream, IPositionAware, IRewindable, ISource};
 #[cfg(not(feature = "std"))]
 use alloc::string::String;
 #[cfg(not(feature = "std"))]
@@ -28,14 +28,8 @@ impl<'a> SliceSource<'a> {
         s
     }
 
-    /// Returns absolute byte offset in slice.
-    pub fn position(&self) -> usize {
-        self.pos
-    }
-}
-
-impl<'a> ISource for SliceSource<'a> {
-    fn next(&mut self) {
+    /// Advances to the next character.
+    pub fn next(&mut self) {
         if let Some((idx, ch)) = self.chars.next() {
             self.pos = idx;
             self.current_char = Some(ch);
@@ -45,22 +39,63 @@ impl<'a> ISource for SliceSource<'a> {
         }
     }
 
-    fn current(&mut self) -> Option<char> {
+    /// Returns the character at the current position.
+    pub fn current(&mut self) -> Option<char> {
         self.current_char
     }
 
-    fn more(&mut self) -> bool {
+    /// Checks if more characters are available.
+    pub fn more(&mut self) -> bool {
         self.current_char.is_some()
     }
 
-    fn reset(&mut self) {
+    /// Resets reading position to the beginning.
+    pub fn reset(&mut self) {
         self.chars = self.data.char_indices();
         self.pos = 0;
         self.next();
     }
+
+    /// Returns absolute byte offset in slice.
+    pub fn position(&self) -> usize {
+        self.pos
+    }
 }
 
-impl<'a> super::traits::IPositionAware for SliceSource<'a> {
+impl<'a> ISource for SliceSource<'a> {
+    fn next(&mut self) {
+        self.next();
+    }
+    fn current(&mut self) -> Option<char> {
+        self.current()
+    }
+    fn more(&mut self) -> bool {
+        self.more()
+    }
+    fn reset(&mut self) {
+        self.reset();
+    }
+}
+
+impl<'a> ICharStream for SliceSource<'a> {
+    fn next(&mut self) {
+        self.next();
+    }
+    fn current(&mut self) -> Option<char> {
+        self.current()
+    }
+    fn more(&mut self) -> bool {
+        self.more()
+    }
+}
+
+impl<'a> IRewindable for SliceSource<'a> {
+    fn reset(&mut self) {
+        self.reset();
+    }
+}
+
+impl<'a> IPositionAware for SliceSource<'a> {
     fn position(&self) -> usize {
         self.pos
     }
@@ -82,20 +117,8 @@ impl StringSource {
         }
     }
 
-    /// Returns current byte offset in source string.
-    pub fn position(&self) -> usize {
-        self.pos
-    }
-}
-
-impl super::traits::IPositionAware for StringSource {
-    fn position(&self) -> usize {
-        self.pos
-    }
-}
-
-impl ISource for StringSource {
-    fn next(&mut self) {
+    /// Advances to the next character.
+    pub fn next(&mut self) {
         if self.pos < self.content.len() {
             if let Some(ch) = self.content[self.pos..].chars().next() {
                 self.pos += ch.len_utf8();
@@ -103,7 +126,8 @@ impl ISource for StringSource {
         }
     }
 
-    fn current(&mut self) -> Option<char> {
+    /// Returns the current character.
+    pub fn current(&mut self) -> Option<char> {
         if self.pos < self.content.len() {
             self.content[self.pos..].chars().next()
         } else {
@@ -111,16 +135,62 @@ impl ISource for StringSource {
         }
     }
 
-    fn more(&mut self) -> bool {
+    /// Checks if more characters are available.
+    pub fn more(&mut self) -> bool {
         self.pos < self.content.len()
     }
 
-    fn reset(&mut self) {
+    /// Resets reading position.
+    pub fn reset(&mut self) {
         self.pos = 0;
+    }
+
+    /// Returns current byte offset in source string.
+    pub fn position(&self) -> usize {
+        self.pos
     }
 }
 
-/// Raw byte slice reader implementing `IByteStream`.
+impl IPositionAware for StringSource {
+    fn position(&self) -> usize {
+        self.pos
+    }
+}
+
+impl ISource for StringSource {
+    fn next(&mut self) {
+        self.next();
+    }
+    fn current(&mut self) -> Option<char> {
+        self.current()
+    }
+    fn more(&mut self) -> bool {
+        self.more()
+    }
+    fn reset(&mut self) {
+        self.reset();
+    }
+}
+
+impl ICharStream for StringSource {
+    fn next(&mut self) {
+        self.next();
+    }
+    fn current(&mut self) -> Option<char> {
+        self.current()
+    }
+    fn more(&mut self) -> bool {
+        self.more()
+    }
+}
+
+impl IRewindable for StringSource {
+    fn reset(&mut self) {
+        self.reset();
+    }
+}
+
+/// Raw byte slice reader implementing `IByteStream` and `IByteReader`.
 #[derive(Debug, Clone)]
 pub struct ByteSliceSource<'a> {
     slice: &'a [u8],
@@ -139,7 +209,7 @@ impl<'a> ByteSliceSource<'a> {
     }
 }
 
-impl<'a> super::traits::IPositionAware for ByteSliceSource<'a> {
+impl<'a> IPositionAware for ByteSliceSource<'a> {
     fn position(&self) -> usize {
         self.pos
     }
@@ -167,7 +237,14 @@ impl<'a> IByteStream for ByteSliceSource<'a> {
     }
 }
 
-/// In-memory byte vector input source.
+impl<'a> IRewindable for ByteSliceSource<'a> {
+    fn reset(&mut self) {
+        self.pos = 0;
+    }
+}
+
+/// In-memory byte vector input source supporting both binary byte streaming
+/// and Unicode UTF-8 character streaming.
 #[derive(Debug, Clone, Default)]
 pub struct BufferSource {
     buffer: Vec<u8>,
@@ -181,6 +258,48 @@ impl BufferSource {
             buffer: data.to_vec(),
             position: 0,
         }
+    }
+
+    /// Advances to the next character.
+    pub fn next(&mut self) {
+        if self.position < self.buffer.len() {
+            if let Some(ch) = self.current() {
+                let len = ch.len_utf8();
+                if len > 0 && self.position + len <= self.buffer.len() {
+                    self.position += len;
+                    return;
+                }
+            }
+            self.position += 1;
+        }
+    }
+
+    /// Returns the character at the current position.
+    pub fn current(&mut self) -> Option<char> {
+        if self.position >= self.buffer.len() {
+            return None;
+        }
+        match core::str::from_utf8(&self.buffer[self.position..]) {
+            Ok(s) => s.chars().next(),
+            Err(e) => {
+                if e.valid_up_to() > 0 {
+                    let valid = unsafe { core::str::from_utf8_unchecked(&self.buffer[self.position..self.position + e.valid_up_to()]) };
+                    valid.chars().next()
+                } else {
+                    Some(self.buffer[self.position] as char)
+                }
+            }
+        }
+    }
+
+    /// Checks if more characters are available.
+    pub fn more(&mut self) -> bool {
+        self.position < self.buffer.len()
+    }
+
+    /// Resets the position to 0.
+    pub fn reset(&mut self) {
+        self.position = 0;
     }
 
     /// Converts the buffer to a UTF-8 string.
@@ -197,18 +316,18 @@ impl BufferSource {
         }
     }
 
+    /// Returns a slice of the underlying buffer.
+    pub fn as_slice(&self) -> &[u8] {
+        &self.buffer
+    }
+
     /// Returns current byte offset.
     pub fn position(&self) -> usize {
         self.position
     }
-
-    /// Resets the position to 0.
-    pub fn reset(&mut self) {
-        self.position = 0;
-    }
 }
 
-impl super::traits::IPositionAware for BufferSource {
+impl IPositionAware for BufferSource {
     fn position(&self) -> usize {
         self.position
     }
@@ -216,23 +335,34 @@ impl super::traits::IPositionAware for BufferSource {
 
 impl ISource for BufferSource {
     fn next(&mut self) {
-        self.position += 1;
+        self.next();
     }
-
     fn current(&mut self) -> Option<char> {
-        if self.more() {
-            Some(self.buffer[self.position] as char)
-        } else {
-            None
-        }
+        self.current()
     }
-
     fn more(&mut self) -> bool {
-        self.position < self.buffer.len()
+        self.more()
     }
-
     fn reset(&mut self) {
-        self.position = 0;
+        self.reset();
+    }
+}
+
+impl ICharStream for BufferSource {
+    fn next(&mut self) {
+        self.next();
+    }
+    fn current(&mut self) -> Option<char> {
+        self.current()
+    }
+    fn more(&mut self) -> bool {
+        self.more()
+    }
+}
+
+impl IRewindable for BufferSource {
+    fn reset(&mut self) {
+        self.reset();
     }
 }
 
@@ -261,38 +391,142 @@ impl IByteStream for BufferSource {
 }
 
 #[cfg(feature = "file-io")]
-/// File input source reading from disk.
+/// File input source reading binary or text data from disk.
+#[derive(Debug, Clone)]
 pub struct FileSource {
-    _content: String,
-    inner: StringSource,
+    path: std::path::PathBuf,
+    inner: BufferSource,
 }
 
 #[cfg(feature = "file-io")]
 impl FileSource {
-    /// Opens and reads an entire file into memory as UTF-8.
+    /// Opens and reads an entire file into memory as raw bytes.
+    pub fn new(path: impl AsRef<std::path::Path>) -> std::io::Result<Self> {
+        Self::open(path)
+    }
+
+    /// Opens and reads an entire file into memory as raw bytes.
     pub fn open(path: impl AsRef<std::path::Path>) -> std::io::Result<Self> {
-        let content = std::fs::read_to_string(path)?;
-        let inner = StringSource::new(content.clone());
+        let p = path.as_ref().to_path_buf();
+        let bytes = std::fs::read(&p)?;
         Ok(Self {
-            _content: content,
-            inner,
+            path: p,
+            inner: BufferSource::new(&bytes),
         })
+    }
+
+    /// Advances to the next character.
+    pub fn next(&mut self) {
+        self.inner.next();
+    }
+
+    /// Returns the character at the current position.
+    pub fn current(&mut self) -> Option<char> {
+        self.inner.current()
+    }
+
+    /// Checks if more characters are available.
+    pub fn more(&mut self) -> bool {
+        self.inner.more()
+    }
+
+    /// Resets reading position.
+    pub fn reset(&mut self) {
+        self.inner.reset();
+    }
+
+    /// Returns the file path name.
+    pub fn file_name(&self) -> &str {
+        self.path.to_str().unwrap_or("")
+    }
+
+    /// Returns the current byte position in the file.
+    pub fn position(&self) -> usize {
+        self.inner.position()
+    }
+
+    /// Returns buffer as UTF-8 string.
+    pub fn to_string(&self) -> String {
+        self.inner.to_string()
+    }
+
+    /// Peeks at current byte without advancing.
+    pub fn peek_byte(&mut self) -> Option<u8> {
+        self.inner.peek_byte()
+    }
+
+    /// Reads current byte and advances position by one byte.
+    pub fn read_byte(&mut self) -> Option<u8> {
+        self.inner.read_byte()
+    }
+
+    /// Advances position by one byte.
+    pub fn advance(&mut self) {
+        self.inner.advance();
+    }
+
+    /// Checks if there are more bytes available.
+    pub fn has_more(&mut self) -> bool {
+        self.inner.has_more()
+    }
+}
+
+#[cfg(feature = "file-io")]
+impl IPositionAware for FileSource {
+    fn position(&self) -> usize {
+        self.inner.position()
     }
 }
 
 #[cfg(feature = "file-io")]
 impl ISource for FileSource {
     fn next(&mut self) {
-        self.inner.next();
+        self.next();
     }
     fn current(&mut self) -> Option<char> {
-        self.inner.current()
+        self.current()
     }
     fn more(&mut self) -> bool {
-        self.inner.more()
+        self.more()
     }
     fn reset(&mut self) {
-        self.inner.reset();
+        self.reset();
+    }
+}
+
+#[cfg(feature = "file-io")]
+impl ICharStream for FileSource {
+    fn next(&mut self) {
+        self.next();
+    }
+    fn current(&mut self) -> Option<char> {
+        self.current()
+    }
+    fn more(&mut self) -> bool {
+        self.more()
+    }
+}
+
+#[cfg(feature = "file-io")]
+impl IByteStream for FileSource {
+    fn peek_byte(&mut self) -> Option<u8> {
+        self.inner.peek_byte()
+    }
+    fn read_byte(&mut self) -> Option<u8> {
+        self.inner.read_byte()
+    }
+    fn advance(&mut self) {
+        self.inner.advance();
+    }
+    fn has_more(&mut self) -> bool {
+        self.inner.has_more()
+    }
+}
+
+#[cfg(feature = "file-io")]
+impl IRewindable for FileSource {
+    fn reset(&mut self) {
+        self.reset();
     }
 }
 
@@ -324,5 +558,23 @@ mod tests {
         assert_eq!(src.read_byte(), Some(b'z'));
         assert_eq!(src.read_byte(), None);
         assert!(!src.has_more());
+    }
+
+    #[test]
+    fn test_buffer_source_utf8() {
+        let mut src = BufferSource::new("hello 🦀".as_bytes());
+        assert_eq!(src.current(), Some('h'));
+        src.next();
+        assert_eq!(src.current(), Some('e'));
+        src.next();
+        src.next();
+        src.next();
+        src.next(); // at space
+        assert_eq!(src.current(), Some(' '));
+        src.next(); // at crab emoji (4-byte UTF-8)
+        assert_eq!(src.current(), Some('🦀'));
+        src.next();
+        assert_eq!(src.current(), None);
+        assert!(!src.more());
     }
 }

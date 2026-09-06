@@ -1,110 +1,17 @@
 //! File Destination for Encoded Output
 //!
-//! Provides a file-based destination for writing encoded YAML or JSON data to disk.
-//! Implements the `IDestination` trait and file operations for storing and manipulating encoded data.
+//! Re-exports the unified `FileDestination` from `babbel_core::io`.
 //!
 //! Copyright (c) 2026 YAML Library Developers
 
-use crate::io::traits::IDestination;
-use crate::io::util::{write_all, write_str};
-use std::fs::File as StdFile;
-use std::io::{Read, Seek, Write};
+pub use babbel_core::io::FileDestination as File;
 
-/// A file-based destination for writing JSON data to disk.
-/// Implements file operations for storing and manipulating encoded data.
-pub struct File {
-    /// The underlying file handle for I/O operations
-    file: StdFile,
-    /// Name/path of the file being operated on
-    file_name: String,
-    /// Current length of the file in bytes
-    file_length: usize,
-}
-
-impl File {
-    /// Creates a new File instance with the specified path.
-    ///
-    /// # Arguments
-    /// * `path` - The file path where the data will be written
-    ///
-    /// # Returns
-    /// A Result containing the new File instance or an IO error
-    pub fn new(path: &str) -> std::io::Result<Self> {
-        Ok(Self {
-            file: StdFile::create(path)?,
-            file_name: path.to_string(),
-            file_length: 0,
-        })
-    }
-
-    /// Writes all bytes to the file using shared helper
-    pub fn write_all_bytes(&mut self, data: &[u8]) -> std::io::Result<()> {
-        write_all(&mut self.file, data)
-    }
-    /// Writes a string to the file using shared helper
-    pub fn write_str(&mut self, data: &str) -> std::io::Result<()> {
-        write_str(&mut self.file, data)
-    }
-    /// Returns the current length of the file in bytes.
-    pub fn file_length(&self) -> usize {
-        self.file_length
-    }
-    /// Returns the name/path of the file.
-    pub fn file_name(&self) -> &str {
-        self.file_name.as_str()
-    }
-    /// Closes the file handle.
-    pub fn close(&self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
-impl IDestination for File {
-    /// Adds a single byte to the end of the file.
-    ///
-    /// # Arguments
-    /// * `b` - The byte to append
-    fn add_byte(&mut self, b: u8) {
-        self.file.write_all(&[b]).unwrap();
-        self.file_length += 1
-    }
-
-    /// Adds a string of bytes to the end of the file.
-    ///
-    /// # Arguments
-    /// * `s` - The string to append as bytes
-    fn add_bytes(&mut self, s: &str) {
-        self.file.write_all(s.as_bytes()).unwrap();
-        self.file_length += s.len();
-    }
-
-    /// Clears the file content by recreating it.
-    fn clear(&mut self) {
-        self.file = StdFile::create(&self.file_name).unwrap();
-        self.file_length = 0;
-    }
-
-    /// Returns the last byte in the file, if any.
-    ///
-    /// # Returns
-    /// The last byte as Some(u8) or None if the file is empty
-    fn last(&self) -> Option<u8> {
-        if self.file_length == 0 {
-            None
-        } else {
-            let mut buf = vec![0];
-            let mut file = StdFile::open(&self.file_name).unwrap();
-            file.seek(std::io::SeekFrom::End(-1)).unwrap();
-            file.read_exact(&mut buf).unwrap();
-            Some(buf[0])
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::fs;
+    use std::fs::File as StdFile;
     use std::io::Read;
 
     #[test]

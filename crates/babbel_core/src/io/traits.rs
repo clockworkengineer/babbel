@@ -1,56 +1,10 @@
-//! Core I/O traits for sequential streaming input and output.
+//! Core I/O traits for sequential streaming input and output adhering to SOLID principles.
 
-/// Trait defining sequential character reading from an input source.
-pub trait ISource {
-    /// Advances reading position to next character.
-    fn next(&mut self);
-    /// Returns character at current position.
-    fn current(&mut self) -> Option<char>;
-    /// Checks if more characters are available.
-    fn more(&mut self) -> bool;
-    /// Resets reading position to the beginning.
-    fn reset(&mut self);
-}
+use crate::error::ErrorCode;
 
-/// Minimal character reading interface adhering to ISP (Interface Segregation Principle).
-pub trait ICharStream {
-    /// Advances reading position to next character.
-    fn next(&mut self);
-    /// Returns character at current position.
-    fn current(&mut self) -> Option<char>;
-    /// Checks if more characters are available.
-    fn more(&mut self) -> bool;
-}
-
-impl<T: ISource + ?Sized> ICharStream for T {
-    fn next(&mut self) {
-        ISource::next(self);
-    }
-    fn current(&mut self) -> Option<char> {
-        ISource::current(self)
-    }
-    fn more(&mut self) -> bool {
-        ISource::more(self)
-    }
-}
-
-/// Interface for streams that support rewinding to the beginning.
-pub trait IRewindable {
-    /// Resets reading position to the beginning.
-    fn reset(&mut self);
-}
-
-impl<T: ISource + ?Sized> IRewindable for T {
-    fn reset(&mut self) {
-        ISource::reset(self);
-    }
-}
-
-/// Interface for sources that report byte position.
-pub trait IPositionAware {
-    /// Returns current absolute byte offset.
-    fn position(&self) -> usize;
-}
+// ==========================================
+// 1. Primitive Byte Streaming (ISP compliant)
+// ==========================================
 
 /// Interface for raw byte reading (essential for Bencode and binary protocol parsing).
 pub trait IByteStream {
@@ -64,11 +18,93 @@ pub trait IByteStream {
     fn has_more(&mut self) -> bool;
 }
 
+/// Capability to read sequential bytes (ISP alias for IByteStream).
+pub trait IByteReader: IByteStream {}
+impl<T: IByteStream + ?Sized> IByteReader for T {}
+
+/// Capability to write sequential bytes (binary-safe output interface).
+pub trait IByteWriter {
+    /// Writes a single byte to the destination.
+    fn write_byte(&mut self, byte: u8) -> Result<(), ErrorCode>;
+    /// Writes multiple bytes from a raw byte slice to the destination.
+    fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), ErrorCode>;
+}
+
+// ==========================================
+// 2. Character Streaming (LSP & ISP compliant)
+// ==========================================
+
+/// Minimal character reading interface adhering to ISP (Interface Segregation Principle).
+pub trait ICharStream {
+    /// Advances reading position to next character.
+    fn next(&mut self);
+    /// Returns character at current position.
+    fn current(&mut self) -> Option<char>;
+    /// Checks if more characters are available.
+    fn more(&mut self) -> bool;
+}
+
+/// Capability to read sequential Unicode characters (ISP alias for ICharStream).
+pub trait ICharReader: ICharStream {}
+impl<T: ICharStream + ?Sized> ICharReader for T {}
+
+/// Standard sequential character reading source trait (LSP & backward compatibility).
+pub trait ISource {
+    /// Advances reading position to next character.
+    fn next(&mut self);
+    /// Returns character at current position.
+    fn current(&mut self) -> Option<char>;
+    /// Checks if more characters are available.
+    fn more(&mut self) -> bool;
+    /// Resets reading position to the beginning.
+    fn reset(&mut self);
+}
+
+// ==========================================
+// 3. Segregated Capabilities (ISP compliant)
+// ==========================================
+
+/// Interface for streams that support rewinding to the beginning.
+pub trait IRewindable {
+    /// Resets reading position to the beginning.
+    fn reset(&mut self);
+}
+
+/// Interface for sources that report byte position.
+pub trait IPositionAware {
+    /// Returns current absolute byte offset.
+    fn position(&self) -> usize;
+}
+
+/// Interface for sources tracking 1-based line and column metrics.
+pub trait ILocationAware {
+    /// Returns 1-based line index.
+    fn line(&self) -> usize;
+    /// Returns 1-based column index.
+    fn column(&self) -> usize;
+}
+
+/// Interface for destinations that can be flushed to underlying storage.
+pub trait IFlushable {
+    /// Flushes any buffered bytes to destination.
+    fn flush(&mut self) -> Result<(), ErrorCode>;
+}
+
+/// Interface for destinations that can inspect the last written byte.
+pub trait ITailInspectable {
+    /// Returns the last written byte, if any.
+    fn last_byte(&self) -> Option<u8>;
+}
+
 /// Interface for destinations that can be cleared or truncated.
 pub trait IClearable {
     /// Clears all accumulated content from the destination.
     fn clear(&mut self);
 }
+
+// ==========================================
+// 4. Output Destination (ISP & DIP compliant)
+// ==========================================
 
 /// Interface for writing data to an output destination.
 pub trait IDestination {
@@ -82,12 +118,6 @@ pub trait IDestination {
     fn last(&self) -> Option<u8>;
 }
 
-impl<T: IDestination + ?Sized> IClearable for T {
-    fn clear(&mut self) {
-        IDestination::clear(self);
-    }
-}
-
 /// Indentation tracking trait for whitespace-sensitive formats (YAML, pretty-printers).
 pub trait IIndentationAware {
     /// Returns current indentation level (number of spaces or tab-stops).
@@ -97,4 +127,3 @@ pub trait IIndentationAware {
         c == ' ' || c == '\t'
     }
 }
-

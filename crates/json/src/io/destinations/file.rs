@@ -1,439 +1,73 @@
-use crate::io::traits::IDestination;
-use std::fs::File as StdFile;
-use std::io::{Read, Seek, Write};
+//! File Destination for JSON
+//!
+//! Re-exports the unified `FileDestination` from `babbel_core::io`.
 
-/// A file-based destination for writing JSON data to disk.
-/// Implements file operations for storing and manipulating encoded data.
-pub struct File {
-    /// The underlying file handle for I/O operations
-    file: StdFile,
-    /// Name/path of the file being operated on
-    file_name: String,
-    /// Current length of the file in bytes
-    file_length: usize,
-}
-
-impl File {
-    /// Creates a new File instance with the specified path.
-    ///
-    /// # Arguments
-    /// * `path` - The file path where the data will be written
-    ///
-    /// # Returns
-    /// A Result containing the new File instance or an IO error
-    pub fn new(path: &str) -> std::io::Result<Self> {
-        Ok(Self {
-            file: StdFile::create(path)?,
-            file_name: path.to_string(),
-            file_length: 0,
-        })
-    }
-
-    /// Returns the current length of the file in bytes.
-    pub fn file_length(&self) -> usize {
-        self.file_length
-    }
-    /// Returns the name/path of the file.
-    pub fn file_name(&self) -> &str {
-        &self.file_name.as_str()
-    }
-    /// Closes the file handle.
-    pub fn close(&self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
-impl IDestination for File {
-    /// Adds a single byte to the end of the file.
-    ///
-    /// # Arguments
-    /// * `b` - The byte to append
-    fn add_byte(&mut self, b: u8) {
-        self.file.write_all(&[b]).unwrap();
-        self.file_length += 1
-    }
-
-    /// Adds a string of bytes to the end of the file.
-    ///
-    /// # Arguments
-    /// * `s` - The string to append as bytes
-    fn add_bytes(&mut self, s: &str) {
-        self.file.write_all(s.as_bytes()).unwrap();
-        self.file_length = self.file_length + s.len();
-    }
-
-    /// Clears the file content by recreating it.
-    fn clear(&mut self) {
-        self.file = StdFile::create(&self.file_name).unwrap();
-        self.file_length = 0;
-    }
-
-    /// Returns the last byte in the file, if any.
-    ///
-    /// # Returns
-    /// The last byte as Some(u8) or None if the file is empty
-    fn last(&self) -> Option<u8> {
-        if self.file_length == 0 {
-            None
-        } else {
-            let mut buf = vec![0];
-            let mut file = StdFile::open(&self.file_name).unwrap();
-            file.seek(std::io::SeekFrom::End(-1)).unwrap();
-            file.read_exact(&mut buf).unwrap();
-            Some(buf[0])
-        }
-    }
-}
+pub use babbel_core::io::FileDestination as File;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::io::traits::IDestination;
     use std::fs;
-    use std::io::Read;
+    use std::sync::atomic::{AtomicU32, Ordering};
 
-    #[test]
-    fn create_file_destination_works() -> std::io::Result<()> {
-        let path = "test_create.txt";
-        let _file = File::new(path)?;
-        assert!(fs::metadata(path).is_ok());
-        fs::remove_file(path)?;
-        Ok(())
+    static COUNTER: AtomicU32 = AtomicU32::new(0);
+
+    fn test_file_path() -> String {
+        let id = COUNTER.fetch_add(1, Ordering::SeqCst);
+        let pid = std::process::id();
+        format!("test_json_file_dest_{pid}_{id}.txt")
+    }
+
+    fn cleanup_file(path: &str) {
+        let _ = fs::remove_file(path);
     }
 
     #[test]
-    fn create_file_fails_with_invalid_path() {
-        let result = File::new("/invalid/path/test.txt");
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn write_fails_on_readonly_file() -> std::io::Result<()> {
-        let path = "test_readonly.txt";
-        let mut file = File::new(path)?;
-        let mut perms = fs::metadata(path)?.permissions();
-        perms.set_readonly(true);
-        fs::set_permissions(path, perms)?;
-
-        file.add_bytes("test");
-
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn read_fails_on_missing_file() {
-        let path = "missing_file.txt";
-        let file = File::new(path).unwrap();
-        assert!(file.last().is_none());
-        fs::remove_file(path).unwrap();
-    }
-
-    #[test]
-    fn add_byte_works() -> std::io::Result<()> {
-        let path = "test_byte.txt";
-        let mut file = File::new(path)?;
-        file.add_byte(b'A');
-
-        let mut content = String::new();
-        StdFile::open(path)?.read_to_string(&mut content)?;
-        assert_eq!(content, "A");
-
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn add_bytes_works() -> std::io::Result<()> {
-        let path = "test_bytes.txt";
-        let mut file = File::new(path)?;
-        file.add_bytes("test");
-
-        let mut content = String::new();
-        StdFile::open(path)?.read_to_string(&mut content)?;
-        assert_eq!(content, "test");
-
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn clear_works() -> std::io::Result<()> {
-        let path = "test_clear.txt";
-        let mut file = File::new(path)?;
-        file.add_bytes("test");
-        file.clear();
-
-        let mut content = String::new();
-        StdFile::open(path)?.read_to_string(&mut content)?;
-        assert_eq!(content, "");
-
-        fs::remove_file(path)?;
-        Ok(())
-    }
-    #[test]
-    fn file_length_works() -> std::io::Result<()> {
-        let path = "test_length.txt";
-        let mut file = File::new(path)?;
+    fn new_creates_file_and_initializes_fields() {
+        let path = test_file_path();
+        let file = File::new(&path).unwrap();
         assert_eq!(file.file_length(), 0);
-
-        file.add_byte(b'A');
-        assert_eq!(file.file_length(), 1);
-
-        file.add_bytes("test");
-        assert_eq!(file.file_length(), 5);
-
-        file.clear();
-        assert_eq!(file.file_length(), 0);
-
-        fs::remove_file(path)?;
-        Ok(())
-    }
-    #[test]
-    fn file_name_works() -> std::io::Result<()> {
-        let path = "test_name.txt";
-        let file = File::new(path)?;
         assert_eq!(file.file_name(), path);
-        fs::remove_file(path)?;
-        Ok(())
-    }
-    #[test]
-    fn last_works() -> std::io::Result<()> {
-        let path = "test_last.txt";
-        let mut file = File::new(path)?;
-        assert_eq!(file.last(), None);
-
-        file.add_byte(b'1');
-        assert_eq!(file.last(), Some(b'1'));
-
-        file.add_byte(b'2');
-        assert_eq!(file.last(), Some(b'2'));
-
-        file.clear();
-        assert_eq!(file.last(), None);
-
-        fs::remove_file(path)?;
-        Ok(())
+        cleanup_file(&path);
     }
 
     #[test]
-    fn last_handles_empty_file() -> std::io::Result<()> {
-        let path = "test_empty.txt";
-        let file = File::new(path)?;
-        assert_eq!(file.last(), None);
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn close_works() -> std::io::Result<()> {
-        let path = "test_name.txt";
-        let file = File::new(path)?;
-        file.close()?;
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn new_file_has_zero_length() -> std::io::Result<()> {
-        let path = "test_new_zero_len.txt";
-        let file = File::new(path)?;
-        assert_eq!(file.file_length(), 0);
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn add_byte_increments_file_length_by_one() -> std::io::Result<()> {
-        let path = "test_add_byte_len.txt";
-        let mut file = File::new(path)?;
-        file.add_byte(b'X');
+    fn add_byte_appends_single_byte() {
+        let path = test_file_path();
+        let mut file = File::new(&path).unwrap();
+        file.add_byte(b'a');
         assert_eq!(file.file_length(), 1);
-        file.add_byte(b'Y');
-        assert_eq!(file.file_length(), 2);
-        fs::remove_file(path)?;
-        Ok(())
+        assert_eq!(file.last(), Some(b'a'));
+        cleanup_file(&path);
     }
 
     #[test]
-    fn add_bytes_increments_file_length_by_string_len() -> std::io::Result<()> {
-        let path = "test_add_bytes_len.txt";
-        let mut file = File::new(path)?;
+    fn add_bytes_appends_multiple_bytes() {
+        let path = test_file_path();
+        let mut file = File::new(&path).unwrap();
         file.add_bytes("hello");
         assert_eq!(file.file_length(), 5);
-        file.add_bytes(" world");
-        assert_eq!(file.file_length(), 11);
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn add_byte_then_add_bytes_accumulates_correctly() -> std::io::Result<()> {
-        let path = "test_mixed_writes.txt";
-        let mut file = File::new(path)?;
-        file.add_byte(b'[');
-        file.add_bytes("1,2,3");
-        file.add_byte(b']');
-
-        let mut content = String::new();
-        StdFile::open(path)?.read_to_string(&mut content)?;
-        assert_eq!(content, "[1,2,3]");
-        assert_eq!(file.file_length(), 7);
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn add_bytes_empty_string_does_not_change_length() -> std::io::Result<()> {
-        let path = "test_empty_write.txt";
-        let mut file = File::new(path)?;
-        file.add_bytes("abc");
-        file.add_bytes("");
-        assert_eq!(file.file_length(), 3);
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn add_bytes_unicode_writes_correct_bytes() -> std::io::Result<()> {
-        let path = "test_unicode.txt";
-        let mut file = File::new(path)?;
-        let text = "日本語"; // 3 chars × 3 bytes each = 9 bytes
-        file.add_bytes(text);
-        assert_eq!(file.file_length(), 9);
-
-        let mut content = String::new();
-        StdFile::open(path)?.read_to_string(&mut content)?;
-        assert_eq!(content, text);
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn clear_resets_file_length_to_zero() -> std::io::Result<()> {
-        let path = "test_clear_len.txt";
-        let mut file = File::new(path)?;
-        file.add_bytes("some data");
-        assert_eq!(file.file_length(), 9);
-        file.clear();
-        assert_eq!(file.file_length(), 0);
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn clear_then_write_starts_fresh() -> std::io::Result<()> {
-        let path = "test_clear_rewrite.txt";
-        let mut file = File::new(path)?;
-        file.add_bytes("old content");
-        file.clear();
-        file.add_bytes("new");
-
-        let mut content = String::new();
-        StdFile::open(path)?.read_to_string(&mut content)?;
-        assert_eq!(content, "new");
-        assert_eq!(file.file_length(), 3);
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn clear_multiple_times_stays_empty() -> std::io::Result<()> {
-        let path = "test_clear_multi.txt";
-        let mut file = File::new(path)?;
-        file.add_bytes("data");
-        file.clear();
-        file.clear();
-        assert_eq!(file.file_length(), 0);
-        assert_eq!(file.last(), None);
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn last_after_add_bytes_returns_final_byte() -> std::io::Result<()> {
-        let path = "test_last_bytes.txt";
-        let mut file = File::new(path)?;
-        file.add_bytes("hello");
         assert_eq!(file.last(), Some(b'o'));
-        fs::remove_file(path)?;
-        Ok(())
+        cleanup_file(&path);
     }
 
     #[test]
-    fn last_after_add_byte_returns_that_byte() -> std::io::Result<()> {
-        let path = "test_last_single.txt";
-        let mut file = File::new(path)?;
-        file.add_byte(b'Z');
-        assert_eq!(file.last(), Some(b'Z'));
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn last_updates_after_each_write() -> std::io::Result<()> {
-        let path = "test_last_update.txt";
-        let mut file = File::new(path)?;
-        file.add_bytes("abc");
-        assert_eq!(file.last(), Some(b'c'));
-        file.add_byte(b'!');
-        assert_eq!(file.last(), Some(b'!'));
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn write_json_object_and_read_back() -> std::io::Result<()> {
-        let path = "test_json_object.txt";
-        let mut file = File::new(path)?;
-        let json = "{\"key\": \"value\", \"num\": 42}";
-        file.add_bytes(json);
-
-        let mut content = String::new();
-        StdFile::open(path)?.read_to_string(&mut content)?;
-        assert_eq!(content, json);
-        assert_eq!(file.file_length(), json.len());
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn write_json_array_and_read_back() -> std::io::Result<()> {
-        let path = "test_json_array.txt";
-        let mut file = File::new(path)?;
-        let json = "[true, false, null, 1, \"two\"]";
-        file.add_bytes(json);
-
-        let mut content = String::new();
-        StdFile::open(path)?.read_to_string(&mut content)?;
-        assert_eq!(content, json);
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    #[test]
-    fn new_creates_or_truncates_existing_file() -> std::io::Result<()> {
-        let path = "test_truncate.txt";
-        // Write something via a first instance
-        {
-            let mut f = File::new(path)?;
-            f.add_bytes("original content that is quite long");
-        }
-        // Create again – should truncate
-        let file = File::new(path)?;
+    fn clear_resets_file() {
+        let path = test_file_path();
+        let mut file = File::new(&path).unwrap();
+        file.add_bytes("hello");
+        file.clear();
         assert_eq!(file.file_length(), 0);
-        let mut content = String::new();
-        StdFile::open(path)?.read_to_string(&mut content)?;
-        assert_eq!(content, "");
-        fs::remove_file(path)?;
-        Ok(())
+        assert_eq!(file.last(), None);
+        cleanup_file(&path);
     }
 
     #[test]
-    fn file_name_returns_exact_path_given() -> std::io::Result<()> {
-        let path = "test_file_name_check.txt";
-        let file = File::new(path)?;
-        assert_eq!(file.file_name(), path);
-        fs::remove_file(path)?;
-        Ok(())
+    fn last_on_empty_returns_none() {
+        let path = test_file_path();
+        let file = File::new(&path).unwrap();
+        assert_eq!(file.last(), None);
+        cleanup_file(&path);
     }
 }

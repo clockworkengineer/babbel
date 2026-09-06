@@ -4,6 +4,7 @@
         "target/analyzer"
     ],
     "files.exclude": {
-        ".vscode": true
+        ".vscode": true,
+        "target": true
     }
 }

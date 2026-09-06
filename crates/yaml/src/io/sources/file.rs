@@ -114,8 +114,8 @@ impl File {
 
 impl File {
     /// new
-    pub fn new(path: &str) -> std::io::Result<Self> {
-        let mut file = StdFile::open(path)?;
+    pub fn new(path: impl AsRef<std::path::Path>) -> std::io::Result<Self> {
+        let mut file = StdFile::open(path.as_ref())?;
 
         // Read first byte and handle CRLF
         let mut first = [0u8; 1];

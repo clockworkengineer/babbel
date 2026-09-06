@@ -22,7 +22,7 @@ fn read_sequence(file_path: &Path) -> Result<Node, String> {
         ]));
     }
 
-    match FileSource::new(&file_path.to_string_lossy()) {
+    match FileSource::new(file_path) {
         Ok(mut file) => match parse(&mut file) {
             Ok(Node::Documents(docs)) if !docs.is_empty() => {
                 if let Node::Document(list) = &docs[0] {

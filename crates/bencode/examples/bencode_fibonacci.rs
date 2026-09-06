@@ -20,7 +20,7 @@ fn read_sequence(file_path: &Path) -> Result<Node, String> {
     }
 
     // Try to open and parse the existing file
-    match FileSource::new(&file_path.to_string_lossy()) {
+    match FileSource::new(file_path) {
         Ok(mut file) => match parse(&mut file) {
             Ok(Node::List(list)) => Ok(Node::List(list)),
             Ok(_) => Err("Invalid file format: expected a list".to_string()),

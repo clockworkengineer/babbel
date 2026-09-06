@@ -63,6 +63,18 @@ impl babbel_core::io::traits::IDestination for XmlDestination {
     }
 }
 
+impl babbel_core::io::traits::IClearable for XmlDestination {
+    fn clear(&mut self) {
+        self.buffer.clear();
+    }
+}
+
+impl babbel_core::io::traits::ITailInspectable for XmlDestination {
+    fn last_byte(&self) -> Option<u8> {
+        self.buffer.as_bytes().last().copied()
+    }
+}
+
 /// Extension trait for [`babbel_core::io::traits::IDestination`] providing string and character writing helpers.
 pub trait DestinationExt {
     /// Writes a string slice to destination.
