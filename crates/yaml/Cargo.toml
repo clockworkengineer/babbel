@@ -7,7 +7,15 @@ repository = "https://github.com/clockworkengineer/yaml"
 license = "MIT"
 
 [features]
-default = ["std", "alloc", "stringify", "format-converters", "file-io", "validation"]
+default = [
+    "std",
+    "alloc",
+    "stringify",
+    "format-converters",
+    "file-io",
+    "validation",
+    "embedded",
+]
 std = ["alloc", "babbel_core/std"]
 alloc = ["babbel_core/alloc"]
 embedded = []
