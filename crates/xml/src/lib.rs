@@ -1,4 +1,4 @@
-﻿//! # XML Lib (Rust Port)
+//! # XML Lib (Rust Port)
 //!
 //! A full-featured, high-performance, pure Rust XML library offering:
 //! - XML Parsing & DOM Construction (Arena-based `Document` model)
@@ -143,6 +143,27 @@ pub fn parse_source_with_options(source: &mut dyn ISource, options: ParseOptions
     parser.parse()
 }
 
+/// Parse an XML string slice into a DOM `Document`.
+/// Canonical alias for [`parse`].
+#[inline]
+pub fn from_str(xml: &str) -> Result<Document> {
+    parse(xml)
+}
+
+/// Parse raw byte slice into a DOM `Document`.
+/// Canonical alias for [`parse_bytes`].
+#[inline]
+pub fn from_bytes(bytes: &[u8]) -> Result<Document> {
+    parse_bytes(bytes)
+}
+
+/// Parse an XML stream from [`ISource`] into a DOM `Document`.
+/// Canonical alias for [`parse_source`].
+#[inline]
+pub fn from_source(source: &mut dyn ISource) -> Result<Document> {
+    parse_source(source)
+}
+
 /// Serialize a DOM `Document` into a formatted UTF-8 XML string representation.
 ///
 /// # Examples
@@ -159,6 +180,19 @@ pub fn parse_source_with_options(source: &mut dyn ISource, options: ParseOptions
 /// * `doc` - Reference to target [`Document`].
 pub fn stringify(doc: &Document) -> String {
     XmlSerializer::serialize_to_string(doc, &SerializeOptions::default())
+}
+
+/// Serialize a DOM `Document` into an owned XML [`String`].
+/// Canonical alias for [`stringify`].
+#[inline]
+pub fn to_string(doc: &Document) -> String {
+    stringify(doc)
+}
+
+/// Serialize a DOM `Document` into a byte vector (`Vec<u8>`).
+#[inline]
+pub fn to_vec(doc: &Document) -> Vec<u8> {
+    stringify(doc).into_bytes()
 }
 
 

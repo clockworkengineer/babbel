@@ -20,4 +20,3 @@ yaml = []
 
 [dependencies]
 babbel_core = { path = "../babbel_core", version = "0.1.0", default-features = false }
-rand = { version = "0.10.0", optional = true }

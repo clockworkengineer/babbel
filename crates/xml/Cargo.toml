@@ -1,7 +1,7 @@
 [package]
 name = "babbel_xml"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["ClockworkEngineer", "Rust Port Team"]
 description = "Full-featured XML parser, validator, stringifier, and XPath 1.0 engine in pure Rust"
 license = "MIT"

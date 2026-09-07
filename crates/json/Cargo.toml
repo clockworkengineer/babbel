@@ -22,7 +22,7 @@ default = [
     "format-toml",
     "json-pointer",
 ]
-std = ["alloc", "rand?/std", "babbel_core/std"]
+std = ["alloc", "babbel_core/std"]
 alloc = ["babbel_core/alloc"]
 
 # Optional I/O capabilities
@@ -42,5 +42,4 @@ babbel_core = { path = "../babbel_core", version = "0.1.0", default-features = f
 arrayvec = "0.7.6"
 dtoa = "1.0.11"
 itoa = "1.0.17"
-rand = { version = "0.10.0", optional = true, default-features = false }
 smallvec = "1.15.1"

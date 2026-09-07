@@ -12,8 +12,12 @@ mod tests {
     use std::fs::{self, File};
     use std::io::{Result, Write};
 
-    fn create_test_file(filename: &str, bom: &[u8]) -> Result<()> {
-        let mut file = File::create(filename)?;
+    fn test_path(filename: &str) -> std::path::PathBuf {
+        std::env::temp_dir().join(filename)
+    }
+
+    fn create_test_file(path: &std::path::Path, bom: &[u8]) -> Result<()> {
+        let mut file = File::create(path)?;
         file.write_all(bom)?;
         file.write_all(b"test content")?;
         Ok(())
@@ -21,118 +25,130 @@ mod tests {
 
     #[test]
     fn test_utf8() -> Result<()> {
-        create_test_file("test_utf8.txt", &[])?;
-        assert!(matches!(detect_format("test_utf8.txt")?, Format::Utf8));
-        fs::remove_file("test_utf8.txt")?;
+        let p = test_path("test_json_utf8.txt");
+        create_test_file(&p, &[])?;
+        assert!(matches!(detect_format(&p)?, Format::Utf8));
+        fs::remove_file(&p)?;
         Ok(())
     }
 
     #[test]
     fn test_utf8_bom() -> Result<()> {
-        create_test_file("test_utf8_bom.txt", &[0xEF, 0xBB, 0xBF])?;
+        let p = test_path("test_json_utf8_bom.txt");
+        create_test_file(&p, &[0xEF, 0xBB, 0xBF])?;
         assert!(matches!(
-            detect_format("test_utf8_bom.txt")?,
+            detect_format(&p)?,
             Format::Utf8bom
         ));
-        fs::remove_file("test_utf8_bom.txt")?;
+        fs::remove_file(&p)?;
         Ok(())
     }
 
     #[test]
     fn test_utf16_le() -> Result<()> {
-        create_test_file("test_utf16le.txt", &[0xFF, 0xFE])?;
+        let p = test_path("test_json_utf16le.txt");
+        create_test_file(&p, &[0xFF, 0xFE])?;
         assert!(matches!(
-            detect_format("test_utf16le.txt")?,
+            detect_format(&p)?,
             Format::Utf16le
         ));
-        fs::remove_file("test_utf16le.txt")?;
+        fs::remove_file(&p)?;
         Ok(())
     }
 
     #[test]
     fn test_utf16_be() -> Result<()> {
-        create_test_file("test_utf16be.txt", &[0xFE, 0xFF])?;
+        let p = test_path("test_json_utf16be.txt");
+        create_test_file(&p, &[0xFE, 0xFF])?;
         assert!(matches!(
-            detect_format("test_utf16be.txt")?,
+            detect_format(&p)?,
             Format::Utf16be
         ));
-        fs::remove_file("test_utf16be.txt")?;
+        fs::remove_file(&p)?;
         Ok(())
     }
 
     #[test]
     fn test_utf32_le() -> Result<()> {
-        create_test_file("test_utf32le.txt", &[0xFF, 0xFE, 0x00, 0x00])?;
+        let p = test_path("test_json_utf32le.txt");
+        create_test_file(&p, &[0xFF, 0xFE, 0x00, 0x00])?;
         assert!(matches!(
-            detect_format("test_utf32le.txt")?,
+            detect_format(&p)?,
             Format::Utf32le
         ));
-        fs::remove_file("test_utf32le.txt")?;
+        fs::remove_file(&p)?;
         Ok(())
     }
 
     #[test]
     fn test_utf32_be() -> Result<()> {
-        create_test_file("test_utf32be.txt", &[0x00, 0x00, 0xFE, 0xFF])?;
+        let p = test_path("test_json_utf32be.txt");
+        create_test_file(&p, &[0x00, 0x00, 0xFE, 0xFF])?;
         assert!(matches!(
-            detect_format("test_utf32be.txt")?,
+            detect_format(&p)?,
             Format::Utf32be
         ));
-        fs::remove_file("test_utf32be.txt")?;
+        fs::remove_file(&p)?;
         Ok(())
     }
 
     #[test]
     fn test_write_utf8() -> Result<()> {
+        let p = test_path("test_write_utf8.txt");
         let test_content = "Test UTF-8 content";
-        write_file_from_string("test_write_utf8.txt", test_content, Format::Utf8)?;
-        assert_eq!(read_file_to_string("test_write_utf8.txt")?, test_content);
-        fs::remove_file("test_write_utf8.txt")?;
+        write_file_from_string(&p, test_content, Format::Utf8)?;
+        assert_eq!(read_file_to_string(&p)?, test_content);
+        fs::remove_file(&p)?;
         Ok(())
     }
 
     #[test]
     fn test_write_utf8bom() -> Result<()> {
+        let p = test_path("test_write_utf8bom.txt");
         let test_content = "Test UTF-8 BOM content";
-        write_file_from_string("test_write_utf8bom.txt", test_content, Format::Utf8bom)?;
-        assert_eq!(read_file_to_string("test_write_utf8bom.txt")?, test_content);
-        fs::remove_file("test_write_utf8bom.txt")?;
+        write_file_from_string(&p, test_content, Format::Utf8bom)?;
+        assert_eq!(read_file_to_string(&p)?, test_content);
+        fs::remove_file(&p)?;
         Ok(())
     }
 
     #[test]
     fn test_write_utf16le() -> Result<()> {
+        let p = test_path("test_write_utf16le.txt");
         let test_content = "Test UTF-16LE content";
-        write_file_from_string("test_write_utf16le.txt", test_content, Format::Utf16le)?;
-        assert_eq!(read_file_to_string("test_write_utf16le.txt")?, test_content);
-        fs::remove_file("test_write_utf16le.txt")?;
+        write_file_from_string(&p, test_content, Format::Utf16le)?;
+        assert_eq!(read_file_to_string(&p)?, test_content);
+        fs::remove_file(&p)?;
         Ok(())
     }
 
     #[test]
     fn test_write_utf16be() -> Result<()> {
+        let p = test_path("test_write_utf16be.txt");
         let test_content = "Test UTF-16BE content";
-        write_file_from_string("test_write_utf16be.txt", test_content, Format::Utf16be)?;
-        assert_eq!(read_file_to_string("test_write_utf16be.txt")?, test_content);
-        fs::remove_file("test_write_utf16be.txt")?;
+        write_file_from_string(&p, test_content, Format::Utf16be)?;
+        assert_eq!(read_file_to_string(&p)?, test_content);
+        fs::remove_file(&p)?;
         Ok(())
     }
 
     #[test]
     fn test_write_utf32le() -> Result<()> {
+        let p = test_path("test_write_utf32le.txt");
         let test_content = "Test UTF-32LE content";
-        write_file_from_string("test_write_utf32le.txt", test_content, Format::Utf32le)?;
-        assert_eq!(read_file_to_string("test_write_utf32le.txt")?, test_content);
-        fs::remove_file("test_write_utf32le.txt")?;
+        write_file_from_string(&p, test_content, Format::Utf32le)?;
+        assert_eq!(read_file_to_string(&p)?, test_content);
+        fs::remove_file(&p)?;
         Ok(())
     }
 
     #[test]
     fn test_write_utf32be() -> Result<()> {
+        let p = test_path("test_write_utf32be.txt");
         let test_content = "Test UTF-32BE content";
-        write_file_from_string("test_write_utf32be.txt", test_content, Format::Utf32be)?;
-        assert_eq!(read_file_to_string("test_write_utf32be.txt")?, test_content);
-        fs::remove_file("test_write_utf32be.txt")?;
+        write_file_from_string(&p, test_content, Format::Utf32be)?;
+        assert_eq!(read_file_to_string(&p)?, test_content);
+        fs::remove_file(&p)?;
         Ok(())
     }
 }

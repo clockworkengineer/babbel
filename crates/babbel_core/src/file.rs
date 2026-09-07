@@ -38,8 +38,8 @@ impl Format {
 }
 
 /// Detects the Unicode format of a text file by examining its byte order mark (BOM).
-pub fn detect_format(filename: &str) -> Result<Format> {
-    let mut file = File::open(filename)?;
+pub fn detect_format(path: impl AsRef<std::path::Path>) -> Result<Format> {
+    let mut file = File::open(path.as_ref())?;
     let mut bom_buffer = [0u8; 4];
     let bytes_read = file.read(&mut bom_buffer)?;
 
@@ -56,8 +56,12 @@ pub fn detect_format(filename: &str) -> Result<Format> {
 }
 
 /// Writes a string to a file in the specified Unicode format, prepending the corresponding BOM.
-pub fn write_file_from_string(filename: &str, content: &str, format: Format) -> Result<()> {
-    let mut file = File::create(filename)?;
+pub fn write_file_from_string(
+    path: impl AsRef<std::path::Path>,
+    content: &str,
+    format: Format,
+) -> Result<()> {
+    let mut file = File::create(path.as_ref())?;
     file.write_all(format.get_bom())?;
 
     match format {
@@ -89,10 +93,10 @@ pub fn write_file_from_string(filename: &str, content: &str, format: Format) -> 
 }
 
 /// Reads a text file and returns its content as a normalized UTF-8 String, stripping BOM if present.
-pub fn read_file_to_string(filename: &str) -> Result<String> {
+pub fn read_file_to_string(path: impl AsRef<std::path::Path>) -> Result<String> {
     let mut content = String::new();
-    let format = detect_format(filename)?;
-    let mut file = File::open(filename)?;
+    let format = detect_format(path.as_ref())?;
+    let mut file = File::open(path.as_ref())?;
 
     /// Helper function to read and skip over the BOM bytes
     fn read_and_skip_bom(file: &mut File, size: usize) -> Result<()> {
@@ -166,8 +170,12 @@ mod tests {
     use super::*;
     use std::fs;
 
-    fn create_test_file(filename: &str, bom: &[u8]) -> Result<()> {
-        let mut file = File::create(filename)?;
+    fn test_path(filename: &str) -> std::path::PathBuf {
+        std::env::temp_dir().join(filename)
+    }
+
+    fn create_test_file(path: &std::path::Path, bom: &[u8]) -> Result<()> {
+        let mut file = File::create(path)?;
         file.write_all(bom)?;
         file.write_all(b"test content")?;
         Ok(())
@@ -175,55 +183,55 @@ mod tests {
 
     #[test]
     fn test_utf8() -> Result<()> {
-        let fname = "test_core_utf8.txt";
-        create_test_file(fname, &[])?;
-        assert!(matches!(detect_format(fname)?, Format::Utf8));
-        fs::remove_file(fname)?;
+        let fname = test_path("test_core_utf8.txt");
+        create_test_file(&fname, &[])?;
+        assert!(matches!(detect_format(&fname)?, Format::Utf8));
+        fs::remove_file(&fname)?;
         Ok(())
     }
 
     #[test]
     fn test_utf8_bom() -> Result<()> {
-        let fname = "test_core_utf8_bom.txt";
-        create_test_file(fname, &[0xEF, 0xBB, 0xBF])?;
-        assert!(matches!(detect_format(fname)?, Format::Utf8bom));
-        fs::remove_file(fname)?;
+        let fname = test_path("test_core_utf8_bom.txt");
+        create_test_file(&fname, &[0xEF, 0xBB, 0xBF])?;
+        assert!(matches!(detect_format(&fname)?, Format::Utf8bom));
+        fs::remove_file(&fname)?;
         Ok(())
     }
 
     #[test]
     fn test_utf16_le() -> Result<()> {
-        let fname = "test_core_utf16le.txt";
-        create_test_file(fname, &[0xFF, 0xFE])?;
-        assert!(matches!(detect_format(fname)?, Format::Utf16le));
-        fs::remove_file(fname)?;
+        let fname = test_path("test_core_utf16le.txt");
+        create_test_file(&fname, &[0xFF, 0xFE])?;
+        assert!(matches!(detect_format(&fname)?, Format::Utf16le));
+        fs::remove_file(&fname)?;
         Ok(())
     }
 
     #[test]
     fn test_utf16_be() -> Result<()> {
-        let fname = "test_core_utf16be.txt";
-        create_test_file(fname, &[0xFE, 0xFF])?;
-        assert!(matches!(detect_format(fname)?, Format::Utf16be));
-        fs::remove_file(fname)?;
+        let fname = test_path("test_core_utf16be.txt");
+        create_test_file(&fname, &[0xFE, 0xFF])?;
+        assert!(matches!(detect_format(&fname)?, Format::Utf16be));
+        fs::remove_file(&fname)?;
         Ok(())
     }
 
     #[test]
     fn test_utf32_le() -> Result<()> {
-        let fname = "test_core_utf32le.txt";
-        create_test_file(fname, &[0xFF, 0xFE, 0x00, 0x00])?;
-        assert!(matches!(detect_format(fname)?, Format::Utf32le));
-        fs::remove_file(fname)?;
+        let fname = test_path("test_core_utf32le.txt");
+        create_test_file(&fname, &[0xFF, 0xFE, 0x00, 0x00])?;
+        assert!(matches!(detect_format(&fname)?, Format::Utf32le));
+        fs::remove_file(&fname)?;
         Ok(())
     }
 
     #[test]
     fn test_utf32_be() -> Result<()> {
-        let fname = "test_core_utf32be.txt";
-        create_test_file(fname, &[0x00, 0x00, 0xFE, 0xFF])?;
-        assert!(matches!(detect_format(fname)?, Format::Utf32be));
-        fs::remove_file(fname)?;
+        let fname = test_path("test_core_utf32be.txt");
+        create_test_file(&fname, &[0x00, 0x00, 0xFE, 0xFF])?;
+        assert!(matches!(detect_format(&fname)?, Format::Utf32be));
+        fs::remove_file(&fname)?;
         Ok(())
     }
 
@@ -239,11 +247,14 @@ mod tests {
             ("test_rt_utf32be.txt", Format::Utf32be),
         ];
 
-        for (fname, fmt) in formats {
-            write_file_from_string(fname, test_content, fmt)?;
-            assert_eq!(detect_format(fname)?, fmt);
-            assert_eq!(read_file_to_string(fname)?, test_content);
-            fs::remove_file(fname)?;
+        for (filename, format) in formats {
+            let path = test_path(filename);
+            write_file_from_string(&path, test_content, format)?;
+            let detected = detect_format(&path)?;
+            assert_eq!(detected, format);
+            let read_back = read_file_to_string(&path)?;
+            assert_eq!(read_back, test_content);
+            fs::remove_file(&path)?;
         }
         Ok(())
     }

@@ -1,4 +1,4 @@
-﻿//! A Rust library for encoding and decoding data in the Bencode format, commonly used in BitTorrent files.
+//! A Rust library for encoding and decoding data in the Bencode format, commonly used in BitTorrent files.
 //! This library provides functionality to parse, create, modify and serialize bencode data structures
 //! with support for various formats including JSON, YAML and XML conversion.
 //!
@@ -89,6 +89,13 @@ pub use parser::default::parse_bytes;
 /// Parses bencode data from a string into a Node tree structure
 pub use parser::default::parse_str;
 
+/// Parses bencode data from a string slice. Canonical alias for [`parse_str`].
+pub use parser::default::parse_str as from_str;
+/// Parses bencode data from a byte slice. Canonical alias for [`parse_bytes`].
+pub use parser::default::parse_bytes as from_bytes;
+/// Parses bencode data from any streaming source. Canonical alias for [`parse`].
+pub use parser::default::parse as from_source;
+
 /// Zero-copy parser that returns borrowed nodes (no allocation)
 pub use parser::borrowed::parse_borrowed;
 /// Validates bencode data without building a node tree (minimal allocation)
@@ -122,6 +129,11 @@ pub use stringify::default::stringify;
 pub use stringify::default::stringify_to_bytes;
 /// Converts a Node tree to bencode format as a String
 pub use stringify::default::stringify_to_string;
+
+/// Converts a Node tree to bencode format as a String. Canonical alias for [`stringify_to_string`].
+pub use stringify::default::stringify_to_string as to_string;
+/// Converts a Node tree to bencode format as bytes. Canonical alias for [`stringify_to_bytes`].
+pub use stringify::default::stringify_to_bytes as to_vec;
 
 /// Core SOLID I/O abstractions
 pub use io::traits::{BencodeRead, BencodeWrite, BufferedWrite, RewindableRead};

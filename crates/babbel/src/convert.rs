@@ -30,15 +30,63 @@ pub enum Format {
     JsonLines,
 }
 
+/// Configuration options for cross-format conversions.
+#[derive(Debug, Clone)]
+pub struct ConversionOptions {
+    /// Whether to format output with pretty-printing and indentation.
+    pub pretty: bool,
+    /// Number of spaces for pretty indentation.
+    pub indent: usize,
+}
+
+impl Default for ConversionOptions {
+    fn default() -> Self {
+        Self {
+            pretty: false,
+            indent: 2,
+        }
+    }
+}
+
+impl ConversionOptions {
+    /// Create options with pretty-printing enabled.
+    pub fn pretty() -> Self {
+        Self {
+            pretty: true,
+            indent: 2,
+        }
+    }
+
+    /// Set custom indentation spaces.
+    pub fn with_indent(mut self, indent: usize) -> Self {
+        self.indent = indent;
+        self
+    }
+}
+
 /// Generic, open-ended conversion pipeline from any format parser to any format emitter (OCP & DIP).
 pub fn convert_text<P: FormatParser, E: FormatEmitter>(
     input: &str,
     parser: &P,
     emitter: &E,
 ) -> Result<String, BabbelError> {
+    convert_text_with_options(input, parser, emitter, &ConversionOptions::default())
+}
+
+/// Generic, open-ended conversion pipeline with custom options (OCP & DIP).
+pub fn convert_text_with_options<P: FormatParser, E: FormatEmitter>(
+    input: &str,
+    parser: &P,
+    emitter: &E,
+    options: &ConversionOptions,
+) -> Result<String, BabbelError> {
     let value = parser.parse_str(input)?;
     let mut dest = Buffer::new();
-    emitter.emit(&value, &mut dest)?;
+    if options.pretty {
+        emitter.emit_pretty(&value, &mut dest, options.indent)?;
+    } else {
+        emitter.emit(&value, &mut dest)?;
+    }
     Ok(dest.to_string())
 }
 

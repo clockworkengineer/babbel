@@ -56,14 +56,18 @@ pub use babbel_xml as xml;
 #[cfg(feature = "bencode")]
 pub use babbel_bencode as bencode;
 
-// Backwards-compatible aliases
+// Backwards-compatible aliases (prefer babbel::json, babbel::yaml, babbel::xml, babbel::bencode)
 #[cfg(feature = "json")]
+#[deprecated(since = "0.2.0", note = "Use `babbel::json` instead")]
 pub use babbel_json as json_lib;
 #[cfg(feature = "yaml")]
+#[deprecated(since = "0.2.0", note = "Use `babbel::yaml` instead")]
 pub use babbel_yaml as yaml_lib;
 #[cfg(feature = "xml")]
+#[deprecated(since = "0.2.0", note = "Use `babbel::xml` instead")]
 pub use babbel_xml as xml_lib;
 #[cfg(feature = "bencode")]
+#[deprecated(since = "0.2.0", note = "Use `babbel::bencode` instead")]
 pub use babbel_bencode as bencode_lib;
 
 #[cfg(feature = "convert")]

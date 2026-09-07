@@ -141,7 +141,11 @@ fn parse_integer(source: &mut dyn ISource) -> Result<Node, String> {
 /// * `Result<Node, String>` - String Node or error message
 fn parse_string(source: &mut dyn ISource) -> Result<Node, String> {
     let len = parse_string_length(source)?;
-    let mut string = String::new();
+    // Security limit: guard against DoS memory exhaustion from excessive length prefixes
+    if len > 64 * 1024 * 1024 {
+        return Err(ERR_INVALID_STRING_LENGTH.to_string());
+    }
+    let mut string = String::with_capacity(len.min(1024 * 1024));
     for _ in 0..len {
         if let Some(c) = source.current() {
             string.push(c);

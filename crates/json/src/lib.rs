@@ -1,4 +1,4 @@
-﻿//! babbel_json - A lightweight, modular JSON toolkit for Rust
+//! babbel_json - A lightweight, modular JSON toolkit for Rust
 //!
 //! This library provides a flexible JSON implementation with:
 //! - Core Node type for representing JSON structures
@@ -154,6 +154,26 @@ pub use stringify::bencode::stringify as to_bencode;
 
 /// Converts a Node tree back to JSON format
 pub use stringify::default::stringify;
+
+/// Serialize a JSON [`Node`] into an owned [`String`].
+pub fn to_string(node: &Node) -> Result<String, String> {
+    let mut dest = babbel_core::io::Buffer::new();
+    stringify(node, &mut dest)?;
+    Ok(dest.to_string())
+}
+
+/// Serialize a JSON [`Node`] into a byte vector (`Vec<u8>`).
+pub fn to_vec(node: &Node) -> Result<alloc::vec::Vec<u8>, String> {
+    let mut dest = babbel_core::io::Buffer::new();
+    stringify(node, &mut dest)?;
+    Ok(dest.into_vec())
+}
+
+/// Serialize a JSON [`Node`] directly to an [`IDestination`].
+#[inline]
+pub fn to_destination(node: &Node, dest: &mut dyn babbel_core::io::IDestination) -> Result<(), String> {
+    stringify(node, dest)
+}
 
 /// Converts a Node tree to TOML format
 #[cfg(feature = "format-toml")]

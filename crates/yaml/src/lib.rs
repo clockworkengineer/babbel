@@ -1,9 +1,14 @@
-﻿
-#![cfg_attr(not(feature = "std"), no_std)]
-
-//! - File and buffer I/O abstractions
-//! - Pretty-printing utilities
-//! - Unicode-aware file handling
+//! # babbel_yaml
+//!
+//! A fast, modular YAML 1.2 parser and emitter in pure Rust, supporting anchors, aliases,
+//! tags, multi-document streams, and embedded resource constraints.
+//!
+//! ## Key Capabilities
+//! - Fast YAML 1.2 DOM parsing and document navigation
+//! - Anchor and alias resolution with cycle detection
+//! - File and buffer streaming I/O abstractions powered by `babbel_core`
+//! - Pretty-printing and custom block scalar formatting
+//! - Unicode-aware file handling and BOM detection
 //!
 //! Minimum supported Rust version: 1.88.0
 //!
@@ -16,6 +21,8 @@
 //! - `stringify`: Enable YAML stringification (requires `alloc`)
 //! - `format-converters`: Enable JSON, XML, TOML, Bencode converters
 //! - `file-io`: Enable file I/O operations (requires `std`)
+
+#![cfg_attr(not(feature = "std"), no_std)]
 
 #[macro_use]
 pub mod parser;
@@ -155,6 +162,28 @@ pub fn parse_string(yaml: &str) -> crate::error::Result<Node> {
     parse_from_source(&mut source, &config)
 }
 
+/// Parse YAML from an in-memory string slice.
+/// Canonical alias for [`parse_string`].
+#[inline]
+pub fn from_str(yaml: &str) -> crate::error::Result<Node> {
+    parse_string(yaml)
+}
+
+/// Parse YAML from raw bytes using the default parser configuration.
+#[inline]
+pub fn from_bytes(bytes: &[u8]) -> crate::error::Result<Node> {
+    let mut source = BufferSource::new(bytes);
+    let config = ParserConfig::default();
+    parse_from_source(&mut source, &config)
+}
+
+/// Parse YAML from any streaming source.
+/// Canonical alias for [`parse`].
+#[inline]
+pub fn from_source(source: &mut dyn crate::io::traits::ISource) -> crate::error::Result<Node> {
+    parse(source)
+}
+
 /// Parse YAML from a file path using the default parser configuration.
 #[cfg(feature = "file-io")]
 pub fn parse_file(path: &str) -> crate::error::Result<Node> {
@@ -189,6 +218,29 @@ pub use stringify::bencode::stringify as to_bencode;
 /// Converts a Node tree back to YAML format
 #[cfg(feature = "stringify")]
 pub use stringify::default::stringify;
+
+/// Serialize a YAML [`Node`] into an owned [`String`].
+#[cfg(feature = "stringify")]
+pub fn to_string(node: &Node) -> crate::error::Result<String> {
+    let mut dest = BufferDestination::new();
+    stringify(node, &mut dest)?;
+    Ok(dest.to_string())
+}
+
+/// Serialize a YAML [`Node`] into a byte vector (`Vec<u8>`).
+#[cfg(feature = "stringify")]
+pub fn to_vec(node: &Node) -> crate::error::Result<Vec<u8>> {
+    let mut dest = BufferDestination::new();
+    stringify(node, &mut dest)?;
+    Ok(dest.into_vec())
+}
+
+/// Serialize a YAML [`Node`] to any [`IDestination`].
+#[cfg(feature = "stringify")]
+#[inline]
+pub fn to_destination(node: &Node, dest: &mut dyn crate::io::traits::IDestination) -> crate::error::Result<()> {
+    stringify(node, dest)
+}
 /// Converts a Node tree to JSON format
 #[cfg(feature = "format-converters")]
 pub use stringify::json::stringify as to_json;
