@@ -6,6 +6,9 @@ description = "Shared core I/O, encoding, numeric, error, and AST primitives for
 license = "MIT"
 authors = ["ClockworkEngineer", "Babbel Contributors"]
 readme = "README.md"
+repository = "https://github.com/clockworkengineer/babbel"
+homepage = "https://github.com/clockworkengineer/babbel"
+documentation = "https://docs.rs/babbel_core"
 
 [features]
 default = ["std", "file-io"]
