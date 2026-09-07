@@ -47,3 +47,9 @@ pub use bencode_lib as bencode;
 
 #[cfg(feature = "convert")]
 pub mod convert;
+
+// Re-export text, CSV, and INI processing from core
+pub use babbel_core::{
+    csv, emit_csv, emit_ini, ini, parse_csv, parse_ini, sniff_delimiter, split_frontmatter, text,
+    CsvOptions, DocumentWithFrontmatter, FrontmatterFormat, IniOptions,
+};

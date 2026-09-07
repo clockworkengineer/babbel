@@ -11,14 +11,17 @@ extern crate alloc;
 
 pub mod chars;
 pub mod codec;
+pub mod csv;
 pub mod encoding;
 pub mod error;
 pub mod escape;
 #[cfg(feature = "file-io")]
 pub mod file;
+pub mod ini;
 pub mod io;
 pub mod model;
 pub mod num;
+pub mod text;
 
 // Re-export key primitives for ergonomic downstream usage
 pub use chars::{is_digit, is_hex_digit, is_newline, is_whitespace};
@@ -26,6 +29,7 @@ pub use codec::{
     BencodeEmitter, FormatCodec, FormatEmitter, FormatParser, JsonEmitter, XmlEmitter,
     YamlEmitter,
 };
+pub use csv::{emit_csv, emit_csv_to, parse_csv, sniff_delimiter, CsvOptions};
 pub use encoding::{detect_encoding_and_strip_bom, normalize_newlines, Encoding};
 pub use error::{format_error_snippet, BabbelError, ErrorCode, Location, Span};
 pub use escape::{
@@ -34,13 +38,18 @@ pub use escape::{
 };
 #[cfg(feature = "file-io")]
 pub use file::{detect_format, read_file_to_string, write_file_from_string, Format};
+pub use ini::{emit_ini, emit_ini_to, parse_ini, IniOptions};
 pub use io::{
     Buffer, BufferDestination, BufferSource, ByteSliceSource, IByteStream, ICharStream,
-    IClearable, IDestination, IIndentationAware, IPositionAware, IRewindable, ISource,
-    SliceSource, StringDestination, StringSource,
+    IClearable, IDestination, IIndentationAware, ILineReader, IPositionAware, IRewindable,
+    ISource, LineIter, SliceSource, StringDestination, StringSource,
 };
 #[cfg(feature = "file-io")]
 pub use io::{FileDestination, FileSource};
 pub use model::{FormatVisitor, Value};
 pub use num::{format_float, format_integer};
+pub use text::{
+    dedent, indent, line_count, split_frontmatter, trim_lines, DocumentWithFrontmatter,
+    FrontmatterFormat,
+};
 

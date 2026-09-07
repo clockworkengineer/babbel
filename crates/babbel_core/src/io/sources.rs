@@ -1,6 +1,4 @@
-//! Concrete implementations of input sources adhering to SOLID principles.
-
-use super::traits::{IByteStream, ICharStream, IPositionAware, IRewindable, ISource};
+use super::traits::{IByteStream, ICharStream, ILineReader, IPositionAware, IRewindable, ISource};
 #[cfg(not(feature = "std"))]
 use alloc::string::String;
 #[cfg(not(feature = "std"))]
@@ -60,6 +58,66 @@ impl<'a> SliceSource<'a> {
     pub fn position(&self) -> usize {
         self.pos
     }
+
+    /// Reads the next line into a String without trailing newline.
+    pub fn read_line(&mut self) -> Option<String> {
+        let mut s = String::new();
+        if self.read_line_into(&mut s) {
+            Some(s)
+        } else {
+            None
+        }
+    }
+
+    /// Reads the next line into an existing buffer. Returns false at EOF.
+    pub fn read_line_into(&mut self, buf: &mut String) -> bool {
+        if !self.more() {
+            return false;
+        }
+        while let Some(ch) = self.current() {
+            if ch == '\n' {
+                self.next();
+                break;
+            } else if ch == '\r' {
+                self.next();
+                if self.current() == Some('\n') {
+                    self.next();
+                }
+                break;
+            } else {
+                buf.push(ch);
+                self.next();
+            }
+        }
+        true
+    }
+
+    /// Zero-copy read of the next line as a borrowed string slice without newline characters.
+    pub fn read_line_slice(&mut self) -> Option<&'a str> {
+        if !self.more() {
+            return None;
+        }
+        let start = self.pos;
+        let mut end = self.pos;
+        while let Some(ch) = self.current() {
+            if ch == '\n' {
+                end = self.pos;
+                self.next();
+                return Some(&self.data[start..end]);
+            } else if ch == '\r' {
+                end = self.pos;
+                self.next();
+                if self.current() == Some('\n') {
+                    self.next();
+                }
+                return Some(&self.data[start..end]);
+            } else {
+                self.next();
+                end = self.pos;
+            }
+        }
+        Some(&self.data[start..end])
+    }
 }
 
 impl<'a> ISource for SliceSource<'a> {
@@ -98,6 +156,12 @@ impl<'a> IRewindable for SliceSource<'a> {
 impl<'a> IPositionAware for SliceSource<'a> {
     fn position(&self) -> usize {
         self.pos
+    }
+}
+
+impl<'a> ILineReader for SliceSource<'a> {
+    fn read_line_into(&mut self, buf: &mut String) -> bool {
+        self.read_line_into(buf)
     }
 }
 
@@ -149,6 +213,39 @@ impl StringSource {
     pub fn position(&self) -> usize {
         self.pos
     }
+
+    /// Reads the next line into a String without trailing newline.
+    pub fn read_line(&mut self) -> Option<String> {
+        let mut s = String::new();
+        if self.read_line_into(&mut s) {
+            Some(s)
+        } else {
+            None
+        }
+    }
+
+    /// Reads the next line into an existing buffer. Returns false at EOF.
+    pub fn read_line_into(&mut self, buf: &mut String) -> bool {
+        if !self.more() {
+            return false;
+        }
+        while let Some(ch) = self.current() {
+            if ch == '\n' {
+                self.next();
+                break;
+            } else if ch == '\r' {
+                self.next();
+                if self.current() == Some('\n') {
+                    self.next();
+                }
+                break;
+            } else {
+                buf.push(ch);
+                self.next();
+            }
+        }
+        true
+    }
 }
 
 impl IPositionAware for StringSource {
@@ -187,6 +284,12 @@ impl ICharStream for StringSource {
 impl IRewindable for StringSource {
     fn reset(&mut self) {
         self.reset();
+    }
+}
+
+impl ILineReader for StringSource {
+    fn read_line_into(&mut self, buf: &mut String) -> bool {
+        self.read_line_into(buf)
     }
 }
 
@@ -333,6 +436,39 @@ impl BufferSource {
     pub fn position(&self) -> usize {
         self.position
     }
+
+    /// Reads the next line into a String without trailing newline.
+    pub fn read_line(&mut self) -> Option<String> {
+        let mut s = String::new();
+        if self.read_line_into(&mut s) {
+            Some(s)
+        } else {
+            None
+        }
+    }
+
+    /// Reads the next line into an existing buffer. Returns false at EOF.
+    pub fn read_line_into(&mut self, buf: &mut String) -> bool {
+        if !self.more() {
+            return false;
+        }
+        while let Some(ch) = self.current() {
+            if ch == '\n' {
+                self.next();
+                break;
+            } else if ch == '\r' {
+                self.next();
+                if self.current() == Some('\n') {
+                    self.next();
+                }
+                break;
+            } else {
+                buf.push(ch);
+                self.next();
+            }
+        }
+        true
+    }
 }
 
 impl IPositionAware for BufferSource {
@@ -371,6 +507,12 @@ impl ICharStream for BufferSource {
 impl IRewindable for BufferSource {
     fn reset(&mut self) {
         self.reset();
+    }
+}
+
+impl ILineReader for BufferSource {
+    fn read_line_into(&mut self, buf: &mut String) -> bool {
+        self.read_line_into(buf)
     }
 }
 
@@ -446,6 +588,16 @@ impl FileSource {
     /// Returns the file path name.
     pub fn file_name(&self) -> &str {
         self.path.to_str().unwrap_or("")
+    }
+
+    /// Reads the next line into a String without trailing newline.
+    pub fn read_line(&mut self) -> Option<String> {
+        self.inner.read_line()
+    }
+
+    /// Reads the next line into an existing buffer. Returns false at EOF.
+    pub fn read_line_into(&mut self, buf: &mut String) -> bool {
+        self.inner.read_line_into(buf)
     }
 
     /// Returns the current byte position in the file.
@@ -538,6 +690,13 @@ impl IRewindable for FileSource {
     }
 }
 
+#[cfg(feature = "file-io")]
+impl ILineReader for FileSource {
+    fn read_line_into(&mut self, buf: &mut String) -> bool {
+        self.inner.read_line_into(buf)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -584,5 +743,27 @@ mod tests {
         src.next();
         assert_eq!(src.current(), None);
         assert!(!src.more());
+    }
+
+    #[test]
+    fn test_line_reading_crlf_and_lf() {
+        let text = "First line\r\nSecond line\nThird line\rFourth line";
+        let mut src = SliceSource::new(text);
+        assert_eq!(src.read_line().as_deref(), Some("First line"));
+        assert_eq!(src.read_line().as_deref(), Some("Second line"));
+        assert_eq!(src.read_line().as_deref(), Some("Third line"));
+        assert_eq!(src.read_line().as_deref(), Some("Fourth line"));
+        assert_eq!(src.read_line(), None);
+
+        let mut buf_src = BufferSource::new(text.as_bytes());
+        let lines: Vec<String> = buf_src.lines().collect();
+        assert_eq!(lines, vec!["First line", "Second line", "Third line", "Fourth line"]);
+
+        let mut slice_src = SliceSource::new(text);
+        assert_eq!(slice_src.read_line_slice(), Some("First line"));
+        assert_eq!(slice_src.read_line_slice(), Some("Second line"));
+        assert_eq!(slice_src.read_line_slice(), Some("Third line"));
+        assert_eq!(slice_src.read_line_slice(), Some("Fourth line"));
+        assert_eq!(slice_src.read_line_slice(), None);
     }
 }

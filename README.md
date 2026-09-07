@@ -5,9 +5,9 @@
 [![Tests](https://img.shields.io/badge/tests-3500%2B%20passing-brightgreen.svg)]()
 [![Architecture: DRY & SOLID](https://img.shields.io/badge/architecture-DRY%20%26%20SOLID-purple.svg)](ARCHITECTURE.md)
 
-A high-performance, polyglot serialization, parsing, and document manipulation workspace in Rust. Babbel brings together **JSON**, **YAML**, **Bencode**, and **XML** under a unified, modular architecture adhering strictly to **DRY** (Don't Repeat Yourself) and **SOLID** engineering principles.
+A high-performance, polyglot serialization, parsing, and document manipulation workspace in Rust. Babbel brings together **JSON**, **YAML**, **Bencode**, **XML**, **CSV / TSV**, **INI / Properties**, and **JSON Lines** under a unified, modular architecture adhering strictly to **DRY** (Don't Repeat Yourself) and **SOLID** engineering principles.
 
-📖 **Architecture & Guidelines**: Read the comprehensive [Architecture Guide](ARCHITECTURE.md), the [Contributing Guide](CONTRIBUTING.md), or review the [SOLID Refactoring Plan](SOLID_REFACTOR_PLAN.md).
+📖 **Architecture & Guidelines**: Read the comprehensive [Architecture Guide](ARCHITECTURE.md), the [Contributing Guide](CONTRIBUTING.md), or review the [SOLID Refactoring Plan](SOLID_REFACTOR_PLAN.md) and [Text File Support Plan](TEXT_FILE_SUPPORT_PLAN.md).
 
 ---
 
@@ -120,6 +120,19 @@ let json_str = convert::yaml_to_json(&yaml_str)?;
 
 // JSON <-> XML
 let xml_str = convert::json_to_xml(r#"{"message": "hello"}"#)?;
+
+// CSV <-> JSON
+let csv_data = "id,name\n1,Alice\n2,Bob\n";
+let json_from_csv = convert::csv_to_json(csv_data)?;
+let csv_roundtrip = convert::json_to_csv(&json_from_csv)?;
+
+// INI <-> JSON
+let ini_doc = "[server]\nhost = 127.0.0.1\nport = 8080\n";
+let json_from_ini = convert::ini_to_json(ini_doc)?;
+
+// JSON Lines <-> JSON
+let jsonl = "{\"id\":1}\n{\"id\":2}\n";
+let json_arr = convert::jsonlines_to_json(jsonl)?;
 
 // Binary Bencode conversions
 let bencode_bytes = convert::json_to_bencode(r#"{"id": 101}"#)?;

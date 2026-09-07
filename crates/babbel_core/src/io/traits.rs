@@ -127,3 +127,54 @@ pub trait IIndentationAware {
         c == ' ' || c == '\t'
     }
 }
+
+// ==========================================
+// 5. Line-Oriented Text Reading (ISP compliant)
+// ==========================================
+
+/// Interface for character streams supporting line-by-line text reading.
+pub trait ILineReader: ICharStream {
+    /// Reads the next line up to `\n` or `\r\n` (or lone `\r`), returning it without trailing newline.
+    /// Returns `None` when end of stream is reached and no characters were read.
+    fn read_line(&mut self) -> Option<alloc::string::String> {
+        let mut line = alloc::string::String::new();
+        if self.read_line_into(&mut line) {
+            Some(line)
+        } else {
+            None
+        }
+    }
+
+    /// Reads the next line into an existing buffer to avoid heap allocations.
+    /// Appends the line content without newline characters to `buf`.
+    /// Returns `true` if a line (including an empty line) was read, `false` at EOF.
+    fn read_line_into(&mut self, buf: &mut alloc::string::String) -> bool;
+
+    /// Returns an iterator yielding lines from this stream.
+    fn lines(&mut self) -> LineIter<'_, Self>
+    where
+        Self: Sized,
+    {
+        LineIter::new(self)
+    }
+}
+
+/// Iterator over lines produced by an [`ILineReader`].
+pub struct LineIter<'a, R: ?Sized> {
+    reader: &'a mut R,
+}
+
+impl<'a, R: ILineReader + ?Sized> LineIter<'a, R> {
+    /// Creates a new line iterator borrowing the reader.
+    pub fn new(reader: &'a mut R) -> Self {
+        Self { reader }
+    }
+}
+
+impl<'a, R: ILineReader + ?Sized> Iterator for LineIter<'a, R> {
+    type Item = alloc::string::String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.reader.read_line()
+    }
+}

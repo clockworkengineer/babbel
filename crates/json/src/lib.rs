@@ -195,3 +195,9 @@ pub use nodes::merge_patch;
 /// JSON5 comment stripping
 #[cfg(feature = "alloc")]
 pub use parser::json5;
+
+/// Line-delimited JSON (JSON Lines / NDJSON) streaming reader and writer
+#[cfg(feature = "alloc")]
+pub mod lines;
+#[cfg(feature = "alloc")]
+pub use lines::{parse_json_lines, to_json_lines, to_json_lines_stream, JsonLinesConfig, JsonLinesReader};
