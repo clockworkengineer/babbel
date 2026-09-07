@@ -1,9 +1,9 @@
-﻿# babbel_bencode
+# babbel_bencode
 
 A Rust library for parsing, constructing, and converting Bencode data. Designed for embedded systems, resource-constrained environments, and general-purpose use. Supports round-tripping Bencode and conversion to JSON, YAML, XML, and TOML.
 
-[![Repository](https://img.shields.io/badge/github-clockworkengineer%2Fbencode-blue)](https://github.com/clockworkengineer/bencode)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
+[![Repository](https://img.shields.io/badge/github-clockworkengineer%2Fbabbel-blue)](https://github.com/clockworkengineer/babbel)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../../LICENSE)
 [![Rust Edition](https://img.shields.io/badge/edition-2024-orange)](Cargo.toml)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-orange.svg)](https://buymeacoffee.com/roberttizz1)
 
@@ -264,11 +264,12 @@ Rust **1.85.0** (edition 2024).
 
 ## Documentation
 
-- [`../docs/API_OVERVIEW.md`](../docs/API_OVERVIEW.md) — API reference
-- [`../docs/DEVELOPER_GUIDE.md`](../docs/DEVELOPER_GUIDE.md) — contributing and project structure
-- [`../docs/EMBEDDED_GUIDE.md`](../docs/EMBEDDED_GUIDE.md) — `no_std` / embedded usage
-- [`../docs/CHANGELOG.md`](../docs/CHANGELOG.md) — release history
-- [`../examples/README.md`](../examples/README.md) — example programs
+See the [Documentation Hub](../../docs/README.md) for complete guides:
+- [Embedded Systems Guide](../../docs/EMBEDDED_GUIDE.md) — `no_std`, stack allocation, and memory bounds
+- [Architecture Guide](../../docs/ARCHITECTURE.md) — 3-tier layering model and SOLID design
+- [Development Guide](../../docs/DEVELOPMENT_GUIDE.md) — contributing and project structure
+- [Security Policy](../../docs/SECURITY.md) — 64 MB length prefix limit and defenses
+- [Contributing Guidelines](../../docs/CONTRIBUTING.md) — pull requests and code standards
 
 ## Support
 
@@ -280,4 +281,4 @@ Or visit [buymeacoffee.com/roberttizz1](https://buymeacoffee.com/roberttizz1).
 
 ## License
 
-MIT License. See [LICENSE](../LICENSE) for details.
+MIT License. See [LICENSE](../../LICENSE) for details.

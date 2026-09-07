@@ -1,4 +1,4 @@
-﻿# Babbel
+# Babbel
 
 [![Rust](https://img.shields.io/badge/rust-2024%20edition-orange.svg)](https://www.rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -9,11 +9,15 @@
 A high-performance, polyglot serialization, parsing, and document manipulation workspace in Rust. Babbel brings together **JSON**, **YAML**, **Bencode**, **XML**, **CSV / TSV**, **INI / Properties**, and **JSON Lines** under a unified, modular architecture adhering strictly to **DRY** (Don't Repeat Yourself) and **SOLID** engineering principles.
 
 📖 **Documentation & Guides**:
+- [Documentation Hub](docs/README.md) — Central directory of all specifications, guides, and tutorials
 - [Architecture Guide](docs/ARCHITECTURE.md) — 3-tier layering model and SOLID design principles
-- [Embedded Systems Plan](docs/EMBEDDED_SYSTEMS_PLAN.md) — Embedded systems architecture and zero-allocation roadmap
-- [Text Support Guide](docs/TEXT_SUPPORT_GUIDE.md) — CSV, TSV, INI, JSON Lines, and frontmatter
-- [Conversion Matrix](docs/CONVERSION_MATRIX.md) — $O(N)$ cross-format conversion reference
-- [Contributing Guide](docs/CONTRIBUTING.md) — Development workflow, standards, and testing guidelines
+- [Embedded Systems Guide](docs/EMBEDDED_GUIDE.md) — `no_std`, stack buffers (`StackBuffer`), and zero-allocation streaming
+- [Text Support Guide](docs/TEXT_SUPPORT_GUIDE.md) — RFC 4180 CSV/TSV, INI/.env, JSON Lines, and frontmatter
+- [Conversion Matrix](docs/CONVERSION_MATRIX.md) — $O(N)$ cross-format conversion reference & options
+- [Memory & Benchmarks](docs/BENCHMARKS_AND_MEMORY.md) — Struct size bounds verification (`size_checks.rs`)
+- [Security Policy](docs/SECURITY.md) — Threat model, Billion Laughs mitigations, and 64 MB DoS limits
+- [Development Guide](docs/DEVELOPMENT_GUIDE.md) — Contributor onboarding, toolchain, testing, and release builds
+- [Contributing Guidelines](docs/CONTRIBUTING.md) — Engineering standards and code conventions
 
 ---
 

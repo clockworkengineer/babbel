@@ -152,20 +152,20 @@ Currently, architectural plan documents exist simultaneously in both the reposit
 
 | Phase | Target File | Action | Detailed Description | Status |
 | :---: | :--- | :---: | :--- | :---: |
-| **1** | `docs/README.md` | **[NEW]** | Central documentation hub, sitemap, and directory of guides. | 📋 Planned |
-| **1** | `docs/EMBEDDED_GUIDE.md` | **[NEW]** | Complete guide for `no_std`, stack memory, and pull parsers. | 📋 Planned |
-| **1** | `docs/SECURITY.md` | **[NEW]** | Threat model, DoS bounds (64MB, Billion Laughs), disclosure policy. | 📋 Planned |
-| **1** | `docs/DEVELOPMENT_GUIDE.md` | **[NEW]** | Development workflow, toolchain, size assertions, release builds. | 📋 Planned |
-| **1** | `docs/CODE_OF_CONDUCT.md` | **[NEW]** | Contributor Covenant v2.1. | 📋 Planned |
-| **2** | `README.md` (root) | **[MODIFY]** | Fix broken links (`EMBEDDED_SYSTEMS_PLAN`), add sitemap links, update features. | 📋 Planned |
-| **2** | `crates/json/README.md` | **[MODIFY]** | Fix `../docs/README.md` link, add pointers/patch/JSON5/lines, prune roadmap. | 📋 Planned |
-| **2** | `crates/yaml/README.md` | **[MODIFY]** | Remove `rand` claim, fix repo URLs, document new APIs and core traits. | 📋 Planned |
-| **2** | `crates/bencode/README.md` | **[MODIFY]** | Fix repo URLs, document 64MB limit and deduplicated memory tools. | 📋 Planned |
-| **2** | `crates/xml/README.md` | **[MODIFY]** | Update edition badge to 2024, document stateful streams and pull parsing. | 📋 Planned |
-| **2** | `crates/babbel/README.md` | **[MODIFY]** | Update feature table (remove `*_lib`), document `ConversionOptions`. | 📋 Planned |
-| **2** | `crates/babbel_core/README.md` | **[MODIFY]** | Document `ReaderSource`, `open_with_limit`, `SaveState`, embedded module. | 📋 Planned |
-| **2** | `docs/CONTRIBUTING.md` | **[MODIFY]** | Remove obsolete `--jobs 2` warning, link Code of Conduct. | 📋 Planned |
-| **3** | Root plan cleanup | **[CONSOLIDATE]**| Ensure root plan files point cleanly to `docs/` to eliminate drift. | 📋 Planned |
+| **1** | `docs/README.md` | **[NEW]** | Central documentation hub, sitemap, and directory of guides. | ✅ Complete |
+| **1** | `docs/EMBEDDED_GUIDE.md` | **[NEW]** | Complete guide for `no_std`, stack memory, and pull parsers. | ✅ Complete |
+| **1** | `docs/SECURITY.md` | **[NEW]** | Threat model, DoS bounds (64MB, Billion Laughs), disclosure policy. | ✅ Complete |
+| **1** | `docs/DEVELOPMENT_GUIDE.md` | **[NEW]** | Development workflow, toolchain, size assertions, release builds. | ✅ Complete |
+| **1** | `docs/CODE_OF_CONDUCT.md` | **[NEW]** | Contributor Covenant v2.1. | ✅ Complete |
+| **2** | `README.md` (root) | **[MODIFY]** | Fix broken links (`EMBEDDED_SYSTEMS_PLAN`), add sitemap links, update features. | ✅ Complete |
+| **2** | `crates/json/README.md` | **[MODIFY]** | Fix `../docs/README.md` link, add pointers/patch/JSON5/lines, prune roadmap. | ✅ Complete |
+| **2** | `crates/yaml/README.md` | **[MODIFY]** | Remove `rand` claim, fix repo URLs, document new APIs and core traits. | ✅ Complete |
+| **2** | `crates/bencode/README.md` | **[MODIFY]** | Fix repo URLs, document 64MB limit and deduplicated memory tools. | ✅ Complete |
+| **2** | `crates/xml/README.md` | **[MODIFY]** | Update edition badge to 2024, document stateful streams and pull parsing. | ✅ Complete |
+| **2** | `crates/babbel/README.md` | **[MODIFY]** | Update feature table (remove `*_lib`), document `ConversionOptions`. | ✅ Complete |
+| **2** | `crates/babbel_core/README.md` | **[MODIFY]** | Document `ReaderSource`, `open_with_limit`, `SaveState`, embedded module. | ✅ Complete |
+| **2** | `docs/CONTRIBUTING.md` | **[MODIFY]** | Remove obsolete `--jobs 2` warning, link Code of Conduct. | ✅ Complete |
+| **3** | Root plan cleanup | **[CONSOLIDATE]**| Synchronized documentation plan files across root and `docs/`. | ✅ Complete |
 
 ---
 

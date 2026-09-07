@@ -50,10 +50,10 @@ By default, all formats and the conversion pipeline are enabled (`["std", "json"
 | :--- | :--- |
 | `std` *(default)* | Enables standard library I/O and OS integration. |
 | `alloc` | Enables heap allocation without full `std` (`no_std` environments). |
-| `json` *(default)* | Re-exports `json_lib` for JSON parsing, pointers, patch, and JSON Lines streaming. |
-| `yaml` *(default)* | Re-exports `yaml_lib` for full YAML 1.2 parsing and emission. |
-| `xml` *(default)* | Re-exports `xml_lib` for validating XML DOM, C14N, and XPath 1.0. |
-| `bencode` *(default)* | Re-exports `bencode_lib` for BitTorrent Bencode processing. |
+| `json` *(default)* | Re-exports `babbel_json` for JSON parsing, pointers, patch, and JSON Lines streaming. |
+| `yaml` *(default)* | Re-exports `babbel_yaml` for full YAML 1.2 parsing and emission. |
+| `xml` *(default)* | Re-exports `babbel_xml` for validating XML DOM, C14N, and XPath 1.0. |
+| `bencode` *(default)* | Re-exports `babbel_bencode` for BitTorrent Bencode processing. |
 | `convert` *(default)* | Enables the `babbel::convert` cross-format conversion pipeline across all 8 formats. |
 
 ---
@@ -157,10 +157,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 | Crate | Link | Description |
 | :--- | :--- | :--- |
 | `babbel_core` | [`crates/babbel_core`](../babbel_core) | Core I/O traits (`ILineReader`), universal `Value` AST, RFC 4180 CSV/TSV, INI/.env, frontmatter, BOM detection, and numeric utilities. |
-| `json_lib` | [`crates/json`](../json) | RFC 6901 JSON Pointer, RFC 7396 Merge Patch, JSON Lines (`.jsonl`/`.ndjson`) streaming, and JSON5 comment stripping. |
-| `yaml_lib` | [`crates/yaml`](../yaml) | YAML 1.2 specification compliance, anchors, aliases, and custom tags. |
-| `xml_lib` | [`crates/xml`](../xml) | XML DOM, C14N Canonical XML, DTD validation, XSD schema, XPath 1.0. |
-| `bencode_lib` | [`crates/bencode`](../bencode) | Zero-copy borrowed parsing and streaming for BitTorrent Bencode. |
+| `babbel_json` | [`crates/json`](../json) | RFC 6901 JSON Pointer, RFC 7396 Merge Patch, JSON Lines (`.jsonl`/`.ndjson`) streaming, and JSON5 comment stripping. |
+| `babbel_yaml` | [`crates/yaml`](../yaml) | YAML 1.2 specification compliance, anchors, aliases, and custom tags. |
+| `babbel_xml` | [`crates/xml`](../xml) | XML DOM, C14N Canonical XML, DTD validation, XSD schema, XPath 1.0. |
+| `babbel_bencode` | [`crates/bencode`](../bencode) | Zero-copy borrowed parsing and streaming for BitTorrent Bencode. |
+
+---
+
+## Documentation
+
+See the [Documentation Hub](../../docs/README.md) for full workspace guides:
+- [Architecture Guide](../../docs/ARCHITECTURE.md)
+- [Embedded Systems Guide](../../docs/EMBEDDED_GUIDE.md)
+- [Text Support Guide](../../docs/TEXT_SUPPORT_GUIDE.md)
+- [Conversion Matrix](../../docs/CONVERSION_MATRIX.md)
+- [Development Guide](../../docs/DEVELOPMENT_GUIDE.md)
+- [Contributing Guidelines](../../docs/CONTRIBUTING.md)
 
 ---
 

@@ -1,4 +1,4 @@
-﻿# Contributing to Babbel
+# Contributing to Babbel
 
 Thank you for your interest in contributing to **Babbel**! Babbel is a high-performance, polyglot serialization, parsing, and document manipulation ecosystem in Rust.
 
@@ -53,21 +53,21 @@ Babbel contains extensive test suites with over 3,500 tests.
 cargo check --workspace
 
 # Run all tests across the workspace
-cargo test --workspace --jobs 2
+cargo test --workspace
 
 # Run documentation tests
-cargo test --workspace --doc --jobs 2
+cargo test --workspace --doc
 
 # Run memory struct size assertion benchmarks
 cargo test -p babbel --test size_checks
 
 # Test specific crate
-cargo test -p babbel_core --jobs 2
-cargo test -p babbel_json --jobs 2
-cargo test -p babbel_yaml --jobs 2
-cargo test -p babbel_xml --jobs 2
-cargo test -p babbel_bencode --jobs 2
-cargo test -p babbel --jobs 2
+cargo test -p babbel_core
+cargo test -p babbel_json
+cargo test -p babbel_yaml
+cargo test -p babbel_xml
+cargo test -p babbel_bencode
+cargo test -p babbel
 ```
 
 ---
@@ -105,5 +105,11 @@ cargo test -p babbel --jobs 2
    - `perf: compact AST node memory layout`
    - `docs: update conversion matrix guide`
 3. **Verify Locally**:
-   Ensure `cargo check --workspace`, `cargo test --workspace --jobs 2`, and `cargo test --workspace --doc --jobs 2` pass with **zero warnings** and **zero errors**.
+   Ensure `cargo check --workspace`, `cargo test --workspace`, and `cargo test --workspace --doc` pass with **zero warnings** and **zero errors**.
 4. **Submit PR**: Open a pull request against the `master` branch with a clear description of the changes and test results.
+
+---
+
+## 6. Code of Conduct
+
+All contributors and maintainers are expected to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md). Please report any violations or inappropriate behavior to the project maintainers.

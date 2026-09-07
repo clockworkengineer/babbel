@@ -10,13 +10,17 @@ Foundational architectural kernel for the **Babbel** multi-format serialization 
 ## Features
 
 - **SOLID Streaming I/O (`babbel_core::io`)**:
-  - Segregated capability traits: [`ILineReader`](src/io/traits.rs), `IByteStream`, `IByteWriter`, `ICharStream`, `IRewindable`, `IPositionAware`, `ILocationAware`, `IClearable`, `ITailInspectable`, `IFlushable`, `IIndentationAware`.
-  - Unified input sources: `BufferSource`, `FileSource`, `SliceSource`, `StringSource`.
-  - Unified output destinations: `Buffer`, `FileDestination`, `StringDestination`.
+  - Segregated capability traits: [`ILineReader`](src/io/traits.rs), `IByteStream`, `IByteWriter`, `ICharStream`, `IRewindable`, `IPositionAware`, `ILocationAware`, `IClearable`, `ITailInspectable`, `IFlushable`, `IIndentationAware`, `IStatefulStream`.
+  - Unified input sources: `BufferSource`, `FileSource` (with 64 MB DoS guard), `SliceSource`, `StringSource`, `ReaderSource` (generic `Read` streaming with `BufReader`).
+  - Unified output destinations: `Buffer`, `FileDestination`, `StringDestination`, `SliceDestination`, `ArrayVecDestination`.
+  - Stream state snapshots: `SaveState` and `IStatefulStream` for transactional backtracking.
   - Line-by-line reading across mixed CRLF, LF, and CR newlines.
   - Zero-allocation line slicing (`SliceSource::read_line_slice()`).
   - Safe in-memory tail tracking (`last()`) without file system re-opening.
   - Full Unicode scalar decoding preventing multi-byte UTF-8 corruption.
+- **Embedded & Zero-Allocation Primitives (`babbel_core::embedded`)**:
+  - Stack allocation: `StackBuffer<const N>`, `MemoryTracker`, `EmbeddedLimits`, `CompactError` (8 bytes).
+  - Zero-allocation destinations: `SliceDestination<'a>` and `ArrayVecDestination<const N>`.
 - **Universal Data Model (`babbel_core::model`)**:
   - `Value` AST (`Null`, `Bool`, `Integer(i128)`, `Float`, `String`, `Array`, `Object`, `Bytes`) powering cross-format conversions.
 - **Tabular Text Engine (`babbel_core::csv`)**:
@@ -155,6 +159,18 @@ let node = Value::Object(vec![
 
 assert!(matches!(node, Value::Object(_)));
 ```
+
+---
+
+## Documentation
+
+See the [Documentation Hub](../../docs/README.md) for full workspace guides:
+- [Architecture Guide](../../docs/ARCHITECTURE.md)
+- [Embedded Systems Guide](../../docs/EMBEDDED_GUIDE.md)
+- [Text Support Guide](../../docs/TEXT_SUPPORT_GUIDE.md)
+- [Security Policy](../../docs/SECURITY.md)
+- [Development Guide](../../docs/DEVELOPMENT_GUIDE.md)
+- [Contributing Guidelines](../../docs/CONTRIBUTING.md)
 
 ---
 

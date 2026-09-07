@@ -1,4 +1,4 @@
-﻿# babbel_json
+# babbel_json
 
 **Version 0.1.0** — A lightweight, modular JSON toolkit for Rust with pluggable I/O sources/destinations, a simple in-memory Node tree, multiple serializers (JSON, YAML, XML, Bencode, TOML), and `no_std` support. Designed for small binaries, predictable behavior, and easy embedding.
 
@@ -425,11 +425,13 @@ If you're interested in any of these, contributions are welcome.
 
 ## Documentation
 
-See the [docs](../docs/README.md) folder for:
-- Development Guide
-- Contributing Guidelines
-- Code of Conduct
-- Embedding Guide
+See the [Documentation Hub](../../docs/README.md) for complete guides:
+- [Architecture Guide](../../docs/ARCHITECTURE.md)
+- [Development Guide](../../docs/DEVELOPMENT_GUIDE.md)
+- [Contributing Guidelines](../../docs/CONTRIBUTING.md)
+- [Code of Conduct](../../docs/CODE_OF_CONDUCT.md)
+- [Embedded Systems Guide](../../docs/EMBEDDED_GUIDE.md)
+- [Security Policy](../../docs/SECURITY.md)
 
 ## License
 

@@ -1,7 +1,7 @@
-﻿# babbel_xml
+# babbel_xml
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
-[![Rust Edition](https://img.shields.io/badge/edition-2021-orange)](Cargo.toml)
+[![Rust Edition](https://img.shields.io/badge/edition-2024-orange)](Cargo.toml)
 
 A robust, full-featured pure Rust XML toolkit providing W3C-compliant DOM construction, validating SAX/pull-parser, W3C Canonical XML (C14N 1.0/1.1), DTD validation, XSD schema validation, and an XPath 1.0 query engine. Backed by the unified [`babbel_core`](../babbel_core) streaming I/O architecture.
 
@@ -173,6 +173,16 @@ use babbel_xml::io::XmlSource;
 let file = std::fs::File::open("large.xml")?;
 let source = XmlSource::from_reader_with_limit(file, 10 * 1024 * 1024)?;
 ```
+
+---
+
+## Documentation
+
+See the [Documentation Hub](../../docs/README.md) for full workspace guides:
+- [Architecture Guide](../../docs/ARCHITECTURE.md)
+- [Security Policy](../../docs/SECURITY.md)
+- [Development Guide](../../docs/DEVELOPMENT_GUIDE.md)
+- [Contributing Guidelines](../../docs/CONTRIBUTING.md)
 
 ---
 

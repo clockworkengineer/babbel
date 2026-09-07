@@ -1,4 +1,4 @@
-﻿# babbel_yaml 🦀
+# babbel_yaml 🦀
 
 [![Rust](https://img.shields.io/badge/rust-1.88.0+-orange.svg)](https://www.rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -403,8 +403,16 @@ babbel_yaml is designed for performance:
 - **Lazy parsing** - Only parse what you need
 - **Memory efficiency** - Minimal allocations and copying
 - **Zero-copy strings** - Where possible, reference original data
-- **Optimized algorithms** - Efficient parsing and serialization
-- **Minimal dependencies** - Only `rand` for testing utilities
+- **Zero dependencies** - Pure Rust with 0 external dependencies for production and tests
+
+## 📚 Documentation
+
+See the [Documentation Hub](../../docs/README.md) for full workspace guides:
+- [Architecture Guide](../../docs/ARCHITECTURE.md)
+- [Development Guide](../../docs/DEVELOPMENT_GUIDE.md)
+- [Contributing Guidelines](../../docs/CONTRIBUTING.md)
+- [Embedded Systems Guide](../../docs/EMBEDDED_GUIDE.md)
+- [Security Policy](../../docs/SECURITY.md)
 
 ## 🤝 Contributing
 
@@ -413,10 +421,10 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 ### Development Setup
 
 ```bash
-git clone https://github.com/clockworkengineer/yaml.git
-cd yaml
-cargo build
-cargo test
+git clone https://github.com/clockworkengineer/babbel.git
+cd babbel
+cargo build -p babbel_yaml
+cargo test -p babbel_yaml
 ```
 
 ### Code Guidelines
@@ -428,7 +436,7 @@ cargo test
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](../../LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
@@ -450,4 +458,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Made with ❤️ and 🦀 by the babbel_yaml team**
 
-*For questions, issues, or contributions, please visit our [GitHub repository](https://github.com/clockworkengineer/yaml).*
+*For questions, issues, or contributions, please visit our [GitHub repository](https://github.com/clockworkengineer/babbel).*
