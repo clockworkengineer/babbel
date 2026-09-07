@@ -1,9 +1,9 @@
-//! Performance Optimization Examples
+﻿//! Performance Optimization Examples
 //!
 //! This example demonstrates various performance optimization techniques
 //! available in the YAML library.
 
-use yaml_lib::*;
+use babbel_yaml::*;
 
 fn main() {
     println!("=== YAML Performance Optimization Examples ===\n");

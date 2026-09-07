@@ -1,15 +1,15 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: directive_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for YAML directive parsing and handling in the yaml_lib crate.
+//      Internal tests for YAML directive parsing and handling in the babbel_yaml crate.
 //      These tests validate correct recognition and processing of YAML directives such as
 //      %TAG and %YAML, ensuring compliance with the YAML specification for document structure
 //      and tag resolution.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Directives control parsing behavior, tag resolution, and document versioning.
 //      - Tests ensure robust handling of directives and edge cases in multi-document streams.
 //

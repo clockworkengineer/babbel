@@ -1,9 +1,9 @@
-//! Demonstrates querying and traversing JSON structures
+﻿//! Demonstrates querying and traversing JSON structures
 //!
 //! Shows safe navigation patterns, tree traversal, searching,
 //! and extracting data from complex nested JSON documents.
 
-use json_lib::{parse, BufferSource, Node};
+use babbel_json::{parse, BufferSource, Node};
 
 fn main() {
     println!("=== JSON Query and Traversal Demo ===\n");
@@ -143,8 +143,8 @@ fn main() {
         if let Some(price_num) = product.get("price").and_then(|p| p.as_number()) {
             // Convert to float for comparison
             let price = match price_num {
-                json_lib::Numeric::Float(f) => *f,
-                json_lib::Numeric::Integer(i) => *i as f64,
+                babbel_json::Numeric::Float(f) => *f,
+                babbel_json::Numeric::Integer(i) => *i as f64,
                 _ => 0.0,
             };
             
@@ -214,8 +214,8 @@ fn main() {
     let prices: Vec<f64> = all_products.iter()
         .filter_map(|p| p.get("price").and_then(|pr| pr.as_number()))
         .filter_map(|num| match num {
-            json_lib::Numeric::Float(f) => Some(*f),
-            json_lib::Numeric::Integer(i) => Some(*i as f64),
+            babbel_json::Numeric::Float(f) => Some(*f),
+            babbel_json::Numeric::Integer(i) => Some(*i as f64),
             _ => None,
         })
         .collect();

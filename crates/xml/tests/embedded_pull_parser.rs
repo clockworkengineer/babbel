@@ -1,4 +1,4 @@
-﻿use xml_lib::{XmlPullEvent, XmlPullParser};
+﻿use babbel_xml::{XmlPullEvent, XmlPullParser};
 
 #[test]
 fn test_zero_allocation_pull_parser_events() {

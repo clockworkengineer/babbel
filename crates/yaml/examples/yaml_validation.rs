@@ -1,10 +1,10 @@
-//! YAML Validation Example
+﻿//! YAML Validation Example
 //!
 //! Demonstrates JSON Schema-style validation for YAML documents.
 
 use std::collections::BTreeMap;
-use yaml_lib::validation::error::ValidationError;
-use yaml_lib::*;
+use babbel_yaml::validation::error::ValidationError;
+use babbel_yaml::*;
 
 /// Helper to parse YAML from a string and get the first document
 fn parse_yaml(yaml: &str) -> Node {

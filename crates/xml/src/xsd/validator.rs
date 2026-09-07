@@ -1,4 +1,4 @@
-//! # XSD Schema Validator
+﻿//! # XSD Schema Validator
 //!
 //! Parses XSD schema documents (`xs:schema`) and validates DOM documents against elements, types, and restriction facets.
 
@@ -89,7 +89,7 @@ pub struct XsdElementRule {
 /// # Examples
 ///
 /// ```
-/// use xml_lib::{parse, XsdValidator};
+/// use babbel_xml::{parse, XsdValidator};
 ///
 /// let schema = r#"
 /// <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">

@@ -1,4 +1,4 @@
-# Babbel Memory & Performance Architecture
+﻿# Babbel Memory & Performance Architecture
 
 Babbel is engineered from the ground up for high-throughput, low-latency, and memory-constrained environments, including serverless workloads, streaming pipelines, and embedded `no_std` systems.
 
@@ -13,11 +13,11 @@ Babbel strictly enforces compact struct sizes, verified by continuous automated 
 | Type | Maximum Size | Before Optimization | Strategy |
 | :--- | :--- | :--- | :--- |
 | **`babbel_core::Value`** | **32 bytes** | 48 bytes | Compacted discriminants, string/vec pairing, and boxed complex variants. |
-| **`xml_lib::NodeKind`** | **48 bytes** | 72 bytes | Boxed large element payload (`Box<ElementData>`) and processing instructions. |
-| **`xml_lib::NodeData`** | **88 bytes** | 112 bytes | Shrunk inner attribute mapping and compacted node kinds. |
-| **`yaml_lib::Node`** | **40 bytes** | 56 bytes | Inlined small scalar storage and pointer tagging for aliases. |
-| **`json_lib::Node`** | **56 bytes** | 64 bytes | Small string optimization (`sso`) and unioned number discriminants. |
-| **`bencode_lib::Node`** | **56 bytes** | 64 bytes | Compacted dictionary maps and zero-copy byte slices. |
+| **`babbel_xml::NodeKind`** | **48 bytes** | 72 bytes | Boxed large element payload (`Box<ElementData>`) and processing instructions. |
+| **`babbel_xml::NodeData`** | **88 bytes** | 112 bytes | Shrunk inner attribute mapping and compacted node kinds. |
+| **`babbel_yaml::Node`** | **40 bytes** | 56 bytes | Inlined small scalar storage and pointer tagging for aliases. |
+| **`babbel_json::Node`** | **56 bytes** | 64 bytes | Small string optimization (`sso`) and unioned number discriminants. |
+| **`babbel_bencode::Node`** | **56 bytes** | 64 bytes | Compacted dictionary maps and zero-copy byte slices. |
 
 ### Size Check Regression Suite
 To run the automated memory size verification:

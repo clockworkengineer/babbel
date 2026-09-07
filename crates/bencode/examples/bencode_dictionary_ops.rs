@@ -1,8 +1,8 @@
-//! Example demonstrating dictionary manipulation operations.
+﻿//! Example demonstrating dictionary manipulation operations.
 //! This shows how to create, query, modify, and iterate through dictionary nodes
 //! in various scenarios commonly needed when working with bencode data.
 
-use bencode_lib::{make_node, Node};
+use babbel_bencode::{make_node, Node};
 use std::collections::HashMap;
 
 fn main() {
@@ -250,7 +250,7 @@ fn demonstrate_torrent_metadata() {
         "announce".to_string(),
         make_node("udp://tracker.example.com:6969/announce"),
     );
-    root.insert("created by".to_string(), make_node("bencode_lib example"));
+    root.insert("created by".to_string(), make_node("babbel_bencode example"));
     root.insert("creation date".to_string(), make_node(1699564800));
     root.insert("info".to_string(), Node::Dictionary(info_dict));
 

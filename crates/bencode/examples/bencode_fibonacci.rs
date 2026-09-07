@@ -1,8 +1,8 @@
-//! Fibonacci sequence generator using bencode format for storage.
+﻿//! Fibonacci sequence generator using bencode format for storage.
 //! This program maintains a sequence of Fibonacci numbers in a bencode file,
 //! reading the existing sequence and appending the next number on each run.
 
-use bencode_lib::{FileDestination, FileSource, Node, parse, stringify};
+use babbel_bencode::{FileDestination, FileSource, Node, parse, stringify};
 use std::path::Path;
 /// Reads a Fibonacci sequence from a bencode-encoded file.
 /// If the file doesn't exist, initializes a new sequence starting with [1, 1].

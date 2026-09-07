@@ -1,4 +1,4 @@
-//! Memory bounds utilities using const generics for embedded systems.
+﻿//! Memory bounds utilities using const generics for embedded systems.
 //!
 //! This module provides compile-time memory calculations to help developers
 //! understand and control memory usage when parsing bencode data.
@@ -15,7 +15,7 @@ impl MemoryBounds {
     ///
     /// # Example
     /// ```
-    /// use bencode_lib::MemoryBounds;
+    /// use babbel_bencode::MemoryBounds;
     ///
     /// const BUFFER_SIZE: usize = 256;
     /// const STACK_BYTES: usize = MemoryBounds::stack_buffer_size(BUFFER_SIZE);
@@ -74,7 +74,7 @@ impl MemoryBounds {
 ///
 /// # Example
 /// ```
-/// use bencode_lib::FixedSizeBuffer;
+/// use babbel_bencode::FixedSizeBuffer;
 ///
 /// // Create a 512-byte buffer at compile time
 /// type My512ByteBuffer = FixedSizeBuffer<512>;
@@ -88,7 +88,7 @@ pub type FixedSizeBuffer<const N: usize> = crate::StackBuffer<N>;
 ///
 /// # Example
 /// ```
-/// use bencode_lib::assert_buffer_size;
+/// use babbel_bencode::assert_buffer_size;
 ///
 /// const MIN_SIZE: usize = 256;
 /// const ACTUAL_SIZE: usize = 512;

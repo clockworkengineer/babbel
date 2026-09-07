@@ -1,8 +1,8 @@
-//! Example demonstrating conversion of torrent files from bencode format to JSON format.
+﻿//! Example demonstrating conversion of torrent files from bencode format to JSON format.
 //! Takes torrent files from the "files" directory and creates corresponding JSON files.
 
 use std::path::Path;
-use bencode_lib::{parse, to_json, FileDestination, FileSource};
+use babbel_bencode::{parse, to_json, FileDestination, FileSource};
 
 #[path = "common/utility.rs"]
 mod bencode_utility_lib;

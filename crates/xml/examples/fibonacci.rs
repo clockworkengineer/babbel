@@ -3,7 +3,7 @@
 //! Demonstrates programmatically populating an XML DOM tree in a loop to generate
 //! structured numerical XML documents at runtime.
 
-use xml_lib::{stringify, Attribute, Document, NodeKind};
+use babbel_xml::{stringify, Attribute, Document, NodeKind};
 
 fn main() {
     println!("--- Fibonacci XML Document Generation Example ---");

@@ -1,4 +1,4 @@
-//! Minimal bencode example demonstrating smallest possible binary size
+﻿//! Minimal bencode example demonstrating smallest possible binary size
 //!
 //! This example shows how to use the bencode library with no default features,
 //! resulting in the smallest possible binary. This is ideal for embedded systems
@@ -9,7 +9,7 @@
 //!
 //! Only core bencode parsing and stringification is available.
 
-use bencode_lib::{parse_bytes, stringify_to_bytes};
+use babbel_bencode::{parse_bytes, stringify_to_bytes};
 
 fn main() {
     // Parse a simple bencode integer

@@ -1,4 +1,4 @@
-//! Embedded Systems Support Module
+﻿//! Embedded Systems Support Module
 //!
 //! Aggregates compile-time configuration, memory limits, and lightweight alternatives for YAML parsing
 //! on resource-constrained embedded environments. Includes numeric type recommendations and memory optimization tips.
@@ -19,7 +19,7 @@
 //! ## Example Usage
 //!
 //! ```rust,ignore
-//! use yaml_lib::nodes::node::{Node, Numeric};
+//! use babbel_yaml::nodes::node::{Node, Numeric};
 //!
 //! // Prefer Int32 instead of Integer for embedded
 //! let small_num = Node::Number(Numeric::Int32(42));  // 4 bytes

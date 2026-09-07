@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: nested_structure_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for YAML nested structure parsing in the yaml_lib crate.
+//      Internal tests for YAML nested structure parsing in the babbel_yaml crate.
 //      These tests validate correct handling of deeply nested sequences, mappings,
 //      and mixed structures, ensuring compliance with the YAML specification.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Focuses on complex and deeply nested YAML document layouts.
 //      - Ensures robust handling of recursion, nesting, and edge cases.
 //

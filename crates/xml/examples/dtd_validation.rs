@@ -3,7 +3,7 @@
 //! Demonstrates validating document structures against DTD content models
 //! (`<!ELEMENT>`) and required attribute rules (`<!ATTLIST ... #REQUIRED>`) using `XmlValidator`.
 
-use xml_lib::{parse, DtdValidator};
+use babbel_xml::{parse, DtdValidator};
 
 fn main() {
     println!("--- XML DTD Validation Example ---");

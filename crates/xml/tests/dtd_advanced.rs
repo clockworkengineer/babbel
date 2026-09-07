@@ -1,4 +1,4 @@
-﻿use xml_lib::{parse, DtdValidator};
+﻿use babbel_xml::{parse, DtdValidator};
 
 #[test]
 fn test_dtd_default_attribute_injection() {

@@ -1,8 +1,8 @@
-//! Example demonstrating proper error handling when working with bencode data.
+﻿//! Example demonstrating proper error handling when working with bencode data.
 //! This shows how to handle parsing errors, invalid data, I/O errors, and
 //! how to write robust code that gracefully handles failures.
 
-use bencode_lib::{make_node, parse, parse_bytes, parse_str, FileSource, Node};
+use babbel_bencode::{make_node, parse, parse_bytes, parse_str, FileSource, Node};
 
 fn main() {
     println!("=== Error Handling Examples ===\n");

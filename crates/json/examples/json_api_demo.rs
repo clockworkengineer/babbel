@@ -1,4 +1,4 @@
-//! Demonstrates new API improvements in Phase 7
+﻿//! Demonstrates new API improvements in Phase 7
 //!
 //! Shows usage of:
 //! - .into_*() consuming methods
@@ -7,7 +7,7 @@
 //! - TryFrom implementations
 //! - Display trait
 
-use json_lib::Node;
+use babbel_json::Node;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 

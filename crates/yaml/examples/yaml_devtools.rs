@@ -1,4 +1,4 @@
-//! Example demonstrating the developer-tools module of yaml_lib.
+﻿//! Example demonstrating the developer-tools module of babbel_yaml.
 //!
 //! Shows how to use:
 //! - `print_tree()` — visualise the full node tree as indented text
@@ -8,7 +8,7 @@
 //! - `NodeDebugger` — log access / create / modify operations at configurable verbosity
 //! - `DebugAssert` — development-time type, size, and depth assertions
 
-use yaml_lib::{
+use babbel_yaml::{
     DebugAssert, NodeDebugger, NodeInfo, NodeType, find_by_type, node_depth, node_size,
     node_summary, node_type, parse_string, print_tree,
 };
@@ -113,7 +113,7 @@ fn main() {
     dbg.debug_create(&doc);
 
     // Simulated before/after modification
-    use yaml_lib::parse_string as ps;
+    use babbel_yaml::parse_string as ps;
     let old_val = ps("42").expect("parse old");
     let new_val = ps("43").expect("parse new");
     dbg.debug_modify("app.max_connections", &old_val, &new_val);

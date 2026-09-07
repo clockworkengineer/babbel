@@ -1,4 +1,4 @@
-# Contributing to Babbel
+﻿# Contributing to Babbel
 
 Thank you for your interest in contributing to **Babbel**! Babbel is a high-performance, polyglot serialization, parsing, and document manipulation ecosystem in Rust.
 
@@ -13,9 +13,9 @@ Babbel strictly enforces **DRY** (Don't Repeat Yourself) and **SOLID** engineeri
 ### Clean Layering Model
 1. **Tier 0: Foundational Kernel (`babbel_core`)**:
    - Contains streaming abstractions (`ICharStream`, `IByteStream`, `ISource`, `IDestination`, `ILineReader`), universal `Value` AST, BOM detection, and numeric/error utilities.
-   - Must have **zero** dependencies on any format crate (`json_lib`, `yaml_lib`, etc.).
+   - Must have **zero** dependencies on any format crate (`babbel_json`, `babbel_yaml`, etc.).
    - Must remain `no_std` + `alloc` compatible when the `std` feature is disabled.
-2. **Tier 1: Domain Format Engines (`json_lib`, `yaml_lib`, `xml_lib`, `bencode_lib`)**:
+2. **Tier 1: Domain Format Engines (`babbel_json`, `babbel_yaml`, `babbel_xml`, `babbel_bencode`)**:
    - Each engine is autonomous and depends on `babbel_core`.
    - Format engines must **never** depend on one another.
 3. **Tier 2: Master Facade & Conversion (`babbel`)**:
@@ -63,10 +63,10 @@ cargo test -p babbel --test size_checks
 
 # Test specific crate
 cargo test -p babbel_core --jobs 2
-cargo test -p json_lib --jobs 2
-cargo test -p yaml_lib --jobs 2
-cargo test -p xml_lib --jobs 2
-cargo test -p bencode_lib --jobs 2
+cargo test -p babbel_json --jobs 2
+cargo test -p babbel_yaml --jobs 2
+cargo test -p babbel_xml --jobs 2
+cargo test -p babbel_bencode --jobs 2
 cargo test -p babbel --jobs 2
 ```
 
@@ -78,10 +78,10 @@ cargo test -p babbel --jobs 2
 - **Zero-Allocation**: Prefer borrowed slices (`SliceSource`, `read_line_slice`) and in-place buffers (`dtoa`, `itoa`, `SmallVec`) wherever possible.
 - **Struct Compaction**: Keep node representation compact. Adhere to the established size bounds:
   - `babbel_core::Value` $\le$ 32 bytes
-  - `json_lib::Node` $\le$ 56 bytes
-  - `xml_lib::NodeKind` $\le$ 48 bytes
-  - `yaml_lib::Node` $\le$ 40 bytes
-  - `bencode_lib::Node` $\le$ 56 bytes
+  - `babbel_json::Node` $\le$ 56 bytes
+  - `babbel_xml::NodeKind` $\le$ 48 bytes
+  - `babbel_yaml::Node` $\le$ 40 bytes
+  - `babbel_bencode::Node` $\le$ 56 bytes
 
 ### Error Handling
 - Return `Result<T, BabbelError>` or format-specific error types that implement `Into<BabbelError>`.

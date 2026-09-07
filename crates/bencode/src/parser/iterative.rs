@@ -1,4 +1,4 @@
-//! Iterative (stack-based) parser implementation for bencode format.
+﻿//! Iterative (stack-based) parser implementation for bencode format.
 //!
 //! This parser avoids recursion by using an explicit stack, making it suitable
 //! for embedded systems with limited stack space or deeply nested structures.
@@ -131,7 +131,7 @@ fn parse_string(source: &mut dyn ISource) -> Result<Node, String> {
 ///
 /// # Example
 /// ```
-/// use bencode_lib::{parse_iterative, BufferSource};
+/// use babbel_bencode::{parse_iterative, BufferSource};
 ///
 /// // Dictionary keys must be in lexicographical order for canonical bencode
 /// let data = b"d3:agei25e4:name4:Johnee";

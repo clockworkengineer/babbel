@@ -1,5 +1,5 @@
-use std::path::Path;
-use json_lib::{strip_whitespace, FileDestination, FileSource};
+﻿use std::path::Path;
+use babbel_json::{strip_whitespace, FileDestination, FileSource};
 
 #[path = "common/utility.rs"]
 mod json_utility_lib;

@@ -1,12 +1,12 @@
 ﻿//! Tests verifying integration of `babbel_core` streaming traits (`ISource`, `IDestination`, `IPositionAware`)
-//! with `xml_lib`.
+//! with `babbel_xml`.
 
 use babbel_core::io::destinations::Buffer;
 use babbel_core::io::sources::{BufferSource, StringSource};
 use babbel_core::io::traits::{
     ICharStream, IClearable, IDestination, IPositionAware, IRewindable, ISource,
 };
-use xml_lib::{
+use babbel_xml::{
     canonicalize_to, parse_source, stringify_to, stringify_to_with_options, Document,
     SerializeOptions, XmlDestination, XmlSource,
 };
@@ -132,7 +132,7 @@ fn test_document_parse_source_and_stringify_to() {
 
 #[test]
 fn test_stringify_to_destinations() {
-    let doc = xml_lib::parse("<data key=\"val\"><item>1</item><item>2</item></data>").unwrap();
+    let doc = babbel_xml::parse("<data key=\"val\"><item>1</item><item>2</item></data>").unwrap();
 
     // 1. Write to XmlDestination
     let mut xml_dest = XmlDestination::new();
@@ -151,7 +151,7 @@ fn test_stringify_to_destinations() {
 
 #[test]
 fn test_canonicalize_to_destination() {
-    let doc = xml_lib::parse("<root b=\"2\" a=\"1\"><empty/></root>").unwrap();
+    let doc = babbel_xml::parse("<root b=\"2\" a=\"1\"><empty/></root>").unwrap();
     let mut dest = Buffer::new();
 
     canonicalize_to(&doc, &mut dest);

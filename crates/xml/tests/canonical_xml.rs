@@ -1,4 +1,4 @@
-﻿use xml_lib::{
+﻿use babbel_xml::{
     canonicalize, parse, CanonicalOptions, CanonicalSerializer, SerializeOptions, XmlSerializer,
 };
 

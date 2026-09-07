@@ -1,4 +1,4 @@
-//! Example demonstrating layered configuration with YAML.
+﻿//! Example demonstrating layered configuration with YAML.
 //!
 //! A common real-world pattern for 12-factor apps and microservices:
 //!
@@ -15,7 +15,7 @@
 //! layers winning on conflicts while preserving keys not present in
 //! the overlay.
 
-use yaml_lib::{parse_string, stringify, BufferDestination, Node};
+use babbel_yaml::{parse_string, stringify, BufferDestination, Node};
 
 // ---------------------------------------------------------------------------
 // Config layers (in a real app these would come from files / env vars)

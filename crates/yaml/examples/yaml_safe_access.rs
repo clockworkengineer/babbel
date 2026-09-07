@@ -1,9 +1,9 @@
-//! Example demonstrating safe, panic-free node access API
+﻿//! Example demonstrating safe, panic-free node access API
 //!
 //! This example shows how to safely access YAML nodes without risking panics,
 //! using the new safe access methods introduced in the library.
 
-use yaml_lib::{parse, BufferSource, Node};
+use babbel_yaml::{parse, BufferSource, Node};
 
 fn main() {
     println!("=== YAML Safe Access API Examples ===\n");

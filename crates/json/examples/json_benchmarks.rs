@@ -1,4 +1,4 @@
-//! JSON Library Performance Benchmarks
+﻿//! JSON Library Performance Benchmarks
 //!
 //! This benchmark suite measures:
 //! - Parsing speed for various JSON structures
@@ -8,7 +8,7 @@
 //!
 //! Run with: cargo run --release --example json_benchmarks
 
-use json_lib::{
+use babbel_json::{
     BufferDestination, BufferSource, ParserConfig,
     embedded::{ArrayBuilder, ObjectBuilder, memory, sensor},
     parse, parse_with_config, stringify,

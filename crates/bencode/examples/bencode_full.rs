@@ -1,9 +1,9 @@
-//! Full-featured bencode example with all format conversions
+﻿//! Full-featured bencode example with all format conversions
 //! 
 //! This example demonstrates the library with all default features enabled,
 //! including all format conversions (JSON, TOML, XML, YAML).
 
-use bencode_lib::{parse_bytes, stringify_to_bytes, to_json, to_toml, to_xml, to_yaml, BufferDestination};
+use babbel_bencode::{parse_bytes, stringify_to_bytes, to_json, to_toml, to_xml, to_yaml, BufferDestination};
 
 fn main() {
     // Parse a bencode dictionary

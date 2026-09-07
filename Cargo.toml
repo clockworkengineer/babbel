@@ -11,6 +11,10 @@ members = [
 
 [workspace.dependencies]
 babbel_core = { path = "crates/babbel_core", version = "0.1.0" }
+babbel_xml = { path = "crates/xml", version = "0.1.0" }
+babbel_json = { path = "crates/json", version = "0.1.0" }
+babbel_yaml = { path = "crates/yaml", version = "0.1.0" }
+babbel_bencode = { path = "crates/bencode", version = "0.1.0" }
 
 
 [workspace.package]

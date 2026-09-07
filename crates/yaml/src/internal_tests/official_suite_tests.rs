@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: official_suite_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for the official YAML test suite in the yaml_lib crate.
+//      Internal tests for the official YAML test suite in the babbel_yaml crate.
 //      These tests validate parser compliance with the YAML specification using
 //      canonical examples and edge cases from the official YAML test suite.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Focuses on comprehensive spec compliance and interoperability.
 //      - Ensures robust handling of all YAML features and edge cases.
 //

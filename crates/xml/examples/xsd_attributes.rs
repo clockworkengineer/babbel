@@ -3,7 +3,7 @@
 //! Demonstrates parsing XSD attribute declarations (`xs:attribute`) and validating
 //! attribute primitive data types (`xs:integer`) using `XsdValidator` and `XmlValidator`.
 
-use xml_lib::{parse, XsdValidator};
+use babbel_xml::{parse, XsdValidator};
 
 fn main() {
     println!("--- XSD Attributes Example ---");

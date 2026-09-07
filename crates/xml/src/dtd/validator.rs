@@ -1,4 +1,4 @@
-//! # DTD Validation Engine
+﻿//! # DTD Validation Engine
 //!
 //! Parses DTD internal subsets (`<!ELEMENT>`, `<!ATTLIST>`) and validates document structure and required attributes.
 
@@ -58,7 +58,7 @@ pub type ExternalSubsetResolver = Arc<dyn Fn(&str, Option<&str>) -> Option<Strin
 /// # Examples
 ///
 /// ```
-/// use xml_lib::{parse, DtdValidator};
+/// use babbel_xml::{parse, DtdValidator};
 ///
 /// let mut validator = DtdValidator::new();
 /// let dtd = "<!ELEMENT root (item*)>\n<!ELEMENT item EMPTY>";

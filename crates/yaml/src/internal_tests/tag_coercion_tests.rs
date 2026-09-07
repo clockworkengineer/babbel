@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: tag_coercion_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for YAML tag coercion and type handling in the yaml_lib crate.
+//      Internal tests for YAML tag coercion and type handling in the babbel_yaml crate.
 //      These tests validate correct recognition, preservation, and coercion of tags on
 //      scalars, sequences, and mappings, ensuring compliance with the YAML specification.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Focuses on tag resolution, type coercion, and tag preservation in parsed nodes.
 //      - Ensures robust handling of explicit and implicit tags in YAML documents.
 //

@@ -1,4 +1,4 @@
-﻿use xml_lib::{parse, stringify, NodeKind};
+﻿use babbel_xml::{parse, stringify, NodeKind};
 
 #[test]
 fn test_remove_child() {

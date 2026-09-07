@@ -3,6 +3,8 @@
 //! Locks in memory compaction optimizations to ensure struct sizes
 //! do not regress as new features are added.
 
+use babbel::{bencode as bencode_lib, json as json_lib, xml as xml_lib, yaml as yaml_lib};
+
 #[test]
 fn test_core_value_memory_size() {
     use core::mem::size_of;

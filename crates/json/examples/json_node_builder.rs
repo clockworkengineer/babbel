@@ -1,9 +1,9 @@
-//! Demonstrates programmatic JSON construction using Node types
+﻿//! Demonstrates programmatic JSON construction using Node types
 //!
 //! Shows various ways to build JSON structures in memory using the Node API,
 //! including type conversions, indexing, and builder patterns.
 
-use json_lib::{BufferDestination, Node, Numeric};
+use babbel_json::{BufferDestination, Node, Numeric};
 use std::collections::HashMap;
 
 fn main() {
@@ -214,7 +214,7 @@ fn main() {
     };
     
     let mut output = BufferDestination::new();
-    json_lib::print(&api_response, &mut output, 2);
+    babbel_json::print(&api_response, &mut output, 2);
     println!("{}", output.to_string());
 
     println!("\n=== Demo Complete ===");

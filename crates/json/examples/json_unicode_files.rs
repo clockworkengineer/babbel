@@ -1,9 +1,9 @@
-//! Demonstrates Unicode file handling with BOM detection
+﻿//! Demonstrates Unicode file handling with BOM detection
 //!
 //! Shows how to read and write JSON files in different Unicode formats
 //! (UTF-8, UTF-16, UTF-32) with proper BOM (Byte Order Mark) handling.
 
-use json_lib::{
+use babbel_json::{
     detect_format, parse, read_file_to_string, stringify, write_file_from_string,
     BufferDestination, BufferSource, Format, FileDestination, FileSource, Node,
 };
@@ -25,7 +25,7 @@ fn main() {
     let json_node = Node::Object(data);
     
     let mut buffer = BufferDestination::new();
-    json_lib::print(&json_node, &mut buffer, 2);
+    babbel_json::print(&json_node, &mut buffer, 2);
     let json_content = buffer.to_string();
     
     println!("{}", json_content);

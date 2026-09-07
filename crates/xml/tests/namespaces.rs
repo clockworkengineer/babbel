@@ -1,4 +1,4 @@
-﻿use xml_lib::{parse, NamespaceScope, QName};
+﻿use babbel_xml::{parse, NamespaceScope, QName};
 
 #[test]
 fn test_qname_parsing() {

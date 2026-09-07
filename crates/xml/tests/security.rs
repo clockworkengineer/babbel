@@ -1,4 +1,4 @@
-﻿use xml_lib::{parse_bytes, XmlError, ParseOptions, XmlParser, XmlSource};
+﻿use babbel_xml::{parse_bytes, XmlError, ParseOptions, XmlParser, XmlSource};
 
 #[test]
 fn test_nesting_depth_limit() {

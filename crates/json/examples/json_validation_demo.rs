@@ -1,9 +1,9 @@
-//! JSON Validation Demo
+﻿//! JSON Validation Demo
 //!
 //! Demonstrates fast JSON validation without memory allocation.
 //! Useful for embedded systems to reject invalid data early.
 
-use json_lib::{validate_json, BufferSource, ParserConfig};
+use babbel_json::{validate_json, BufferSource, ParserConfig};
 
 fn main() {
     println!("=== JSON Validation Demo ===\n");

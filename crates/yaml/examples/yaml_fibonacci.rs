@@ -1,9 +1,9 @@
-//! Fibonacci sequence generator using YAML format for storage.
+﻿//! Fibonacci sequence generator using YAML format for storage.
 //! This program maintains a sequence of Fibonacci numbers in a YAML file,
 //! reading the existing sequence and appending the next number on each run.
 
 use std::path::Path;
-use yaml_lib::{FileDestination, FileSource, Node, Numeric, parse, stringify};
+use babbel_yaml::{FileDestination, FileSource, Node, Numeric, parse, stringify};
 
 /// Reads a Fibonacci sequence from a YAML-encoded file.
 /// If the file doesn't exist, initializes a new sequence starting with [1, 1].

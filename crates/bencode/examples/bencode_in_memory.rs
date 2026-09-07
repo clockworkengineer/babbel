@@ -1,8 +1,8 @@
-//! Example demonstrating in-memory parsing and stringification of bencode data.
+﻿//! Example demonstrating in-memory parsing and stringification of bencode data.
 //! This shows how to work with bencode data without file I/O using convenience functions
 //! and BufferSource/BufferDestination for more control.
 
-use bencode_lib::{
+use babbel_bencode::{
     make_node, parse_borrowed, validate_bencode, stringify, stringify_to_bytes, stringify_to_string,
     BufferDestination, Node,
 };

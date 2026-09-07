@@ -1,6 +1,6 @@
-use json_lib::misc::print;
-use json_lib::nodes::node::{Node, make_node};
-use json_lib::BufferDestination;
+﻿use babbel_json::misc::print;
+use babbel_json::nodes::node::{Node, make_node};
+use babbel_json::BufferDestination;
 use std::collections::HashMap;
 
 fn main() {

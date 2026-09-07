@@ -3,7 +3,7 @@
 //! Demonstrates error handling for invalid XML syntax inputs (mismatched closing tags,
 //! unclosed attributes, unclosed tags) using `XmlError::SyntaxError`.
 
-use xml_lib::parse;
+use babbel_xml::parse;
 
 fn main() {
     println!("--- XML Malformed Errors Example ---");

@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: embedded_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
 //      Internal tests for YAML parsing and validation in embedded and resource-constrained
-//      environments using the yaml_lib crate. These tests ensure correct parsing, structure,
+//      environments using the babbel_yaml crate. These tests ensure correct parsing, structure,
 //      and value handling for typical embedded system YAML configurations.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Focuses on scenarios relevant to embedded systems and minimal environments.
 //      - Ensures robust parsing, validation, and error handling for embedded use cases.
 //

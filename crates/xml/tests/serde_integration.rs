@@ -1,7 +1,7 @@
 ﻿#![cfg(feature = "serde")]
 
 use serde::{Deserialize, Serialize};
-use xml_lib::serde_impl::{from_str, to_string, to_string_with_root};
+use babbel_xml::serde_impl::{from_str, to_string, to_string_with_root};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct User {

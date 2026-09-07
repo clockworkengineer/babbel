@@ -1,10 +1,10 @@
-
+﻿
 //! Example demonstrating performance measurement and optimization utilities
 //!
 //! Shows how to use DocumentStats, Timer, and Profiler for analyzing
 //! and optimizing YAML processing performance.
 
-use yaml_lib::{
+use babbel_yaml::{
     parse, stringify, BufferDestination, BufferSource, DocumentStats, Node, Profiler, Timer,
 };
 

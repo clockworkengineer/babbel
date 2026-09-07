@@ -1,4 +1,4 @@
-
+﻿
 #![cfg_attr(not(feature = "std"), no_std)]
 
 //! - File and buffer I/O abstractions
@@ -64,7 +64,7 @@ mod utils;
 pub mod validation;
 
 /// ============
-/// YAML_lib API
+/// babbel_yaml API
 /// ============
 // Error handling types
 pub use error::ErrorKind;

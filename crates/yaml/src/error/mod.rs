@@ -1,4 +1,4 @@
-//! YAML Error Handling Module
+﻿//! YAML Error Handling Module
 //!
 //! Aggregates error types, message constants, enhanced error handling, and recovery strategies
 //! for YAML parsing and processing. Provides structured error handling with detailed context
@@ -97,7 +97,7 @@ impl fmt::Display for ErrorKind {
 ///
 /// # Example
 /// ```
-/// use yaml_lib::error::{YamlError, ErrorKind};
+/// use babbel_yaml::error::{YamlError, ErrorKind};
 ///
 /// let error = YamlError::new(
 ///     ErrorKind::SyntaxError,

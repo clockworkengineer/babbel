@@ -1,8 +1,8 @@
-//! Example demonstrating the Node API type checking, accessors, and utility methods.
+﻿//! Example demonstrating the Node API type checking, accessors, and utility methods.
 //! This example showcases the various methods available on the Node enum for
 //! inspecting and manipulating bencode data structures.
 
-use bencode_lib::{make_node, Node};
+use babbel_bencode::{make_node, Node};
 use std::collections::HashMap;
 
 fn main() {

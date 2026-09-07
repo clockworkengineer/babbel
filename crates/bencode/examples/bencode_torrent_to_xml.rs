@@ -1,8 +1,8 @@
-//! This module provides functionality to convert torrent files from bencode format to XML.
+﻿//! This module provides functionality to convert torrent files from bencode format to XML.
 //! It processes files from a specified directory and creates corresponding XML outputs.
 
 use std::path::Path;
-use bencode_lib::{parse, to_xml, FileDestination, FileSource};
+use babbel_bencode::{parse, to_xml, FileDestination, FileSource};
 
 #[path = "common/utility.rs"]
 mod bencode_utility_lib;

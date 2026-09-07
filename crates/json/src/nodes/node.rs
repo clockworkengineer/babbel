@@ -1,4 +1,4 @@
-#[allow(unused_imports)]
+﻿#[allow(unused_imports)]
 #[cfg(feature = "std")]
 use std::collections::HashMap;
 
@@ -29,7 +29,7 @@ impl Node {
     ///
     /// # Examples
     /// ```
-    /// use json_lib::Node;
+    /// use babbel_json::Node;
     /// use std::collections::HashMap;
     ///
     /// let mut obj1 = HashMap::new();
@@ -95,7 +95,7 @@ impl Node {
     ///
     /// # Examples
     /// ```
-    /// use json_lib::{json, Node};
+    /// use babbel_json::{json, Node};
     ///
     /// let data = json!({
     ///     "user": {
@@ -114,7 +114,7 @@ impl Node {
     ///
     /// # Examples
     /// ```
-    /// use json_lib::{json, Node};
+    /// use babbel_json::{json, Node};
     ///
     /// let mut data = json!({"x": 10});
     /// if let Some(x) = data.pointer_mut("/x") {
@@ -131,7 +131,7 @@ impl Node {
     ///
     /// # Examples
     /// ```
-    /// use json_lib::{json, Node};
+    /// use babbel_json::{json, Node};
     ///
     /// let data = json!({"name": "Alice", "age": 30});
     /// let pretty = data.to_string_pretty();
@@ -146,7 +146,7 @@ impl Node {
     ///
     /// # Examples
     /// ```
-    /// use json_lib::{json, Node};
+    /// use babbel_json::{json, Node};
     ///
     /// let data = json!({"x": 1});
     /// let pretty = data.to_string_with_indent("\t");
@@ -186,7 +186,7 @@ impl FromStr for Node {
     ///
     /// # Examples
     /// ```
-    /// use json_lib::Node;
+    /// use babbel_json::Node;
     /// use std::str::FromStr;
     ///
     /// let node = Node::from_str(r#"{"name": "Alice"}"#).unwrap();

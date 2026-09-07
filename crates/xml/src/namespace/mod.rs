@@ -1,4 +1,4 @@
-//! # XML Namespaces Subsystem
+﻿//! # XML Namespaces Subsystem
 //!
 //! Provides data structures and scoped resolution for W3C Namespaces in XML 1.0/1.1.
 
@@ -68,7 +68,7 @@ impl QName {
 /// # Examples
 ///
 /// ```
-/// use xml_lib::NamespaceScope;
+/// use babbel_xml::NamespaceScope;
 ///
 /// let mut scope = NamespaceScope::new();
 /// scope.declare(Some("soap"), "http://schemas.xmlsoap.org/soap/envelope/");

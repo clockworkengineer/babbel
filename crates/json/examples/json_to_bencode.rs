@@ -1,5 +1,5 @@
-use std::path::Path;
-use json_lib::{parse, to_bencode, FileDestination, FileSource};
+﻿use std::path::Path;
+use babbel_json::{parse, to_bencode, FileDestination, FileSource};
 
 #[path = "common/utility.rs"]
 mod json_utility_lib;

@@ -1,15 +1,15 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: basic_parsing_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for basic YAML parsing functionality in the yaml_lib crate.
+//      Internal tests for basic YAML parsing functionality in the babbel_yaml crate.
 //      These tests cover fundamental YAML constructs such as sequences, mappings,
 //      block styles, comments, and scalar values, ensuring correct parsing and
 //      compliance with the YAML specification.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Tests are based on YAML spec examples and custom scenarios.
 //      - Ensures robust handling of basic YAML syntax and edge cases.
 //

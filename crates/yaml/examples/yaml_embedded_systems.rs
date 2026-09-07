@@ -1,4 +1,4 @@
-//! Example demonstrating embedded systems support
+﻿//! Example demonstrating embedded systems support
 //!
 //! Shows how to use the YAML library in resource-constrained environments
 //! with no_std, custom allocators, and strict resource limits.
@@ -8,10 +8,10 @@
 extern crate alloc;
 
 #[cfg(feature = "std")]
-use yaml_lib::{parse, BufferSource, Node};
+use babbel_yaml::{parse, BufferSource, Node};
 
 #[cfg(feature = "std")]
-use yaml_lib::embedded::{
+use babbel_yaml::embedded::{
     allocator::BumpAllocator,
     config::*,
     lightweight_node::{LightNode, NodeArena},

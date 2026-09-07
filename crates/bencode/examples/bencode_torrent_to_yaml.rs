@@ -1,8 +1,8 @@
-//! This program converts BitTorrent files from bencode format to YAML format.
+﻿//! This program converts BitTorrent files from bencode format to YAML format.
 //! It processes all .torrent files in the "files" directory and creates corresponding .yaml files.
 
 use std::path::Path;
-use bencode_lib::{parse, to_yaml, FileDestination, FileSource};
+use babbel_bencode::{parse, to_yaml, FileDestination, FileSource};
 
 #[path = "common/utility.rs"]
 mod bencode_utility_lib;

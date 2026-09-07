@@ -1,4 +1,4 @@
-//! # Stringify Subsystem
+﻿//! # Stringify Subsystem
 //!
 //! Handles serialization of [`Document`] DOM trees back to valid, formatted XML string output
 //! and W3C Canonical XML (C14N).
@@ -18,7 +18,7 @@ use babbel_core::io::traits::IDestination;
 /// # Examples
 ///
 /// ```
-/// use xml_lib::{canonicalize, parse};
+/// use babbel_xml::{canonicalize, parse};
 ///
 /// let doc = parse("<root b=\"2\" a=\"1\"><empty/></root>").unwrap();
 /// let c14n = canonicalize(&doc);

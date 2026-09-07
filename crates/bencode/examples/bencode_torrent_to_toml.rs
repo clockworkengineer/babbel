@@ -1,8 +1,8 @@
-//! Example demonstrating conversion of torrent files from bencode format to TOML format.
+﻿//! Example demonstrating conversion of torrent files from bencode format to TOML format.
 //! Takes torrent files from the "files" directory and creates corresponding TOML files.
 
 use std::path::Path;
-use bencode_lib::{parse, to_toml, FileDestination, FileSource};
+use babbel_bencode::{parse, to_toml, FileDestination, FileSource};
 
 #[path = "common/utility.rs"]
 mod bencode_utility_lib;

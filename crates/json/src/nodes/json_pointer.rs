@@ -1,4 +1,4 @@
-//! JSON Pointer implementation (RFC 6901)
+﻿//! JSON Pointer implementation (RFC 6901)
 //!
 //! Provides functionality to navigate, query, and modify JSON structures using JSON Pointer syntax.
 //! A JSON Pointer is a string syntax for identifying a specific value within a JSON document.
@@ -6,7 +6,7 @@
 //! # Examples
 //!
 //! ```
-//! use json_lib::{Node, Numeric};
+//! use babbel_json::{Node, Numeric};
 //! # #[cfg(feature = "std")]
 //! use std::collections::HashMap;
 //! # #[cfg(not(feature = "std"))]
@@ -19,7 +19,7 @@
 //! let node = Node::Object(obj);
 //!
 //! // Get a value using JSON Pointer
-//! let name = json_lib::nodes::json_pointer::get(&node, "/name");
+//! let name = babbel_json::nodes::json_pointer::get(&node, "/name");
 //! # }
 //! ```
 
@@ -48,7 +48,7 @@ use alloc::{
 ///
 /// # Examples
 /// ```
-/// use json_lib::{Node, Numeric};
+/// use babbel_json::{Node, Numeric};
 /// use std::collections::HashMap;
 ///
 /// let mut obj = HashMap::new();
@@ -59,7 +59,7 @@ use alloc::{
 /// let node = Node::Object(obj);
 ///
 /// // Access "/foo/0"
-/// let result = json_lib::nodes::json_pointer::get(&node, "/foo/0");
+/// let result = babbel_json::nodes::json_pointer::get(&node, "/foo/0");
 /// assert!(result.is_some());
 /// ```
 pub fn get<'a>(node: &'a Node, pointer: &str) -> Option<&'a Node> {

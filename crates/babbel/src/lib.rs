@@ -45,16 +45,26 @@
 pub use babbel_core as core;
 
 #[cfg(feature = "json")]
-pub use json_lib as json;
+pub use babbel_json as json;
 
 #[cfg(feature = "yaml")]
-pub use yaml_lib as yaml;
+pub use babbel_yaml as yaml;
 
 #[cfg(feature = "xml")]
-pub use xml_lib as xml;
+pub use babbel_xml as xml;
 
 #[cfg(feature = "bencode")]
-pub use bencode_lib as bencode;
+pub use babbel_bencode as bencode;
+
+// Backwards-compatible aliases
+#[cfg(feature = "json")]
+pub use babbel_json as json_lib;
+#[cfg(feature = "yaml")]
+pub use babbel_yaml as yaml_lib;
+#[cfg(feature = "xml")]
+pub use babbel_xml as xml_lib;
+#[cfg(feature = "bencode")]
+pub use babbel_bencode as bencode_lib;
 
 #[cfg(feature = "convert")]
 pub mod convert;
@@ -67,9 +77,9 @@ pub mod embedded {
     pub use babbel_core::csv::{CsvFieldsIter, CsvPullParser, CsvRecord};
     pub use babbel_core::ini::{IniEvent, IniPullParser};
     #[cfg(feature = "json")]
-    pub use json_lib::parser::pull_parser::{JsonPullEvent, JsonPullParser, JsonScalar};
+    pub use babbel_json::parser::pull_parser::{JsonPullEvent, JsonPullParser, JsonScalar};
     #[cfg(feature = "xml")]
-    pub use xml_lib::parser::{XmlPullAttribute, XmlPullEvent, XmlPullParser};
+    pub use babbel_xml::parser::{XmlPullAttribute, XmlPullEvent, XmlPullParser};
 }
 
 // Re-export text, CSV, and INI processing from core

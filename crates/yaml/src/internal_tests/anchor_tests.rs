@@ -1,15 +1,15 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: anchor_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for YAML anchor and alias handling in the yaml_lib crate.
+//      Internal tests for YAML anchor and alias handling in the babbel_yaml crate.
 //      These tests validate correct parsing and behavior of YAML anchors, aliases,
 //      and related edge cases, including anchor names with special characters,
 //      empty anchor values, and anchors on various node types.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Tests are based on YAML specification examples and custom edge cases.
 //      - Ensures compliance with YAML anchor/alias semantics and robustness.
 //

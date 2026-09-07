@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: flow_debug.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for debugging and validating YAML flow style parsing in the yaml_lib crate.
+//      Internal tests for debugging and validating YAML flow style parsing in the babbel_yaml crate.
 //      These tests focus on edge cases, trailing commas, and error scenarios in flow mappings
 //      and sequences, aiding in parser development and troubleshooting.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Used for debugging and validating flow style parsing logic and error handling.
 //      - Ensures robust handling of flow mappings, sequences, and related edge cases.
 //

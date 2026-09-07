@@ -1,4 +1,4 @@
-//! Example demonstrating enhanced error handling features
+﻿//! Example demonstrating enhanced error handling features
 //!
 //! This example shows the new error handling capabilities:
 //! - Error codes for programmatic handling
@@ -7,7 +7,7 @@
 //! - Enhanced error context with spans
 //! - Multiple error collection
 
-use yaml_lib::{
+use babbel_yaml::{
     EnhancedError, ErrorCode, ErrorCollection, ErrorKind, ErrorSuggestion, RecoveryContext,
     RecoveryHandler, RecoveryStrategy, Span, SuggestionBuilder, YamlError,
 };

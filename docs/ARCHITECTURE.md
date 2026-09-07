@@ -1,4 +1,4 @@
-# Babbel Architecture & Design Principles
+﻿# Babbel Architecture & Design Principles
 
 Babbel is a high-performance, polyglot serialization, parsing, and document manipulation ecosystem in Rust. It unifies **JSON**, **YAML**, **Bencode**, **XML**, **CSV / TSV**, **INI / Properties**, and **JSON Lines** under a cohesive multi-crate architecture adhering strictly to **DRY** (Don't Repeat Yourself) and **SOLID** engineering principles.
 
@@ -16,10 +16,10 @@ graph TD
     end
 
     subgraph "Tier 1: Domain Format Engines"
-        JSON["json_lib (RFC 6901, RFC 7396, JSON5, JSON Lines)"]
-        YAML["yaml_lib (YAML 1.2, Anchors/Aliases, Custom Tags)"]
-        XML["xml_lib (W3C DOM, C14N, DTD, XSD, XPath 1.0)"]
-        Bencode["bencode_lib (BitTorrent, Zero-Copy Slices)"]
+        JSON["babbel_json (RFC 6901, RFC 7396, JSON5, JSON Lines)"]
+        YAML["babbel_yaml (YAML 1.2, Anchors/Aliases, Custom Tags)"]
+        XML["babbel_xml (W3C DOM, C14N, DTD, XSD, XPath 1.0)"]
+        Bencode["babbel_bencode (BitTorrent, Zero-Copy Slices)"]
     end
 
     subgraph "Tier 0: Foundational Kernel"
@@ -62,9 +62,9 @@ graph TD
     * **Memory Control**: `StackBuffer<const N>`, `MemoryTracker`, `EmbeddedLimits`, and 8-byte `CompactError` ensure deterministic execution without heap fragmentation.
   * **DRY Primitives**: Unicode BOM auto-detection (UTF-8, UTF-16 LE/BE, UTF-32 LE/BE), newline normalization, zero-allocation integer formatting via `itoa`, fast float formatting via `dtoa`, and canonical string escaping.
 
-### Layer 1: Domain Format Engines (`json_lib`, `yaml_lib`, `bencode_lib`, `xml_lib`)
+### Layer 1: Domain Format Engines (`babbel_json`, `babbel_yaml`, `babbel_bencode`, `babbel_xml`)
 * **Grammar & Semantics**: Each engine implements parsing, syntax validation, document navigation, and serialization for its specific specification.
-* **JSON Lines Streaming**: `json_lib::lines` provides streaming `JsonLinesReader` and `to_json_lines` over `ILineReader`.
+* **JSON Lines Streaming**: `babbel_json::lines` provides streaming `JsonLinesReader` and `to_json_lines` over `ILineReader`.
 * **Abstractions**: All format engines depend on `babbel_core::io` abstractions rather than hardcoded OS files or heap buffers.
 * **Autonomy**: Each crate can be consumed independently with minimal binary footprint.
 
@@ -97,7 +97,7 @@ Clients bind only to the minimal interface required for their operation:
 | Trait | Focus | Primary Implementor / Consumer |
 | :--- | :--- | :--- |
 | `ILineReader` | Line-by-line text reading across CRLF/LF/CR (`read_line`, `read_line_into`, `lines`) | Text engines, JSON Lines, CSV |
-| `IByteStream` | Forward byte reading (`read_byte`, `peek_byte`, `advance`) | Binary protocols (`bencode_lib`) |
+| `IByteStream` | Forward byte reading (`read_byte`, `peek_byte`, `advance`) | Binary protocols (`babbel_bencode`) |
 | `IByteWriter` | Binary byte writing (`write_byte`, `write_bytes`) | Binary serialization |
 | `ICharStream` | Minimal forward character pull (`next`, `current`, `more`) | Lightweight parsers |
 | `IRewindable` | Stream position reset (`reset`) | Multi-pass parsers |
@@ -106,7 +106,7 @@ Clients bind only to the minimal interface required for their operation:
 | `ITailInspectable` | Inspect last written byte (`last_byte`) | Comma-separation formatters |
 | `IClearable` | Truncate buffer/storage (`clear`) | Buffer pooling & recycling |
 | `IFlushable` | Flush buffered bytes (`flush`) | File and network I/O |
-| `IIndentationAware`| Current column / indent calculation | Whitespace-sensitive grammars (`yaml_lib`) |
+| `IIndentationAware`| Current column / indent calculation | Whitespace-sensitive grammars (`babbel_yaml`) |
 
 ### Dependency Inversion Principle (DIP)
 * **High-level parsers** depend upon trait abstractions (`ISource`, `ICharStream`, `IByteStream`, `ILineReader`).
@@ -151,15 +151,15 @@ pub enum Value {
 
 1. **Memory Compacted Node Layouts**:
    - `babbel_core::Value`: compacted to **32 bytes**.
-   - `json_lib::Node`: compacted to **56 bytes**.
-   - `xml_lib::NodeKind`: compacted from 72 bytes to **48 bytes** via targeted boxing.
-   - `xml_lib::NodeData`: compacted from 112 bytes to **88 bytes**.
-   - `yaml_lib::Node`: compacted to **40 bytes**.
-   - `bencode_lib::Node`: compacted to **56 bytes**.
+   - `babbel_json::Node`: compacted to **56 bytes**.
+   - `babbel_xml::NodeKind`: compacted from 72 bytes to **48 bytes** via targeted boxing.
+   - `babbel_xml::NodeData`: compacted from 112 bytes to **88 bytes**.
+   - `babbel_yaml::Node`: compacted to **40 bytes**.
+   - `babbel_bencode::Node`: compacted to **56 bytes**.
    - Validated continuously via automated assertion tests in `crates/babbel/tests/size_checks.rs`.
 2. **Zero-Copy Where Feasible**:
-   - `bencode_lib` provides `BorrowedNode<'a>`, slicing directly from input buffers with zero heap allocations.
-   - `xml_lib` provides `slice_range(start, end)` directly over UTF-8 string buffers.
+   - `babbel_bencode` provides `BorrowedNode<'a>`, slicing directly from input buffers with zero heap allocations.
+   - `babbel_xml` provides `slice_range(start, end)` directly over UTF-8 string buffers.
    - `SliceSource<'a>` reads directly from borrowed byte slices and yields line slices with `read_line_slice()`.
 3. **Elimination of I/O System Call Overhead**:
    - `FileDestination` maintains in-memory tracking of written length and the last written byte, eliminating disk seeks and handle re-opening.

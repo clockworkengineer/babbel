@@ -3,7 +3,7 @@
 //! Demonstrates iterating over DOM arena nodes (`doc.nodes()`), categorizing node variants
 //! (`Element`, `Text`, `Comment`), and counting metrics across a document structure.
 
-use xml_lib::{parse, NodeKind};
+use babbel_xml::{parse, NodeKind};
 
 fn main() {
     println!("--- XML Analyze File Example ---");

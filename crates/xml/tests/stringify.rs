@@ -1,4 +1,4 @@
-﻿use xml_lib::{parse, stringify, SerializeOptions, XmlSerializer};
+﻿use babbel_xml::{parse, stringify, SerializeOptions, XmlSerializer};
 
 #[test]
 fn test_roundtrip_stringify() {

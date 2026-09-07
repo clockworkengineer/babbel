@@ -3,7 +3,7 @@
 //! Demonstrates configuring `ParseOptions::max_nesting_depth` to protect applications
 //! against stack overflow and DoS attacks from deeply nested element structures.
 
-use xml_lib::{parse_with_options, ParseOptions};
+use babbel_xml::{parse_with_options, ParseOptions};
 
 fn main() {
     println!("--- XML Deep Nesting Example ---");

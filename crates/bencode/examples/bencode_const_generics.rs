@@ -1,4 +1,4 @@
-//! Example demonstrating const generics for compile-time memory bounds.
+﻿//! Example demonstrating const generics for compile-time memory bounds.
 //!
 //! **Best Practice:** Use `FixedSizeBuffer<N>` for stack-allocated, compile-time checked buffers in embedded or size-sensitive applications.
 //! This ensures predictable memory usage, avoids heap allocation, and enables compile-time safety checks.
@@ -6,7 +6,7 @@
 //! This example shows how to use const generics to ensure memory usage
 //! is known at compile time, perfect for embedded systems.
 
-use bencode_lib::{parse_borrowed, validate_bencode, FixedSizeBuffer, MemoryBounds};
+use babbel_bencode::{parse_borrowed, validate_bencode, FixedSizeBuffer, MemoryBounds};
 
 fn main() {
     println!("=== Const Generics for Embedded Systems ===\n");
@@ -148,7 +148,7 @@ fn main() {
     const ACTUAL_BUFFER: usize = 128;
 
     // This compiles because ACTUAL_BUFFER >= MIN_BUFFER
-    bencode_lib::assert_buffer_size!(ACTUAL_BUFFER, MIN_BUFFER);
+    babbel_bencode::assert_buffer_size!(ACTUAL_BUFFER, MIN_BUFFER);
 
     println!("   ✓ Buffer size assertion passed at compile time");
     println!(

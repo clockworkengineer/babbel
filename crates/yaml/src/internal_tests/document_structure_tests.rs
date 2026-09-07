@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: document_structure_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for YAML document structure parsing in the yaml_lib crate.
+//      Internal tests for YAML document structure parsing in the babbel_yaml crate.
 //      These tests validate correct handling of multi-document streams, document boundaries,
 //      and structural edge cases, ensuring compliance with the YAML specification.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Focuses on document boundaries, multi-document parsing, and structure validation.
 //      - Ensures robust handling of complex YAML document layouts and edge cases.
 //

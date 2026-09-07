@@ -1,15 +1,15 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: bencode_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for Bencode serialization in the yaml_lib crate.
+//      Internal tests for Bencode serialization in the babbel_yaml crate.
 //      These tests validate correct conversion of YAML node structures to the
 //      Bencode format, ensuring compliance with Bencode encoding rules for
 //      strings, integers, lists, and dictionaries.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Bencode is used in applications such as BitTorrent for data serialization.
 //      - Tests ensure interoperability and correctness of Bencode output.
 //

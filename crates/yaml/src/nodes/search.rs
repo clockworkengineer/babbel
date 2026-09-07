@@ -1,4 +1,4 @@
-//! Tree search, visitor, and traversal methods for YAML AST nodes.
+﻿//! Tree search, visitor, and traversal methods for YAML AST nodes.
 //!
 //! Provides depth-first pre-order tree traversal, counting, depth calculation,
 //! predicate-based node filtering, and immediate child iteration.
@@ -84,7 +84,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let array = Node::Array(vec![Node::from(1), Node::from(2)]);
     /// let children: Vec<_> = array.children().collect();
     /// assert_eq!(children.len(), 2);
@@ -100,7 +100,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let doc = Node::Array(vec![
     ///     Node::from(1),
     ///     Node::Array(vec![Node::from(2), Node::from(3)])
@@ -167,8 +167,8 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
-    /// # use yaml_lib::Numeric;
+    /// # use babbel_yaml::Node;
+    /// # use babbel_yaml::Numeric;
     /// let mut doc = Node::Array(vec![Node::from(1), Node::from(2)]);
     /// doc.visit_mut(|node, _depth| {
     ///     if let Node::Number(n) = node {
@@ -231,7 +231,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let doc = Node::Array(vec![
     ///     Node::from(1),
     ///     Node::Array(vec![Node::from(2)])
@@ -253,7 +253,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let leaf = Node::from(42);
     /// assert_eq!(leaf.max_depth(), 0);
     ///
@@ -279,7 +279,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let doc = Node::Array(vec![
     ///     Node::from(1),
     ///     Node::from("text"),
@@ -337,7 +337,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let doc = Node::Array(vec![
     ///     Node::from("text"),
     ///     Node::from(42)

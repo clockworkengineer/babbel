@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: toml_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for TOML serialization in the yaml_lib crate.
+//      Internal tests for TOML serialization in the babbel_yaml crate.
 //      These tests validate correct conversion of YAML node structures to TOML format,
 //      ensuring compliance with TOML encoding rules for strings, numbers, tables, and arrays.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Ensures interoperability and correctness of TOML output from YAML data.
 //      - Focuses on both simple and nested TOML serialization scenarios.
 //

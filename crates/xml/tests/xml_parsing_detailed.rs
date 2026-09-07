@@ -1,4 +1,4 @@
-﻿use xml_lib::{
+﻿use babbel_xml::{
     parse, stringify, NodeKind,
 };
 
@@ -183,7 +183,7 @@ fn test_unicode_character_parsing() {
 
 #[test]
 fn test_security_depth_limits() {
-    use xml_lib::{parse_with_options, ParseOptions};
+    use babbel_xml::{parse_with_options, ParseOptions};
 
     let mut options = ParseOptions::default();
     options.max_nesting_depth = 20;

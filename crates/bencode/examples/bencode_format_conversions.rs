@@ -1,7 +1,7 @@
-//! Example demonstrating format conversions between bencode and various output formats.
+﻿//! Example demonstrating format conversions between bencode and various output formats.
 //! This shows how to convert bencode data to JSON, TOML, XML, YAML and back to bencode.
 
-use bencode_lib::{
+use babbel_bencode::{
     make_node, parse_str, stringify_to_string, to_json, to_toml, to_xml, to_yaml,
     BufferDestination, Node,
 };
@@ -248,7 +248,7 @@ fn demonstrate_torrent_conversion() {
         "announce".to_string(),
         make_node("udp://tracker.example.com:6969/announce"),
     );
-    torrent.insert("created by".to_string(), make_node("bencode_lib"));
+    torrent.insert("created by".to_string(), make_node("babbel_bencode"));
     torrent.insert("creation date".to_string(), make_node(1699564800));
     torrent.insert("info".to_string(), Node::Dictionary(info));
 

@@ -1,4 +1,4 @@
-﻿use xml_lib::{parse, XsdValidator};
+﻿use babbel_xml::{parse, XsdValidator};
 
 #[test]
 fn test_xsd_simple_string_validation() {

@@ -1,10 +1,10 @@
-//! Example demonstrating zero-copy parsing for embedded systems.
+﻿//! Example demonstrating zero-copy parsing for embedded systems.
 //!
 //! This example shows how to use BorrowedNode and parse_borrowed() to parse
 //! bencode data without allocating or copying the input data. This is ideal
 //! for memory-constrained embedded systems.
 
-use bencode_lib::{parse_borrowed, validate_bencode, BorrowedNode};
+use babbel_bencode::{parse_borrowed, validate_bencode, BorrowedNode};
 
 fn main() {
     println!("=== Zero-Copy Bencode Parsing Example ===\n");

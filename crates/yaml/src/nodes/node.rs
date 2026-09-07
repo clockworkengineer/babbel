@@ -1,4 +1,4 @@
-//! YAML Node Definitions
+﻿//! YAML Node Definitions
 //!
 //! Defines the core `Node` enum and related traits for representing YAML data structures.
 //! Includes conversion, cloning, and utility methods for node manipulation and introspection.
@@ -529,7 +529,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let array = Node::Array(vec![Node::from(1), Node::from(2)]);
     /// assert!(array.get(0).is_some());
     /// assert!(array.get(5).is_none());
@@ -550,7 +550,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let mapping = Node::Mapping(vec![
     ///     (Node::from("key"), Node::from("value"))
     /// ]);
@@ -580,7 +580,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let mut array = Node::Array(vec![Node::from(1), Node::from(2)]);
     /// if let Some(node) = array.get_mut(0) {
     ///     *node = Node::from(10);
@@ -601,7 +601,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let mut mapping = Node::Mapping(vec![
     ///     (Node::from("key"), Node::from("value"))
     /// ]);
@@ -632,7 +632,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let array = Node::Array(vec![]);
     /// assert!(array.is_sequence());
     /// let mapping = Node::Mapping(vec![]);
@@ -649,7 +649,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let mapping = Node::Mapping(vec![]);
     /// assert!(mapping.is_mapping());
     /// let array = Node::Array(vec![]);
@@ -666,7 +666,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let array = Node::Array(vec![Node::from(1), Node::from(2)]);
     /// assert_eq!(array.len(), Some(2));
     /// let scalar = Node::from(42);
@@ -688,7 +688,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let array = Node::Array(vec![]);
     /// assert!(array.is_empty());
     /// let array = Node::Array(vec![Node::from(1)]);
@@ -705,7 +705,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let num = Node::from(42);
     /// assert_eq!(num.as_i32(), Some(42));
     /// let string = Node::from("text");
@@ -745,7 +745,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let num = Node::from(3.14);
     /// assert_eq!(num.as_f32(), Some(3.14_f32));
     /// let string = Node::from("text");
@@ -779,7 +779,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let string = Node::from("hello");
     /// assert_eq!(string.as_str(), Some("hello"));
     /// let number = Node::from(42);
@@ -799,7 +799,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let bool_node = Node::from(true);
     /// assert_eq!(bool_node.as_bool(), Some(true));
     /// let number = Node::from(42);
@@ -819,7 +819,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let string = Node::from("hello");
     /// assert!(string.is_string());
     /// let number = Node::from(42);
@@ -836,7 +836,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let number = Node::from(42);
     /// assert!(number.is_number());
     /// let string = Node::from("text");
@@ -853,7 +853,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let bool_node = Node::from(true);
     /// assert!(bool_node.is_boolean());
     /// let number = Node::from(42);
@@ -878,7 +878,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let array = Node::Array(vec![Node::from(1)]);
     /// assert!(array.is_array());
     /// let number = Node::from(42);
@@ -903,7 +903,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let none = Node::None;
     /// assert!(none.is_none());
     /// let number = Node::from(42);
@@ -920,7 +920,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let array = Node::Array(vec![Node::from(1), Node::from(2)]);
     /// assert_eq!(array.as_slice().map(|s| s.len()), Some(2));
     /// let mapping = Node::Mapping(vec![]);
@@ -941,7 +941,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let mapping = Node::Mapping(vec![
     ///     (Node::from("key"), Node::from("value"))
     /// ]);
@@ -963,7 +963,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let mapping = Node::Mapping(vec![
     ///     (Node::from("key"), Node::from("value"))
     /// ]);
@@ -981,7 +981,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let mapping = Node::Mapping(vec![
     ///     (Node::from("key1"), Node::from("value1")),
     ///     (Node::from("key2"), Node::from("value2"))
@@ -1024,7 +1024,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let array = Node::array()
     ///     .push(1)
     ///     .push(2)
@@ -1039,7 +1039,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let config = Node::mapping()
     ///     .insert("host", "localhost")
     ///     .insert("port", 8080)
@@ -1053,7 +1053,7 @@ impl Node {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::Node;
+    /// # use babbel_yaml::Node;
     /// let set = Node::set()
     ///     .insert(1)
     ///     .insert(2)

@@ -1,4 +1,4 @@
-//! Line-delimited JSON (JSON Lines / NDJSON / JSONL) streaming parser and emitter.
+﻿//! Line-delimited JSON (JSON Lines / NDJSON / JSONL) streaming parser and emitter.
 //!
 //! JSON Lines is a text format where each line contains a valid single-line JSON value.
 //! It is ideal for streaming large datasets, logs, and record-by-record processing.
@@ -107,7 +107,7 @@ impl<R: ILineReader> Iterator for JsonLinesReader<R> {
 ///
 /// # Examples
 /// ```
-/// use json_lib::lines::parse_json_lines;
+/// use babbel_json::lines::parse_json_lines;
 ///
 /// let data = "{\"id\": 1}\n{\"id\": 2}\n";
 /// let records = parse_json_lines(data).unwrap();
@@ -129,8 +129,8 @@ pub fn parse_json_lines(input: &str) -> Result<Vec<Node>, String> {
 ///
 /// # Examples
 /// ```
-/// use json_lib::lines::{to_json_lines, parse_json_lines};
-/// use json_lib::from_str;
+/// use babbel_json::lines::{to_json_lines, parse_json_lines};
+/// use babbel_json::from_str;
 ///
 /// let n1 = from_str("{\"a\": 1}").unwrap();
 /// let n2 = from_str("{\"b\": 2}").unwrap();

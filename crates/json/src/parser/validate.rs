@@ -1,4 +1,4 @@
-//! JSON validation without allocation
+﻿//! JSON validation without allocation
 //!
 //! Provides fast validation of JSON syntax without building a Node tree.
 //! Useful for rejecting invalid data before attempting full parsing.
@@ -25,7 +25,7 @@ use crate::parser::constants::*;
 ///
 /// # Examples
 /// ```
-/// use json_lib::{validate_json, BufferSource, ParserConfig};
+/// use babbel_json::{validate_json, BufferSource, ParserConfig};
 ///
 /// let json = br#"{"valid": true}"#;
 /// let mut source = BufferSource::new(json);

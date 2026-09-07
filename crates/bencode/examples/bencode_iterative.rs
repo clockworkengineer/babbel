@@ -1,4 +1,4 @@
-//! Iterative (stack-based) parser example
+﻿//! Iterative (stack-based) parser example
 //!
 //! **Best Practice:** Use `parse_iterative` and related functions for deeply nested bencode data or in embedded/stack-limited environments.
 //! This avoids stack overflows by using an explicit heap stack, making parsing robust and predictable for any nesting depth.
@@ -9,7 +9,7 @@
 //! The iterative parser uses an explicit heap-allocated stack instead of the call stack,
 //! preventing stack overflow when parsing deeply nested bencode structures.
 
-use bencode_lib::{parse_iterative, stringify_to_bytes, BufferSource};
+use babbel_bencode::{parse_iterative, stringify_to_bytes, BufferSource};
 
 fn main() {
     println!("=== Iterative Parser Demo ===\n");
@@ -38,13 +38,13 @@ fn main() {
     println!("   Created nested list with {} bytes", deeply_nested.len());
 
     // Try with iterative parser (should work)
-    match bencode_lib::parse_bytes_iterative(deeply_nested.as_bytes()) {
+    match babbel_bencode::parse_bytes_iterative(deeply_nested.as_bytes()) {
         Ok(_) => println!("   ✓ Iterative parser succeeded"),
         Err(e) => println!("   ✗ Iterative parser failed: {}", e),
     }
 
     // Try with recursive parser (works but uses more stack)
-    match bencode_lib::parse_bytes(deeply_nested.as_bytes()) {
+    match babbel_bencode::parse_bytes(deeply_nested.as_bytes()) {
         Ok(_) => println!("   ✓ Recursive parser succeeded (but used more stack)"),
         Err(e) => println!("   ✗ Recursive parser failed: {}", e),
     }
@@ -57,7 +57,7 @@ fn main() {
     }
     println!("   Created nested list with {} bytes", very_deep.len());
 
-    match bencode_lib::parse_bytes_iterative(very_deep.as_bytes()) {
+    match babbel_bencode::parse_bytes_iterative(very_deep.as_bytes()) {
         Ok(_) => println!("   ✓ Iterative parser succeeded (no stack issues)"),
         Err(e) => println!("   ✗ Iterative parser failed: {}", e),
     }

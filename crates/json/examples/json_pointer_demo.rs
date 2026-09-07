@@ -1,9 +1,9 @@
-//! Demonstrates JSON Pointer (RFC 6901) operations
+﻿//! Demonstrates JSON Pointer (RFC 6901) operations
 //!
 //! Shows how to navigate, query, and modify JSON structures using JSON Pointer syntax.
 //! JSON Pointers provide a standard way to identify specific values within a JSON document.
 
-use json_lib::{
+use babbel_json::{
     parse, pointer_get, pointer_get_mut, pointer_remove, pointer_set, stringify, BufferDestination,
     BufferSource, Node, Numeric,
 };
@@ -152,7 +152,7 @@ fn main() {
     // Example 9: Display final modified JSON
     println!("\n9. Final modified JSON:");
     let mut output = BufferDestination::new();
-    json_lib::print(&root, &mut output, 2);
+    babbel_json::print(&root, &mut output, 2);
     println!("{}", output.to_string());
 
     println!("\n=== Demo Complete ===");

@@ -5,7 +5,7 @@
 //! - Expanding empty elements (`<item/>` -> `<item></item>`)
 //! - Standardizing line breaks and character escaping for digital signatures (XMLDSig)
 
-use xml_lib::{canonicalize, parse, CanonicalOptions, CanonicalSerializer};
+use babbel_xml::{canonicalize, parse, CanonicalOptions, CanonicalSerializer};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("--- Canonical XML (C14N) Example ---");

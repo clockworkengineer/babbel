@@ -1,12 +1,12 @@
 [package]
-name = "xml_lib"
+name = "babbel_xml"
 version = "0.1.0"
 edition = "2021"
 authors = ["ClockworkEngineer", "Rust Port Team"]
 description = "Full-featured XML parser, validator, stringifier, and XPath 1.0 engine in pure Rust"
 license = "MIT"
-repository = "https://github.com/clockworkengineer/xml"
-documentation = "https://docs.rs/xml_lib"
+repository = "https://github.com/clockworkengineer/babbel"
+documentation = "https://docs.rs/babbel_xml"
 readme = "README.md"
 
 [features]
@@ -22,7 +22,7 @@ small_nodes = []
 serde = ["dep:serde"]
 
 [dependencies]
-babbel_core = { path = "../babbel_core", default-features = false }
+babbel_core = { path = "../babbel_core", version = "0.1.0", default-features = false }
 thiserror = "1.0"
 serde = { version = "1.0", default-features = false, features = ["alloc", "derive"], optional = true }
 

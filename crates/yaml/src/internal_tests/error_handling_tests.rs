@@ -1,15 +1,15 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: error_handling_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for error handling and reporting in the yaml_lib crate.
+//      Internal tests for error handling and reporting in the babbel_yaml crate.
 //      These tests validate that parsing errors, invalid syntax, and edge cases are
 //      correctly detected and reported with meaningful error messages, ensuring
 //      compliance with the YAML specification and robust user feedback.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Focuses on error scenarios, malformed input, and panic safety.
 //      - Ensures comprehensive error coverage for YAML parsing and validation.
 //

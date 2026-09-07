@@ -1,4 +1,4 @@
-//! Example demonstrating robust error handling with YAML operations
+﻿//! Example demonstrating robust error handling with YAML operations
 //!
 //! This example shows how to:
 //! - Handle parse errors gracefully
@@ -9,7 +9,7 @@
 //!
 //! Run with `--features enhanced` to see enhanced error handling examples.
 
-use yaml_lib::{get_document, parse, BufferSource, FileSource, Node};
+use babbel_yaml::{get_document, parse, BufferSource, FileSource, Node};
 
 #[path = "common/enhanced_errors.rs"]
 mod enhanced;
@@ -360,7 +360,7 @@ fn get_nested_number(node: &Node, path: &[&str]) -> Option<i64> {
     }
 
     match current {
-        Node::Number(yaml_lib::Numeric::Integer(n)) => Some(*n),
+        Node::Number(babbel_yaml::Numeric::Integer(n)) => Some(*n),
         _ => None,
     }
 }

@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: block_tag_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for YAML block tag parsing and handling in the yaml_lib crate.
+//      Internal tests for YAML block tag parsing and handling in the babbel_yaml crate.
 //      These tests validate correct recognition and processing of explicit tags on
 //      block scalars, sequences, and mappings, ensuring compliance with the YAML spec.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Tags are used to indicate data types and semantics in YAML documents.
 //      - Tests ensure correct tag resolution, preservation, and node wrapping.
 //

@@ -1,9 +1,9 @@
-//! String Interning Example
+﻿//! String Interning Example
 //!
 //! This example demonstrates how to use string interning to reduce memory usage
 //! when working with YAML documents that contain many repeated strings.
 
-use yaml_lib::{CommonStrings, StringInterner};
+use babbel_yaml::{CommonStrings, StringInterner};
 
 fn main() {
     println!("=== String Interning Demo ===\n");

@@ -3,7 +3,7 @@
 //! Demonstrates parsing mixed content element tags containing interspersed text nodes,
 //! child element tags (`<b>`, `<i>`), and CDATA sections (`<![CDATA[...]]>`).
 
-use xml_lib::{parse, NodeKind};
+use babbel_xml::{parse, NodeKind};
 
 fn main() {
     println!("--- XML Mixed Content Example ---");

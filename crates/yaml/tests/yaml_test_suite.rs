@@ -1,4 +1,4 @@
-//! Official YAML 1.2 Test Suite Integration
+﻿//! Official YAML 1.2 Test Suite Integration
 //!
 //! This test suite runs the official YAML test cases from:
 //! https://github.com/yaml/yaml-test-suite (data-2022-01-17 release)
@@ -9,7 +9,7 @@ use std::fs;
 use std::panic;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
-use yaml_lib::test_helpers::parse_yaml;
+use babbel_yaml::test_helpers::parse_yaml;
 
 // Guard to temporarily silence panic output during the YAML test suite run.
 // This keeps the console output focused on per-case PASS/FAIL, while still

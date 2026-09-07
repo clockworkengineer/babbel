@@ -1,4 +1,4 @@
-//! JSON parser implementation that converts JSON text into Node structures
+﻿//! JSON parser implementation that converts JSON text into Node structures
 //! Provides functions for parsing different JSON data types including objects,
 //! arrays, strings, numbers, boolean and null values.
 
@@ -44,7 +44,7 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
 ///
 /// # Examples
 /// ```
-/// use json_lib::parser::default::from_str;
+/// use babbel_json::parser::default::from_str;
 ///
 /// let node = from_str(r#"{"name": "Alice", "age": 30}"#).unwrap();
 /// assert!(node.is_object());
@@ -65,7 +65,7 @@ pub fn from_str(s: &str) -> Result<Node, String> {
 ///
 /// # Examples
 /// ```
-/// use json_lib::parser::default::from_bytes;
+/// use babbel_json::parser::default::from_bytes;
 ///
 /// let bytes = br#"{"name": "Alice"}"#;
 /// let node = from_bytes(bytes).unwrap();

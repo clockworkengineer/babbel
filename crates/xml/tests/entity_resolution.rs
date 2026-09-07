@@ -1,4 +1,4 @@
-﻿use xml_lib::{parse, EntityMapper};
+﻿use babbel_xml::{parse, EntityMapper};
 
 #[test]
 fn test_predefined_entities() {

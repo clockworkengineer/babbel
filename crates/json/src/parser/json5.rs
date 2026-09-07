@@ -1,4 +1,4 @@
-//! JSON5 comment stripping
+﻿//! JSON5 comment stripping
 //!
 //! Provides utilities to strip single-line (//) and multi-line (/* */) comments
 //! from JSON5-style input before parsing as standard JSON.
@@ -21,7 +21,7 @@ use alloc::{string::String, vec::Vec};
 ///
 /// # Examples
 /// ```
-/// use json_lib::parser::json5::strip_comments;
+/// use babbel_json::parser::json5::strip_comments;
 ///
 /// let input = r#"{
 ///     "name": "Alice", // This is a name

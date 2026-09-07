@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: file_parsing_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for parsing YAML files from the filesystem in the yaml_lib crate.
+//      Internal tests for parsing YAML files from the filesystem in the babbel_yaml crate.
 //      These tests validate correct reading, parsing, and error handling for multiple YAML
 //      files, ensuring robust file I/O and compliance with the YAML specification.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Focuses on end-to-end parsing of real YAML files from the test suite.
 //      - Ensures robust handling of file I/O, batch parsing, and edge cases.
 //

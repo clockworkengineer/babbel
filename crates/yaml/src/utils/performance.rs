@@ -1,4 +1,4 @@
-//! Performance Utilities for YAML Library
+﻿//! Performance Utilities for YAML Library
 //!
 //! This module provides performance measurement and optimization tools for YAML processing.
 //! It includes profiling helpers and statistics gathering utilities to analyze and improve
@@ -80,7 +80,7 @@ impl DocumentStats {
     ///
     /// # Example
     /// ```
-    /// # use yaml_lib::{Node, DocumentStats};
+    /// # use babbel_yaml::{Node, DocumentStats};
     /// let doc = Node::Array(vec![
     ///     Node::from(1),
     ///     Node::from("text"),

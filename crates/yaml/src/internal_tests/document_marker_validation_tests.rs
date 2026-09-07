@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: document_marker_validation_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for validation of YAML document marker usage in the yaml_lib crate.
+//      Internal tests for validation of YAML document marker usage in the babbel_yaml crate.
 //      These tests ensure that document start markers (---) are correctly validated for
 //      placement, formatting, and error reporting according to the YAML specification.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Focuses on error handling and validation for document marker placement and usage.
 //      - Ensures robust error reporting and spec compliance for document marker issues.
 //

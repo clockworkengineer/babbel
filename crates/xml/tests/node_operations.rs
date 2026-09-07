@@ -1,4 +1,4 @@
-﻿use xml_lib::{
+﻿use babbel_xml::{
     Attribute, Document, NodeKind, parse,
     EntityMapper, DtdValidator,
 };
@@ -99,7 +99,7 @@ fn test_cdata_stringify_output() {
     doc.append_child(elem_id, cdata_id).unwrap();
     doc.append_child(root_id, elem_id).unwrap();
 
-    let output = xml_lib::stringify(&doc);
+    let output = babbel_xml::stringify(&doc);
     assert!(output.contains("<![CDATA[<raw>&data</raw>]]>"));
 }
 
@@ -127,7 +127,7 @@ fn test_comment_stringify_output() {
     });
     doc.append_child(root_id, elem_id).unwrap();
 
-    let output = xml_lib::stringify(&doc);
+    let output = babbel_xml::stringify(&doc);
     assert!(output.contains("<!--Header comment-->"));
 }
 
@@ -153,7 +153,7 @@ fn test_processing_instruction_node() {
 #[test]
 fn test_declaration_node() {
     let mut doc = Document::new();
-    let decl_id = doc.add_node(NodeKind::Declaration(Box::new(xml_lib::DeclarationData {
+    let decl_id = doc.add_node(NodeKind::Declaration(Box::new(babbel_xml::DeclarationData {
         version: "1.0".into(),
         encoding: Some("UTF-8".into()),
         standalone: Some(true),
@@ -175,7 +175,7 @@ fn test_declaration_node() {
 #[test]
 fn test_declaration_stringify_output() {
     let mut doc = Document::new();
-    let decl_id = doc.add_node(NodeKind::Declaration(Box::new(xml_lib::DeclarationData {
+    let decl_id = doc.add_node(NodeKind::Declaration(Box::new(babbel_xml::DeclarationData {
         version: "1.0".into(),
         encoding: Some("UTF-8".into()),
         standalone: Some(true),
@@ -189,7 +189,7 @@ fn test_declaration_stringify_output() {
     });
     doc.append_child(root_id, elem_id).unwrap();
 
-    let output = xml_lib::stringify(&doc);
+    let output = babbel_xml::stringify(&doc);
     assert!(output.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"));
 }
 

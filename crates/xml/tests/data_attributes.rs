@@ -1,4 +1,4 @@
-﻿use xml_lib::{Attribute, EntityMapper};
+﻿use babbel_xml::{Attribute, EntityMapper};
 
 #[test]
 fn test_attribute_creation_and_search() {

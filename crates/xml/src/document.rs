@@ -1,4 +1,4 @@
-//! # Document (DOM Arena Model)
+﻿//! # Document (DOM Arena Model)
 //!
 //! Provides the primary [`Document`] container representing an XML DOM tree stored in a flat arena vector.
 
@@ -47,7 +47,7 @@ impl Document {
     /// # Examples
     ///
     /// ```
-    /// use xml_lib::Document;
+    /// use babbel_xml::Document;
     ///
     /// let doc = Document::parse_str("<root><child/></root>").unwrap();
     /// assert_eq!(doc.get_root_element_name(), Some("root"));
@@ -205,7 +205,7 @@ impl Document {
     /// # Examples
     ///
     /// ```
-    /// use xml_lib::Document;
+    /// use babbel_xml::Document;
     ///
     /// let mut doc = Document::new();
     /// let elem = doc.create_element("item");
@@ -223,7 +223,7 @@ impl Document {
     /// # Examples
     ///
     /// ```
-    /// use xml_lib::Document;
+    /// use babbel_xml::Document;
     ///
     /// let mut doc = Document::new();
     /// let text = doc.create_text_node("Hello, XML!");
@@ -497,7 +497,7 @@ impl Document {
     /// # Examples
     ///
     /// ```
-    /// use xml_lib::Document;
+    /// use babbel_xml::Document;
     ///
     /// let mut doc = Document::parse_str("<root><a/><b/></root>").unwrap();
     /// let b_id = doc.get_elements_by_tag_name("b")[0];

@@ -1,4 +1,4 @@
-//! # XML Lib (Rust Port)
+﻿//! # XML Lib (Rust Port)
 //!
 //! A full-featured, high-performance, pure Rust XML library offering:
 //! - XML Parsing & DOM Construction (Arena-based `Document` model)
@@ -66,7 +66,7 @@ pub use serde_impl::{
 /// # Examples
 ///
 /// ```
-/// use xml_lib::parse;
+/// use babbel_xml::parse;
 ///
 /// let doc = parse("<root id=\"1\"><item>Data</item></root>").unwrap();
 /// assert_eq!(doc.get_root_element_name(), Some("root"));
@@ -126,7 +126,7 @@ pub fn parse_reader<R: std::io::Read>(reader: R) -> Result<Document> {
 /// # Examples
 ///
 /// ```
-/// use xml_lib::{parse_source, ISource, XmlSource};
+/// use babbel_xml::{parse_source, ISource, XmlSource};
 ///
 /// let mut source = XmlSource::from_string("<root><child/></root>");
 /// let doc = parse_source(&mut source).unwrap();
@@ -148,7 +148,7 @@ pub fn parse_source_with_options(source: &mut dyn ISource, options: ParseOptions
 /// # Examples
 ///
 /// ```
-/// use xml_lib::{parse, stringify};
+/// use babbel_xml::{parse, stringify};
 ///
 /// let doc = parse("<status>online</status>").unwrap();
 /// let xml = stringify(&doc);

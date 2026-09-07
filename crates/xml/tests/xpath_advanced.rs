@@ -1,4 +1,4 @@
-﻿use xml_lib::{parse, XPathEngine, XPathValue};
+﻿use babbel_xml::{parse, XPathEngine, XPathValue};
 
 #[test]
 fn test_xpath_position_and_last() {
@@ -102,8 +102,8 @@ fn test_xpath_modern_string_functions() {
 
     // lower-case & upper-case
     assert_eq!(
-        engine.evaluate("lower-case('XML_LIB')", None).unwrap(),
-        XPathValue::String("xml_lib".into())
+        engine.evaluate("lower-case('babbel_xml')", None).unwrap(),
+        XPathValue::String("babbel_xml".into())
     );
     assert_eq!(
         engine.evaluate("upper-case('rust')", None).unwrap(),
@@ -144,7 +144,7 @@ fn test_xpath_custom_function() {
 
     engine.register_function("square", |args| {
         if args.len() != 1 {
-            return Err(xml_lib::XmlError::XPathError("square() takes 1 argument".into()));
+            return Err(babbel_xml::XmlError::XPathError("square() takes 1 argument".into()));
         }
         let n = match args[0] {
             XPathValue::Number(num) => num,

@@ -1,4 +1,4 @@
-//! Parser Configuration & Builder
+﻿//! Parser Configuration & Builder
 //!
 //! Provides configuration options and a fluent builder API for customizing YAML parser behavior.
 //! Supports setting limits, toggling features, and adapting to different environments.
@@ -17,7 +17,7 @@ use alloc::string::String;
 ///
 /// # Example
 /// ```
-/// use yaml_lib::ParserConfig;
+/// use babbel_yaml::ParserConfig;
 ///
 /// let config = ParserConfig::builder()
 ///     .max_depth(64)
@@ -183,7 +183,7 @@ impl ParserConfig {
 ///
 /// # Example
 /// ```
-/// use yaml_lib::ParserConfig;
+/// use babbel_yaml::ParserConfig;
 ///
 /// let config = ParserConfig::builder()
 ///     .max_depth(64)

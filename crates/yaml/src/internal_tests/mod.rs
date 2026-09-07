@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: mod.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Module declaration file for internal tests in the yaml_lib crate.
+//      Module declaration file for internal tests in the babbel_yaml crate.
 //      This file organizes and includes all internal test modules, ensuring
 //      comprehensive test coverage for YAML parsing, serialization, and validation.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Centralizes internal test module imports for maintainability and clarity.
 //      - Supports both standard and embedded system test configurations.
 //

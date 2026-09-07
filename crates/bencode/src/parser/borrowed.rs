@@ -1,4 +1,4 @@
-//! Zero-copy parser for bencode data.
+﻿//! Zero-copy parser for bencode data.
 //! This parser creates BorrowedNode structures that reference the input buffer
 //! without allocating or copying data, making it suitable for embedded systems.
 
@@ -33,7 +33,7 @@ use crate::nodes::borrowed::BorrowedNode;
 ///
 /// # Example
 /// ```
-/// use bencode_lib::parse_borrowed;
+/// use babbel_bencode::parse_borrowed;
 ///
 /// let data = b"i42e";
 /// let node = parse_borrowed(data).unwrap();
@@ -194,7 +194,7 @@ fn parse_dictionary<'a>(input: &'a [u8], position: &mut usize) -> Result<Borrowe
 ///
 /// # Example
 /// ```
-/// use bencode_lib::validate_bencode;
+/// use babbel_bencode::validate_bencode;
 ///
 /// assert!(validate_bencode(b"i42e").is_ok());
 /// assert!(validate_bencode(b"invalid").is_err());

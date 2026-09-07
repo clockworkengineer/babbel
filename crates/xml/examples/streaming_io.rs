@@ -5,7 +5,7 @@
 //! - Decoding legacy single-byte encodings: ISO-8859-1 (Latin-1) and Windows-1252 (CP1252)
 //! - 7-bit US-ASCII strict validation
 
-use xml_lib::{parse_bytes_with_encoding, parse_reader};
+use babbel_xml::{parse_bytes_with_encoding, parse_reader};
 use std::io::Cursor;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

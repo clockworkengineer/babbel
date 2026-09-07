@@ -1,4 +1,4 @@
-//! Macros for convenient JSON construction
+﻿//! Macros for convenient JSON construction
 
 /// Constructs a JSON value from a literal syntax
 ///
@@ -14,7 +14,7 @@
 /// # Examples
 ///
 /// ```
-/// use json_lib::{json, Node};
+/// use babbel_json::{json, Node};
 ///
 /// let value = json!({
 ///     "name": "Alice",
@@ -31,7 +31,7 @@
 /// Variables and expressions can be interpolated:
 ///
 /// ```
-/// use json_lib::{json, Node};
+/// use babbel_json::{json, Node};
 ///
 /// let name = "Bob";
 /// let age = 25;

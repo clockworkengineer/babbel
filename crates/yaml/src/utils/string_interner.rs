@@ -1,4 +1,4 @@
-//! String Interning Utilities for YAML Library
+﻿//! String Interning Utilities for YAML Library
 //!
 //! This module provides string interning capabilities to optimize memory usage when
 //! identical strings appear repeatedly in YAML documents (such as common keys).
@@ -86,7 +86,7 @@ impl From<&str> for InternedString {
 ///
 /// # Example
 /// ```
-/// use yaml_lib::StringInterner;
+/// use babbel_yaml::StringInterner;
 ///
 /// let mut interner = StringInterner::new();
 /// let s1 = interner.intern("name");

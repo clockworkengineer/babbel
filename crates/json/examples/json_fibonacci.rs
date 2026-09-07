@@ -1,8 +1,8 @@
-//! Fibonacci sequence generator using JSON format for storage.
+﻿//! Fibonacci sequence generator using JSON format for storage.
 //! This program maintains a sequence of Fibonacci numbers in a JSON file,
 //! reading the existing sequence and appending the next number on each run.
 
-use json_lib::{FileDestination, FileSource, Node, parse, stringify, Numeric};
+use babbel_json::{FileDestination, FileSource, Node, parse, stringify, Numeric};
 use std::path::Path;
 
 /// Reads a Fibonacci sequence from a JSON-encoded file.

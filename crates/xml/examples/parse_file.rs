@@ -3,7 +3,7 @@
 //! Demonstrates parsing an XML string into a DOM `Document`, inspecting node metadata,
 //! and stringifying back to XML.
 
-use xml_lib::{parse, stringify};
+use babbel_xml::{parse, stringify};
 
 fn main() {
     println!("--- XML Parse File Example ---");

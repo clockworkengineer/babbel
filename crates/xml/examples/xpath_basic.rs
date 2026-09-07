@@ -3,7 +3,7 @@
 //! Demonstrates evaluating basic XPath location paths (`//book/title`, `/bookstore/book[2]/price`)
 //! against a DOM `Document` using `XPathEngine`.
 
-use xml_lib::{parse, XPathEngine};
+use babbel_xml::{parse, XPathEngine};
 
 fn main() {
     println!("--- XPath Basic Navigation Example ---");

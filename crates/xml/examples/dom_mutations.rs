@@ -7,7 +7,7 @@
 //! - Deep node cloning (`clone_node`)
 //! - Garbage compaction (`compact`) to reclaim memory from dead arena slots
 
-use xml_lib::{parse, stringify};
+use babbel_xml::{parse, stringify};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("--- W3C DOM Core Mutations Example ---");

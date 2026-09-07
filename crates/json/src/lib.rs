@@ -1,4 +1,4 @@
-//! json_lib - A lightweight, modular JSON toolkit for Rust
+﻿//! babbel_json - A lightweight, modular JSON toolkit for Rust
 //!
 //! This library provides a flexible JSON implementation with:
 //! - Core Node type for representing JSON structures
@@ -15,7 +15,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! json_lib = { version = "0.1", default-features = false, features = ["alloc"] }
+//! babbel_json = { version = "0.1", default-features = false, features = ["alloc"] }
 //! ```
 //!
 //! Minimum supported Rust version: 1.88.0
@@ -88,7 +88,7 @@ pub use file::file::read_file_to_string;
 #[cfg(feature = "file-io")]
 pub use file::file::write_file_from_string;
 ///
-/// JSON_lib API
+/// babbel_json API
 ///
 
 /// Returns the current version of the JSON library

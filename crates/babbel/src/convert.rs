@@ -4,13 +4,13 @@
 //! CSV, TSV, INI, and JSON Lines.
 
 #[cfg(feature = "json")]
-use json_lib;
+use babbel_json as json_lib;
 #[cfg(feature = "yaml")]
-use yaml_lib;
+use babbel_yaml as yaml_lib;
 #[cfg(feature = "bencode")]
-use bencode_lib;
+use babbel_bencode as bencode_lib;
 #[cfg(feature = "xml")]
-use xml_lib;
+use babbel_xml as xml_lib;
 
 use babbel_core::{
     csv::emit_csv_to, ini::emit_ini_to, parse_csv, parse_ini, BabbelError, Buffer,

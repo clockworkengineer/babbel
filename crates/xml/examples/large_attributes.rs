@@ -3,7 +3,7 @@
 //! Demonstrates parsing tags with numerous attributes while configuring
 //! `ParseOptions::max_attribute_count` threshold protection.
 
-use xml_lib::{parse_with_options, NodeKind, ParseOptions};
+use babbel_xml::{parse_with_options, NodeKind, ParseOptions};
 
 fn main() {
     println!("--- XML Large Attributes Example ---");

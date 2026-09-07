@@ -3,7 +3,7 @@
 //! Demonstrates validating complex type sequence elements (`<xs:complexType>`, `<xs:sequence>`)
 //! using `XsdValidator` and `XmlValidator`.
 
-use xml_lib::{parse, XsdValidator};
+use babbel_xml::{parse, XsdValidator};
 
 fn main() {
     println!("--- XSD Complex Sequence Example ---");

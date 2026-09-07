@@ -1,4 +1,4 @@
-//! Embedded-Safe YAML Example
+﻿//! Embedded-Safe YAML Example
 //!
 //! Demonstrates panic-free, safe YAML operations for embedded systems.
 //! Shows best practices for resource-constrained environments.
@@ -6,8 +6,8 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use yaml_lib::embedded::limits::{LimitError, NodeValidator};
-use yaml_lib::{BufferSource, Node, Numeric, parse};
+use babbel_yaml::embedded::limits::{LimitError, NodeValidator};
+use babbel_yaml::{BufferSource, Node, Numeric, parse};
 
 fn main() {
     println!("=== Embedded-Safe YAML Example ===\n");

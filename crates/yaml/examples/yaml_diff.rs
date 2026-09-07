@@ -1,4 +1,4 @@
-//! Example demonstrating YAML document diffing.
+﻿//! Example demonstrating YAML document diffing.
 //!
 //! Uses `diff_nodes()` to compare two YAML documents and categorise every
 //! change as an addition, removal, modification, type change, or size change.
@@ -6,7 +6,7 @@
 //! Useful for auditing config changes, testing round-trips, and building
 //! human-readable "what changed?" reports.
 
-use yaml_lib::{Diff, DiffType, diff_nodes, parse_string};
+use babbel_yaml::{Diff, DiffType, diff_nodes, parse_string};
 
 // --- sample documents ---------------------------------------------------------
 
@@ -147,7 +147,7 @@ fn main() {
     // 6. Round-trip check: parse → stringify → re-parse should be identical
     // ------------------------------------------------------------------
     println!("--- 6. Round-trip stability check ---");
-    use yaml_lib::{BufferDestination, stringify};
+    use babbel_yaml::{BufferDestination, stringify};
     let mut buf = BufferDestination::new();
     stringify(&v1, &mut buf).expect("stringify");
     let reparsed = parse_string(&buf.to_string()).expect("re-parse");

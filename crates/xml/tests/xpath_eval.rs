@@ -1,4 +1,4 @@
-﻿use xml_lib::{parse, XPathEngine, XPathValue};
+﻿use babbel_xml::{parse, XPathEngine, XPathValue};
 
 const BOOKSTORE_XML: &str = r#"<?xml version="1.0"?>
 <bookstore>

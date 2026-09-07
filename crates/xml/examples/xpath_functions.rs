@@ -3,7 +3,7 @@
 //! Demonstrates evaluating XPath numeric and string functions (`count()`, `sum()`, `concat()`, `round()`)
 //! against a DOM `Document` using `XPathEngine`.
 
-use xml_lib::{parse, XPathEngine};
+use babbel_xml::{parse, XPathEngine};
 
 fn main() {
     println!("--- XPath Functions Example ---");

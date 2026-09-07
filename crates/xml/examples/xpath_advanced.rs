@@ -6,7 +6,7 @@
 //! - XPath 1.0 context functions: `position()` and `last()`
 //! - Modern string manipulation functions: `ends-with()`, `lower-case()`
 
-use xml_lib::{parse, XPathEngine, XPathValue};
+use babbel_xml::{parse, XPathEngine, XPathValue};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("--- Advanced XPath 1.0 Example ---");

@@ -1,4 +1,4 @@
-﻿use xml_lib::{parse, NodeKind};
+﻿use babbel_xml::{parse, NodeKind};
 
 #[derive(Default, Debug, PartialEq, Eq)]
 struct NodeStats {

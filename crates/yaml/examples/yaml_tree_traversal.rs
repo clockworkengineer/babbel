@@ -1,9 +1,9 @@
-//! Example demonstrating tree traversal and visitor pattern
+﻿//! Example demonstrating tree traversal and visitor pattern
 //!
 //! Shows how to efficiently navigate and transform YAML documents using
 //! the new traversal APIs.
 
-use yaml_lib::{parse, stringify, BufferDestination, BufferSource, Node, Numeric};
+use babbel_yaml::{parse, stringify, BufferDestination, BufferSource, Node, Numeric};
 
 fn main() {
     println!("=== YAML Tree Traversal Examples ===\n");

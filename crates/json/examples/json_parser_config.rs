@@ -1,8 +1,8 @@
-//! Example demonstrating parser configuration for memory-constrained embedded systems
+﻿//! Example demonstrating parser configuration for memory-constrained embedded systems
 //!
 //! This example shows how to use ParserConfig to control resource usage when parsing JSON.
 
-use json_lib::{BufferSource, ParserConfig, parse_with_config};
+use babbel_json::{BufferSource, ParserConfig, parse_with_config};
 
 fn main() {
     println!("=== JSON Parser Configuration Examples ===\n");
@@ -130,7 +130,7 @@ fn main() {
     println!("9. Memory Usage Estimation:");
     println!(
         "   Node enum size: {} bytes",
-        std::mem::size_of::<json_lib::Node>()
+        std::mem::size_of::<babbel_json::Node>()
     );
     println!("   With strict config:");
     println!("     Max string: 256 bytes");

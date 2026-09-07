@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: flow_trailing_comma_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for YAML flow style trailing comma handling in the yaml_lib crate.
+//      Internal tests for YAML flow style trailing comma handling in the babbel_yaml crate.
 //      These tests validate correct parsing of flow mappings and sequences with trailing commas,
 //      ensuring compliance with the YAML specification and robust parser behavior.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Focuses on edge cases for trailing commas in flow style collections.
 //      - Ensures robust handling of valid and invalid trailing comma scenarios.
 //

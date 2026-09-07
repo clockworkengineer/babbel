@@ -1,8 +1,8 @@
-//! Example demonstrating list manipulation operations.
+﻿//! Example demonstrating list manipulation operations.
 //! This shows how to create, modify, iterate, search, and transform list nodes
 //! in various scenarios when working with bencode data.
 
-use bencode_lib::{make_node, Node};
+use babbel_bencode::{make_node, Node};
 
 fn main() {
     println!("=== List Manipulation Examples ===\n");

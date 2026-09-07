@@ -1,9 +1,9 @@
-//! Example demonstrating memory management utilities for embedded systems.
+﻿//! Example demonstrating memory management utilities for embedded systems.
 //!
 //! This example shows how to use MemoryTracker, Arena, and StackBuffer
 //! to manage memory in resource-constrained environments.
 
-use bencode_lib::{parse_borrowed, Arena, MemoryTracker, StackBuffer};
+use babbel_bencode::{parse_borrowed, Arena, MemoryTracker, StackBuffer};
 
 fn main() {
     println!("=== Memory Management for Embedded Systems ===\n");

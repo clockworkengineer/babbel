@@ -1,4 +1,4 @@
-# YAML_lib 🦀
+﻿# babbel_yaml 🦀
 
 [![Rust](https://img.shields.io/badge/rust-1.88.0+-orange.svg)](https://www.rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -109,24 +109,24 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-yaml_lib = "0.1.0"
+babbel_yaml = "0.1.0"
 ```
 
 Or as a workspace path dependency:
 
 ```toml
 [dependencies]
-yaml_lib = { path = "crates/yaml" }
+babbel_yaml = { path = "crates/yaml" }
 ```
 
-Streaming I/O in `yaml_lib` is unified with and powered by [`babbel_core::io`](../babbel_core) (`FileDestination`, `Buffer`, `ICharStream`, `IIndentationAware`).
+Streaming I/O in `babbel_yaml` is unified with and powered by [`babbel_core::io`](../babbel_core) (`FileDestination`, `Buffer`, `ICharStream`, `IIndentationAware`).
 
 ## 🚀 Quick Start
 
 ### Basic Parsing
 
 ```rust
-use yaml_lib::*;
+use babbel_yaml::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse YAML from a string (convenience function)
@@ -156,7 +156,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Working with Nodes
 
 ```rust
-use yaml_lib::*;
+use babbel_yaml::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create nodes programmatically
@@ -193,7 +193,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### File Operations
 
 ```rust
-use yaml_lib::*;
+use babbel_yaml::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Read from file with automatic encoding detection
@@ -215,7 +215,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Advanced Features
 
 ```rust
-use yaml_lib::*;
+use babbel_yaml::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Working with tags and anchors
@@ -360,16 +360,16 @@ Debug logging is opt-in and disabled by default to avoid overhead. Enable it wit
 
 ```powershell
 # Enable logging for this session
-$env:RUST_LOG = 'yaml_lib=debug'
+$env:RUST_LOG = 'babbel_yaml=debug'
 
 # Promote token-stream internals to debug without global trace
 $env:YAML_TRACE_TOKENS = '1'
 
 # Run tests with logging enabled
-cargo test -p yaml_lib --features debug-trace -- --nocapture
+cargo test -p babbel_yaml --features debug-trace -- --nocapture
 
 # For very verbose internals, use full trace instead of YAML_TRACE_TOKENS
-# $env:RUST_LOG = 'yaml_lib=trace'
+# $env:RUST_LOG = 'babbel_yaml=trace'
 ```
 
 ### Enable in binaries/examples
@@ -387,18 +387,18 @@ fn main() {
 Run with the feature and env vars as needed:
 
 ```powershell
-$env:RUST_LOG = 'yaml_lib=debug'; $env:YAML_TRACE_TOKENS = '1'
+$env:RUST_LOG = 'babbel_yaml=debug'; $env:YAML_TRACE_TOKENS = '1'
 cargo run --features debug-trace
 ```
 
 Notes:
-- `yaml_lib=debug` shows high-level parser decisions; token-stream stays quiet unless `YAML_TRACE_TOKENS` is set.
-- Set `yaml_lib=trace` for maximum verbosity (may be very chatty).
+- `babbel_yaml=debug` shows high-level parser decisions; token-stream stays quiet unless `YAML_TRACE_TOKENS` is set.
+- Set `babbel_yaml=trace` for maximum verbosity (may be very chatty).
 - Feature-gating ensures zero overhead when `debug-trace` is not enabled.
 
 ## 🔧 Performance
 
-YAML_lib is designed for performance:
+babbel_yaml is designed for performance:
 
 - **Lazy parsing** - Only parse what you need
 - **Memory efficiency** - Minimal allocations and copying
@@ -448,6 +448,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ and 🦀 by the YAML_lib team**
+**Made with ❤️ and 🦀 by the babbel_yaml team**
 
 *For questions, issues, or contributions, please visit our [GitHub repository](https://github.com/clockworkengineer/yaml).*

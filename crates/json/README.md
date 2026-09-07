@@ -1,4 +1,4 @@
-# json_lib
+﻿# babbel_json
 
 **Version 0.1.0** — A lightweight, modular JSON toolkit for Rust with pluggable I/O sources/destinations, a simple in-memory Node tree, multiple serializers (JSON, YAML, XML, Bencode, TOML), and `no_std` support. Designed for small binaries, predictable behavior, and easy embedding.
 
@@ -57,9 +57,9 @@ Disable default features and enable `alloc` for embedded / bare-metal targets:
 
 ```toml
 [dependencies]
-json_lib = { version = "0.1.0", default-features = false, features = ["alloc"] }
+babbel_json = { version = "0.1.0", default-features = false, features = ["alloc"] }
 # Or within the workspace:
-# json_lib = { path = "crates/json", default-features = false, features = ["alloc"] }
+# babbel_json = { path = "crates/json", default-features = false, features = ["alloc"] }
 ```
 
 ## Installation
@@ -68,17 +68,17 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-json_lib = "0.1.0"
+babbel_json = "0.1.0"
 ```
 
 Or as a workspace path dependency:
 
 ```toml
 [dependencies]
-json_lib = { path = "crates/json" }
+babbel_json = { path = "crates/json" }
 ```
 
-All streaming I/O in `json_lib` (`FileSource`, `FileDestination`, `BufferSource`, `Buffer`) is unified with and powered by [`babbel_core::io`](../babbel_core).
+All streaming I/O in `babbel_json` (`FileSource`, `FileDestination`, `BufferSource`, `Buffer`) is unified with and powered by [`babbel_core::io`](../babbel_core).
 
 ## Embedding Guide
 
@@ -86,7 +86,7 @@ To embed this library in another Rust project:
 1. Add the path or version dependency as shown above.
 2. Import the required items in your code:
    ```rust
-   use json_lib::{Node, parse, stringify};
+   use babbel_json::{Node, parse, stringify};
    ```
 3. For comprehensive architecture and conversion pipelines across the Babbel ecosystem, refer to the [Babbel Architecture Guide](../../docs/ARCHITECTURE.md).
 
@@ -95,7 +95,7 @@ To embed this library in another Rust project:
 ### Parse from a string or bytes
 
 ```rust
-use json_lib::{from_str, from_bytes};
+use babbel_json::{from_str, from_bytes};
 
 let node = from_str(r#"{"name": "Alice", "age": 30}"#).unwrap();
 let node = from_bytes(b"[1, 2, 3]").unwrap();
@@ -104,7 +104,7 @@ let node = from_bytes(b"[1, 2, 3]").unwrap();
 ### Stream Line-Delimited JSON (JSON Lines / NDJSON)
 
 ```rust
-use json_lib::lines::{JsonLinesReader, parse_json_lines, to_json_lines};
+use babbel_json::lines::{JsonLinesReader, parse_json_lines, to_json_lines};
 use babbel_core::io::SliceSource;
 
 // 1. Batch parsing
@@ -126,7 +126,7 @@ let jsonl_output = to_json_lines(&records).unwrap();
 ### Build a Node with the `json!` macro
 
 ```rust
-use json_lib::{json, Node};
+use babbel_json::{json, Node};
 
 let value = json!({
     "name": "Alice",
@@ -142,7 +142,7 @@ assert_eq!(value["age"].as_i64(), Some(30));
 ### Parse a file, then pretty-print to another file
 
 ```rust
-use json_lib::{FileSource, FileDestination, parse, print};
+use babbel_json::{FileSource, FileDestination, parse, print};
 use std::path::Path;
 
 fn main() -> Result<(), String> {
@@ -162,7 +162,7 @@ fn main() -> Result<(), String> {
 ### Build a Node in memory and stringify to a buffer
 
 ```rust
-use json_lib::{Node, Numeric, stringify, BufferDestination};
+use babbel_json::{Node, Numeric, stringify, BufferDestination};
 
 fn main() {
     let node = Node::Object(vec![
@@ -184,7 +184,7 @@ fn main() {
 ### Validate JSON without allocating
 
 ```rust
-use json_lib::{validate_json, BufferSource, ParserConfig};
+use babbel_json::{validate_json, BufferSource, ParserConfig};
 
 let mut source = BufferSource::new(br#"{"valid": true}"#);
 let config = ParserConfig::new();
@@ -194,7 +194,7 @@ assert!(validate_json(&mut source, &config).is_ok());
 ### Parse with resource limits
 
 ```rust
-use json_lib::{parse_with_config, BufferSource, ParserConfig};
+use babbel_json::{parse_with_config, BufferSource, ParserConfig};
 
 let config = ParserConfig {
     max_depth: Some(16),
@@ -209,7 +209,7 @@ let node = parse_with_config(&mut src, &config).unwrap();
 ### Convert a Node to YAML / XML / Bencode
 
 ```rust
-use json_lib::{Node, Numeric, to_yaml, to_xml, to_bencode, BufferDestination};
+use babbel_json::{Node, Numeric, to_yaml, to_xml, to_bencode, BufferDestination};
 
 let node = Node::Array(vec![
     Node::Number(Numeric::Integer(1)),
@@ -233,7 +233,7 @@ println!("Bencode:\n{}", bencode.to_string());
 ### JSON Pointer (RFC 6901)
 
 ```rust
-use json_lib::{json, pointer_get, pointer_set};
+use babbel_json::{json, pointer_get, pointer_set};
 
 let mut doc = json!({"users": [{"name": "Alice"}, {"name": "Bob"}]});
 
@@ -248,7 +248,7 @@ pointer_set(&mut doc, "/users/1/name", json!("Charlie")).unwrap();
 ### JSON Patch (RFC 6902)
 
 ```rust
-use json_lib::{json, nodes::patch::{apply_patch, PatchOp}};
+use babbel_json::{json, nodes::patch::{apply_patch, PatchOp}};
 
 let mut doc = json!({"a": 1, "b": 2});
 let ops = vec![
@@ -262,7 +262,7 @@ apply_patch(&mut doc, &ops).unwrap();
 ### JSON Merge Patch (RFC 7386)
 
 ```rust
-use json_lib::{json, nodes::merge_patch::merge_patch};
+use babbel_json::{json, nodes::merge_patch::merge_patch};
 
 let mut doc = json!({"a": 1, "b": 2});
 let patch = json!({"b": 3, "c": 4});
@@ -273,7 +273,7 @@ merge_patch(&mut doc, &patch);
 ### JSON Schema validation
 
 ```rust
-use json_lib::{json, nodes::schema::SchemaValidator};
+use babbel_json::{json, nodes::schema::SchemaValidator};
 
 let schema = json!({
     "type": "object",
@@ -292,7 +292,7 @@ assert!(validator.validate(&json!({"age": 30})).is_err()); // missing "name"
 ### JSON5 comment stripping
 
 ```rust
-use json_lib::parser::json5::strip_comments;
+use babbel_json::parser::json5::strip_comments;
 
 let input = r#"{
     "name": "Alice", // single-line comment
@@ -301,13 +301,13 @@ let input = r#"{
     "age": 30
 }"#;
 let clean = strip_comments(input);
-let node = json_lib::from_str(&clean).unwrap();
+let node = babbel_json::from_str(&clean).unwrap();
 ```
 
 ### Read/write text files with Unicode BOM handling
 
 ```rust
-use json_lib::{Format, detect_format, read_file_to_string, write_file_from_string};
+use babbel_json::{Format, detect_format, read_file_to_string, write_file_from_string};
 
 fn main() -> Result<(), String> {
     let fmt = detect_format("input.txt").unwrap_or(Format::UTF8);

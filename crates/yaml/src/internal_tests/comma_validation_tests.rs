@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: comma_validation_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for validation of comma usage in YAML sequences in the yaml_lib crate.
+//      Internal tests for validation of comma usage in YAML sequences in the babbel_yaml crate.
 //      These tests ensure that invalid comma placements (leading, trailing, double commas)
 //      and related syntax errors are correctly detected and reported according to the YAML spec.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Focuses on flow sequence syntax and error handling for malformed input.
 //      - Ensures robust error reporting and spec compliance for comma-related issues.
 //

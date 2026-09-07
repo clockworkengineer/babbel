@@ -1,4 +1,4 @@
-//! Example demonstrating JSON usage in embedded IoT sensor scenarios
+﻿//! Example demonstrating JSON usage in embedded IoT sensor scenarios
 //!
 //! This example shows patterns for:
 //! - Creating sensor readings
@@ -6,7 +6,7 @@
 //! - Memory-efficient JSON construction
 //! - Configuration management
 
-use json_lib::{
+use babbel_json::{
     BufferDestination, BufferSource, Node, Numeric, ParserConfig,
     embedded::{ArrayBuilder, ObjectBuilder, config, memory, sensor},
     parse_with_config, stringify,

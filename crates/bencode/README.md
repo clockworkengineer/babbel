@@ -1,4 +1,4 @@
-# bencode_lib
+﻿# babbel_bencode
 
 A Rust library for parsing, constructing, and converting Bencode data. Designed for embedded systems, resource-constrained environments, and general-purpose use. Supports round-tripping Bencode and conversion to JSON, YAML, XML, and TOML.
 
@@ -26,14 +26,14 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bencode_lib = "0.1.0"
+babbel_bencode = "0.1.0"
 ```
 
 Or as a path dependency within this workspace:
 
 ```toml
 [dependencies]
-bencode_lib = { path = "crates/bencode" }
+babbel_bencode = { path = "crates/bencode" }
 ```
 
 All binary-safe streaming I/O (`IByteStream`, `FileSource`, `FileDestination`, `Buffer`) is unified with and powered by [`babbel_core::io`](../babbel_core).
@@ -42,7 +42,7 @@ To minimise binary size, disable unused format-conversion features:
 
 ```toml
 [dependencies]
-bencode_lib = { version = "0.1.0", default-features = false, features = ["std", "json"] }
+babbel_bencode = { version = "0.1.0", default-features = false, features = ["std", "json"] }
 ```
 
 Available features: `std` (default), `json`, `toml`, `xml`, `yaml`.
@@ -67,7 +67,7 @@ cargo build --release
 ### Parse a `.torrent` file and convert to YAML
 
 ```rust
-use bencode_lib::{FileSource, FileDestination, parse, to_yaml};
+use babbel_bencode::{FileSource, FileDestination, parse, to_yaml};
 
 let mut src = FileSource::new("example.torrent")?;
 let node = parse(&mut src)?;
@@ -78,7 +78,7 @@ to_yaml(&node, &mut dst);
 ### Round-trip a Bencode buffer
 
 ```rust
-use bencode_lib::{parse_bytes, stringify_to_bytes};
+use babbel_bencode::{parse_bytes, stringify_to_bytes};
 
 let raw = b"d3:foo3:bar4:spamli1ei2ei3eee";
 let node = parse_bytes(raw)?;
@@ -89,7 +89,7 @@ assert_eq!(raw.as_slice(), encoded.as_slice());
 ### Construct a `Node` and render as JSON
 
 ```rust
-use bencode_lib::{Node, make_node, to_json, BufferDestination};
+use babbel_bencode::{Node, make_node, to_json, BufferDestination};
 
 // Using the From trait with an array of key-value pairs
 let node = Node::from([
@@ -103,7 +103,7 @@ to_json(&node, &mut dst);
 ### Validate and extract fields ergonomically
 
 ```rust
-use bencode_lib::parse_bytes;
+use babbel_bencode::parse_bytes;
 
 let node = parse_bytes(b"d4:name5:Alice3:agei30ee")?;
 let name: &str = node.get_string_required("name")?;
@@ -125,7 +125,7 @@ Nodes implement `Clone`, `Debug`, `PartialEq`, and `Display`.
 ### Creating Nodes
 
 ```rust
-use bencode_lib::{Node, make_node};
+use babbel_bencode::{Node, make_node};
 use std::collections::HashMap;
 
 // Direct variants
@@ -216,7 +216,7 @@ let dict = Node::from([("key", Node::Integer(1))]);
 ### Configuration
 
 ```rust
-use bencode_lib::{ParserConfig, EncoderConfig};
+use babbel_bencode::{ParserConfig, EncoderConfig};
 
 let parser = ParserConfig::new().with_max_depth(50);   // default: 100
 

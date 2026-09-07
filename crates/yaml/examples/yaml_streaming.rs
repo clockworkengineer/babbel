@@ -1,4 +1,4 @@
-//! Example demonstrating streaming and iterator support for YAML processing
+﻿//! Example demonstrating streaming and iterator support for YAML processing
 //!
 //! This example shows how to:
 //! - Iterate through node trees with depth-first and breadth-first traversal
@@ -7,7 +7,7 @@
 //! - Process large documents efficiently
 //! - Collect specific node types
 
-use yaml_lib::{
+use babbel_yaml::{
     parse, BufferSource, Node, NodeIteratorExt, NodePath, NodeStream, Numeric, PathSegment,
 };
 

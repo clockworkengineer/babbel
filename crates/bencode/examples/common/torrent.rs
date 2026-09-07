@@ -1,5 +1,5 @@
-use std::collections::HashMap;
-use bencode_lib::{parse, FileSource, Node};
+﻿use std::collections::HashMap;
+use babbel_bencode::{parse, FileSource, Node};
 use std::path::Path;
 
 /// Represents details about a single file within a torrent

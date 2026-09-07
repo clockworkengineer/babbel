@@ -1,4 +1,4 @@
-//! Example demonstrating programmatic Node creation and manipulation
+﻿//! Example demonstrating programmatic Node creation and manipulation
 //!
 //! This example shows how to:
 //! - Create nodes programmatically using constructors
@@ -6,7 +6,7 @@
 //! - Manipulate existing node structures
 //! - Work with different node types
 
-use yaml_lib::{make_node, make_set, stringify, BufferDestination, Node};
+use babbel_yaml::{make_node, make_set, stringify, BufferDestination, Node};
 
 /// Helper function to print node as YAML
 fn print_node(node: &Node) {

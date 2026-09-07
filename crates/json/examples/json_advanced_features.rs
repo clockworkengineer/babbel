@@ -1,4 +1,4 @@
-use json_lib::{
+﻿use babbel_json::{
     parse, pointer_get, pointer_remove, pointer_set, stringify, BufferDestination, BufferSource,
     Node, Numeric,
 };

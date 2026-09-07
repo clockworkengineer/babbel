@@ -1,4 +1,4 @@
-﻿use xml_lib::{parse_bytes_with_encoding, parse_reader};
+﻿use babbel_xml::{parse_bytes_with_encoding, parse_reader};
 
 #[test]
 fn test_parse_reader_streaming() {

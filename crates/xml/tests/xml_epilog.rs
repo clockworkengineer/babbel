@@ -1,4 +1,4 @@
-﻿use xml_lib::{parse, XmlPullEvent, XmlPullParser};
+﻿use babbel_xml::{parse, XmlPullEvent, XmlPullParser};
 
 #[test]
 fn test_epilog_comments_and_pi() {

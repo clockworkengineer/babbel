@@ -1,4 +1,4 @@
-# Babbel Text File Support Guide
+﻿# Babbel Text File Support Guide
 
 Babbel provides high-performance, specification-compliant text processing engines covering:
 - **Core Line-by-Line Streaming** (`ILineReader`, `LineIter`)
@@ -157,7 +157,7 @@ JSON Lines is standard for log processing, analytics pipelines, and AI dataset s
 ### Streaming Reader with `JsonLinesReader`
 ```rust
 use babbel::core::io::SliceSource;
-use json_lib::lines::{JsonLinesConfig, JsonLinesReader};
+use babbel_json::lines::{JsonLinesConfig, JsonLinesReader};
 
 let stream_data = "{\"event\": \"login\", \"user\": 10}\n{\"event\": \"logout\", \"user\": 10}\n";
 let source = SliceSource::new(stream_data);
@@ -171,7 +171,7 @@ while let Some(record) = reader.next_node() {
 
 ### Batch Parsing & Serializing
 ```rust
-use json_lib::lines::{parse_json_lines, to_json_lines};
+use babbel_json::lines::{parse_json_lines, to_json_lines};
 
 let jsonl = "{\"id\": 1}\n{\"id\": 2}\n";
 let nodes = parse_json_lines(jsonl)?;

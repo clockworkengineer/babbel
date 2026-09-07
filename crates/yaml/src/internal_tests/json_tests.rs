@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: json_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for JSON serialization in the yaml_lib crate.
+//      Internal tests for JSON serialization in the babbel_yaml crate.
 //      These tests validate correct conversion of YAML node structures to JSON format,
 //      ensuring compliance with JSON encoding rules for strings, numbers, arrays, and objects.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Ensures interoperability and correctness of JSON output from YAML data.
 //      - Focuses on both compact and pretty-printed JSON serialization.
 //

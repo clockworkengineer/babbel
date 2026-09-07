@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: directive_validation_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for validation of YAML directive usage in the yaml_lib crate.
+//      Internal tests for validation of YAML directive usage in the babbel_yaml crate.
 //      These tests ensure that directives such as %YAML are correctly validated for
 //      placement, required document content, and error reporting according to the YAML spec.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Focuses on error handling and validation for directive placement and usage.
 //      - Ensures robust error reporting and spec compliance for directive-related issues.
 //

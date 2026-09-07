@@ -1,9 +1,9 @@
-//! Validation helpers example
+﻿//! Validation helpers example
 //!
 //! Demonstrates the new validation helper methods that make it easier
 //! to extract and validate required/optional fields from bencode dictionaries.
 
-use bencode_lib::{parse_bytes, Node};
+use babbel_bencode::{parse_bytes, Node};
 
 fn main() {
     println!("=== Validation Helpers Demo ===\n");

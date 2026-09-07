@@ -1,4 +1,4 @@
-//! JSON Merge Patch (RFC 7386) implementation
+﻿//! JSON Merge Patch (RFC 7386) implementation
 //!
 //! Simpler alternative to JSON Patch for partial updates.
 //! Uses JSON structure itself to describe the changes.
@@ -19,7 +19,7 @@ use alloc::collections::BTreeMap as HashMap;
 ///
 /// # Examples
 /// ```
-/// use json_lib::{json, nodes::merge_patch::merge_patch};
+/// use babbel_json::{json, nodes::merge_patch::merge_patch};
 ///
 /// let mut doc = json!({"a": 1, "b": 2});
 /// let patch = json!({"b": 3, "c": 4});
@@ -74,7 +74,7 @@ pub fn merge_patch(target: &mut Node, patch: &Node) {
 ///
 /// # Examples
 /// ```
-/// use json_lib::{json, nodes::merge_patch::create_merge_patch};
+/// use babbel_json::{json, nodes::merge_patch::create_merge_patch};
 ///
 /// let source = json!({"a": 1, "b": 2});
 /// let target = json!({"a": 1, "c": 3});

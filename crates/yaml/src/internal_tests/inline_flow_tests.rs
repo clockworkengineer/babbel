@@ -1,14 +1,14 @@
-// =====================================================================================
+﻿// =====================================================================================
 //  File: inline_flow_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
 //  Purpose:
-//      Internal tests for YAML inline (flow style) mapping and sequence parsing in the yaml_lib crate.
+//      Internal tests for YAML inline (flow style) mapping and sequence parsing in the babbel_yaml crate.
 //      These tests validate correct handling of inline mappings and sequences, including edge cases,
 //      formatting variations, and compliance with the YAML specification.
 //
 //  Context:
-//      - Part of the yaml_lib project, a Rust YAML parser/serializer.
+//      - Part of the babbel_yaml project, a Rust YAML parser/serializer.
 //      - Focuses on flow style (inline) collections and their parsing logic.
 //      - Ensures robust handling of inline YAML syntax and edge cases.
 //
