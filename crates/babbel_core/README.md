@@ -3,20 +3,32 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Rust Edition](https://img.shields.io/badge/edition-2024-orange)](Cargo.toml)
 
-Foundational architectural kernel for the **Babbel** multi-format serialization ecosystem. `babbel_core` provides unified streaming I/O abstractions adhering strictly to **SOLID** principles, a universal `Value` AST, Unicode BOM detection, zero-allocation numeric formatting, diagnostic error reporting, and string escaping.
+Foundational architectural kernel for the **Babbel** multi-format serialization ecosystem. `babbel_core` provides unified streaming I/O abstractions adhering strictly to **SOLID** principles, universal `Value` AST, RFC 4180 CSV/TSV, sectioned INI/.env, frontmatter processing, Unicode BOM detection, zero-allocation numeric formatting, diagnostic error reporting, and string escaping.
 
 ---
 
 ## Features
 
 - **SOLID Streaming I/O (`babbel_core::io`)**:
-  - Segregated capability traits (`IByteStream`, `IByteWriter`, `ICharStream`, `IRewindable`, `IPositionAware`, `ILocationAware`, `IClearable`, `ITailInspectable`, `IFlushable`, `IIndentationAware`).
+  - Segregated capability traits: [`ILineReader`](src/io/traits.rs), `IByteStream`, `IByteWriter`, `ICharStream`, `IRewindable`, `IPositionAware`, `ILocationAware`, `IClearable`, `ITailInspectable`, `IFlushable`, `IIndentationAware`.
   - Unified input sources: `BufferSource`, `FileSource`, `SliceSource`, `StringSource`.
   - Unified output destinations: `Buffer`, `FileDestination`, `StringDestination`.
+  - Line-by-line reading across mixed CRLF, LF, and CR newlines.
+  - Zero-allocation line slicing (`SliceSource::read_line_slice()`).
   - Safe in-memory tail tracking (`last()`) without file system re-opening.
   - Full Unicode scalar decoding preventing multi-byte UTF-8 corruption.
 - **Universal Data Model (`babbel_core::model`)**:
-  - `Value` AST (`Null`, `Bool`, `Integer`, `Float`, `String`, `Array`, `Object`, `Bytes`) powering cross-format conversions.
+  - `Value` AST (`Null`, `Bool`, `Integer(i128)`, `Float`, `String`, `Array`, `Object`, `Bytes`) powering cross-format conversions.
+- **Tabular Text Engine (`babbel_core::csv`)**:
+  - RFC 4180 CSV and TSV parsing and serialization.
+  - Delimiter auto-detection (`sniff_delimiter`) across `,`, `\t`, `;`, `|`.
+  - Multi-line quoted fields, double-quote escaping (`""`), and automatic scalar type inference.
+- **Configuration Text Engine (`babbel_core::ini`)**:
+  - Sectioned INI (`[section]`), Java `.properties`, and `.env` parsing and serialization.
+  - Comments (`#`, `;`, `!`), delimiters (`=`, `:`), and global root keys.
+- **Document Frontmatter & Text Utilities (`babbel_core::text`)**:
+  - Frontmatter splitter (`split_frontmatter`) supporting YAML (`---`) and TOML (`+++`).
+  - Indentation manipulation: `indent`, `dedent`, `trim_lines`, `line_count`.
 - **Unified Codec Interfaces (`babbel_core::codec`)**:
   - `FormatParser`, `FormatEmitter`, and `FormatCodec` abstractions.
 - **Unicode & Text Engine (`babbel_core::encoding` & `babbel_core::escape`)**:
@@ -58,82 +70,72 @@ babbel_core = { path = "crates/babbel_core" }
 
 ---
 
-## I/O Streaming Architecture
+## Quickstart & Code Examples
 
-### Core Traits (`babbel_core::io::traits`)
+### 1. Line-by-Line Text Streaming (`ILineReader`)
 
 ```rust
-use babbel_core::io::traits::*;
+use babbel_core::io::{ILineReader, SliceSource};
 
-// 1. Forward character stream (ISP-segregated pull parser)
-pub trait ICharStream {
-    fn next(&mut self);
-    fn current(&mut self) -> Option<char>;
-    fn more(&mut self) -> bool;
+let text = "alpha\r\nbeta\ngamma\rdelta";
+let mut source = SliceSource::new(text);
+
+while let Some(line) = source.read_line() {
+    println!("Line: {}", line);
 }
 
-// 2. Binary byte stream (ISP-segregated for binary protocols)
-pub trait IByteStream {
-    fn peek_byte(&mut self) -> Option<u8>;
-    fn read_byte(&mut self) -> Option<u8>;
-    fn advance(&mut self);
-    fn has_more(&mut self) -> bool;
-}
-
-// 3. Composite source
-pub trait ISource: ICharStream + IRewindable {}
-
-// 4. Output destination
-pub trait IDestination: IClearable + ITailInspectable {
-    fn add_byte(&mut self, byte: u8);
-    fn add_bytes(&mut self, bytes: &str);
+// Zero-copy borrowed slice iteration
+let mut source2 = SliceSource::new(text);
+while let Some(slice) = source2.read_line_slice() {
+    println!("Slice: {}", slice);
 }
 ```
 
-### Reading from In-Memory Buffers & Slices
+### 2. Delimited Text (CSV / TSV)
 
 ```rust
-use babbel_core::io::{BufferSource, SliceSource, ISource};
+use babbel_core::csv::{parse_csv, emit_csv, sniff_delimiter, CsvOptions};
 
-// 1. Reading from a byte buffer
-let mut source = BufferSource::new("Hello, 世界!".as_bytes());
-assert_eq!(source.current(), Some('H'));
-source.next();
-assert_eq!(source.current(), Some('e'));
+// 1. Sniff delimiter
+let data = "col1\tcol2\nval1\tval2\n";
+assert_eq!(sniff_delimiter(data), '\t');
 
-// 2. Reading directly from a borrowed slice with zero allocations
-let data = b"42";
-let mut slice_source = SliceSource::new(data);
-assert_eq!(slice_source.current(), Some('4'));
+// 2. Parse TSV
+let val = parse_csv(data, &CsvOptions::tsv()).unwrap();
+
+// 3. Emit CSV
+let csv_out = emit_csv(&val, &CsvOptions::default()).unwrap();
+println!("{}", csv_out);
 ```
 
-### Writing with In-Memory Buffers & Files
+### 3. Configuration Text (INI / .env)
 
 ```rust
-use babbel_core::io::{Buffer, IDestination};
+use babbel_core::ini::{parse_ini, emit_ini, IniOptions};
 
-let mut dest = Buffer::new();
-dest.add_bytes("hello");
-dest.add_byte(b' ');
-dest.add_bytes("world");
+// Parse INI with sections
+let ini_text = "[server]\nhost = 127.0.0.1\nport = 8080\n";
+let val = parse_ini(ini_text, &IniOptions::default()).unwrap();
 
-assert_eq!(dest.to_string(), "hello world");
-assert_eq!(dest.last(), Some(b'd'));
+// Parse .env
+let env_text = "PORT=3000\nDATABASE_URL=sqlite://data.db\n";
+let env_val = parse_ini(env_text, &IniOptions::env()).unwrap();
 ```
 
-### BOM Detection & Newline Normalization
+### 4. Document Frontmatter & Text Utilities
 
 ```rust
-use babbel_core::encoding::{detect_encoding_and_strip_bom, normalize_newlines, Encoding};
+use babbel_core::text::{split_frontmatter, indent, dedent, FrontmatterFormat};
 
-// Auto-detect UTF-8 BOM
-let raw_bytes = b"\xEF\xBB\xBFcontent\r\n";
-let (content, encoding) = detect_encoding_and_strip_bom(raw_bytes)?;
-assert_eq!(encoding, Encoding::Utf8);
+// Split Markdown frontmatter
+let doc = "---\ntitle: Guide\n---\n# Welcome";
+let res = split_frontmatter(doc);
+assert_eq!(res.format, Some(FrontmatterFormat::Yaml));
+assert_eq!(res.content, "# Welcome");
 
-// Normalize CRLF to LF
-let normalized = normalize_newlines(&content);
-assert_eq!(normalized, "content\n");
+// Dedent code block
+let indented = "    fn run() {\n        42\n    }";
+assert_eq!(dedent(indented), "fn run() {\n    42\n}");
 ```
 
 ---

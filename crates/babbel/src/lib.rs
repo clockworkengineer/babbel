@@ -1,16 +1,20 @@
 //! # Babbel
 //!
 //! A unified, high-performance polyglot serialization and document processing ecosystem.
-//! Provides first-class support for XML, JSON, YAML, and BitTorrent Bencode, backed by a
-//! shared core (`babbel_core`).
+//! Provides first-class support for JSON, YAML, XML, BitTorrent Bencode, RFC 4180 CSV/TSV,
+//! sectioned INI/.env, and JSON Lines, backed by a shared core (`babbel_core`).
 //!
-//! ## Sub-libraries
+//! ## Sub-libraries & Modules
 //!
-//! - **`core`**: Common streaming I/O, BOM auto-detection, and numeric/error utilities.
-//! - **`json`**: Full-featured JSON DOM, JSON Pointer (RFC 6901), and Merge Patch (RFC 7396).
+//! - **`core`**: Common streaming I/O (`ILineReader`), universal `Value` AST, BOM detection, and numeric utilities.
+//! - **`json`**: Full-featured JSON DOM, JSON Pointer (RFC 6901), Merge Patch (RFC 7396), and JSON Lines streaming.
 //! - **`yaml`**: YAML 1.2 parser/emitter with anchors, aliases, tags, and multi-document streams.
 //! - **`xml`**: Validating XML parser, C14N canonicalization, and XPath 1.0 engine.
 //! - **`bencode`**: Fast, binary-safe BitTorrent Bencode serializer and DOM.
+//! - **`csv`**: RFC 4180 CSV and TSV parsing/emission with delimiter sniffing and type inference.
+//! - **`ini`**: Section-based INI, Java `.properties`, and `.env` parsing/emission.
+//! - **`text`**: Document frontmatter extraction (`split_frontmatter`) and line indentation utilities.
+//! - **`convert`**: Universal $O(N)$ cross-format conversion matrix.
 //!
 //! ## Quickstart
 //!
@@ -22,10 +26,17 @@
 //!     assert_eq!(json_node.get("service").and_then(|n| n.as_str()), Some("babbel"));
 //! }
 //!
+//! // Parse CSV
+//! let csv_val = babbel::parse_csv("name,score\nAlice,100\n", &babbel::CsvOptions::default())?;
+//! assert_eq!(csv_val.as_array().unwrap().len(), 1);
+//!
 //! #[cfg(feature = "convert")]
 //! {
 //!     let yaml_str = babbel::convert::json_to_yaml(r#"{"name": "test"}"#)?;
 //!     assert!(yaml_str.contains("name: test"));
+//!
+//!     let json_str = babbel::convert::csv_to_json("id,item\n1,rust\n")?;
+//!     assert!(json_str.contains("rust"));
 //! }
 //! # Ok(())
 //! # }

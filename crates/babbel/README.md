@@ -3,21 +3,24 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Rust Edition](https://img.shields.io/badge/edition-2024-orange)](Cargo.toml)
 
-The master facade crate for the **Babbel** multi-format serialization and document processing ecosystem. It provides unified ergonomics, re-exports all domain engines (JSON, YAML, XML, Bencode), and powers open-ended, $O(N)$ cross-format conversion pipelines.
+The master facade crate for the **Babbel** multi-format serialization and document processing ecosystem. It provides unified ergonomics, re-exports all domain engines (JSON, YAML, XML, Bencode, CSV, TSV, INI, JSON Lines), and powers open-ended, $O(N)$ cross-format conversion pipelines.
 
 ---
 
 ## Features
 
-- **Unified Prelude**: Access all formats with a single dependency.
-- **Polyglot Parsing**: Parse JSON, YAML, XML, and BitTorrent Bencode into idiomatic typed representations.
-- **Universal Cross-Conversion**: Convert documents between arbitrary formats without manual intermediate representations:
-  - JSON $\leftrightarrow$ YAML
-  - JSON $\leftrightarrow$ XML
-  - JSON $\leftrightarrow$ Bencode
-  - YAML $\leftrightarrow$ XML
-  - YAML $\leftrightarrow$ Bencode
-  - XML $\leftrightarrow$ Bencode
+- **Unified Prelude**: Access all formats and text processing primitives with a single dependency.
+- **Polyglot Parsing**: Parse JSON, YAML, XML, Bencode, CSV/TSV, and INI into idiomatic typed representations.
+- **Universal Cross-Conversion**: Convert documents between 8 arbitrary formats without manual intermediate representations:
+  - JSON $\leftrightarrow$ YAML $\leftrightarrow$ XML $\leftrightarrow$ Bencode
+  - CSV / TSV $\leftrightarrow$ JSON $\leftrightarrow$ YAML
+  - INI / .env $\leftrightarrow$ JSON $\leftrightarrow$ YAML
+  - JSON Lines $\leftrightarrow$ JSON $\leftrightarrow$ CSV
+- **First-Class Text Processing**:
+  - RFC 4180 CSV & TSV parsing/emission with automatic delimiter sniffing and scalar type inference.
+  - Section-based INI (`[section]`), Java `.properties`, and `.env` parsing.
+  - Line-delimited JSON (`.jsonl`/`.ndjson`) streaming reader and writer.
+  - Document frontmatter extraction (`split_frontmatter` for YAML `---` and TOML `+++`).
 - **Extensible Streaming I/O**: Stream to and from files or memory buffers powered by [`babbel_core`](../babbel_core).
 - **Fine-Grained Feature Flags**: Enable only the formats your application requires.
 
@@ -47,11 +50,11 @@ By default, all formats and the conversion pipeline are enabled (`["std", "json"
 | :--- | :--- |
 | `std` *(default)* | Enables standard library I/O and OS integration. |
 | `alloc` | Enables heap allocation without full `std` (`no_std` environments). |
-| `json` *(default)* | Re-exports `json_lib` for JSON parsing, pointers, and patch operations. |
+| `json` *(default)* | Re-exports `json_lib` for JSON parsing, pointers, patch, and JSON Lines streaming. |
 | `yaml` *(default)* | Re-exports `yaml_lib` for full YAML 1.2 parsing and emission. |
 | `xml` *(default)* | Re-exports `xml_lib` for validating XML DOM, C14N, and XPath 1.0. |
 | `bencode` *(default)* | Re-exports `bencode_lib` for BitTorrent Bencode processing. |
-| `convert` *(default)* | Enables the `babbel::convert` cross-format conversion pipeline. |
+| `convert` *(default)* | Enables the `babbel::convert` cross-format conversion pipeline across all 8 formats. |
 
 ---
 
@@ -64,23 +67,34 @@ use babbel::json;
 use babbel::yaml;
 use babbel::xml;
 use babbel::bencode;
+use babbel::{parse_csv, parse_ini, split_frontmatter, CsvOptions, IniOptions};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Parse JSON
+    // 1. Parse JSON
     let json_doc = json::from_str(r#"{"service": "babbel", "port": 8080}"#)?;
     assert_eq!(json_doc.get("service").and_then(|n| n.as_str()), Some("babbel"));
 
-    // Parse YAML
+    // 2. Parse YAML
     let yaml_doc = yaml::parse_string("service: babbel\nport: 8080\n")?;
     assert_eq!(yaml_doc.get("service").and_then(|n| n.as_str()), Some("babbel"));
 
-    // Parse XML
+    // 3. Parse XML
     let xml_doc = xml::parse("<service port=\"8080\">babbel</service>")?;
     assert_eq!(xml_doc.get_root_element_name(), Some("service"));
 
-    // Parse Bencode
-    let bencode_doc = bencode::parse_bytes(b"d4:porti8080e7:service6:babbele")?;
-    
+    // 4. Parse CSV with type inference
+    let csv_val = parse_csv("id,name\n1,Alice\n", &CsvOptions::default())?;
+    assert_eq!(csv_val.as_array().unwrap().len(), 1);
+
+    // 5. Parse INI with sections
+    let ini_val = parse_ini("[app]\nname = Babbel\n", &IniOptions::default())?;
+    assert!(ini_val.get("app").is_some());
+
+    // 6. Split Markdown Frontmatter
+    let doc = "---\ntitle: Guide\n---\n# Content";
+    let parsed = split_frontmatter(doc);
+    assert_eq!(parsed.content, "# Content");
+
     Ok(())
 }
 ```
@@ -91,22 +105,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 use babbel::convert;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let json_data = r#"{"title": "Babbel", "active": true, "version": 1}"#;
-
-    // Convert JSON to YAML
-    let yaml_output = convert::json_to_yaml(json_data)?;
-
-    // Convert YAML back to JSON
+    // JSON <-> YAML
+    let yaml_output = convert::json_to_yaml(r#"{"title": "Babbel", "version": 1}"#)?;
     let json_output = convert::yaml_to_json(&yaml_output)?;
 
-    // Convert JSON to XML
-    let xml_output = convert::json_to_xml(json_data)?;
+    // CSV <-> JSON
+    let csv_data = "id,name\n1,Alice\n2,Bob\n";
+    let json_arr = convert::csv_to_json(csv_data)?;
+    let csv_back = convert::json_to_csv(&json_arr)?;
 
-    // Convert JSON to binary Bencode
-    let bencode_bytes = convert::json_to_bencode(json_data)?;
+    // INI <-> JSON
+    let ini_doc  = "[server]\nhost = 127.0.0.1\nport = 8080\n";
+    let json_ini = convert::ini_to_json(ini_doc)?;
+    let ini_back = convert::json_to_ini(&json_ini)?;
 
-    // Convert Bencode directly to YAML
-    let yaml_from_bencode = convert::bencode_to_yaml(&bencode_bytes)?;
+    // JSON Lines <-> JSON
+    let jsonl    = "{\"id\":1}\n{\"id\":2}\n";
+    let json_arr = convert::jsonlines_to_json(jsonl)?;
+    let jsonl_out= convert::json_to_jsonlines(&json_arr)?;
+
+    // Bencode <-> JSON
+    let bencode_bytes = convert::json_to_bencode(r#"{"user": "alice"}"#)?;
+    let json_from_benc = convert::bencode_to_json(&bencode_bytes)?;
 
     Ok(())
 }
@@ -119,11 +139,9 @@ use babbel::core::io::{Buffer, BufferSource};
 use babbel::xml;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Stream from an in-memory buffer source
     let mut source = BufferSource::new(b"<app><version>1.0</version></app>");
     let doc = xml::parse_source(&mut source)?;
 
-    // Stream directly into an in-memory destination
     let mut dest = Buffer::new();
     xml::stringify_to(&doc, &mut dest);
     assert!(dest.to_string().contains("1.0"));
@@ -138,8 +156,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 | Crate | Link | Description |
 | :--- | :--- | :--- |
-| `babbel_core` | [`crates/babbel_core`](../babbel_core) | Core I/O traits, universal `Value` AST, BOM detection, and numeric utilities. |
-| `json_lib` | [`crates/json`](../json) | RFC 6901 JSON Pointer, RFC 7396 Merge Patch, JSON5 comment stripping. |
+| `babbel_core` | [`crates/babbel_core`](../babbel_core) | Core I/O traits (`ILineReader`), universal `Value` AST, RFC 4180 CSV/TSV, INI/.env, frontmatter, BOM detection, and numeric utilities. |
+| `json_lib` | [`crates/json`](../json) | RFC 6901 JSON Pointer, RFC 7396 Merge Patch, JSON Lines (`.jsonl`/`.ndjson`) streaming, and JSON5 comment stripping. |
 | `yaml_lib` | [`crates/yaml`](../yaml) | YAML 1.2 specification compliance, anchors, aliases, and custom tags. |
 | `xml_lib` | [`crates/xml`](../xml) | XML DOM, C14N Canonical XML, DTD validation, XSD schema, XPath 1.0. |
 | `bencode_lib` | [`crates/bencode`](../bencode) | Zero-copy borrowed parsing and streaming for BitTorrent Bencode. |

@@ -3,11 +3,16 @@
 [![Rust](https://img.shields.io/badge/rust-2024%20edition-orange.svg)](https://www.rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-3500%2B%20passing-brightgreen.svg)]()
-[![Architecture: DRY & SOLID](https://img.shields.io/badge/architecture-DRY%20%26%20SOLID-purple.svg)](ARCHITECTURE.md)
+[![Architecture: DRY & SOLID](https://img.shields.io/badge/architecture-DRY%20%26%20SOLID-purple.svg)](docs/ARCHITECTURE.md)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Donate-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/roberttizz1)
 
 A high-performance, polyglot serialization, parsing, and document manipulation workspace in Rust. Babbel brings together **JSON**, **YAML**, **Bencode**, **XML**, **CSV / TSV**, **INI / Properties**, and **JSON Lines** under a unified, modular architecture adhering strictly to **DRY** (Don't Repeat Yourself) and **SOLID** engineering principles.
 
-📖 **Architecture & Guidelines**: Read the comprehensive [Architecture Guide](ARCHITECTURE.md), the [Contributing Guide](CONTRIBUTING.md), or review the [SOLID Refactoring Plan](SOLID_REFACTOR_PLAN.md) and [Text File Support Plan](TEXT_FILE_SUPPORT_PLAN.md).
+📖 **Documentation & Guides**:
+- [Architecture Guide](docs/ARCHITECTURE.md) — 3-tier layering model and SOLID design principles
+- [Text Support Guide](docs/TEXT_SUPPORT_GUIDE.md) — CSV, TSV, INI, JSON Lines, and frontmatter
+- [Conversion Matrix](docs/CONVERSION_MATRIX.md) — $O(N)$ cross-format conversion reference
+- [Contributing Guide](docs/CONTRIBUTING.md) — Development workflow, standards, and testing guidelines
 
 ---
 
@@ -17,9 +22,9 @@ Babbel is structured as an interconnected multi-crate workspace:
 
 | Crate | Package Docs | Directory | Description |
 | :--- | :--- | :--- | :--- |
-| **`babbel`** | [README](crates/babbel/README.md) | [`crates/babbel`](crates/babbel) | Master facade crate providing high-level ergonomics and open-ended cross-format conversion pipelines. |
-| **`babbel_core`** | [README](crates/babbel_core/README.md) | [`crates/babbel_core`](crates/babbel_core) | Core architectural kernel containing streaming traits (`ISource`, `IDestination`), universal `Value` AST, shared escaping, Unicode BOM detection, and format codec abstractions. |
-| **`json_lib`** | [README](crates/json/README.md) | [`crates/json`](crates/json) | Full-featured JSON DOM engine supporting RFC 6901 JSON Pointer, RFC 7396 JSON Merge Patch, and zero-copy parsing. |
+| **`babbel`** | [README](crates/babbel/README.md) | [`crates/babbel`](crates/babbel) | Master facade crate providing high-level ergonomics, prelude, and open-ended cross-format conversion pipelines across 8 formats. |
+| **`babbel_core`** | [README](crates/babbel_core/README.md) | [`crates/babbel_core`](crates/babbel_core) | Core architectural kernel containing streaming traits (`ISource`, `IDestination`, `ILineReader`), universal `Value` AST, RFC 4180 CSV/TSV, sectioned INI/.env, frontmatter processing, Unicode BOM detection, and format codec abstractions. |
+| **`json_lib`** | [README](crates/json/README.md) | [`crates/json`](crates/json) | Full-featured JSON DOM engine supporting RFC 6901 JSON Pointer, RFC 7396 JSON Merge Patch, JSON Lines (`.jsonl`/`.ndjson`) streaming, and zero-copy parsing. |
 | **`yaml_lib`** | [README](crates/yaml/README.md) | [`crates/yaml`](crates/yaml) | YAML 1.2 parser and emitter with full support for anchors, aliases, custom tags, multiline block scalars, and multi-document streams. |
 | **`bencode_lib`** | [README](crates/bencode/README.md) | [`crates/bencode`](crates/bencode) | High-speed, binary-safe BitTorrent Bencode parser and serializer supporting zero-copy borrowed slices and iterative streaming. |
 | **`xml_lib`** | [README](crates/xml/README.md) | [`crates/xml`](crates/xml) | Robust XML DOM parser, W3C Canonical XML (C14N 1.0/1.1), DTD validation, XSD schema validator, and XPath 1.0 query engine. |
@@ -31,8 +36,9 @@ Babbel is structured as an interconnected multi-crate workspace:
 ### 1. Unified Streaming I/O (`ISource` & `IDestination`)
 All format crates across Babbel share the same streaming abstractions from [`babbel_core::io`](crates/babbel_core/src/io):
 - **Streaming Input (`ISource`)**: Every parser (`json_lib::parse`, `yaml_lib::parse`, `bencode_lib::parse`, `xml_lib::parse_source`) ingests data via `&mut dyn ISource`.
-- **Streaming Output (`IDestination`)**: Every emitter and serializer (`to_json`, `to_yaml`, `to_bencode`, `to_xml`, `stringify_to`) writes sequentially to `&mut dyn IDestination`.
+- **Streaming Output (`IDestination`)**: Every emitter and serializer (`to_json`, `to_yaml`, `to_bencode`, `to_xml`, `stringify_to`, `emit_csv_to`, `emit_ini_to`) writes sequentially to `&mut dyn IDestination`.
 - **Interface Segregation (ISP)**: Minimal sub-traits allow clients to bind only to the capabilities they require:
+  - [`ILineReader`](crates/babbel_core/src/io/traits.rs): Line-by-line reading across mixed `\r\n`, `\n`, `\r` endings without full buffering.
   - [`ICharStream`](crates/babbel_core/src/io/traits.rs): Minimal pull-based character stream (`current()`, `next()`, `more()`).
   - [`IByteStream`](crates/babbel_core/src/io/traits.rs): Raw byte reading for binary protocols (Bencode).
   - [`IByteWriter`](crates/babbel_core/src/io/traits.rs): Binary byte writing for output destinations.
@@ -163,6 +169,16 @@ cargo test -p babbel --jobs 2
 
 > [!TIP]
 > On Windows, passing `--jobs 2` ensures smooth concurrent file handling across test artifacts.
+
+---
+
+## Support
+
+If you find Babbel helpful and want to support ongoing development, performance optimizations, and format additions, you can buy me a coffee:
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Donate-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/roberttizz1)
+
+👉 **[https://buymeacoffee.com/roberttizz1](https://buymeacoffee.com/roberttizz1)**
 
 ---
 

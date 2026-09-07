@@ -9,6 +9,7 @@
 - Performance-optimized serialization with lazy escaping and arena allocation
 - File and in-memory buffer I/O abstractions
 - Pretty-printing utilities
+- Line-delimited JSON (JSON Lines / NDJSON / `.jsonl`) streaming reader and writer
 - JSON Pointer (RFC 6901), JSON Patch (RFC 6902), and JSON Merge Patch (RFC 7386)
 - JSON Schema validation (Draft 7 subset)
 - JSON5 comment stripping
@@ -22,6 +23,7 @@ Minimum supported Rust version: 1.88.0
 
 - `Node` and `Numeric` types for representing all JSON values
 - Parse with `parse`, `from_str`, `from_bytes`, or `parse_with_config`
+- `lines::JsonLinesReader` — stream record-by-record without buffering entire files
 - `validate_json` — check syntax without building a Node tree
 - Streaming-friendly `ISource`/`IDestination` traits
 - `FileSource`/`FileDestination` and `BufferSource`/`BufferDestination`
@@ -81,12 +83,12 @@ All streaming I/O in `json_lib` (`FileSource`, `FileDestination`, `BufferSource`
 ## Embedding Guide
 
 To embed this library in another Rust project:
-1. Add the path dependency as shown above.
+1. Add the path or version dependency as shown above.
 2. Import the required items in your code:
    ```rust
    use json_lib::{Node, parse, stringify};
    ```
-3. See the [EMBEDDING_GUIDE.md](../docs/EMBEDDING_GUIDE.md) for detailed instructions and integration tips.
+3. For comprehensive architecture and conversion pipelines across the Babbel ecosystem, refer to the [Babbel Architecture Guide](../../docs/ARCHITECTURE.md).
 
 ## Quick start
 
@@ -97,6 +99,28 @@ use json_lib::{from_str, from_bytes};
 
 let node = from_str(r#"{"name": "Alice", "age": 30}"#).unwrap();
 let node = from_bytes(b"[1, 2, 3]").unwrap();
+```
+
+### Stream Line-Delimited JSON (JSON Lines / NDJSON)
+
+```rust
+use json_lib::lines::{JsonLinesReader, parse_json_lines, to_json_lines};
+use babbel_core::io::SliceSource;
+
+// 1. Batch parsing
+let data = "{\"id\": 1}\n{\"id\": 2}\n";
+let records = parse_json_lines(data).unwrap();
+assert_eq!(records.len(), 2);
+
+// 2. Stream-by-record iteration
+let source = SliceSource::new(data);
+let mut reader = JsonLinesReader::new(source);
+while let Some(Ok(record)) = reader.next_node() {
+    println!("ID: {:?}", record.get("id"));
+}
+
+// 3. Serialization
+let jsonl_output = to_json_lines(&records).unwrap();
 ```
 
 ### Build a Node with the `json!` macro
