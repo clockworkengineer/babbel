@@ -126,6 +126,35 @@ pub trait IIndentationAware {
     fn is_indent_whitespace(&self, c: char) -> bool {
         c == ' ' || c == '\t'
     }
+    /// Checks if character is whitespace (space or tab).
+    fn is_whitespace(&self, c: char) -> bool {
+        c == ' ' || c == '\t'
+    }
+    /// Checks if character is a tab.
+    fn is_tab(&self, c: char) -> bool {
+        c == '\t'
+    }
+}
+
+/// Concrete save/restore snapshot of stream state and location metrics.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct SaveState {
+    /// Absolute byte position in the underlying source.
+    pub pos: u64,
+    /// The current byte at that position when the snapshot was taken (if any).
+    pub current_byte: Option<u8>,
+    /// Column (indent) at the snapshot.
+    pub column: usize,
+    /// Line number at the snapshot.
+    pub line: usize,
+}
+
+/// Interface for snapshotting and restoring stream read state.
+pub trait IStatefulStream {
+    /// Snapshots the source read position and metadata.
+    fn save_state(&mut self) -> SaveState;
+    /// Restores a previously saved state.
+    fn restore_state(&mut self, state: SaveState);
 }
 
 // ==========================================

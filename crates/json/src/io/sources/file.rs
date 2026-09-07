@@ -16,7 +16,9 @@ mod tests {
     fn create_test_file(content: &str) -> String {
         let id = COUNTER.fetch_add(1, Ordering::SeqCst);
         let pid = std::process::id();
-        let path = format!("test_json_file_src_{pid}_{id}.txt");
+        let mut temp_path = std::env::temp_dir();
+        temp_path.push(format!("test_json_file_src_{pid}_{id}.txt"));
+        let path = temp_path.to_str().unwrap().to_string();
         let mut file = fs::File::create(&path).unwrap();
         file.write_all(content.as_bytes()).unwrap();
         path

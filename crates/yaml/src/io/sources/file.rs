@@ -34,7 +34,7 @@ impl ICharStream for File {
                     Ok(1) => {
                         // Standalone CR
                         self.current_byte = Some(byte1[0]);
-                        self.file.seek(SeekFrom::Current(-1)).unwrap();
+                        let _ = self.file.seek(SeekFrom::Current(-1));
                     }
                     _ => {
                         self.current_byte = Some(byte1[0]);
@@ -191,7 +191,10 @@ mod tests {
     impl TestFile {
         fn new(content: &[u8]) -> Self {
             let id = TEST_FILE_COUNTER.fetch_add(1, Ordering::SeqCst);
-            let path = format!("test_temp_file_{}.yaml", id);
+            let pid = std::process::id();
+            let mut temp_path = std::env::temp_dir();
+            temp_path.push(format!("test_yaml_temp_file_{}_{}.yaml", pid, id));
+            let path = temp_path.to_str().unwrap().to_string();
             let mut file = OpenOptions::new()
                 .write(true)
                 .create(true)

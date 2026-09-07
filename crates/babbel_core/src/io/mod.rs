@@ -11,6 +11,8 @@ pub use destinations::{
 pub use destinations::FileDestination;
 
 pub use sources::{BufferSource, ByteSliceSource, SliceSource, StringSource};
+#[cfg(feature = "std")]
+pub use sources::ReaderSource;
 #[cfg(feature = "file-io")]
 pub use sources::FileSource;
 

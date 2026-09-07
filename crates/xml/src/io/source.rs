@@ -297,3 +297,20 @@ impl babbel_core::io::traits::ILocationAware for XmlSource {
     }
 }
 
+impl babbel_core::io::traits::IStatefulStream for XmlSource {
+    fn save_state(&mut self) -> babbel_core::io::traits::SaveState {
+        babbel_core::io::traits::SaveState {
+            pos: self.pos as u64,
+            current_byte: self.peek().map(|c| (c as u32 & 0xFF) as u8),
+            column: self.col,
+            line: self.line,
+        }
+    }
+
+    fn restore_state(&mut self, state: babbel_core::io::traits::SaveState) {
+        self.pos = state.pos as usize;
+        self.line = state.line;
+        self.col = state.column;
+    }
+}
+
