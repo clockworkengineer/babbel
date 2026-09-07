@@ -1,4 +1,4 @@
-use xml_lib_rust::{parse_bytes, Format, XmlSource, XmlDestination};
+﻿use xml_lib::{parse_bytes, Format, XmlSource, XmlDestination};
 
 #[test]
 fn test_bom_detection_utf8() {

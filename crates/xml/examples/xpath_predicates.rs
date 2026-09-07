@@ -1,9 +1,9 @@
-//! # XPath 1.0 Filter Predicates Example
+﻿//! # XPath 1.0 Filter Predicates Example
 //!
 //! Demonstrates evaluating XPath attribute predicates (`[@category='web']`)
 //! and positional index predicates (`[1]`) using `XPathEngine`.
 
-use xml_lib_rust::{parse, XPathEngine};
+use xml_lib::{parse, XPathEngine};
 
 fn main() {
     println!("--- XPath Predicates Example ---");

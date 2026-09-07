@@ -1,4 +1,4 @@
-use xml_lib_rust::{
+﻿use xml_lib::{
     parse, parse_with_options, Document, ParseOptions, XPathEngine, XPathValue, XmlError,
     XmlPullParser,
 };
@@ -214,7 +214,7 @@ fn test_xpath_substring_negative_and_nan_no_panic() {
 #[test]
 fn test_xml_source_slice_range_safe_on_invalid_boundaries() {
     // "€" is 3 bytes (0xE2 0x82 0xAC)
-    let source = xml_lib_rust::XmlSource::from_string("€uro");
+    let source = xml_lib::XmlSource::from_string("€uro");
     assert_eq!(source.len(), 6);
 
     // Slicing inside the multibyte character (byte 1 to 2)
@@ -264,7 +264,7 @@ fn test_streaming_io_limit_enforced() {
     use std::io::Read;
     // 2 KB stream with a 1 KB limit
     let stream = std::io::repeat(b'x').take(2048);
-    let res = xml_lib_rust::XmlSource::from_reader_with_limit(stream, 1024);
+    let res = xml_lib::XmlSource::from_reader_with_limit(stream, 1024);
     assert!(res.is_err());
     match res.unwrap_err() {
         XmlError::SecurityLimitExceeded(msg) => {
@@ -275,7 +275,7 @@ fn test_streaming_io_limit_enforced() {
 
     // Valid stream within limit
     let valid_stream = "<root><data>123</data></root>".as_bytes();
-    let res_ok = xml_lib_rust::XmlSource::from_reader_with_limit(valid_stream, 1024);
+    let res_ok = xml_lib::XmlSource::from_reader_with_limit(valid_stream, 1024);
     assert!(res_ok.is_ok());
 }
 
@@ -291,7 +291,7 @@ fn test_xpath_parser_depth_limit() {
         expr.push(')');
     }
 
-    let mut parser = xml_lib_rust::xpath::parser::XPathParser::new(&expr).unwrap();
+    let mut parser = xml_lib::xpath::parser::XPathParser::new(&expr).unwrap();
     let res = parser.parse_expression();
     assert!(res.is_err());
     match res.unwrap_err() {
@@ -304,7 +304,7 @@ fn test_xpath_parser_depth_limit() {
 
 #[test]
 fn test_pull_parser_attribute_iteration_clean_termination() {
-    use xml_lib_rust::XmlPullParser;
+    use xml_lib::XmlPullParser;
     // Malformed attribute with unclosed quote
     let xml = r#"<tag valid="yes" unclosed="no_end_quote"#;
     let mut parser = XmlPullParser::new(xml);
@@ -329,10 +329,10 @@ fn test_pull_parser_attribute_iteration_clean_termination() {
 
 #[test]
 fn test_validator_and_serializer_depth_constants() {
-    use xml_lib_rust::dtd::validator::DtdValidator;
-    use xml_lib_rust::xsd::validator::XsdValidator;
-    use xml_lib_rust::stringify::serializer::XmlSerializer;
-    use xml_lib_rust::stringify::canonical::CanonicalSerializer;
+    use xml_lib::dtd::validator::DtdValidator;
+    use xml_lib::xsd::validator::XsdValidator;
+    use xml_lib::stringify::serializer::XmlSerializer;
+    use xml_lib::stringify::canonical::CanonicalSerializer;
 
     assert_eq!(DtdValidator::MAX_VALIDATION_DEPTH, 512);
     assert_eq!(XsdValidator::MAX_VALIDATION_DEPTH, 512);

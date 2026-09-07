@@ -1,4 +1,4 @@
-use xml_lib_rust::{XmlPullEvent, XmlPullParser};
+﻿use xml_lib::{XmlPullEvent, XmlPullParser};
 
 #[test]
 fn test_zero_allocation_pull_parser_events() {

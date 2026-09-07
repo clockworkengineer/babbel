@@ -1,4 +1,4 @@
-use xml_lib_rust::{parse, NamespaceScope, QName};
+﻿use xml_lib::{parse, NamespaceScope, QName};
 
 #[test]
 fn test_qname_parsing() {

@@ -1,4 +1,4 @@
-use xml_lib_rust::{parse, NodeKind};
+﻿use xml_lib::{parse, NodeKind};
 
 #[derive(Default, Debug, PartialEq, Eq)]
 struct NodeStats {

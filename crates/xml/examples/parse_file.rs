@@ -1,9 +1,9 @@
-//! # XML File Parsing Example
+﻿//! # XML File Parsing Example
 //!
 //! Demonstrates parsing an XML string into a DOM `Document`, inspecting node metadata,
 //! and stringifying back to XML.
 
-use xml_lib_rust::{parse, stringify};
+use xml_lib::{parse, stringify};
 
 fn main() {
     println!("--- XML Parse File Example ---");

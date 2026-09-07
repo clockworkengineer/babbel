@@ -1,9 +1,9 @@
-//! # XSD Simple Type Restriction Facets Example
+﻿//! # XSD Simple Type Restriction Facets Example
 //!
 //! Demonstrates validating numeric simple type restriction facets (`minInclusive`, `maxInclusive`)
 //! using `XsdValidator` and `XmlValidator`.
 
-use xml_lib_rust::{parse, XsdValidator};
+use xml_lib::{parse, XsdValidator};
 
 fn main() {
     println!("--- XSD Type Restrictions Example ---");

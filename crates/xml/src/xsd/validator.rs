@@ -89,7 +89,7 @@ pub struct XsdElementRule {
 /// # Examples
 ///
 /// ```
-/// use xml_lib_rust::{parse, XsdValidator};
+/// use xml_lib::{parse, XsdValidator};
 ///
 /// let schema = r#"
 /// <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">

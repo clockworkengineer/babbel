@@ -1,4 +1,4 @@
-use xml_lib_rust::{Attribute, EntityMapper};
+﻿use xml_lib::{Attribute, EntityMapper};
 
 #[test]
 fn test_attribute_creation_and_search() {

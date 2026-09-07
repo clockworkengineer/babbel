@@ -1,9 +1,9 @@
-//! # XSD Basic Validation Example
+﻿//! # XSD Basic Validation Example
 //!
 //! Demonstrates parsing a simple XSD schema definition (`<xs:element name="note" type="xs:string"/>`)
 //! and validating document instance nodes using `XsdValidator` and `XmlValidator`.
 
-use xml_lib_rust::{parse, XsdValidator};
+use xml_lib::{parse, XsdValidator};
 
 fn main() {
     println!("--- XSD Basic Validation Example ---");

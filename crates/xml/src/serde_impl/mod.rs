@@ -40,7 +40,7 @@ impl std::error::Error for CustomSerError {}
 ///
 /// ```
 /// use serde::Deserialize;
-/// use xml_lib_rust::from_xml_str;
+/// use xml_lib::from_xml_str;
 ///
 /// #[derive(Deserialize, PartialEq, Debug)]
 /// struct Config {
@@ -71,7 +71,7 @@ pub fn to_string<T: Serialize>(value: &T) -> Result<String> {
 ///
 /// ```
 /// use serde::Serialize;
-/// use xml_lib_rust::to_xml_string_with_root;
+/// use xml_lib::to_xml_string_with_root;
 ///
 /// #[derive(Serialize)]
 /// struct Message {

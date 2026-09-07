@@ -1,9 +1,9 @@
-//! # XML Whitespace Handling Example
+﻿//! # XML Whitespace Handling Example
 //!
 //! Demonstrates how `xml_lib` preserves text whitespace and distinguishes between
 //! raw child nodes (including indentation text nodes) and element-only children.
 
-use xml_lib_rust::parse;
+use xml_lib::parse;
 
 fn main() {
     println!("--- XML Whitespace Handling Example ---");

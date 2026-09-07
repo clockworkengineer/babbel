@@ -22,7 +22,7 @@ Babbel is structured as an interconnected multi-crate workspace:
 | **`json_lib`** | [README](crates/json/README.md) | [`crates/json`](crates/json) | Full-featured JSON DOM engine supporting RFC 6901 JSON Pointer, RFC 7396 JSON Merge Patch, and zero-copy parsing. |
 | **`yaml_lib`** | [README](crates/yaml/README.md) | [`crates/yaml`](crates/yaml) | YAML 1.2 parser and emitter with full support for anchors, aliases, custom tags, multiline block scalars, and multi-document streams. |
 | **`bencode_lib`** | [README](crates/bencode/README.md) | [`crates/bencode`](crates/bencode) | High-speed, binary-safe BitTorrent Bencode parser and serializer supporting zero-copy borrowed slices and iterative streaming. |
-| **`xml_lib_rust`** | [README](crates/xml/README.md) | [`crates/xml`](crates/xml) | Robust XML DOM parser, W3C Canonical XML (C14N 1.0/1.1), DTD validation, XSD schema validator, and XPath 1.0 query engine. |
+| **`xml_lib`** | [README](crates/xml/README.md) | [`crates/xml`](crates/xml) | Robust XML DOM parser, W3C Canonical XML (C14N 1.0/1.1), DTD validation, XSD schema validator, and XPath 1.0 query engine. |
 
 ---
 
@@ -30,7 +30,7 @@ Babbel is structured as an interconnected multi-crate workspace:
 
 ### 1. Unified Streaming I/O (`ISource` & `IDestination`)
 All format crates across Babbel share the same streaming abstractions from [`babbel_core::io`](crates/babbel_core/src/io):
-- **Streaming Input (`ISource`)**: Every parser (`json_lib::parse`, `yaml_lib::parse`, `bencode_lib::parse`, `xml_lib_rust::parse_source`) ingests data via `&mut dyn ISource`.
+- **Streaming Input (`ISource`)**: Every parser (`json_lib::parse`, `yaml_lib::parse`, `bencode_lib::parse`, `xml_lib::parse_source`) ingests data via `&mut dyn ISource`.
 - **Streaming Output (`IDestination`)**: Every emitter and serializer (`to_json`, `to_yaml`, `to_bencode`, `to_xml`, `stringify_to`) writes sequentially to `&mut dyn IDestination`.
 - **Interface Segregation (ISP)**: Minimal sub-traits allow clients to bind only to the capabilities they require:
   - [`ICharStream`](crates/babbel_core/src/io/traits.rs): Minimal pull-based character stream (`current()`, `next()`, `more()`).
@@ -140,7 +140,7 @@ cargo check --workspace
 cargo test --workspace --jobs 2
 
 # Run tests for a specific crate
-cargo test -p xml_lib_rust --jobs 2
+cargo test -p xml_lib --jobs 2
 cargo test -p json_lib --jobs 2
 cargo test -p yaml_lib --jobs 2
 cargo test -p bencode_lib --jobs 2

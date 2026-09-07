@@ -1,4 +1,4 @@
-use xml_lib_rust::{parse, EntityMapper};
+﻿use xml_lib::{parse, EntityMapper};
 
 #[test]
 fn test_predefined_entities() {

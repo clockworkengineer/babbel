@@ -1,4 +1,4 @@
-use xml_lib_rust::{parse, XPathEngine, XPathValue};
+﻿use xml_lib::{parse, XPathEngine, XPathValue};
 
 const BOOKSTORE_XML: &str = r#"<?xml version="1.0"?>
 <bookstore>

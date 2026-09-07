@@ -42,7 +42,7 @@ dependencies = [
  "babbel_core",
  "bencode_lib",
  "json_lib",
- "xml_lib_rust",
+ "xml_lib",
  "yaml_lib",
 ]
 
@@ -722,7 +722,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "xml_lib_rust"
+name = "xml_lib"
 version = "1.2.2"
 dependencies = [
  "babbel_core",

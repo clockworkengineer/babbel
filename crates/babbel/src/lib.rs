@@ -40,7 +40,7 @@ pub use json_lib as json;
 pub use yaml_lib as yaml;
 
 #[cfg(feature = "xml")]
-pub use xml_lib_rust as xml;
+pub use xml_lib as xml;
 
 #[cfg(feature = "bencode")]
 pub use bencode_lib as bencode;

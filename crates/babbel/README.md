@@ -49,7 +49,7 @@ By default, all formats and the conversion pipeline are enabled (`["std", "json"
 | `alloc` | Enables heap allocation without full `std` (`no_std` environments). |
 | `json` *(default)* | Re-exports `json_lib` for JSON parsing, pointers, and patch operations. |
 | `yaml` *(default)* | Re-exports `yaml_lib` for full YAML 1.2 parsing and emission. |
-| `xml` *(default)* | Re-exports `xml_lib_rust` for validating XML DOM, C14N, and XPath 1.0. |
+| `xml` *(default)* | Re-exports `xml_lib` for validating XML DOM, C14N, and XPath 1.0. |
 | `bencode` *(default)* | Re-exports `bencode_lib` for BitTorrent Bencode processing. |
 | `convert` *(default)* | Enables the `babbel::convert` cross-format conversion pipeline. |
 
@@ -141,7 +141,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 | `babbel_core` | [`crates/babbel_core`](../babbel_core) | Core I/O traits, universal `Value` AST, BOM detection, and numeric utilities. |
 | `json_lib` | [`crates/json`](../json) | RFC 6901 JSON Pointer, RFC 7396 Merge Patch, JSON5 comment stripping. |
 | `yaml_lib` | [`crates/yaml`](../yaml) | YAML 1.2 specification compliance, anchors, aliases, and custom tags. |
-| `xml_lib_rust` | [`crates/xml`](../xml) | XML DOM, C14N Canonical XML, DTD validation, XSD schema, XPath 1.0. |
+| `xml_lib` | [`crates/xml`](../xml) | XML DOM, C14N Canonical XML, DTD validation, XSD schema, XPath 1.0. |
 | `bencode_lib` | [`crates/bencode`](../bencode) | Zero-copy borrowed parsing and streaming for BitTorrent Bencode. |
 
 ---

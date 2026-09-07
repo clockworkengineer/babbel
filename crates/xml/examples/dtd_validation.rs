@@ -1,9 +1,9 @@
-//! # XML DTD Validation Example
+﻿//! # XML DTD Validation Example
 //!
 //! Demonstrates validating document structures against DTD content models
 //! (`<!ELEMENT>`) and required attribute rules (`<!ATTLIST ... #REQUIRED>`) using `XmlValidator`.
 
-use xml_lib_rust::{parse, DtdValidator};
+use xml_lib::{parse, DtdValidator};
 
 fn main() {
     println!("--- XML DTD Validation Example ---");

@@ -1,9 +1,9 @@
-//! # XPath 1.0 Basic Navigation Example
+﻿//! # XPath 1.0 Basic Navigation Example
 //!
 //! Demonstrates evaluating basic XPath location paths (`//book/title`, `/bookstore/book[2]/price`)
 //! against a DOM `Document` using `XPathEngine`.
 
-use xml_lib_rust::{parse, XPathEngine};
+use xml_lib::{parse, XPathEngine};
 
 fn main() {
     println!("--- XPath Basic Navigation Example ---");

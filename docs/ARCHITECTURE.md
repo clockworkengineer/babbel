@@ -18,7 +18,7 @@ graph TD
     subgraph "Tier 1: Domain Format Engines"
         JSON["json_lib (RFC 6901, RFC 7396, JSON5)"]
         YAML["yaml_lib (YAML 1.2, Anchors/Aliases, Custom Tags)"]
-        XML["xml_lib_rust (W3C DOM, C14N, DTD, XSD, XPath 1.0)"]
+        XML["xml_lib (W3C DOM, C14N, DTD, XSD, XPath 1.0)"]
         Bencode["bencode_lib (BitTorrent, Zero-Copy Slices)"]
     end
 
@@ -52,7 +52,7 @@ graph TD
   * **Codec Interfaces**: Defines `FormatParser` and `FormatEmitter` abstractions.
   * **DRY Primitives**: Unicode BOM auto-detection (UTF-8, UTF-16 LE/BE, UTF-32 LE/BE), newline normalization, zero-allocation integer formatting via `itoa`, fast float formatting via `dtoa`, and canonical string escaping.
 
-### Layer 1: Format Engines (`json_lib`, `yaml_lib`, `bencode_lib`, `xml_lib_rust`)
+### Layer 1: Format Engines (`json_lib`, `yaml_lib`, `bencode_lib`, `xml_lib`)
 * **Grammar & Semantics**: Each engine implements parsing, syntax validation, document navigation, and serialization for its specific specification.
 * **Abstractions**: All format engines depend on `babbel_core::io` abstractions rather than hardcoded OS files or buffers.
 * **Autonomy**: Each crate can be consumed independently with minimal binary footprint.
@@ -138,7 +138,7 @@ pub enum Value {
 
 1. **Zero-Copy Where Feasible**:
    - `bencode_lib` provides `BorrowedNode<'a>`, slicing directly from input buffers with zero heap allocations.
-   - `xml_lib_rust` provides `slice_range(start, end)` directly over UTF-8 string buffers.
+   - `xml_lib` provides `slice_range(start, end)` directly over UTF-8 string buffers.
    - `SliceSource<'a>` reads directly from borrowed byte slices.
 2. **Elimination of I/O System Call Overhead**:
    - `FileDestination` maintains in-memory tracking of written length and the last written byte, eliminating disk seeks and handle re-opening.

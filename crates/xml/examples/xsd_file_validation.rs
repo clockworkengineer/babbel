@@ -1,9 +1,9 @@
-//! # XSD Complex Type Sequence Example
+﻿//! # XSD Complex Type Sequence Example
 //!
 //! Demonstrates validating complex type sequence elements (`<xs:complexType>`, `<xs:sequence>`)
 //! using `XsdValidator` and `XmlValidator`.
 
-use xml_lib_rust::{parse, XsdValidator};
+use xml_lib::{parse, XsdValidator};
 
 fn main() {
     println!("--- XSD Complex Sequence Example ---");

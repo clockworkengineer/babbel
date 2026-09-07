@@ -1,4 +1,4 @@
-use xml_lib_rust::{parse, XmlPullEvent, XmlPullParser};
+﻿use xml_lib::{parse, XmlPullEvent, XmlPullParser};
 
 #[test]
 fn test_epilog_comments_and_pi() {

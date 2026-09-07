@@ -1,9 +1,9 @@
-//! # XML Encoding & BOM Detection Example
+﻿//! # XML Encoding & BOM Detection Example
 //!
 //! Demonstrates automatic Byte Order Mark (BOM) detection and parsing for raw byte streams
 //! (`UTF-8`, `UTF-16 LE`, `UTF-16 BE`) using `parse_bytes`.
 
-use xml_lib_rust::{parse_bytes, XmlSource};
+use xml_lib::{parse_bytes, XmlSource};
 
 fn main() {
     println!("--- XML Encoding & BOM Example ---");

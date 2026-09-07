@@ -18,7 +18,7 @@ use babbel_core::io::traits::IDestination;
 /// # Examples
 ///
 /// ```
-/// use xml_lib_rust::{canonicalize, parse};
+/// use xml_lib::{canonicalize, parse};
 ///
 /// let doc = parse("<root b=\"2\" a=\"1\"><empty/></root>").unwrap();
 /// let c14n = canonicalize(&doc);

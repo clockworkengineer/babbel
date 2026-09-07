@@ -1,9 +1,9 @@
-//! # XPath 1.0 Built-in Functions Example
+﻿//! # XPath 1.0 Built-in Functions Example
 //!
 //! Demonstrates evaluating XPath numeric and string functions (`count()`, `sum()`, `concat()`, `round()`)
 //! against a DOM `Document` using `XPathEngine`.
 
-use xml_lib_rust::{parse, XPathEngine};
+use xml_lib::{parse, XPathEngine};
 
 fn main() {
     println!("--- XPath Functions Example ---");

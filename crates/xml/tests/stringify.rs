@@ -1,4 +1,4 @@
-use xml_lib_rust::{parse, stringify, SerializeOptions, XmlSerializer};
+﻿use xml_lib::{parse, stringify, SerializeOptions, XmlSerializer};
 
 #[test]
 fn test_roundtrip_stringify() {

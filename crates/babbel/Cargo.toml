@@ -13,7 +13,7 @@ std = ["babbel_core/std"]
 alloc = ["babbel_core/alloc"]
 json = ["dep:json_lib", "json_lib/format-yaml", "json_lib/format-xml", "json_lib/format-bencode"]
 yaml = ["dep:yaml_lib"]
-xml = ["dep:xml_lib_rust"]
+xml = ["dep:xml_lib"]
 bencode = ["dep:bencode_lib"]
 convert = ["json", "yaml", "xml", "bencode"]
 
@@ -21,5 +21,5 @@ convert = ["json", "yaml", "xml", "bencode"]
 babbel_core = { path = "../babbel_core" }
 json_lib = { path = "../json", optional = true }
 yaml_lib = { path = "../yaml", optional = true }
-xml_lib_rust = { path = "../xml", optional = true }
+xml_lib = { path = "../xml", optional = true }
 bencode_lib = { path = "../bencode", optional = true }

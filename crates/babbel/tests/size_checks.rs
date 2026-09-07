@@ -17,12 +17,12 @@ fn test_core_value_memory_size() {
 fn test_xml_node_kind_compacted_size() {
     use core::mem::size_of;
     assert!(
-        size_of::<xml_lib_rust::NodeKind>() <= 48,
-        "xml_lib_rust::NodeKind must be <= 48 bytes (shrunk from 72 bytes via boxing)"
+        size_of::<xml_lib::NodeKind>() <= 48,
+        "xml_lib::NodeKind must be <= 48 bytes (shrunk from 72 bytes via boxing)"
     );
     assert!(
-        size_of::<xml_lib_rust::NodeData>() <= 88,
-        "xml_lib_rust::NodeData must be <= 88 bytes (shrunk from 112 bytes)"
+        size_of::<xml_lib::NodeData>() <= 88,
+        "xml_lib::NodeData must be <= 88 bytes (shrunk from 112 bytes)"
     );
 }
 

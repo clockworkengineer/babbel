@@ -1,9 +1,9 @@
-//! # XML Mixed Content Example
+﻿//! # XML Mixed Content Example
 //!
 //! Demonstrates parsing mixed content element tags containing interspersed text nodes,
 //! child element tags (`<b>`, `<i>`), and CDATA sections (`<![CDATA[...]]>`).
 
-use xml_lib_rust::{parse, NodeKind};
+use xml_lib::{parse, NodeKind};
 
 fn main() {
     println!("--- XML Mixed Content Example ---");

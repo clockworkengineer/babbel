@@ -58,7 +58,7 @@ pub type ExternalSubsetResolver = Arc<dyn Fn(&str, Option<&str>) -> Option<Strin
 /// # Examples
 ///
 /// ```
-/// use xml_lib_rust::{parse, DtdValidator};
+/// use xml_lib::{parse, DtdValidator};
 ///
 /// let mut validator = DtdValidator::new();
 /// let dtd = "<!ELEMENT root (item*)>\n<!ELEMENT item EMPTY>";

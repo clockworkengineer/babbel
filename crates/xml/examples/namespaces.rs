@@ -1,11 +1,11 @@
-//! # XML Namespaces 1.0 Example
+﻿//! # XML Namespaces 1.0 Example
 //!
 //! Demonstrates parsing, inspecting, and resolving W3C Namespaces in XML documents:
 //! - Extracting element prefixes and local names from QNames
 //! - Resolving namespace URIs based on hierarchical scope
 //! - Finding elements using namespace-aware query selectors (`get_elements_by_tag_name_ns`)
 
-use xml_lib_rust::parse;
+use xml_lib::parse;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("--- XML Namespaces 1.0 Example ---");
@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for elem_id in add_elements {
         for child_id in doc.get_children(elem_id) {
-            if doc.get_node(child_id).map_or(false, |n| matches!(n.kind, xml_lib_rust::NodeKind::Element { .. })) {
+            if doc.get_node(child_id).map_or(false, |n| matches!(n.kind, xml_lib::NodeKind::Element { .. })) {
                 let child_local = doc.get_local_name(child_id);
                 let text = doc.get_text_content(child_id);
                 println!("  Parameter <m:{child_local}> = {text}");

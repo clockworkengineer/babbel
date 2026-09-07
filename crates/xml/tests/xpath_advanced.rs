@@ -1,4 +1,4 @@
-use xml_lib_rust::{parse, XPathEngine, XPathValue};
+﻿use xml_lib::{parse, XPathEngine, XPathValue};
 
 #[test]
 fn test_xpath_position_and_last() {
@@ -144,7 +144,7 @@ fn test_xpath_custom_function() {
 
     engine.register_function("square", |args| {
         if args.len() != 1 {
-            return Err(xml_lib_rust::XmlError::XPathError("square() takes 1 argument".into()));
+            return Err(xml_lib::XmlError::XPathError("square() takes 1 argument".into()));
         }
         let n = match args[0] {
             XPathValue::Number(num) => num,

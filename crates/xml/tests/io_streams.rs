@@ -1,4 +1,4 @@
-use xml_lib_rust::{
+﻿use xml_lib::{
     io::{XmlSource, XmlDestination},
     parse, parse_bytes,
 };
@@ -54,7 +54,7 @@ fn test_xml_source_from_file() {
     }
 
     let source = XmlSource::from_file(&temp_file_path).expect("Open file source");
-    let mut parser = xml_lib_rust::XmlParser::new(source, xml_lib_rust::ParseOptions::default());
+    let mut parser = xml_lib::XmlParser::new(source, xml_lib::ParseOptions::default());
     let doc = parser.parse().expect("Parse file source clean");
 
     assert_eq!(doc.get_text_content(doc.root_element_id().unwrap()), "The Iliad");
@@ -70,7 +70,7 @@ fn test_parse_file_convenience_function() {
     let xml_content = "<note><to>Tove</to></note>";
     std::fs::write(&temp_file_path, xml_content).expect("Write temp file");
 
-    let doc = xml_lib_rust::parse_file(&temp_file_path).expect("parse_file convenience function should succeed");
+    let doc = xml_lib::parse_file(&temp_file_path).expect("parse_file convenience function should succeed");
     assert_eq!(doc.get_text_content(doc.root_element_id().unwrap()), "Tove");
 
     let _ = std::fs::remove_file(temp_file_path);

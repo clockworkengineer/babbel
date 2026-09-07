@@ -9,7 +9,7 @@ use yaml_lib;
 #[cfg(feature = "bencode")]
 use bencode_lib;
 #[cfg(feature = "xml")]
-use xml_lib_rust;
+use xml_lib;
 
 use babbel_core::{BabbelError, Buffer, FormatEmitter, FormatParser, Value};
 
@@ -97,7 +97,7 @@ pub struct XmlParser;
 #[cfg(feature = "xml")]
 impl FormatParser for XmlParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        let doc = xml_lib_rust::parse(input)?;
+        let doc = xml_lib::parse(input)?;
         let name = doc.get_root_element_name().unwrap_or("xml").to_string();
         Ok(Value::Object(vec![(name, Value::String(input.to_string()))]))
     }

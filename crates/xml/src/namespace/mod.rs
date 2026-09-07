@@ -68,7 +68,7 @@ impl QName {
 /// # Examples
 ///
 /// ```
-/// use xml_lib_rust::NamespaceScope;
+/// use xml_lib::NamespaceScope;
 ///
 /// let mut scope = NamespaceScope::new();
 /// scope.declare(Some("soap"), "http://schemas.xmlsoap.org/soap/envelope/");

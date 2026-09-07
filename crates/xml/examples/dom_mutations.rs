@@ -1,4 +1,4 @@
-//! # W3C DOM Core Mutations Example
+﻿//! # W3C DOM Core Mutations Example
 //!
 //! Demonstrates live tree manipulation and memory management:
 //! - Creating and inserting elements (`insert_before`)
@@ -7,7 +7,7 @@
 //! - Deep node cloning (`clone_node`)
 //! - Garbage compaction (`compact`) to reclaim memory from dead arena slots
 
-use xml_lib_rust::{parse, stringify};
+use xml_lib::{parse, stringify};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("--- W3C DOM Core Mutations Example ---");

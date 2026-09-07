@@ -1,4 +1,4 @@
-use xml_lib_rust::{
+﻿use xml_lib::{
     canonicalize, parse, CanonicalOptions, CanonicalSerializer, SerializeOptions, XmlSerializer,
 };
 

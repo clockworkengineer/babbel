@@ -1,4 +1,4 @@
-# xml_lib_rust
+# xml_lib
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Rust Edition](https://img.shields.io/badge/edition-2021-orange)](Cargo.toml)
@@ -37,14 +37,14 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-xml_lib_rust = "1.2.2"
+xml_lib = "1.2.2"
 ```
 
 Or as a workspace path dependency:
 
 ```toml
 [dependencies]
-xml_lib_rust = { path = "crates/xml" }
+xml_lib = { path = "crates/xml" }
 ```
 
 ### Feature Flags
@@ -66,7 +66,7 @@ xml_lib_rust = { path = "crates/xml" }
 ### 1. Parsing & DOM Navigation
 
 ```rust
-use xml_lib_rust::Document;
+use xml_lib::Document;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let xml = r#"
@@ -95,7 +95,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### 2. XPath 1.0 Queries
 
 ```rust
-use xml_lib_rust::Document;
+use xml_lib::Document;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let xml = r#"
@@ -119,8 +119,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### 3. Canonical XML (C14N)
 
 ```rust
-use xml_lib_rust::stringify::canonicalize;
-use xml_lib_rust::Document;
+use xml_lib::stringify::canonicalize;
+use xml_lib::Document;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let xml = r#"<doc b="2" a="1">  <child/>  </doc>"#;
@@ -137,7 +137,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### 4. Streaming I/O with `babbel_core`
 
 ```rust
-use xml_lib_rust::io::{XmlSource, XmlDestination};
+use xml_lib::io::{XmlSource, XmlDestination};
 use babbel_core::io::traits::{ICharStream, IDestination};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -160,14 +160,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Security Limits
 
-`xml_lib_rust` provides built-in defenses against malicious XML payloads:
+`xml_lib` provides built-in defenses against malicious XML payloads:
 
 * `max_depth`: Limits nesting to prevent stack overflows (default: 256).
 * `max_entity_expansions`: Mitigates Billion Laughs exponential entity expansion (default: 10,000).
 * `max_stream_size`: Limits unbounded streaming inputs (default: 50 MB).
 
 ```rust
-use xml_lib_rust::io::XmlSource;
+use xml_lib::io::XmlSource;
 
 // Read streaming input with a custom safety limit (10 MB)
 let file = std::fs::File::open("large.xml")?;

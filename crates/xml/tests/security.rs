@@ -1,4 +1,4 @@
-use xml_lib_rust::{parse_bytes, XmlError, ParseOptions, XmlParser, XmlSource};
+﻿use xml_lib::{parse_bytes, XmlError, ParseOptions, XmlParser, XmlSource};
 
 #[test]
 fn test_nesting_depth_limit() {

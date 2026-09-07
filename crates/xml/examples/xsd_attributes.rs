@@ -1,9 +1,9 @@
-//! # XSD Attribute & Type Constraint Example
+﻿//! # XSD Attribute & Type Constraint Example
 //!
 //! Demonstrates parsing XSD attribute declarations (`xs:attribute`) and validating
 //! attribute primitive data types (`xs:integer`) using `XsdValidator` and `XmlValidator`.
 
-use xml_lib_rust::{parse, XsdValidator};
+use xml_lib::{parse, XsdValidator};
 
 fn main() {
     println!("--- XSD Attributes Example ---");

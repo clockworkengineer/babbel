@@ -1,9 +1,9 @@
-//! # XML Malformed Syntax & Error Handling Example
+﻿//! # XML Malformed Syntax & Error Handling Example
 //!
 //! Demonstrates error handling for invalid XML syntax inputs (mismatched closing tags,
 //! unclosed attributes, unclosed tags) using `XmlError::SyntaxError`.
 
-use xml_lib_rust::parse;
+use xml_lib::parse;
 
 fn main() {
     println!("--- XML Malformed Errors Example ---");

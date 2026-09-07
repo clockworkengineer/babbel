@@ -1,4 +1,4 @@
-use xml_lib_rust::{parse, stringify, NodeKind};
+﻿use xml_lib::{parse, stringify, NodeKind};
 
 #[test]
 fn test_basic_parsing() {
