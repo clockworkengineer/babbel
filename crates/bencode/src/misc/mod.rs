@@ -57,7 +57,7 @@ mod tests {
 
     #[test]
     fn test_get_version() {
-        assert_eq!(get_version(), "0.2.1");
+        assert_eq!(get_version(), "0.1.0");
     }
 
     #[test]

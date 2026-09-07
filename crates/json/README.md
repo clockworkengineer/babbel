@@ -1,6 +1,6 @@
 # json_lib
 
-**Version 0.2.1** — A lightweight, modular JSON toolkit for Rust with pluggable I/O sources/destinations, a simple in-memory Node tree, multiple serializers (JSON, YAML, XML, Bencode, TOML), and `no_std` support. Designed for small binaries, predictable behavior, and easy embedding.
+**Version 0.1.0** — A lightweight, modular JSON toolkit for Rust with pluggable I/O sources/destinations, a simple in-memory Node tree, multiple serializers (JSON, YAML, XML, Bencode, TOML), and `no_std` support. Designed for small binaries, predictable behavior, and easy embedding.
 
 - Core `Node` type representing JSON structures
 - Parser to build Node trees from streams, strings, or byte slices
@@ -57,7 +57,7 @@ Disable default features and enable `alloc` for embedded / bare-metal targets:
 
 ```toml
 [dependencies]
-json_lib = { version = "0.2.1", default-features = false, features = ["alloc"] }
+json_lib = { version = "0.1.0", default-features = false, features = ["alloc"] }
 # Or within the workspace:
 # json_lib = { path = "crates/json", default-features = false, features = ["alloc"] }
 ```
@@ -68,7 +68,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-json_lib = "0.2.1"
+json_lib = "0.1.0"
 ```
 
 Or as a workspace path dependency:

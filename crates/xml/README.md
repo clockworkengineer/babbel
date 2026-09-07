@@ -37,7 +37,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-xml_lib = "1.2.2"
+xml_lib = "0.1.0"
 ```
 
 Or as a workspace path dependency:

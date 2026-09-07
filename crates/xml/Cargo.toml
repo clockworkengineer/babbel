@@ -1,6 +1,6 @@
 [package]
 name = "xml_lib"
-version = "1.2.2"
+version = "0.1.0"
 edition = "2021"
 authors = ["ClockworkEngineer", "Rust Port Team"]
 description = "Full-featured XML parser, validator, stringifier, and XPath 1.0 engine in pure Rust"

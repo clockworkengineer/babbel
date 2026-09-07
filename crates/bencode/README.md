@@ -26,7 +26,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bencode_lib = "0.2.1"
+bencode_lib = "0.1.0"
 ```
 
 Or as a path dependency within this workspace:
@@ -42,7 +42,7 @@ To minimise binary size, disable unused format-conversion features:
 
 ```toml
 [dependencies]
-bencode_lib = { version = "0.2.1", default-features = false, features = ["std", "json"] }
+bencode_lib = { version = "0.1.0", default-features = false, features = ["std", "json"] }
 ```
 
 Available features: `std` (default), `json`, `toml`, `xml`, `yaml`.

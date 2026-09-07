@@ -109,7 +109,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-yaml_lib = "0.2.1"
+yaml_lib = "0.1.0"
 ```
 
 Or as a workspace path dependency:

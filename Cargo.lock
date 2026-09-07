@@ -64,7 +64,7 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "bencode_lib"
-version = "0.2.1"
+version = "0.1.0"
 dependencies = [
  "babbel_core",
  "rand",
@@ -331,7 +331,7 @@ dependencies = [
 
 [[package]]
 name = "json_lib"
-version = "0.2.1"
+version = "0.1.0"
 dependencies = [
  "arrayvec",
  "babbel_core",
@@ -723,7 +723,7 @@ dependencies = [
 
 [[package]]
 name = "xml_lib"
-version = "1.2.2"
+version = "0.1.0"
 dependencies = [
  "babbel_core",
  "criterion",
@@ -733,7 +733,7 @@ dependencies = [
 
 [[package]]
 name = "yaml_lib"
-version = "0.2.1"
+version = "0.1.0"
 dependencies = [
  "babbel_core",
  "base64",
