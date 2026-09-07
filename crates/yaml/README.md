@@ -109,7 +109,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-babbel_yaml = "0.1.0"
+babbel_yaml = "0.1.1"
 ```
 
 Or as a workspace path dependency:

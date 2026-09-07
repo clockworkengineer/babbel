@@ -32,7 +32,7 @@ Add `babbel` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-babbel = "0.1.0"
+babbel = "0.1.1"
 ```
 
 Or as a workspace path dependency:
