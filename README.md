@@ -10,6 +10,7 @@ A high-performance, polyglot serialization, parsing, and document manipulation w
 
 📖 **Documentation & Guides**:
 - [Architecture Guide](docs/ARCHITECTURE.md) — 3-tier layering model and SOLID design principles
+- [Embedded Systems Plan](docs/EMBEDDED_SYSTEMS_PLAN.md) — Embedded systems architecture and zero-allocation roadmap
 - [Text Support Guide](docs/TEXT_SUPPORT_GUIDE.md) — CSV, TSV, INI, JSON Lines, and frontmatter
 - [Conversion Matrix](docs/CONVERSION_MATRIX.md) — $O(N)$ cross-format conversion reference
 - [Contributing Guide](docs/CONTRIBUTING.md) — Development workflow, standards, and testing guidelines

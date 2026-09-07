@@ -23,6 +23,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "alloc")]
+#[macro_use]
 extern crate alloc;
 
 /// Module defining error types and handling for JSON operations.
@@ -99,6 +100,10 @@ pub use misc::strip as strip_whitespace;
 
 /// Destination implementation for writing JSON data to a memory buffer
 pub use io::destinations::buffer::Buffer as BufferDestination;
+/// Zero-allocation stack-based destination implementations
+pub use babbel_core::io::{ArrayVecDestination, SliceDestination};
+/// Streaming zero-allocation pull parser for embedded systems
+pub use parser::pull_parser::{JsonPullEvent, JsonPullParser, JsonScalar};
 /// Destination implementation for writing JSON data to a file
 #[cfg(feature = "file-io")]
 pub use io::destinations::file::File as FileDestination;

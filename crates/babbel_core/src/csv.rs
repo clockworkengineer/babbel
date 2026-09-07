@@ -534,6 +534,163 @@ fn emit_field(s: &str, options: &CsvOptions, destination: &mut dyn IDestination)
     }
 }
 
+// ==========================================
+// Zero-Allocation Streaming Pull Parser
+// ==========================================
+
+/// Zero-allocation streaming CSV pull parser for microcontrollers and embedded systems.
+///
+/// Iterates over CSV rows without dynamic heap allocation ($O(1)$ stack memory).
+#[derive(Debug, Clone)]
+pub struct CsvPullParser<'a> {
+    input: &'a str,
+    pos: usize,
+    delimiter: char,
+    quote: char,
+}
+
+impl<'a> CsvPullParser<'a> {
+    /// Creates a new streaming CSV pull parser over a borrowed string slice.
+    pub fn new(input: &'a str, options: &CsvOptions) -> Self {
+        Self {
+            input,
+            pos: 0,
+            delimiter: options.delimiter,
+            quote: options.quote,
+        }
+    }
+
+    /// Pulls the next record (row) from the CSV stream.
+    /// Returns `None` when end of input is reached.
+    pub fn next_record(&mut self) -> Option<CsvRecord<'a>> {
+        if self.pos >= self.input.len() {
+            return None;
+        }
+
+        let start = self.pos;
+        let bytes = self.input.as_bytes();
+        let mut in_quotes = false;
+
+        while self.pos < bytes.len() {
+            let b = bytes[self.pos];
+            if b == self.quote as u8 {
+                in_quotes = !in_quotes;
+                self.pos += 1;
+            } else if !in_quotes && (b == b'\n' || b == b'\r') {
+                let row_slice = &self.input[start..self.pos];
+                if b == b'\r' && self.pos + 1 < bytes.len() && bytes[self.pos + 1] == b'\n' {
+                    self.pos += 2;
+                } else {
+                    self.pos += 1;
+                }
+                return Some(CsvRecord {
+                    raw: row_slice,
+                    delimiter: self.delimiter,
+                    quote: self.quote,
+                });
+            } else {
+                self.pos += 1;
+            }
+        }
+
+        if start < self.input.len() {
+            let row_slice = &self.input[start..self.pos];
+            Some(CsvRecord {
+                raw: row_slice,
+                delimiter: self.delimiter,
+                quote: self.quote,
+            })
+        } else {
+            None
+        }
+    }
+}
+
+/// A borrowed CSV record (row) referencing slices in the original input buffer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CsvRecord<'a> {
+    raw: &'a str,
+    delimiter: char,
+    quote: char,
+}
+
+impl<'a> CsvRecord<'a> {
+    /// Returns the raw unparsed row slice.
+    pub fn raw(&self) -> &'a str {
+        self.raw
+    }
+
+    /// Returns an iterator over the fields in this record without allocating.
+    pub fn fields(&self) -> CsvFieldsIter<'a> {
+        CsvFieldsIter {
+            raw: self.raw,
+            pos: 0,
+            delimiter: self.delimiter,
+            quote: self.quote,
+        }
+    }
+}
+
+/// Zero-allocation iterator over fields within a [`CsvRecord`].
+#[derive(Debug, Clone)]
+pub struct CsvFieldsIter<'a> {
+    raw: &'a str,
+    pos: usize,
+    delimiter: char,
+    quote: char,
+}
+
+impl<'a> Iterator for CsvFieldsIter<'a> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pos > self.raw.len() {
+            return None;
+        }
+        if self.pos == self.raw.len() {
+            self.pos += 1;
+            return Some("");
+        }
+
+        let start = self.pos;
+        let bytes = self.raw.as_bytes();
+        let mut in_quotes = false;
+
+        while self.pos < bytes.len() {
+            let b = bytes[self.pos];
+            if b == self.quote as u8 {
+                in_quotes = !in_quotes;
+                self.pos += 1;
+            } else if !in_quotes && b == self.delimiter as u8 {
+                let field = &self.raw[start..self.pos];
+                self.pos += 1; // skip delimiter
+                return Some(Self::clean_field(field, self.quote));
+            } else {
+                self.pos += 1;
+            }
+        }
+
+        let field = &self.raw[start..self.pos];
+        self.pos += 1; // mark EOF
+        Some(Self::clean_field(field, self.quote))
+    }
+}
+
+impl<'a> CsvFieldsIter<'a> {
+    fn clean_field(s: &'a str, quote: char) -> &'a str {
+        let trimmed = s.trim();
+        let quote_b = quote as u8;
+        if trimmed.len() >= 2
+            && trimmed.as_bytes()[0] == quote_b
+            && trimmed.as_bytes()[trimmed.len() - 1] == quote_b
+        {
+            &trimmed[1..trimmed.len() - 1]
+        } else {
+            trimmed
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -607,5 +764,25 @@ mod tests {
         let val = parse_csv(input, &CsvOptions::default()).unwrap();
         let emitted = emit_csv(&val, &CsvOptions::default()).unwrap();
         assert_eq!(emitted, input);
+    }
+
+    #[test]
+    fn test_csv_pull_parser() {
+        let csv_data = "temp,humidity,sensor\n21.5,45,\"living room\"\n22.0,46,bedroom\n";
+        let mut parser = CsvPullParser::new(csv_data, &CsvOptions::default());
+
+        let row1 = parser.next_record().unwrap();
+        let fields1: Vec<&str> = row1.fields().collect();
+        assert_eq!(fields1, vec!["temp", "humidity", "sensor"]);
+
+        let row2 = parser.next_record().unwrap();
+        let fields2: Vec<&str> = row2.fields().collect();
+        assert_eq!(fields2, vec!["21.5", "45", "living room"]);
+
+        let row3 = parser.next_record().unwrap();
+        let fields3: Vec<&str> = row3.fields().collect();
+        assert_eq!(fields3, vec!["22.0", "46", "bedroom"]);
+
+        assert!(parser.next_record().is_none());
     }
 }

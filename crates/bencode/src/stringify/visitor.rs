@@ -3,7 +3,7 @@
 //! without altering core AST data structures or parser logic.
 
 #[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
+use alloc::{string::String, vec::Vec};
 
 use crate::nodes::node::Node;
 

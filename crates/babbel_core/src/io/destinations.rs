@@ -389,6 +389,343 @@ impl IDestination for FileDestination {
     }
 }
 
+// ==========================================
+// Zero-Allocation / Stack Destinations
+// ==========================================
+
+/// Zero-allocation in-memory destination writing directly into a caller-supplied byte slice.
+///
+/// Ideal for embedded systems and real-time environments where heap allocation is forbidden.
+#[derive(Debug)]
+pub struct SliceDestination<'a> {
+    buffer: &'a mut [u8],
+    pos: usize,
+    truncated: bool,
+}
+
+impl<'a> SliceDestination<'a> {
+    /// Creates a new `SliceDestination` borrowing a mutable byte slice.
+    pub fn new(buffer: &'a mut [u8]) -> Self {
+        Self {
+            buffer,
+            pos: 0,
+            truncated: false,
+        }
+    }
+
+    /// Returns the number of bytes written so far.
+    pub fn len(&self) -> usize {
+        self.pos
+    }
+
+    /// Returns true if no bytes have been written.
+    pub fn is_empty(&self) -> bool {
+        self.pos == 0
+    }
+
+    /// Returns the total capacity of the borrowed slice.
+    pub fn capacity(&self) -> usize {
+        self.buffer.len()
+    }
+
+    /// Returns remaining space in the slice.
+    pub fn remaining(&self) -> usize {
+        self.buffer.len().saturating_sub(self.pos)
+    }
+
+    /// Returns true if an attempted write exceeded capacity.
+    pub fn is_truncated(&self) -> bool {
+        self.truncated
+    }
+
+    /// Returns a byte slice of the valid written content.
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.buffer[..self.pos]
+    }
+
+    /// Returns a mutable byte slice of the valid written content.
+    pub fn as_mut_bytes(&mut self) -> &mut [u8] {
+        &mut self.buffer[..self.pos]
+    }
+
+    /// Returns a string slice of the written content if valid UTF-8.
+    pub fn as_str(&self) -> Result<&str, core::str::Utf8Error> {
+        core::str::from_utf8(self.as_bytes())
+    }
+
+    /// Appends a single byte.
+    pub fn add_byte(&mut self, byte: u8) {
+        if self.pos < self.buffer.len() {
+            self.buffer[self.pos] = byte;
+            self.pos += 1;
+        } else {
+            self.truncated = true;
+        }
+    }
+
+    /// Appends a string slice of bytes.
+    pub fn add_bytes(&mut self, bytes: &str) {
+        let b = bytes.as_bytes();
+        let avail = self.buffer.len().saturating_sub(self.pos);
+        let to_copy = b.len().min(avail);
+        if to_copy > 0 {
+            self.buffer[self.pos..self.pos + to_copy].copy_from_slice(&b[..to_copy]);
+            self.pos += to_copy;
+        }
+        if b.len() > avail {
+            self.truncated = true;
+        }
+    }
+
+    /// Resets the write position to 0 and clears truncated flag.
+    pub fn clear(&mut self) {
+        self.pos = 0;
+        self.truncated = false;
+    }
+}
+
+impl<'a> IDestination for SliceDestination<'a> {
+    fn add_byte(&mut self, byte: u8) {
+        if self.pos < self.buffer.len() {
+            self.buffer[self.pos] = byte;
+            self.pos += 1;
+        } else {
+            self.truncated = true;
+        }
+    }
+
+    fn add_bytes(&mut self, bytes: &str) {
+        let b = bytes.as_bytes();
+        let avail = self.buffer.len().saturating_sub(self.pos);
+        let to_copy = b.len().min(avail);
+        if to_copy > 0 {
+            self.buffer[self.pos..self.pos + to_copy].copy_from_slice(&b[..to_copy]);
+            self.pos += to_copy;
+        }
+        if b.len() > avail {
+            self.truncated = true;
+        }
+    }
+
+    fn clear(&mut self) {
+        self.clear();
+    }
+
+    fn last(&self) -> Option<u8> {
+        if self.pos > 0 {
+            Some(self.buffer[self.pos - 1])
+        } else {
+            None
+        }
+    }
+}
+
+impl<'a> IByteWriter for SliceDestination<'a> {
+    fn write_byte(&mut self, byte: u8) -> Result<(), ErrorCode> {
+        if self.pos < self.buffer.len() {
+            self.buffer[self.pos] = byte;
+            self.pos += 1;
+            Ok(())
+        } else {
+            self.truncated = true;
+            Err(ErrorCode::IoError)
+        }
+    }
+
+    fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), ErrorCode> {
+        let avail = self.buffer.len().saturating_sub(self.pos);
+        if bytes.len() <= avail {
+            self.buffer[self.pos..self.pos + bytes.len()].copy_from_slice(bytes);
+            self.pos += bytes.len();
+            Ok(())
+        } else {
+            self.buffer[self.pos..self.pos + avail].copy_from_slice(&bytes[..avail]);
+            self.pos += avail;
+            self.truncated = true;
+            Err(ErrorCode::IoError)
+        }
+    }
+}
+
+impl<'a> IClearable for SliceDestination<'a> {
+    fn clear(&mut self) {
+        self.clear();
+    }
+}
+
+impl<'a> ITailInspectable for SliceDestination<'a> {
+    fn last_byte(&self) -> Option<u8> {
+        self.last()
+    }
+}
+
+/// Stack-allocated fixed-capacity byte buffer destination using const generics.
+///
+/// Allocates exclusively on the call stack without requiring any heap allocations (`no_alloc`).
+#[derive(Debug, Clone)]
+pub struct ArrayVecDestination<const N: usize> {
+    data: [u8; N],
+    pos: usize,
+    truncated: bool,
+}
+
+impl<const N: usize> ArrayVecDestination<N> {
+    /// Creates a new empty stack buffer destination.
+    pub const fn new() -> Self {
+        Self {
+            data: [0u8; N],
+            pos: 0,
+            truncated: false,
+        }
+    }
+
+    /// Returns the number of bytes written.
+    pub fn len(&self) -> usize {
+        self.pos
+    }
+
+    /// Returns true if no bytes have been written.
+    pub fn is_empty(&self) -> bool {
+        self.pos == 0
+    }
+
+    /// Returns the total capacity `N`.
+    pub const fn capacity(&self) -> usize {
+        N
+    }
+
+    /// Returns remaining space in the buffer.
+    pub fn remaining(&self) -> usize {
+        N.saturating_sub(self.pos)
+    }
+
+    /// Returns true if a write exceeded capacity.
+    pub fn is_truncated(&self) -> bool {
+        self.truncated
+    }
+
+    /// Returns written bytes as a slice.
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.data[..self.pos]
+    }
+
+    /// Returns written content as a string slice if valid UTF-8.
+    pub fn as_str(&self) -> Result<&str, core::str::Utf8Error> {
+        core::str::from_utf8(self.as_bytes())
+    }
+
+    /// Appends a single byte.
+    pub fn add_byte(&mut self, byte: u8) {
+        if self.pos < N {
+            self.data[self.pos] = byte;
+            self.pos += 1;
+        } else {
+            self.truncated = true;
+        }
+    }
+
+    /// Appends a string slice of bytes.
+    pub fn add_bytes(&mut self, bytes: &str) {
+        let b = bytes.as_bytes();
+        let avail = N.saturating_sub(self.pos);
+        let to_copy = b.len().min(avail);
+        if to_copy > 0 {
+            self.data[self.pos..self.pos + to_copy].copy_from_slice(&b[..to_copy]);
+            self.pos += to_copy;
+        }
+        if b.len() > avail {
+            self.truncated = true;
+        }
+    }
+
+    /// Clears written content.
+    pub fn clear(&mut self) {
+        self.pos = 0;
+        self.truncated = false;
+    }
+}
+
+impl<const N: usize> Default for ArrayVecDestination<N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<const N: usize> IDestination for ArrayVecDestination<N> {
+    fn add_byte(&mut self, byte: u8) {
+        if self.pos < N {
+            self.data[self.pos] = byte;
+            self.pos += 1;
+        } else {
+            self.truncated = true;
+        }
+    }
+
+    fn add_bytes(&mut self, bytes: &str) {
+        let b = bytes.as_bytes();
+        let avail = N.saturating_sub(self.pos);
+        let to_copy = b.len().min(avail);
+        if to_copy > 0 {
+            self.data[self.pos..self.pos + to_copy].copy_from_slice(&b[..to_copy]);
+            self.pos += to_copy;
+        }
+        if b.len() > avail {
+            self.truncated = true;
+        }
+    }
+
+    fn clear(&mut self) {
+        self.clear();
+    }
+
+    fn last(&self) -> Option<u8> {
+        if self.pos > 0 {
+            Some(self.data[self.pos - 1])
+        } else {
+            None
+        }
+    }
+}
+
+impl<const N: usize> IByteWriter for ArrayVecDestination<N> {
+    fn write_byte(&mut self, byte: u8) -> Result<(), ErrorCode> {
+        if self.pos < N {
+            self.data[self.pos] = byte;
+            self.pos += 1;
+            Ok(())
+        } else {
+            self.truncated = true;
+            Err(ErrorCode::IoError)
+        }
+    }
+
+    fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), ErrorCode> {
+        let avail = N.saturating_sub(self.pos);
+        if bytes.len() <= avail {
+            self.data[self.pos..self.pos + bytes.len()].copy_from_slice(bytes);
+            self.pos += bytes.len();
+            Ok(())
+        } else {
+            self.data[self.pos..self.pos + avail].copy_from_slice(&bytes[..avail]);
+            self.pos += avail;
+            self.truncated = true;
+            Err(ErrorCode::IoError)
+        }
+    }
+}
+
+impl<const N: usize> IClearable for ArrayVecDestination<N> {
+    fn clear(&mut self) {
+        self.clear();
+    }
+}
+
+impl<const N: usize> ITailInspectable for ArrayVecDestination<N> {
+    fn last_byte(&self) -> Option<u8> {
+        self.last()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -410,5 +747,53 @@ mod tests {
         dest.add_bytes("testing");
         assert_eq!(dest.as_str(), "testing");
         assert_eq!(dest.into_string(), "testing");
+    }
+
+    #[test]
+    fn test_slice_destination() {
+        let mut raw = [0u8; 16];
+        let mut dest = SliceDestination::new(&mut raw);
+        assert_eq!(dest.capacity(), 16);
+        assert_eq!(dest.remaining(), 16);
+        assert!(dest.is_empty());
+
+        dest.add_bytes("12345");
+        assert_eq!(dest.len(), 5);
+        assert_eq!(dest.remaining(), 11);
+        assert_eq!(dest.as_str().unwrap(), "12345");
+        assert_eq!(dest.last(), Some(b'5'));
+
+        dest.add_bytes("67890abcde");
+        assert_eq!(dest.len(), 15);
+        assert!(!dest.is_truncated());
+
+        // Exceed capacity
+        dest.add_bytes("xyz");
+        assert!(dest.is_truncated());
+        assert_eq!(dest.len(), 16);
+
+        dest.clear();
+        assert_eq!(dest.len(), 0);
+        assert!(!dest.is_truncated());
+    }
+
+    #[test]
+    fn test_array_vec_destination() {
+        let mut dest = ArrayVecDestination::<32>::new();
+        assert_eq!(dest.capacity(), 32);
+        assert_eq!(dest.remaining(), 32);
+
+        dest.add_bytes("embedded");
+        dest.add_byte(b'_');
+        dest.add_bytes("rust");
+
+        assert_eq!(dest.as_str().unwrap(), "embedded_rust");
+        assert_eq!(dest.last(), Some(b't'));
+        assert_eq!(dest.len(), 13);
+        assert_eq!(dest.remaining(), 19);
+
+        dest.clear();
+        assert_eq!(dest.len(), 0);
+        assert_eq!(dest.remaining(), 32);
     }
 }

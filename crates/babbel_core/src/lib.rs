@@ -12,6 +12,7 @@ extern crate alloc;
 pub mod chars;
 pub mod codec;
 pub mod csv;
+pub mod embedded;
 pub mod encoding;
 pub mod error;
 pub mod escape;
@@ -29,7 +30,11 @@ pub use codec::{
     BencodeEmitter, FormatCodec, FormatEmitter, FormatParser, JsonEmitter, XmlEmitter,
     YamlEmitter,
 };
-pub use csv::{emit_csv, emit_csv_to, parse_csv, sniff_delimiter, CsvOptions};
+pub use csv::{
+    emit_csv, emit_csv_to, parse_csv, sniff_delimiter, CsvFieldsIter, CsvOptions, CsvPullParser,
+    CsvRecord,
+};
+pub use embedded::{CompactError, EmbeddedLimits, MemoryTracker, StackBuffer};
 pub use encoding::{detect_encoding_and_strip_bom, normalize_newlines, Encoding};
 pub use error::{format_error_snippet, BabbelError, ErrorCode, Location, Span};
 pub use escape::{
@@ -38,11 +43,11 @@ pub use escape::{
 };
 #[cfg(feature = "file-io")]
 pub use file::{detect_format, read_file_to_string, write_file_from_string, Format};
-pub use ini::{emit_ini, emit_ini_to, parse_ini, IniOptions};
+pub use ini::{emit_ini, emit_ini_to, parse_ini, IniEvent, IniOptions, IniPullParser};
 pub use io::{
-    Buffer, BufferDestination, BufferSource, ByteSliceSource, IByteStream, ICharStream,
-    IClearable, IDestination, IIndentationAware, ILineReader, IPositionAware, IRewindable,
-    ISource, LineIter, SliceSource, StringDestination, StringSource,
+    ArrayVecDestination, Buffer, BufferDestination, BufferSource, ByteSliceSource, IByteStream,
+    ICharStream, IClearable, IDestination, IIndentationAware, ILineReader, IPositionAware,
+    IRewindable, ISource, LineIter, SliceDestination, SliceSource, StringDestination, StringSource,
 };
 #[cfg(feature = "file-io")]
 pub use io::{FileDestination, FileSource};

@@ -56,6 +56,10 @@ graph TD
     * **Configuration Text (`ini`)**: Section-based INI (`[section]`), `.properties`, and `.env` parsing, comment handling (`#`, `;`, `!`), and emission.
     * **Frontmatter & Line Utilities (`text`)**: Extracting YAML (`---`) and TOML (`+++`) metadata blocks (`split_frontmatter`), indentation trimming (`indent`, `dedent`, `trim_lines`).
   * **Codec Interfaces**: Defines `FormatParser`, `FormatEmitter`, and `FormatCodec` abstractions.
+  * **Embedded Systems & Zero-Allocation (`embedded`)**:
+    * **Stack Destinations**: `SliceDestination<'a>` and `ArrayVecDestination<const N>` allow writing directly into caller-provided stack memory with zero dynamic allocations.
+    * **Streaming Pull Parsers**: `JsonPullParser`, `XmlPullParser`, `CsvPullParser`, and `IniPullParser` enable microcontrollers with 16–64 KB RAM to parse documents of arbitrary size with $O(1)$ stack memory.
+    * **Memory Control**: `StackBuffer<const N>`, `MemoryTracker`, `EmbeddedLimits`, and 8-byte `CompactError` ensure deterministic execution without heap fragmentation.
   * **DRY Primitives**: Unicode BOM auto-detection (UTF-8, UTF-16 LE/BE, UTF-32 LE/BE), newline normalization, zero-allocation integer formatting via `itoa`, fast float formatting via `dtoa`, and canonical string escaping.
 
 ### Layer 1: Domain Format Engines (`json_lib`, `yaml_lib`, `bencode_lib`, `xml_lib`)

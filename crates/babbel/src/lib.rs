@@ -59,8 +59,23 @@ pub use bencode_lib as bencode;
 #[cfg(feature = "convert")]
 pub mod convert;
 
+/// Unified embedded systems module aggregating zero-allocation streaming parsers,
+/// stack-allocated destinations, and memory limits for microcontrollers.
+pub mod embedded {
+    pub use babbel_core::embedded::*;
+    pub use babbel_core::io::{ArrayVecDestination, SliceDestination};
+    pub use babbel_core::csv::{CsvFieldsIter, CsvPullParser, CsvRecord};
+    pub use babbel_core::ini::{IniEvent, IniPullParser};
+    #[cfg(feature = "json")]
+    pub use json_lib::parser::pull_parser::{JsonPullEvent, JsonPullParser, JsonScalar};
+    #[cfg(feature = "xml")]
+    pub use xml_lib::parser::{XmlPullAttribute, XmlPullEvent, XmlPullParser};
+}
+
 // Re-export text, CSV, and INI processing from core
 pub use babbel_core::{
     csv, emit_csv, emit_ini, ini, parse_csv, parse_ini, sniff_delimiter, split_frontmatter, text,
-    CsvOptions, DocumentWithFrontmatter, FrontmatterFormat, IniOptions,
+    ArrayVecDestination, CompactError, CsvFieldsIter, CsvOptions, CsvPullParser, CsvRecord,
+    DocumentWithFrontmatter, EmbeddedLimits, FrontmatterFormat, IniEvent, IniOptions, IniPullParser,
+    MemoryTracker, SliceDestination, StackBuffer,
 };

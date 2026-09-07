@@ -1,23 +1,24 @@
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
+//! - File and buffer I/O abstractions
+//! - Pretty-printing utilities
+//! - Unicode-aware file handling
+//!
+//! Minimum supported Rust version: 1.88.0
+//!
+//! ## Feature Flags
+//!
+//! - `std` (default): Enable standard library support
+//! - `alloc` (default): Enable allocation support (required for most features)
+//! - `embedded`: Enable embedded systems optimizations and limits
+//! - `parse-only`: Only enable parsing, disable serialization
+//! - `stringify`: Enable YAML stringification (requires `alloc`)
+//! - `format-converters`: Enable JSON, XML, TOML, Bencode converters
+//! - `file-io`: Enable file I/O operations (requires `std`)
+
 #[macro_use]
 pub mod parser;
-/// - File and buffer I/O abstractions
-/// - Pretty-printing utilities
-/// - Unicode-aware file handling
-///
-/// Minimum supported Rust version: 1.88.0
-///
-/// ## Feature Flags
-///
-/// - `std` (default): Enable standard library support
-/// - `alloc` (default): Enable allocation support (required for most features)
-/// - `embedded`: Enable embedded systems optimizations and limits
-/// - `parse-only`: Only enable parsing, disable serialization
-/// - `stringify`: Enable YAML stringification (requires `alloc`)
-/// - `format-converters`: Enable JSON, XML, TOML, Bencode converters
-/// - `file-io`: Enable file I/O operations (requires `std`)
-
-#[cfg_attr(not(feature = "std"), no_std)]
 
 /// Common test helpers for integration/unit tests
 pub mod test_helpers;
@@ -92,10 +93,12 @@ pub use file::file::write_file_from_string;
 /// Destination implementation for writing YAML data to a memory buffer
 pub use io::destinations::buffer::Buffer as BufferDestination;
 /// Destination implementation for writing YAML data to a file
+#[cfg(feature = "file-io")]
 pub use io::destinations::file::File as FileDestination;
 /// Source implementation for reading YAML data from a memory buffer
 pub use io::sources::buffer::Buffer as BufferSource;
 /// Source implementation for reading YAML data from a file
+#[cfg(feature = "file-io")]
 pub use io::sources::file::File as FileSource;
 /// Returns the base node of document number n (0-based), reporting any errors.
 pub use nodes::node_utils::get_document_base as get_document;
@@ -263,7 +266,7 @@ pub use utils::string_interner::InternerStats;
 #[cfg(feature = "alloc")]
 pub use utils::string_interner::SimpleInterner;
 /// Thread-safe string interner with read-write lock
-#[cfg(feature = "alloc")]
+#[cfg(feature = "std")]
 pub use utils::string_interner::StringInterner;
 
 // Validation API

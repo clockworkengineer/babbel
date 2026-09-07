@@ -34,3 +34,6 @@ pub mod sso;
 /// JSON5 comment stripping
 #[cfg(feature = "alloc")]
 pub mod json5;
+
+/// Zero-allocation streaming JSON pull parser for embedded systems
+pub mod pull_parser;

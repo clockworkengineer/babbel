@@ -4,7 +4,9 @@ pub mod destinations;
 pub mod sources;
 pub mod traits;
 
-pub use destinations::{Buffer, BufferDestination, StringDestination};
+pub use destinations::{
+    ArrayVecDestination, Buffer, BufferDestination, SliceDestination, StringDestination,
+};
 #[cfg(feature = "file-io")]
 pub use destinations::FileDestination;
 

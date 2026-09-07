@@ -1,7 +1,5 @@
 //! Extensible format parser, emitter, and codec traits adhering to OCP and DIP.
 
-#[cfg(not(feature = "std"))]
-use alloc::string::String;
 
 use crate::error::BabbelError;
 use crate::io::traits::IDestination;

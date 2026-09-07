@@ -215,7 +215,8 @@ impl Value {
             Value::Float(f) => {
                 let mut buf = itoa::Buffer::new();
                 dest.add_bytes("i");
-                dest.add_bytes(buf.format(f.round() as i64));
+                let rounded = if *f >= 0.0 { (*f + 0.5) as i64 } else { (*f - 0.5) as i64 };
+                dest.add_bytes(buf.format(rounded));
                 dest.add_bytes("e");
             }
             Value::String(s) => {

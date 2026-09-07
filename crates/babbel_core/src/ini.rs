@@ -9,6 +9,7 @@ use crate::io::traits::IDestination;
 use crate::model::Value;
 use alloc::format;
 use alloc::string::{String, ToString};
+use alloc::vec;
 use alloc::vec::Vec;
 
 /// Configuration options for INI and property file parsing and emission.
@@ -307,6 +308,87 @@ fn emit_key_value(key: &str, val: &Value, options: &IniOptions, destination: &mu
     destination.add_bytes("\n");
 }
 
+// ==========================================
+// Zero-Allocation Streaming Pull Parser
+// ==========================================
+
+/// Streaming event emitted by [`IniPullParser`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IniEvent<'a> {
+    /// Section header `[section_name]`
+    Section(&'a str),
+    /// Key-value property pair `key = value`
+    Entry { key: &'a str, val: &'a str },
+    /// Line comment starting with `#` or `;`
+    Comment(&'a str),
+}
+
+/// Zero-allocation streaming INI and property file pull parser.
+///
+/// Scans line-by-line over a borrowed string slice with $O(1)$ stack memory.
+#[derive(Debug, Clone)]
+pub struct IniPullParser<'a> {
+    input: &'a str,
+    pos: usize,
+}
+
+impl<'a> IniPullParser<'a> {
+    /// Creates a new streaming INI pull parser over a borrowed string slice.
+    pub fn new(input: &'a str) -> Self {
+        Self { input, pos: 0 }
+    }
+
+    /// Pulls the next event from the INI input stream. Returns `None` at EOF.
+    pub fn next_event(&mut self) -> Option<IniEvent<'a>> {
+        while self.pos < self.input.len() {
+            let start = self.pos;
+            let bytes = self.input.as_bytes();
+            while self.pos < bytes.len() && bytes[self.pos] != b'\n' && bytes[self.pos] != b'\r' {
+                self.pos += 1;
+            }
+            let line = &self.input[start..self.pos];
+            if self.pos < bytes.len() && bytes[self.pos] == b'\r' {
+                self.pos += 1;
+            }
+            if self.pos < bytes.len() && bytes[self.pos] == b'\n' {
+                self.pos += 1;
+            }
+
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+
+            if trimmed.starts_with('#') || trimmed.starts_with(';') {
+                return Some(IniEvent::Comment(trimmed));
+            }
+
+            if trimmed.starts_with('[') && trimmed.ends_with(']') {
+                let section_name = &trimmed[1..trimmed.len() - 1].trim();
+                return Some(IniEvent::Section(section_name));
+            }
+
+            if let Some((k, v)) = trimmed.split_once('=') {
+                return Some(IniEvent::Entry {
+                    key: k.trim(),
+                    val: v.trim(),
+                });
+            } else if let Some((k, v)) = trimmed.split_once(':') {
+                return Some(IniEvent::Entry {
+                    key: k.trim(),
+                    val: v.trim(),
+                });
+            } else {
+                return Some(IniEvent::Entry {
+                    key: trimmed,
+                    val: "",
+                });
+            }
+        }
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -357,5 +439,18 @@ mod tests {
         let val = parse_ini(doc, &IniOptions::default()).unwrap();
         let emitted = emit_ini(&val, &IniOptions::default()).unwrap();
         assert_eq!(emitted, doc);
+    }
+
+    #[test]
+    fn test_ini_pull_parser() {
+        let doc = "# Embedded config\nbaud_rate = 115200\n\n[wifi]\nssid = IoT_Network\npass = secret123\n";
+        let mut parser = IniPullParser::new(doc);
+
+        assert_eq!(parser.next_event(), Some(IniEvent::Comment("# Embedded config")));
+        assert_eq!(parser.next_event(), Some(IniEvent::Entry { key: "baud_rate", val: "115200" }));
+        assert_eq!(parser.next_event(), Some(IniEvent::Section("wifi")));
+        assert_eq!(parser.next_event(), Some(IniEvent::Entry { key: "ssid", val: "IoT_Network" }));
+        assert_eq!(parser.next_event(), Some(IniEvent::Entry { key: "pass", val: "secret123" }));
+        assert_eq!(parser.next_event(), None);
     }
 }
