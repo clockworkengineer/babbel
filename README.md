@@ -176,10 +176,10 @@ cargo test -p babbel --jobs 2
 
 Babbel is continuously tested against the official standards test suites:
 - **Official YAML 1.2 Test Suite**: **402 / 402 tests passed (100.0%)** via `cargo test -p babbel_yaml --test yaml_test_suite_integration`.
-- **Official W3C XML Conformance Test Suite (XML TS 20130923)**: **1,381 tests passed** across 2,145 test cases via `cargo test -p babbel_xml --test w3c_conformance`:
-  - **100.0%** on Edinburgh Univ. Errata 2e, 3e, 4e, Namespaces 1.0, and Namespaces Errata 1e
+- **Official W3C XML Conformance Test Suite (XML TS 20130923)**: **1,386 tests passed** across 2,144 test cases (0 skipped) via `cargo test -p babbel_xml --test w3c_conformance`:
+  - **100.0%** on Edinburgh Univ. Errata 2e (33/33), 3e (13/13), 4e (393/393), Namespaces 1.0 (48/48), and Namespaces Errata 1e (3/3)
   - **100.0%** on IBM OASIS Valid (149/149) and Invalid (48/48)
-  - **100.0%** on Japanese (8/8) and Sun error suites
+  - **100.0%** on Japanese (12/12) and Sun error suites (1/1)
   - See [`crates/xml/README.md`](crates/xml/README.md) and [`docs/DEVELOPMENT_GUIDE.md`](docs/DEVELOPMENT_GUIDE.md) for full breakdown.
 
 ---

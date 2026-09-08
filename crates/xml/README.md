@@ -182,23 +182,21 @@ let source = XmlSource::from_reader_with_limit(file, 10 * 1024 * 1024)?;
 
 ### Conformance Test Results
 
-| Suite Name | Focus Area | Total Cases | Passed | Skipped* | Pass Rate |
+| Suite Name | Focus Area | Total Cases | Passed | Skipped | Pass Rate |
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | **`eduni/errata-4e`** | Edinburgh Univ. XML 1.0 (4th & 5th Edition Errata) | 393 | **393** | 0 | **100.0%** |
 | **`eduni/errata-3e`** | Edinburgh Univ. XML 1.0 (3rd Edition Errata) | 13 | **13** | 0 | **100.0%** |
-| **`eduni/errata-2e`** | Edinburgh Univ. XML 1.0 (2nd Edition Errata) | 34 | **33** | 1 | **100.0%** |
-| **`eduni/namespaces/1.0`** | Namespaces in XML 1.0 (Richard Tobin) | 48 | **47** | 1 | **100.0%** |
+| **`eduni/errata-2e`** | Edinburgh Univ. XML 1.0 (2nd Edition Errata) | 33 | **33** | 0 | **100.0%** |
+| **`eduni/namespaces/1.0`** | Namespaces in XML 1.0 (Richard Tobin) | 48 | **48** | 0 | **100.0%** |
 | **`eduni/namespaces/errata-1e`** | Edinburgh Univ. Namespaces in XML 1.0 Errata | 3 | **3** | 0 | **100.0%** |
 | **`ibm/ibm_oasis_valid`** | IBM / OASIS Valid XML productions | 149 | **149** | 0 | **100.0%** |
 | **`ibm/ibm_oasis_invalid`** | IBM / OASIS Validity constraint rejections | 48 | **48** | 0 | **100.0%** |
-| **`japanese`** | Japanese Character Set & UTF-8 Validations | 12 | **8** | 4 | **100.0%** |
+| **`japanese`** | Japanese Character Set & Fatal Error Validations | 12 | **12** | 0 | **100.0%** |
 | **`sun/sun-error`** | Sun Microsystems Fatal Error Detection | 1 | **1** | 0 | **100.0%** |
 | `xmltest` | James Clark XML Test Suite | 365 | **269** | 0 | **73.7%** |
 | `oasis` | OASIS XML 1.0 Conformance Suite | 348 | **229** | 0 | **65.8%** |
 | `ibm/ibm_oasis_not-wf` | IBM Not-Well-Formed Negative Suite | 731 | **188** | 0 | **25.7%** |
-| **OVERALL** | **Full W3C Conformance Corpus** | **2,145** | **1,381** | **6** | **64.6%** |
-
-*\*Skipped tests are legacy non-UTF encodings (ISO-8859-1, Shift-JIS).*
+| **OVERALL** | **Full W3C Conformance Corpus** | **2,144** | **1,386** | **0** | **64.6%** |
 
 ### Running the Conformance Runner
 
@@ -207,7 +205,7 @@ let source = XmlSource::from_reader_with_limit(file, 10 * 1024 * 1024)?;
 powershell -ExecutionPolicy Bypass -File scripts/fetch_w3c_xmlts.ps1
 # On Linux/macOS: ./scripts/fetch_w3c_xmlts.sh
 
-# 2. Run the 2,145 test cases
+# 2. Run the 2,144 test cases
 cargo test -p babbel_xml --test w3c_conformance -- --nocapture
 ```
 
