@@ -288,10 +288,12 @@ fn test_w3c_xml_conformance_suite() {
             enc,
             babbel_core::encoding::Encoding::Utf16Le | babbel_core::encoding::Encoding::Utf16Be
         );
+        let is_namespace_suite = test.recommendation.contains("NS") || test.suite_name.contains("namespace");
         let options = babbel_xml::options::ParseOptions {
             allow_external_entities: true,
             base_dir: test.file_path.parent().map(|p| p.to_string_lossy().to_string()),
             is_utf16,
+            namespace_aware: is_namespace_suite,
             ..babbel_xml::options::ParseOptions::default()
         };
 
@@ -313,12 +315,10 @@ fn test_w3c_xml_conformance_suite() {
                         overall.not_wf_failed += 1;
                     }
                     "invalid" => {
-                        // Non-validating parser successfully parsed structure
                         stats.invalid_passed += 1;
                         overall.invalid_passed += 1;
                     }
                     "error" => {
-                        // Optional / non-fatal error test
                         stats.error_passed += 1;
                         overall.error_passed += 1;
                     }
@@ -338,12 +338,10 @@ fn test_w3c_xml_conformance_suite() {
                         overall.not_wf_passed += 1;
                     }
                     "invalid" => {
-                        // Well-formedness was rejected
                         stats.invalid_failed += 1;
                         overall.invalid_failed += 1;
                     }
                     "error" => {
-                        // Process signaled optional error
                         stats.error_passed += 1;
                         overall.error_passed += 1;
                     }

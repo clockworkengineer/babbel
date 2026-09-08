@@ -7,6 +7,7 @@ use crate::document::Document;
 use crate::entity::EntityMapper;
 use crate::error::{Result, XmlError};
 use crate::io::{is_valid_xml_char, is_xml_name_char, is_xml_name_start, XmlSource};
+use crate::namespace::{NamespaceScope, QName};
 use crate::node::{Attribute, NodeId, NodeKind};
 use crate::options::ParseOptions;
 
@@ -16,6 +17,7 @@ pub struct XmlParser<'a> {
     source: XmlSource,
     options: ParseOptions,
     entity_mapper: EntityMapper,
+    namespace_scope: NamespaceScope,
     element_count: usize,
     total_attribute_count: usize,
     _phantom: core::marker::PhantomData<&'a ()>,
@@ -32,6 +34,7 @@ impl<'a> XmlParser<'a> {
             source,
             options,
             entity_mapper: mapper,
+            namespace_scope: NamespaceScope::new(),
             element_count: 0,
             total_attribute_count: 0,
             _phantom: core::marker::PhantomData,
@@ -173,6 +176,13 @@ impl<'a> XmlParser<'a> {
 
     /// Parses a single XML element tag, its attributes, and child content recursively.
     fn parse_element(&mut self, doc: &mut Document, parent_id: NodeId, depth: usize) -> Result<()> {
+        self.namespace_scope.push_scope();
+        let res = self.parse_element_internal(doc, parent_id, depth);
+        self.namespace_scope.pop_scope();
+        res
+    }
+
+    fn parse_element_internal(&mut self, doc: &mut Document, parent_id: NodeId, depth: usize) -> Result<()> {
         self.options.check_nesting_depth(depth)?;
 
         self.element_count += 1;
@@ -219,6 +229,15 @@ impl<'a> XmlParser<'a> {
                 });
             }
 
+            // Register namespaces declared on this element
+            if self.options.namespace_aware {
+                if attr_name == "xmlns" {
+                    self.namespace_scope.declare(None, attr_value.trim());
+                } else if let Some(prefix) = attr_name.strip_prefix("xmlns:") {
+                    self.namespace_scope.declare(Some(prefix), attr_value.trim());
+                }
+            }
+
             attributes.push(Attribute::new(attr_name, attr_value));
 
             self.total_attribute_count += 1;
@@ -226,6 +245,56 @@ impl<'a> XmlParser<'a> {
             self.options.check_total_attribute_count(self.total_attribute_count)?;
 
             self.source.skip_whitespace();
+        }
+
+        // Validate namespace prefixes and collisions
+        if self.options.namespace_aware {
+            // Check element prefix
+            let (elem_pfx, _) = QName::split_prefix(&name);
+            if let Some(pfx) = elem_pfx {
+                if self.namespace_scope.resolve_prefix(Some(pfx)).is_none() {
+                    return Err(XmlError::SyntaxError {
+                        message: format!("Undeclared element namespace prefix '{pfx}'"),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+            }
+
+            // Check attribute prefixes and attribute namespace collisions
+            let mut resolved_attrs: Vec<(Option<String>, String)> = Vec::new();
+            for attr in &attributes {
+                let (attr_pfx, local) = QName::split_prefix(&attr.name);
+                let uri_opt = if let Some(pfx) = attr_pfx {
+                    if pfx == "xmlns" {
+                        None
+                    } else {
+                        match self.namespace_scope.resolve_prefix(Some(pfx)) {
+                            Some(u) => Some(u.to_string()),
+                            None => {
+                                return Err(XmlError::SyntaxError {
+                                    message: format!("Undeclared attribute namespace prefix '{pfx}'"),
+                                    line: self.source.line(),
+                                    col: self.source.col(),
+                                });
+                            }
+                        }
+                    }
+                } else {
+                    None
+                };
+
+                if let Some(uri) = &uri_opt {
+                    if resolved_attrs.iter().any(|(u, l)| u.as_deref() == Some(uri.as_str()) && l == local) {
+                        return Err(XmlError::SyntaxError {
+                            message: format!("Attribute collision: multiple attributes with namespace '{uri}' and local name '{local}'"),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                }
+                resolved_attrs.push((uri_opt, local.to_string()));
+            }
         }
 
         let elem_id = doc.add_node(NodeKind::Element {
@@ -334,6 +403,20 @@ impl<'a> XmlParser<'a> {
 
         let mut raw_val = String::new();
         while let Some(ch) = self.source.next_char() {
+            if ch == '<' {
+                return Err(XmlError::SyntaxError {
+                    message: format!("Unescaped '<' is forbidden in attribute value for '{key}'"),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+            if !is_valid_xml_char(ch) {
+                return Err(XmlError::SyntaxError {
+                    message: format!("Forbidden XML character '\\u{{{:x}}}' in attribute value", ch as u32),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
             if ch == quote {
                 let expanded_val = self.entity_mapper.expand(&raw_val)?;
 
@@ -368,6 +451,13 @@ impl<'a> XmlParser<'a> {
                         col: self.source.col(),
                     });
                 } else if key.starts_with("xmlns:") {
+                    if expanded_val == "http://www.w3.org/XML/1998/namespace" {
+                        return Err(XmlError::SyntaxError {
+                            message: "The xml namespace must not be bound to any other prefix".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
                     if expanded_val == "http://www.w3.org/2000/xmlns/" {
                         return Err(XmlError::SyntaxError {
                             message: "Prefix cannot be bound to the xmlns namespace".into(),
@@ -419,6 +509,14 @@ impl<'a> XmlParser<'a> {
             self.options.check_text_node_size(raw_text.len())?;
         }
 
+        if raw_text.contains("]]>") {
+            return Err(XmlError::SyntaxError {
+                message: "The sequence ']]>' is forbidden in character data".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+
         let expanded = self.entity_mapper.expand(&raw_text)?;
         Ok(doc.add_node(NodeKind::Text(expanded.into_boxed_str())))
     }
@@ -438,6 +536,13 @@ impl<'a> XmlParser<'a> {
                 line: self.source.line(),
                 col: self.source.col(),
             })?;
+            if !is_valid_xml_char(ch) {
+                return Err(XmlError::SyntaxError {
+                    message: format!("Forbidden XML character '\\u{{{:x}}}' in CDATA", ch as u32),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
             content.push(ch);
             self.options.check_text_node_size(content.len())?;
         }
@@ -456,6 +561,13 @@ impl<'a> XmlParser<'a> {
 
         while !self.source.is_eof() {
             if self.source.starts_with("-->") {
+                if comment.ends_with('-') {
+                    return Err(XmlError::SyntaxError {
+                        message: "Comment must not end in '--->'".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
                 self.source.consume("-->");
                 return Ok(doc.add_node(NodeKind::Comment(comment.into_boxed_str())));
             }
@@ -464,6 +576,20 @@ impl<'a> XmlParser<'a> {
                 line: self.source.line(),
                 col: self.source.col(),
             })?;
+            if !is_valid_xml_char(ch) {
+                return Err(XmlError::SyntaxError {
+                    message: format!("Forbidden XML character '\\u{{{:x}}}' in comment", ch as u32),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+            if comment.ends_with('-') && ch == '-' {
+                return Err(XmlError::SyntaxError {
+                    message: "The string '--' is forbidden inside comments".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
             comment.push(ch);
         }
 
@@ -478,6 +604,27 @@ impl<'a> XmlParser<'a> {
     fn parse_pi(&mut self, doc: &mut Document) -> Result<NodeId> {
         self.source.consume("<?");
         let target = self.parse_name()?;
+        if target.is_empty() {
+            return Err(XmlError::SyntaxError {
+                message: "Processing instruction target cannot be empty".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        if target.eq_ignore_ascii_case("xml") {
+            return Err(XmlError::SyntaxError {
+                message: "Processing instruction target cannot be 'xml'".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        if self.options.namespace_aware && target.contains(':') {
+            return Err(XmlError::SyntaxError {
+                message: format!("Processing instruction target '{target}' cannot contain a colon"),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
         self.source.skip_whitespace();
 
         let mut data = String::new();
@@ -494,6 +641,13 @@ impl<'a> XmlParser<'a> {
                 line: self.source.line(),
                 col: self.source.col(),
             })?;
+            if !is_valid_xml_char(ch) {
+                return Err(XmlError::SyntaxError {
+                    message: format!("Forbidden XML character '\\u{{{:x}}}' in processing instruction", ch as u32),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
             data.push(ch);
         }
 
@@ -529,15 +683,63 @@ impl<'a> XmlParser<'a> {
         self.source.skip_whitespace();
         if self.source.consume("[") {
             let mut subset = String::new();
-            while !self.source.is_eof() && !self.source.starts_with("]") {
-                let ch = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
-                    message: "Unterminated DOCTYPE subset".into(),
+            let mut in_quote: Option<char> = None;
+            while !self.source.is_eof() {
+                if let Some(q) = in_quote {
+                    let ch = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
+                        message: "Unterminated quote in DOCTYPE subset".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    })?;
+                    subset.push(ch);
+                    if ch == q {
+                        in_quote = None;
+                    }
+                } else if self.source.starts_with("<!--") {
+                    self.source.consume("<!--");
+                    subset.push_str("<!--");
+                    while !self.source.is_eof() {
+                        if self.source.starts_with("-->") {
+                            self.source.consume("-->");
+                            subset.push_str("-->");
+                            break;
+                        }
+                        let ch = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
+                            message: "Unterminated comment in DOCTYPE subset".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        })?;
+                        subset.push(ch);
+                    }
+                } else {
+                    if self.source.starts_with("]") {
+                        break;
+                    }
+                    let ch = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
+                        message: "Unterminated DOCTYPE subset".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    })?;
+                    if ch == '"' || ch == '\'' {
+                        in_quote = Some(ch);
+                    }
+                    subset.push(ch);
+                }
+            }
+            if !self.source.consume("]") {
+                return Err(XmlError::SyntaxError {
+                    message: "Unclosed DOCTYPE internal subset".into(),
                     line: self.source.line(),
                     col: self.source.col(),
-                })?;
-                subset.push(ch);
+                });
             }
-            self.source.consume("]");
+            if subset.contains("<![INCLUDE[") || subset.contains("<![IGNORE[") {
+                return Err(XmlError::SyntaxError {
+                    message: "Conditional sections are not allowed in the internal subset".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
             internal_subset = Some(subset);
         }
 
@@ -604,6 +806,13 @@ impl<'a> XmlParser<'a> {
                         (1, 2)
                     };
                     let ent_name = parts[name_idx];
+                    if self.options.namespace_aware && ent_name.contains(':') {
+                        return Err(XmlError::SyntaxError {
+                            message: format!("Entity name '{ent_name}' cannot contain a colon in namespace-aware XML"),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
                     let is_external = trimmed.contains("SYSTEM") || trimmed.contains("PUBLIC");
                     if is_external {
                         external_entities.push(ent_name.to_string());
@@ -647,6 +856,18 @@ impl<'a> XmlParser<'a> {
                     let val = raw_val.trim_matches(|c| c == '"' || c == '\'' || c == '>');
                     self.entity_mapper.register(ent_name, val);
                 }
+            } else if trimmed.starts_with("<!NOTATION") {
+                let parts: Vec<&str> = trimmed.split_whitespace().collect();
+                if parts.len() >= 2 {
+                    let not_name = parts[1];
+                    if self.options.namespace_aware && not_name.contains(':') {
+                        return Err(XmlError::SyntaxError {
+                            message: format!("Notation name '{not_name}' cannot contain a colon in namespace-aware XML"),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                }
             } else if trimmed.starts_with("<!ATTLIST") {
                 // W3C XML 1.0 §3.1: Attribute values must not contain references to external entities
                 for ext in &external_entities {
@@ -660,6 +881,28 @@ impl<'a> XmlParser<'a> {
                     }
                 }
             }
+        }
+        Ok(())
+    }
+
+    fn check_qname(&self, name: &str) -> Result<()> {
+        if !self.options.namespace_aware {
+            return Ok(());
+        }
+        let colons = name.matches(':').count();
+        if colons > 1 {
+            return Err(XmlError::SyntaxError {
+                message: format!("QName '{name}' cannot contain multiple colons"),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        if name.starts_with(':') || name.ends_with(':') {
+            return Err(XmlError::SyntaxError {
+                message: format!("QName '{name}' cannot start or end with a colon"),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
         }
         Ok(())
     }
@@ -681,7 +924,11 @@ impl<'a> XmlParser<'a> {
             }
         }
         let end = self.source.position();
-        Ok(self.source.slice_range(start, end).to_string())
+        let name = self.source.slice_range(start, end).to_string();
+        if !name.is_empty() {
+            self.check_qname(&name)?;
+        }
+        Ok(name)
     }
 
     /// Helper parsing a single- or double-quoted string.

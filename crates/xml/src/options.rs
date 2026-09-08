@@ -30,6 +30,8 @@ pub struct ParseOptions {
     pub base_dir: Option<String>,
     /// Whether the document was decoded from a UTF-16 byte stream.
     pub is_utf16: bool,
+    /// Whether XML namespace validation rules are enforced (default: true).
+    pub namespace_aware: bool,
 }
 
 impl Default for ParseOptions {
@@ -46,6 +48,7 @@ impl Default for ParseOptions {
             allow_external_entities: false,
             base_dir: None,
             is_utf16: false,
+            namespace_aware: true,
         }
     }
 }
