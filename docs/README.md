@@ -13,6 +13,7 @@ Welcome to the **Babbel** documentation hub. Babbel is a high-performance, polyg
 | **[Text Support Guide](TEXT_SUPPORT_GUIDE.md)** | RFC 4180 CSV/TSV, sectioned INI/.env, JSON Lines (`.jsonl`), frontmatter extraction, and line readers. |
 | **[Conversion Matrix](CONVERSION_MATRIX.md)** | $O(N)$ universal cross-format conversion pipeline and `ConversionOptions` reference. |
 | **[Memory & Benchmarks](BENCHMARKS_AND_MEMORY.md)** | Struct size bounds verification (`size_checks.rs`), zero-allocation formatters, and I/O optimizations. |
+| **[W3C XML Conformance](XML_CONFORMANCE.md)** | Official W3C XML Conformance Test Suite (XML TS 20130923) results, 100% OASIS/Edinburgh pass rates, and validation architecture. |
 | **[Security Policy](SECURITY.md)** | Threat model, Billion Laughs entity expansion mitigations, 64 MB DoS limits, and vulnerability reporting. |
 | **[Development Guide](DEVELOPMENT_GUIDE.md)** | Contributor onboarding, toolchain requirements, debugging, release profiles, and profiling. |
 | **[Contributing Guidelines](CONTRIBUTING.md)** | Engineering standards, code formatting, pull request process, and test guidelines. |

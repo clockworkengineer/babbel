@@ -214,6 +214,7 @@ cargo test -p babbel_xml --test w3c_conformance -- --nocapture
 ## Documentation
 
 See the [Documentation Hub](../../docs/README.md) for full workspace guides:
+- [W3C XML Conformance Guide](../../docs/XML_CONFORMANCE.md)
 - [Architecture Guide](../../docs/ARCHITECTURE.md)
 - [Security Policy](../../docs/SECURITY.md)
 - [Development Guide](../../docs/DEVELOPMENT_GUIDE.md)
