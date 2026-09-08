@@ -187,14 +187,26 @@ fn parse_catalog(catalog_path: &Path, xmlconf_base: &Path) -> Vec<W3cTestCase> {
         let recommendation = doc.get_attribute(node_id, "RECOMMENDATION").unwrap_or("XML1.0").to_string();
         let entities = doc.get_attribute(node_id, "ENTITIES").unwrap_or("none").to_string();
         let version = doc.get_attribute(node_id, "VERSION");
+        let edition = doc.get_attribute(node_id, "EDITION");
 
-        // Per W3C XML Conformance Test Suite testcases.dtd:
+        // Per W3C XML Conformance Test Suite testcases.dtd lines 105-114:
         // "Tests which apply only to certain versions of XML list those versions
         // in the VERSION attribute. An absent VERSION implies that the test
         // applies to all versions. Parsers should not run tests for versions
         // they do not support."
         if version == Some("1.1") {
             continue;
+        }
+
+        // "Tests which apply only to certain editions of XML list those editions
+        // in the EDITION attribute. An absent EDITION implies that the test
+        // applies to all editions. Parsers should not run tests for editions
+        // they do not support."
+        // babbel_xml implements XML 1.0 (Fifth Edition).
+        if let Some(ed) = edition {
+            if !ed.split_whitespace().any(|e| e == "5") {
+                continue;
+            }
         }
 
         if uri.is_empty() {
@@ -443,33 +455,37 @@ fn test_w3c_xml_conformance_suite() {
     drop(_panic_guard);
 
     assert!(
-        overall.total_tested() > 1000,
-        "Expected at least 1000 tests executed, got {}",
+        overall.total_tested() >= 1800,
+        "Expected at least 1800 tests executed, got {}",
         overall.total_tested()
     );
-    assert!(
-        overall.total_passed() >= 1200,
-        "Expected at least 1200 passing tests, got {}",
-        overall.total_passed()
-    );
-    assert!(
-        overall.pass_rate() >= 55.0,
-        "Expected conformance pass rate >= 55%, got {:.1}%",
-        overall.pass_rate()
+    assert_eq!(
+        overall.total_passed(),
+        overall.total_tested(),
+        "W3C XML conformance suite must achieve 100% pass rate (got {}/{})",
+        overall.total_passed(),
+        overall.total_tested()
     );
     assert_eq!(
         overall.skipped_encoding, 0,
-        "Milestone 1 requirement: zero skipped tests in W3C XML conformance suite (got {})",
+        "Zero skipped tests requirement in W3C XML conformance suite (got {})",
         overall.skipped_encoding
     );
+    assert_eq!(
+        overall.panics, 0,
+        "Zero panics requirement in W3C XML conformance suite (got {})",
+        overall.panics
+    );
 
-    if let Some(oasis_stats) = suite_results.get("oasis/oasis.xml") {
+    // Verify 100.0% pass rate across each individual test catalog
+    for (suite_name, suite_stat) in &suite_results {
         assert_eq!(
-            oasis_stats.total_passed(),
-            oasis_stats.total_tested(),
-            "OASIS XML 1.0 test suite must achieve 100% pass rate (got {}/{})",
-            oasis_stats.total_passed(),
-            oasis_stats.total_tested()
+            suite_stat.total_passed(),
+            suite_stat.total_tested(),
+            "Suite '{}' must achieve 100% pass rate (got {}/{})",
+            suite_name,
+            suite_stat.total_passed(),
+            suite_stat.total_tested()
         );
     }
 }

@@ -60,8 +60,10 @@ impl EntityMapper {
     }
 
     /// Registers a custom entity reference name and replacement value.
+    /// Per XML 1.0 §4.2, the first declaration of an entity is binding.
     pub fn register(&mut self, name: impl Into<String>, value: impl Into<String>) {
-        self.entities.insert(name.into(), value.into());
+        let name_str = name.into();
+        self.entities.entry(name_str).or_insert_with(|| value.into());
     }
 
     /// Looks up an entity reference replacement value by name.
@@ -93,6 +95,14 @@ impl EntityMapper {
         let bytes = input.as_bytes();
 
         while pos < bytes.len() {
+            if bytes[pos..].starts_with(b"<![CDATA[") {
+                if let Some(cdata_end) = input[pos..].find("]]>") {
+                    let end_idx = pos + cdata_end + 3;
+                    result.push_str(&input[pos..end_idx]);
+                    pos = end_idx;
+                    continue;
+                }
+            }
             if bytes[pos] == b'&' {
                 if let Some(semi_offset) = input[pos..].find(';') {
                     let semi_idx = pos + semi_offset;
@@ -101,9 +111,19 @@ impl EntityMapper {
                     if entity_ref.starts_with('#') {
                         // Numeric reference (dec or hex)
                         let code_str = &entity_ref[1..];
-                        let codepoint = if code_str.starts_with('x') || code_str.starts_with('X') {
-                            u32::from_str_radix(&code_str[1..], 16)
+                        let codepoint = if let Some(hex_digits) = code_str.strip_prefix('x') {
+                            if hex_digits.is_empty() {
+                                return Err(XmlError::EntityError("Empty hex character reference".into()));
+                            }
+                            u32::from_str_radix(hex_digits, 16)
+                        } else if code_str.starts_with('X') {
+                            return Err(XmlError::EntityError(format!(
+                                "Malformed numeric entity reference, uppercase 'X' forbidden: &{entity_ref};"
+                            )));
                         } else {
+                            if code_str.is_empty() {
+                                return Err(XmlError::EntityError("Empty numeric character reference".into()));
+                            }
                             code_str.parse::<u32>()
                         };
 

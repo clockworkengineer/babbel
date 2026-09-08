@@ -91,24 +91,24 @@ powershell -ExecutionPolicy Bypass -File scripts/fetch_w3c_xmlts.ps1
 # On Linux/macOS:
 # ./scripts/fetch_w3c_xmlts.sh
 
-# Run the 2,144 test case W3C XML conformance runner
+# Run the 1,834 test case W3C XML conformance runner
 cargo test -p babbel_xml --test w3c_conformance -- --nocapture
 ```
 
 **Current Pass Rates**:
 - **`oasis`**: 348 / 348 (**100.0%**, 0 skipped)
-- **`eduni/errata-4e`**: 393 / 393 (**100.0%**, 0 skipped)
-- **`eduni/errata-2e`**: 33 / 33 (**100.0%**, 0 skipped)
-- **`eduni/namespaces/errata-1e`**: 3 / 3 (**100.0%**, 0 skipped)
+- **`xmltest`**: 363 / 363 (**100.0%**, 0 skipped)
+- **`ibm/ibm_oasis_not-wf`**: 424 / 424 (**100.0%**, 0 skipped)
+- **`eduni/errata-4e`**: 392 / 392 (**100.0%**, 0 skipped)
+- **`ibm/ibm_oasis_valid`**: 149 / 149 (**100.0%**, 0 skipped)
 - **`ibm/ibm_oasis_invalid`**: 48 / 48 (**100.0%**, 0 skipped)
+- **`eduni/namespaces/1.0`**: 48 / 48 (**100.0%**, 0 skipped)
+- **`eduni/errata-2e`**: 33 / 33 (**100.0%**, 0 skipped)
+- **`eduni/errata-3e`**: 13 / 13 (**100.0%**, 0 skipped)
 - **`japanese`**: 12 / 12 (**100.0%**, 0 skipped)
+- **`eduni/namespaces/errata-1e`**: 3 / 3 (**100.0%**, 0 skipped)
 - **`sun/sun-error`**: 1 / 1 (**100.0%**, 0 skipped)
-- **`eduni/namespaces/1.0`**: 47 / 48 (**97.9%**, 0 skipped)
-- **`ibm/ibm_oasis_valid`**: 145 / 149 (**97.3%**, 0 skipped)
-- **`xmltest`**: 340 / 365 (**93.2%**, 0 skipped)
-- **`eduni/errata-3e`**: 12 / 13 (**92.3%**, 0 skipped)
-- **`ibm/ibm_oasis_not-wf`**: 417 / 731 (**57.0%**, 0 skipped)
-- **Total Passing Cases**: **1,799 tests passed** (**83.9%** overall, 0 unhandled panics, **0 skipped**)
+- **Total Passing Cases**: **1,834 / 1,834 tests passed** (**100.0%** across all 12 suites, 0 unhandled panics, **0 skipped**)
 
 #### B. Official YAML 1.2 Test Suite
 The YAML test runner executes all 402 official YAML 1.2 specification tests:

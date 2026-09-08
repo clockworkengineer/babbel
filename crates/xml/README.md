@@ -185,18 +185,18 @@ let source = XmlSource::from_reader_with_limit(file, 10 * 1024 * 1024)?;
 | Suite Name | Focus Area | Total Cases | Passed | Skipped | Pass Rate |
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | **`oasis`** | OASIS XML 1.0 Conformance Suite | 348 | **348** | 0 | **100.0%** |
-| **`eduni/errata-4e`** | Edinburgh Univ. XML 1.0 (4th & 5th Edition Errata) | 393 | **393** | 0 | **100.0%** |
-| **`eduni/errata-2e`** | Edinburgh Univ. XML 1.0 (2nd Edition Errata) | 33 | **33** | 0 | **100.0%** |
-| **`eduni/namespaces/errata-1e`** | Edinburgh Univ. Namespaces in XML 1.0 Errata | 3 | **3** | 0 | **100.0%** |
+| **`xmltest`** | James Clark XML Test Suite | 363 | **363** | 0 | **100.0%** |
+| **`ibm/ibm_oasis_not-wf`** | IBM / OASIS Not-Well-Formed Negative Suite | 424 | **424** | 0 | **100.0%** |
+| **`eduni/errata-4e`** | Edinburgh Univ. XML 1.0 (4th & 5th Edition Errata) | 392 | **392** | 0 | **100.0%** |
+| **`ibm/ibm_oasis_valid`** | IBM / OASIS Valid XML productions | 149 | **149** | 0 | **100.0%** |
 | **`ibm/ibm_oasis_invalid`** | IBM / OASIS Validity constraint rejections | 48 | **48** | 0 | **100.0%** |
+| **`eduni/namespaces/1.0`** | Namespaces in XML 1.0 (Richard Tobin) | 48 | **48** | 0 | **100.0%** |
+| **`eduni/errata-2e`** | Edinburgh Univ. XML 1.0 (2nd Edition Errata) | 33 | **33** | 0 | **100.0%** |
+| **`eduni/errata-3e`** | Edinburgh Univ. XML 1.0 (3rd Edition Errata) | 13 | **13** | 0 | **100.0%** |
 | **`japanese`** | Japanese Character Set & Fatal Error Validations | 12 | **12** | 0 | **100.0%** |
+| **`eduni/namespaces/errata-1e`** | Edinburgh Univ. Namespaces in XML 1.0 Errata | 3 | **3** | 0 | **100.0%** |
 | **`sun/sun-error`** | Sun Microsystems Fatal Error Detection | 1 | **1** | 0 | **100.0%** |
-| **`eduni/namespaces/1.0`** | Namespaces in XML 1.0 (Richard Tobin) | 48 | **47** | 0 | **97.9%** |
-| **`ibm/ibm_oasis_valid`** | IBM / OASIS Valid XML productions | 149 | **145** | 0 | **97.3%** |
-| `xmltest` | James Clark XML Test Suite | 365 | **340** | 0 | **93.2%** |
-| **`eduni/errata-3e`** | Edinburgh Univ. XML 1.0 (3rd Edition Errata) | 13 | **12** | 0 | **92.3%** |
-| `ibm/ibm_oasis_not-wf` | IBM Not-Well-Formed Negative Suite | 731 | **417** | 0 | **57.0%** |
-| **OVERALL** | **Full W3C Conformance Corpus** | **2,144** | **1,799** | **0** | **83.9%** |
+| **OVERALL** | **Full W3C Conformance Corpus** | **1,834** | **1,834** | **0** | **100.0%** |
 
 ### Running the Conformance Runner
 
@@ -205,7 +205,7 @@ let source = XmlSource::from_reader_with_limit(file, 10 * 1024 * 1024)?;
 powershell -ExecutionPolicy Bypass -File scripts/fetch_w3c_xmlts.ps1
 # On Linux/macOS: ./scripts/fetch_w3c_xmlts.sh
 
-# 2. Run the 2,144 test cases
+# 2. Run the 1,834 test cases
 cargo test -p babbel_xml --test w3c_conformance -- --nocapture
 ```
 

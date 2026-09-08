@@ -20,6 +20,9 @@ pub struct XmlParser<'a> {
     namespace_scope: NamespaceScope,
     element_count: usize,
     total_attribute_count: usize,
+    standalone: Option<bool>,
+    external_entities: Vec<String>,
+    unparsed_entities: Vec<String>,
     _phantom: core::marker::PhantomData<&'a ()>,
 }
 
@@ -37,6 +40,9 @@ impl<'a> XmlParser<'a> {
             namespace_scope: NamespaceScope::new(),
             element_count: 0,
             total_attribute_count: 0,
+            standalone: None,
+            external_entities: Vec::new(),
+            unparsed_entities: Vec::new(),
             _phantom: core::marker::PhantomData,
         }
     }
@@ -209,6 +215,7 @@ impl<'a> XmlParser<'a> {
             }
         }
 
+        self.standalone = standalone;
         let decl_id = doc.add_node(NodeKind::Declaration(Box::new(crate::node::DeclarationData {
             version: version.into_boxed_str(),
             encoding: encoding.map(String::into_boxed_str),
@@ -475,6 +482,13 @@ impl<'a> XmlParser<'a> {
     /// Parses attribute key-value pair (`key="value"`).
     fn parse_attribute(&mut self) -> Result<(String, String)> {
         let key = self.parse_name()?;
+        if key.is_empty() {
+            return Err(XmlError::SyntaxError {
+                message: "Attribute name cannot be empty".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
         self.source.skip_whitespace();
 
         if !self.source.consume("=") {
@@ -517,6 +531,7 @@ impl<'a> XmlParser<'a> {
                 });
             }
             if ch == quote {
+                self.check_attribute_entities(&raw_val)?;
                 let expanded_val = self.entity_mapper.expand(&raw_val)?;
 
                 // Namespaces in XML 1.0 validation checks
@@ -614,6 +629,38 @@ impl<'a> XmlParser<'a> {
                 line: self.source.line(),
                 col: self.source.col(),
             });
+        }
+
+        let mut pos = 0;
+        let bytes = raw_text.as_bytes();
+        while pos < bytes.len() {
+            if bytes[pos] == b'&' {
+                if let Some(semi_offset) = raw_text[pos..].find(';') {
+                    let semi_idx = pos + semi_offset;
+                    let ref_name = &raw_text[pos + 1..semi_idx];
+                    if !ref_name.starts_with('#') {
+                        if self.unparsed_entities.iter().any(|u| u == ref_name) {
+                            return Err(XmlError::SyntaxError {
+                                message: format!("Unparsed entity '{ref_name}' cannot be referenced in content (WFC: Parsed Entity)"),
+                                line: self.source.line(),
+                                col: self.source.col(),
+                            });
+                        }
+                        if ref_name != "lt" && ref_name != "gt" && ref_name != "amp" && ref_name != "quot" && ref_name != "apos" {
+                            if !self.external_entities.iter().any(|e| e == ref_name) {
+                                if let Some(val) = self.entity_mapper.get(ref_name) {
+                                    self.validate_entity_replacement_text(ref_name, val)?;
+                                }
+                            }
+                        }
+                    }
+                    pos = semi_idx + 1;
+                } else {
+                    pos += 1;
+                }
+            } else {
+                pos += 1;
+            }
         }
 
         let expanded = self.entity_mapper.expand(&raw_text)?;
@@ -848,10 +895,13 @@ impl<'a> XmlParser<'a> {
 
         // XML 1.0 §4.1: If DOCTYPE contains parameter entities or external subsets,
         // undeclared entity references are validity errors, not well-formedness errors.
-        if self.options.allow_external_entities
-            || system_id.is_some()
-            || public_id.is_some()
-            || internal_subset.as_ref().map(|s| s.contains('%')).unwrap_or(false)
+        // In a standalone document or one without external subset or parameter entities,
+        // undeclared entity references are strictly well-formedness errors.
+        let is_standalone = self.standalone == Some(true);
+        if !is_standalone
+            && (system_id.is_some()
+                || public_id.is_some()
+                || internal_subset.as_ref().map(|s| s.contains('%')).unwrap_or(false))
         {
             self.entity_mapper.allow_undeclared = true;
         }
@@ -890,6 +940,10 @@ impl<'a> XmlParser<'a> {
                     let is_external = trimmed.contains("SYSTEM") || trimmed.contains("PUBLIC");
                     if is_external {
                         external_entities.push(ent_name.to_string());
+                        self.external_entities.push(ent_name.to_string());
+                    }
+                    if trimmed.contains("NDATA") {
+                        self.unparsed_entities.push(ent_name.to_string());
                     }
                     if is_external && !self.options.allow_external_entities {
                         return Err(XmlError::SecurityLimitExceeded(
@@ -1018,6 +1072,13 @@ impl<'a> XmlParser<'a> {
             if ch == quote {
                 return Ok(s);
             }
+            if !is_valid_xml_char(ch) {
+                return Err(XmlError::SyntaxError {
+                    message: format!("Forbidden XML character '\\u{{{:x}}}' in string literal", ch as u32),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
             s.push(ch);
         }
 
@@ -1106,39 +1167,19 @@ impl<'a> XmlParser<'a> {
                 return Ok(s);
             }
             if ch == '%' {
-                self.source.next_char();
-                s.push('%');
-                let name = self.parse_name()?;
-                if name.is_empty() {
-                    return Err(XmlError::SyntaxError {
-                        message: "Expected Name in PEReference inside EntityValue".into(),
-                        line: self.source.line(),
-                        col: self.source.col(),
-                    });
-                }
-                s.push_str(&name);
-                if !self.source.consume(";") {
-                    return Err(XmlError::SyntaxError {
-                        message: "Expected ';' terminating PEReference inside EntityValue".into(),
-                        line: self.source.line(),
-                        col: self.source.col(),
-                    });
-                }
-                s.push(';');
+                return Err(XmlError::SyntaxError {
+                    message: "Parameter-entity references must not occur within markup declarations in the internal DTD subset (WFC: In Subset)".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
             } else if ch == '&' {
                 self.source.next_char();
-                s.push('&');
                 if self.source.consume("#") {
-                    s.push('#');
                     let hex = self.source.consume("x");
-                    if hex {
-                        s.push('x');
-                    }
                     let mut num_str = String::new();
                     while let Some(nc) = self.source.peek() {
                         if (hex && nc.is_ascii_hexdigit()) || (!hex && nc.is_ascii_digit()) {
                             num_str.push(nc);
-                            s.push(nc);
                             self.source.next_char();
                         } else {
                             break;
@@ -1158,8 +1199,40 @@ impl<'a> XmlParser<'a> {
                             col: self.source.col(),
                         });
                     }
-                    s.push(';');
+                    let codepoint = if hex {
+                        u32::from_str_radix(&num_str, 16)
+                    } else {
+                        num_str.parse::<u32>()
+                    };
+                    match codepoint {
+                        Ok(cp) => {
+                            if let Some(c) = char::from_u32(cp) {
+                                if !is_valid_xml_char(c) {
+                                    return Err(XmlError::SyntaxError {
+                                        message: format!("Forbidden XML character '\\u{{{:x}}}' in character reference", cp),
+                                        line: self.source.line(),
+                                        col: self.source.col(),
+                                    });
+                                }
+                                s.push(c);
+                            } else {
+                                return Err(XmlError::SyntaxError {
+                                    message: format!("Invalid code point {cp} in character reference"),
+                                    line: self.source.line(),
+                                    col: self.source.col(),
+                                });
+                            }
+                        }
+                        Err(_) => {
+                            return Err(XmlError::SyntaxError {
+                                message: "Malformed numeric character reference".into(),
+                                line: self.source.line(),
+                                col: self.source.col(),
+                            });
+                        }
+                    }
                 } else {
+                    s.push('&');
                     let name = self.parse_name()?;
                     if name.is_empty() {
                         return Err(XmlError::SyntaxError {
@@ -1179,6 +1252,13 @@ impl<'a> XmlParser<'a> {
                     s.push(';');
                 }
             } else {
+                if !is_valid_xml_char(ch) {
+                    return Err(XmlError::SyntaxError {
+                        message: format!("Forbidden XML character '\\u{{{:x}}}' in EntityValue", ch as u32),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
                 self.source.next_char();
                 s.push(ch);
             }
@@ -1576,10 +1656,12 @@ impl<'a> XmlParser<'a> {
                         col: self.source.col(),
                     });
                 }
-                let _val = self.parse_quoted_string()?;
+                let val = self.parse_quoted_string()?;
+                self.validate_attribute_default_value(&val)?;
             } else if let Some(ch) = self.source.peek() {
                 if ch == '"' || ch == '\'' {
-                    let _val = self.parse_quoted_string()?;
+                    let val = self.parse_quoted_string()?;
+                    self.validate_attribute_default_value(&val)?;
                 } else {
                     return Err(XmlError::SyntaxError {
                         message: "Invalid DefaultDecl in ATTLIST declaration".into(),
@@ -1642,6 +1724,7 @@ impl<'a> XmlParser<'a> {
                 });
             }
             let _sys_lit = self.parse_quoted_string()?;
+            self.external_entities.push(name.clone());
             if !is_param {
                 let ws = self.source.skip_whitespace();
                 if self.source.consume("NDATA") {
@@ -1667,6 +1750,7 @@ impl<'a> XmlParser<'a> {
                             col: self.source.col(),
                         });
                     }
+                    self.unparsed_entities.push(name.clone());
                 } else if self.source.consume("ndata") {
                     return Err(XmlError::SyntaxError {
                         message: "'NDATA' must be uppercase".into(),
@@ -1701,6 +1785,7 @@ impl<'a> XmlParser<'a> {
                 });
             }
             let _sys_lit = self.parse_quoted_string()?;
+            self.external_entities.push(name.clone());
             if !is_param {
                 let ws = self.source.skip_whitespace();
                 if self.source.consume("NDATA") {
@@ -1726,6 +1811,7 @@ impl<'a> XmlParser<'a> {
                             col: self.source.col(),
                         });
                     }
+                    self.unparsed_entities.push(name.clone());
                 } else if self.source.consume("ndata") {
                     return Err(XmlError::SyntaxError {
                         message: "'NDATA' must be uppercase".into(),
@@ -1747,7 +1833,10 @@ impl<'a> XmlParser<'a> {
             if ch == '"' || ch == '\'' {
                 let val = self.parse_entity_value()?;
                 if !is_param {
+                    self.entity_mapper.register(&name, &val);
                     subset.push_str(&format!("<!ENTITY {} \"{}\">", name, val.replace('"', "&quot;")));
+                } else {
+                    subset.push_str(&format!("<!ENTITY % {} \"{}\">", name, val.replace('"', "&quot;")));
                 }
             } else {
                 return Err(XmlError::SyntaxError {
@@ -1772,6 +1861,320 @@ impl<'a> XmlParser<'a> {
                 col: self.source.col(),
             });
         }
+        Ok(())
+    }
+
+    fn check_attribute_entities(&self, text: &str) -> Result<()> {
+        let mut pos = 0;
+        let bytes = text.as_bytes();
+        while pos < bytes.len() {
+            if bytes[pos] == b'&' {
+                if let Some(semi_offset) = text[pos..].find(';') {
+                    let semi_idx = pos + semi_offset;
+                    let ref_name = &text[pos + 1..semi_idx];
+                    if !ref_name.starts_with('#') {
+                        self.check_entity_for_attribute(ref_name, 0)?;
+                    }
+                    pos = semi_idx + 1;
+                } else {
+                    pos += 1;
+                }
+            } else {
+                pos += 1;
+            }
+        }
+        Ok(())
+    }
+
+    fn check_entity_for_attribute(&self, name: &str, depth: usize) -> Result<()> {
+        if depth > 100 {
+            return Err(XmlError::SyntaxError {
+                message: "Circular entity reference in attribute".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        if self.unparsed_entities.iter().any(|u| u == name) {
+            return Err(XmlError::SyntaxError {
+                message: format!("Unparsed entity '{name}' cannot be referenced in attribute"),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        if self.external_entities.iter().any(|e| e == name) {
+            return Err(XmlError::SyntaxError {
+                message: format!("Attribute values must not contain references to external entity '&{name};'"),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        if name != "lt" && name != "gt" && name != "amp" && name != "quot" && name != "apos" {
+            if let Some(val) = self.entity_mapper.get(name) {
+                if val.contains('<') {
+                    return Err(XmlError::SyntaxError {
+                        message: format!("Replacement text of entity '{name}' in attribute contains '<' (WFC: No < in Attribute Values)"),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+                let mut pos = 0;
+                let bytes = val.as_bytes();
+                while pos < bytes.len() {
+                    if bytes[pos] == b'&' {
+                        if let Some(semi_offset) = val[pos..].find(';') {
+                            let semi_idx = pos + semi_offset;
+                            let inner_ref = &val[pos + 1..semi_idx];
+                            if !inner_ref.starts_with('#') {
+                                self.check_entity_for_attribute(inner_ref, depth + 1)?;
+                            }
+                            pos = semi_idx + 1;
+                        } else {
+                            pos += 1;
+                        }
+                    } else {
+                        pos += 1;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_attribute_default_value(&self, val: &str) -> Result<()> {
+        if val.contains('<') {
+            return Err(XmlError::SyntaxError {
+                message: "Attribute default value cannot contain '<'".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        self.check_attribute_entities(val)?;
+        let has_pe = self.entity_mapper.allow_undeclared;
+        if !has_pe {
+            let mut pos = 0;
+            let bytes = val.as_bytes();
+            while pos < bytes.len() {
+                if bytes[pos] == b'&' {
+                    if let Some(semi_offset) = val[pos..].find(';') {
+                        let semi_idx = pos + semi_offset;
+                        let ref_name = &val[pos + 1..semi_idx];
+                        if !ref_name.starts_with('#') {
+                            match ref_name {
+                                "lt" | "gt" | "amp" | "quot" | "apos" => {}
+                                other => {
+                                    if self.entity_mapper.get(other).is_none() {
+                                        return Err(XmlError::SyntaxError {
+                                            message: format!("Entity '{other}' referenced in attribute default before it was declared"),
+                                            line: self.source.line(),
+                                            col: self.source.col(),
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        pos = semi_idx + 1;
+                    } else {
+                        pos += 1;
+                    }
+                } else {
+                    pos += 1;
+                }
+            }
+        }
+        let expanded = self.entity_mapper.expand(val)?;
+        if expanded.contains('<') {
+            return Err(XmlError::SyntaxError {
+                message: "Replacement text of entity in attribute default contains '<'".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        Ok(())
+    }
+
+    fn validate_entity_replacement_text(&self, name: &str, val: &str) -> Result<()> {
+        if val.contains("<?xml") {
+            return Err(XmlError::SyntaxError {
+                message: format!("'<?xml' forbidden in internal entity '{name}' replacement text"),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+
+        let mut i = 0;
+        let bytes = val.as_bytes();
+        while i < bytes.len() {
+            if bytes[i] == b'&' {
+                if let Some(semi_pos) = val[i..].find(';') {
+                    let ref_content = &val[i + 1..i + semi_pos];
+                    if ref_content.starts_with('#') {
+                        let code_str = &ref_content[1..];
+                        let valid = if let Some(hex_digits) = code_str.strip_prefix('x') {
+                            !hex_digits.is_empty() && hex_digits.chars().all(|c| c.is_ascii_hexdigit())
+                        } else {
+                            !code_str.is_empty() && code_str.chars().all(|c| c.is_ascii_digit())
+                        };
+                        if !valid {
+                            return Err(XmlError::SyntaxError {
+                                message: format!("Invalid numeric character reference in entity '{name}'"),
+                                line: self.source.line(),
+                                col: self.source.col(),
+                            });
+                        }
+                    } else {
+                        let mut chars = ref_content.chars();
+                        let valid = match chars.next() {
+                            Some(first) => is_xml_name_start(first) && chars.all(is_xml_name_char),
+                            None => false,
+                        };
+                        if !valid {
+                            return Err(XmlError::SyntaxError {
+                                message: format!("Invalid entity reference name in entity '{name}'"),
+                                line: self.source.line(),
+                                col: self.source.col(),
+                            });
+                        }
+                    }
+                    i += semi_pos + 1;
+                } else {
+                    return Err(XmlError::SyntaxError {
+                        message: format!("Unclosed '&' in entity '{name}' replacement text (WFC: Parsed Entity)"),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+            } else {
+                i += 1;
+            }
+        }
+
+        if val.contains('<') {
+            let mut pos = 0;
+            let mut tag_stack: Vec<String> = Vec::new();
+            while pos < bytes.len() {
+                if bytes[pos] == b'<' {
+                    let rest = &val[pos..];
+                    if rest.starts_with("<!--") {
+                        if let Some(end_comment) = rest.find("-->") {
+                            pos += end_comment + 3;
+                            continue;
+                        } else {
+                            return Err(XmlError::SyntaxError {
+                                message: format!("Unclosed comment in entity '{name}' (WFC: Parsed Entity)"),
+                                line: self.source.line(),
+                                col: self.source.col(),
+                            });
+                        }
+                    } else if rest.starts_with("<?") {
+                        if let Some(end_pi) = rest.find("?>") {
+                            pos += end_pi + 2;
+                            continue;
+                        } else {
+                            return Err(XmlError::SyntaxError {
+                                message: format!("Unclosed PI in entity '{name}' (WFC: Parsed Entity)"),
+                                line: self.source.line(),
+                                col: self.source.col(),
+                            });
+                        }
+                    } else if rest.starts_with("<![CDATA[") {
+                        if let Some(end_cdata) = rest.find("]]>") {
+                            pos += end_cdata + 3;
+                            continue;
+                        } else {
+                            return Err(XmlError::SyntaxError {
+                                message: format!("Unclosed CDATA in entity '{name}' (WFC: Parsed Entity)"),
+                                line: self.source.line(),
+                                col: self.source.col(),
+                            });
+                        }
+                    } else if rest.starts_with("</") {
+                        if let Some(gt) = rest.find('>') {
+                            let tag_name = rest[2..gt].trim();
+                            if let Some(expected) = tag_stack.pop() {
+                                if expected != tag_name {
+                                    return Err(XmlError::SyntaxError {
+                                        message: format!("Mismatched end tag '</{tag_name}>' in entity '{name}', expected '</{expected}>'"),
+                                        line: self.source.line(),
+                                        col: self.source.col(),
+                                    });
+                                }
+                            } else {
+                                return Err(XmlError::SyntaxError {
+                                    message: format!("End tag '</{tag_name}>' in entity '{name}' has no matching start tag (WFC: Parsed Entity)"),
+                                    line: self.source.line(),
+                                    col: self.source.col(),
+                                });
+                            }
+                            pos += gt + 1;
+                            continue;
+                        } else {
+                            return Err(XmlError::SyntaxError {
+                                message: format!("Unclosed end tag in entity '{name}'"),
+                                line: self.source.line(),
+                                col: self.source.col(),
+                            });
+                        }
+                    } else {
+                        if let Some(gt) = rest.find('>') {
+                            let is_self_closing = rest[..gt].ends_with('/');
+                            let tag_body = if is_self_closing {
+                                &rest[1..gt - 1]
+                            } else {
+                                &rest[1..gt]
+                            };
+                            let elem_tag = tag_body.split_whitespace().next().unwrap_or("");
+                            if let Some(first_space) = tag_body.find(|c: char| c.is_whitespace()) {
+                                let attrs_part = &tag_body[first_space..];
+                                if attrs_part.contains('<') {
+                                    return Err(XmlError::SyntaxError {
+                                        message: format!("Attribute value cannot contain '<' in entity '{name}'"),
+                                        line: self.source.line(),
+                                        col: self.source.col(),
+                                    });
+                                }
+                                let mut a_pos = 0;
+                                let a_bytes = attrs_part.as_bytes();
+                                while a_pos < a_bytes.len() {
+                                    if a_bytes[a_pos] == b'&' {
+                                        if let Some(semi) = attrs_part[a_pos..].find(';') {
+                                            a_pos += semi + 1;
+                                        } else {
+                                            return Err(XmlError::SyntaxError {
+                                                message: format!("Unescaped '&' in attribute in entity '{name}'"),
+                                                line: self.source.line(),
+                                                col: self.source.col(),
+                                            });
+                                        }
+                                    } else {
+                                        a_pos += 1;
+                                    }
+                                }
+                            }
+                            if !is_self_closing && !elem_tag.is_empty() {
+                                tag_stack.push(elem_tag.to_string());
+                            }
+                            pos += gt + 1;
+                            continue;
+                        } else {
+                            return Err(XmlError::SyntaxError {
+                                message: format!("Unclosed start tag in entity '{name}' (WFC: Parsed Entity)"),
+                                line: self.source.line(),
+                                col: self.source.col(),
+                            });
+                        }
+                    }
+                }
+                pos += 1;
+            }
+            if !tag_stack.is_empty() {
+                return Err(XmlError::SyntaxError {
+                    message: format!("Unclosed element in entity '{name}' replacement text (WFC: Parsed Entity)"),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+        }
+
         Ok(())
     }
 
