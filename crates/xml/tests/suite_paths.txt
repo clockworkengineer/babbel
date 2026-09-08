@@ -1,0 +1,5 @@
+xmlconf
+tests/xmlconf
+crates/xml/tests/xmlconf
+../xmlconf
+../../xmlconf

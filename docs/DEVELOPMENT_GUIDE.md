@@ -79,6 +79,22 @@ The size thresholds are:
 
 Any modification that increases the byte size of an AST node will trigger a test failure in `size_checks.rs`.
 
+### 3.4 Official Conformance Test Suites
+Babbel supports running official specification test suites for XML and YAML:
+
+```bash
+# Download the official W3C XML Conformance Test Suite (XML TS 20130923)
+powershell -ExecutionPolicy Bypass -File scripts/fetch_w3c_xmlts.ps1
+# On Linux/macOS:
+# ./scripts/fetch_w3c_xmlts.sh
+
+# Run the 2,500+ test case W3C XML conformance runner
+cargo test -p babbel_xml --test w3c_conformance -- --nocapture
+
+# Run the official YAML 1.2 test suite (if cloned)
+cargo test -p babbel_yaml --test yaml_test_suite -- --nocapture
+```
+
 ---
 
 ## 4. Linting & Formatting

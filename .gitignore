@@ -16,4 +16,6 @@ target
 
 # External test suites
 **/yaml-test-suite/
+**/xmlconf/
+*.zip
 notes/
