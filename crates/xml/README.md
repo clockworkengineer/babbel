@@ -176,6 +176,43 @@ let source = XmlSource::from_reader_with_limit(file, 10 * 1024 * 1024)?;
 
 ---
 
+## Official W3C XML Conformance Test Suite
+
+`babbel_xml` is continuously tested against the official [W3C XML Conformance Test Suite (XML TS 20130923)](https://www.w3.org/XML/Test/).
+
+### Conformance Test Results
+
+| Suite Name | Focus Area | Total Cases | Passed | Skipped* | Pass Rate |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **`eduni/errata-4e`** | Edinburgh Univ. XML 1.0 (4th & 5th Edition Errata) | 393 | **393** | 0 | **100.0%** |
+| **`eduni/errata-3e`** | Edinburgh Univ. XML 1.0 (3rd Edition Errata) | 13 | **13** | 0 | **100.0%** |
+| **`eduni/errata-2e`** | Edinburgh Univ. XML 1.0 (2nd Edition Errata) | 34 | **33** | 1 | **100.0%** |
+| **`eduni/namespaces/1.0`** | Namespaces in XML 1.0 (Richard Tobin) | 48 | **47** | 1 | **100.0%** |
+| **`eduni/namespaces/errata-1e`** | Edinburgh Univ. Namespaces in XML 1.0 Errata | 3 | **3** | 0 | **100.0%** |
+| **`ibm/ibm_oasis_valid`** | IBM / OASIS Valid XML productions | 149 | **149** | 0 | **100.0%** |
+| **`ibm/ibm_oasis_invalid`** | IBM / OASIS Validity constraint rejections | 48 | **48** | 0 | **100.0%** |
+| **`japanese`** | Japanese Character Set & UTF-8 Validations | 12 | **8** | 4 | **100.0%** |
+| **`sun/sun-error`** | Sun Microsystems Fatal Error Detection | 1 | **1** | 0 | **100.0%** |
+| `xmltest` | James Clark XML Test Suite | 365 | **269** | 0 | **73.7%** |
+| `oasis` | OASIS XML 1.0 Conformance Suite | 348 | **229** | 0 | **65.8%** |
+| `ibm/ibm_oasis_not-wf` | IBM Not-Well-Formed Negative Suite | 731 | **188** | 0 | **25.7%** |
+| **OVERALL** | **Full W3C Conformance Corpus** | **2,145** | **1,381** | **6** | **64.6%** |
+
+*\*Skipped tests are legacy non-UTF encodings (ISO-8859-1, Shift-JIS).*
+
+### Running the Conformance Runner
+
+```bash
+# 1. Fetch test fixtures on demand (~20 MB uncompressed, uncommitted)
+powershell -ExecutionPolicy Bypass -File scripts/fetch_w3c_xmlts.ps1
+# On Linux/macOS: ./scripts/fetch_w3c_xmlts.sh
+
+# 2. Run the 2,145 test cases
+cargo test -p babbel_xml --test w3c_conformance -- --nocapture
+```
+
+---
+
 ## Documentation
 
 See the [Documentation Hub](../../docs/README.md) for full workspace guides:

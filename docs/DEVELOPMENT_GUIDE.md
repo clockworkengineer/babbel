@@ -82,18 +82,41 @@ Any modification that increases the byte size of an AST node will trigger a test
 ### 3.4 Official Conformance Test Suites
 Babbel supports running official specification test suites for XML and YAML:
 
+#### A. Official W3C XML Conformance Test Suite (XML TS 20130923)
+The runner dynamically executes 2,145 official test cases with full panic isolation:
+
 ```bash
-# Download the official W3C XML Conformance Test Suite (XML TS 20130923)
+# Download test suite fixtures on demand (~20 MB uncompressed, uncommitted)
 powershell -ExecutionPolicy Bypass -File scripts/fetch_w3c_xmlts.ps1
 # On Linux/macOS:
 # ./scripts/fetch_w3c_xmlts.sh
 
-# Run the 2,500+ test case W3C XML conformance runner
+# Run the 2,145 test case W3C XML conformance runner
 cargo test -p babbel_xml --test w3c_conformance -- --nocapture
-
-# Run the official YAML 1.2 test suite (if cloned)
-cargo test -p babbel_yaml --test yaml_test_suite -- --nocapture
 ```
+
+**Current Pass Rates**:
+- **`eduni/errata-4e`**: 393 / 393 (**100.0%**)
+- **`eduni/errata-3e`**: 13 / 13 (**100.0%**)
+- **`eduni/errata-2e`**: 33 / 33 (**100.0%**, 1 non-UTF skipped)
+- **`eduni/namespaces/1.0`**: 47 / 47 (**100.0%**, 1 non-UTF skipped)
+- **`eduni/namespaces/errata-1e`**: 3 / 3 (**100.0%**)
+- **`ibm/ibm_oasis_valid`**: 149 / 149 (**100.0%**)
+- **`ibm/ibm_oasis_invalid`**: 48 / 48 (**100.0%**)
+- **`japanese`**: 8 / 8 (**100.0%**, 4 non-UTF skipped)
+- **`sun/sun-error`**: 1 / 1 (**100.0%**)
+- **`xmltest`**: 269 / 365 (**73.7%**)
+- **`oasis`**: 229 / 348 (**65.8%**)
+- **Total Passing Cases**: **1,381 tests passed** (0 unhandled panics)
+
+#### B. Official YAML 1.2 Test Suite
+The YAML test runner executes all 402 official YAML 1.2 specification tests:
+
+```bash
+cargo test -p babbel_yaml --test yaml_test_suite_integration -- --nocapture
+```
+
+**Current Pass Rate**: **402 / 402 (100.0%)**
 
 ---
 

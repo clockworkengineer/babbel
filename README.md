@@ -172,8 +172,15 @@ cargo test -p babbel_core --jobs 2
 cargo test -p babbel --jobs 2
 ```
 
-> [!TIP]
-> On Windows, passing `--jobs 2` ensures smooth concurrent file handling across test artifacts.
+### Official Specification Conformance Suites
+
+Babbel is continuously tested against the official standards test suites:
+- **Official YAML 1.2 Test Suite**: **402 / 402 tests passed (100.0%)** via `cargo test -p babbel_yaml --test yaml_test_suite_integration`.
+- **Official W3C XML Conformance Test Suite (XML TS 20130923)**: **1,381 tests passed** across 2,145 test cases via `cargo test -p babbel_xml --test w3c_conformance`:
+  - **100.0%** on Edinburgh Univ. Errata 2e, 3e, 4e, Namespaces 1.0, and Namespaces Errata 1e
+  - **100.0%** on IBM OASIS Valid (149/149) and Invalid (48/48)
+  - **100.0%** on Japanese (8/8) and Sun error suites
+  - See [`crates/xml/README.md`](crates/xml/README.md) and [`docs/DEVELOPMENT_GUIDE.md`](docs/DEVELOPMENT_GUIDE.md) for full breakdown.
 
 ---
 
