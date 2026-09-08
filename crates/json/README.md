@@ -1,6 +1,6 @@
 # babbel_json
 
-**Version 0.1.1** — A lightweight, modular JSON toolkit for Rust with pluggable I/O sources/destinations, a simple in-memory Node tree, multiple serializers (JSON, YAML, XML, Bencode, TOML), and `no_std` support. Designed for small binaries, predictable behavior, and easy embedding.
+**Version 0.1.2** — A lightweight, modular JSON toolkit for Rust with pluggable I/O sources/destinations, a simple in-memory Node tree, multiple serializers (JSON, YAML, XML, Bencode, TOML), and `no_std` support. Designed for small binaries, predictable behavior, and easy embedding.
 
 - Core `Node` type representing JSON structures
 - Parser to build Node trees from streams, strings, or byte slices
@@ -57,7 +57,7 @@ Disable default features and enable `alloc` for embedded / bare-metal targets:
 
 ```toml
 [dependencies]
-babbel_json = { version = "0.1.1", default-features = false, features = ["alloc"] }
+babbel_json = { version = "0.1.2", default-features = false, features = ["alloc"] }
 # Or within the workspace:
 # babbel_json = { path = "crates/json", default-features = false, features = ["alloc"] }
 ```
@@ -68,7 +68,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-babbel_json = "0.1.1"
+babbel_json = "0.1.2"
 ```
 
 Or as a workspace path dependency:

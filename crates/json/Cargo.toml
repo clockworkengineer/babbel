@@ -1,6 +1,6 @@
 [package]
 name = "babbel_json"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 description = "Fast, modular JSON toolkit with streaming parsers, JSON Pointer (RFC 6901), and Merge Patch"
 license = "MIT"
@@ -38,7 +38,7 @@ format-toml = []
 json-pointer = []
 
 [dependencies]
-babbel_core = { path = "../babbel_core", version = "0.1.1", default-features = false }
+babbel_core = { path = "../babbel_core", version = "0.1.2", default-features = false }
 arrayvec = "0.7.6"
 dtoa = "1.0.11"
 itoa = "1.0.17"

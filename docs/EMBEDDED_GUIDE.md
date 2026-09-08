@@ -13,11 +13,11 @@ Every core component of Babbel supports `no_std` execution with the `alloc` feat
 ### Cargo.toml Setup
 ```toml
 [dependencies]
-babbel_core = { version = "0.1.1", default-features = false, features = ["alloc"] }
-babbel_json = { version = "0.1.1", default-features = false, features = ["alloc"] }
-babbel_bencode = { version = "0.1.1", default-features = false, features = ["alloc"] }
-babbel_xml = { version = "0.1.1", default-features = false, features = ["alloc"] }
-babbel_yaml = { version = "0.1.1", default-features = false, features = ["alloc"] }
+babbel_core = { version = "0.1.2", default-features = false, features = ["alloc"] }
+babbel_json = { version = "0.1.2", default-features = false, features = ["alloc"] }
+babbel_bencode = { version = "0.1.2", default-features = false, features = ["alloc"] }
+babbel_xml = { version = "0.1.2", default-features = false, features = ["alloc"] }
+babbel_yaml = { version = "0.1.2", default-features = false, features = ["alloc"] }
 ```
 
 When building for bare-metal targets (e.g. `thumbv7em-none-eabihf`):

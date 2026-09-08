@@ -1,6 +1,6 @@
 [package]
 name = "babbel_core"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 description = "Shared core I/O, encoding, numeric, error, and AST primitives for the Babbel data format family"
 license = "MIT"
