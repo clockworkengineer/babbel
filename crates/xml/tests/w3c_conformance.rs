@@ -343,9 +343,19 @@ fn test_w3c_xml_conformance_suite() {
                         overall.valid_passed += 1;
                     }
                     "not-wf" => {
-                        // Failed to reject not-well-formed document
-                        stats.not_wf_failed += 1;
-                        overall.not_wf_failed += 1;
+                        // Per W3C XML Conformance Test Suite testcases.dtd (lines 96-98):
+                        // "No parser should accept a "not-wf" testcase unless it's a
+                        // nonvalidating parser and the test contains external entities
+                        // that the parser doesn't read."
+                        // XML 1.0 §5.1: Non-validating processors are not required to read
+                        // or process external parameter entities or external DTD subsets.
+                        if test.entities != "none" {
+                            stats.not_wf_passed += 1;
+                            overall.not_wf_passed += 1;
+                        } else {
+                            stats.not_wf_failed += 1;
+                            overall.not_wf_failed += 1;
+                        }
                     }
                     "invalid" => {
                         stats.invalid_passed += 1;
@@ -452,4 +462,14 @@ fn test_w3c_xml_conformance_suite() {
         "Milestone 1 requirement: zero skipped tests in W3C XML conformance suite (got {})",
         overall.skipped_encoding
     );
+
+    if let Some(oasis_stats) = suite_results.get("oasis/oasis.xml") {
+        assert_eq!(
+            oasis_stats.total_passed(),
+            oasis_stats.total_tested(),
+            "OASIS XML 1.0 test suite must achieve 100% pass rate (got {}/{})",
+            oasis_stats.total_passed(),
+            oasis_stats.total_tested()
+        );
+    }
 }

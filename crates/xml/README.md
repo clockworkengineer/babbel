@@ -184,19 +184,19 @@ let source = XmlSource::from_reader_with_limit(file, 10 * 1024 * 1024)?;
 
 | Suite Name | Focus Area | Total Cases | Passed | Skipped | Pass Rate |
 | :--- | :--- | :---: | :---: | :---: | :---: |
+| **`oasis`** | OASIS XML 1.0 Conformance Suite | 348 | **348** | 0 | **100.0%** |
 | **`eduni/errata-4e`** | Edinburgh Univ. XML 1.0 (4th & 5th Edition Errata) | 393 | **393** | 0 | **100.0%** |
-| **`eduni/errata-3e`** | Edinburgh Univ. XML 1.0 (3rd Edition Errata) | 13 | **13** | 0 | **100.0%** |
 | **`eduni/errata-2e`** | Edinburgh Univ. XML 1.0 (2nd Edition Errata) | 33 | **33** | 0 | **100.0%** |
-| **`eduni/namespaces/1.0`** | Namespaces in XML 1.0 (Richard Tobin) | 48 | **48** | 0 | **100.0%** |
 | **`eduni/namespaces/errata-1e`** | Edinburgh Univ. Namespaces in XML 1.0 Errata | 3 | **3** | 0 | **100.0%** |
-| **`ibm/ibm_oasis_valid`** | IBM / OASIS Valid XML productions | 149 | **149** | 0 | **100.0%** |
 | **`ibm/ibm_oasis_invalid`** | IBM / OASIS Validity constraint rejections | 48 | **48** | 0 | **100.0%** |
 | **`japanese`** | Japanese Character Set & Fatal Error Validations | 12 | **12** | 0 | **100.0%** |
 | **`sun/sun-error`** | Sun Microsystems Fatal Error Detection | 1 | **1** | 0 | **100.0%** |
-| `xmltest` | James Clark XML Test Suite | 365 | **269** | 0 | **73.7%** |
-| `oasis` | OASIS XML 1.0 Conformance Suite | 348 | **229** | 0 | **65.8%** |
-| `ibm/ibm_oasis_not-wf` | IBM Not-Well-Formed Negative Suite | 731 | **188** | 0 | **25.7%** |
-| **OVERALL** | **Full W3C Conformance Corpus** | **2,144** | **1,386** | **0** | **64.6%** |
+| **`eduni/namespaces/1.0`** | Namespaces in XML 1.0 (Richard Tobin) | 48 | **47** | 0 | **97.9%** |
+| **`ibm/ibm_oasis_valid`** | IBM / OASIS Valid XML productions | 149 | **145** | 0 | **97.3%** |
+| `xmltest` | James Clark XML Test Suite | 365 | **340** | 0 | **93.2%** |
+| **`eduni/errata-3e`** | Edinburgh Univ. XML 1.0 (3rd Edition Errata) | 13 | **12** | 0 | **92.3%** |
+| `ibm/ibm_oasis_not-wf` | IBM Not-Well-Formed Negative Suite | 731 | **417** | 0 | **57.0%** |
+| **OVERALL** | **Full W3C Conformance Corpus** | **2,144** | **1,799** | **0** | **83.9%** |
 
 ### Running the Conformance Runner
 

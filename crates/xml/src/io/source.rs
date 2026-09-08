@@ -207,8 +207,9 @@ impl XmlSource {
         }
     }
 
-    /// Skips all leading ASCII whitespace characters.
-    pub fn skip_whitespace(&mut self) {
+    /// Skips all leading ASCII whitespace characters and returns the number of characters skipped.
+    pub fn skip_whitespace(&mut self) -> usize {
+        let start = self.pos;
         let bytes = self.content.as_bytes();
         while self.pos < bytes.len() {
             let b = bytes[self.pos];
@@ -224,6 +225,7 @@ impl XmlSource {
                 break;
             }
         }
+        self.pos - start
     }
 
     /// Creates an `XmlSource` by consuming an arbitrary character stream implementing [`babbel_core::io::traits::ISource`].

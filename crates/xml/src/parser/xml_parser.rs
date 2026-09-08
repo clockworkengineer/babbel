@@ -46,7 +46,8 @@ impl<'a> XmlParser<'a> {
         self.options.check_xml_size(self.source.len())?;
         let mut doc = Document::new();
 
-        self.source.skip_whitespace();
+        // XML 1.0 §2.8 [22]: XML declaration must appear at the very start of document if present.
+        // No whitespace or comments can precede it.
         if self.source.starts_with("<?xml") {
             self.parse_declaration(&mut doc)?;
         }
@@ -80,23 +81,111 @@ impl<'a> XmlParser<'a> {
     /// Parses XML declaration (`<?xml version="..." encoding="..."?>`).
     fn parse_declaration(&mut self, doc: &mut Document) -> Result<()> {
         self.source.consume("<?xml");
-        self.source.skip_whitespace();
+        // XML 1.0 §2.8 [23]: XMLDecl ::= '<?xml' VersionInfo ... where VersionInfo begins with S
+        let ws = self.source.skip_whitespace();
+        if ws == 0 {
+            return Err(XmlError::SyntaxError {
+                message: "Expected whitespace after '<?xml'".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
 
-        let mut version = String::from("1.0");
+        // First attribute MUST be version
+        let (k1, v1) = self.parse_attribute()?;
+        if k1 != "version" {
+            return Err(XmlError::SyntaxError {
+                message: format!("XML declaration must begin with 'version', found '{k1}'"),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        // XML 1.0 §2.8 [26]: VersionNum ::= '1.' [0-9]+
+        if !v1.starts_with("1.") || v1.len() < 3 || !v1[2..].chars().all(|c| c.is_ascii_digit()) {
+            return Err(XmlError::SyntaxError {
+                message: format!("Invalid XML version format '{v1}'"),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        let version = v1;
         let mut encoding = None;
         let mut standalone = None;
 
         while !self.source.is_eof() && !self.source.starts_with("?>") {
+            let ws_attr = self.source.skip_whitespace();
+            if self.source.starts_with("?>") {
+                break;
+            }
+            if ws_attr == 0 {
+                return Err(XmlError::SyntaxError {
+                    message: "Whitespace required before attribute in XML declaration".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+
             let (key, val) = self.parse_attribute()?;
             match key.as_str() {
-                "version" => version = val,
-                "encoding" => encoding = Some(val),
-                "standalone" => standalone = Some(val == "yes"),
-                _ => {}
+                "encoding" => {
+                    if standalone.is_some() {
+                        return Err(XmlError::SyntaxError {
+                            message: "'encoding' declaration must precede 'standalone' in XML declaration".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    if encoding.is_some() {
+                        return Err(XmlError::SyntaxError {
+                            message: "Duplicate 'encoding' in XML declaration".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    // Validate EncName: [A-Za-z] ([A-Za-z0-9._] | '-')*
+                    let mut chars = val.chars();
+                    let valid = match chars.next() {
+                        Some(f) => f.is_ascii_alphabetic() && chars.all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '_' || c == '-'),
+                        None => false,
+                    };
+                    if !valid {
+                        return Err(XmlError::SyntaxError {
+                            message: format!("Invalid encoding name '{val}'"),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    encoding = Some(val);
+                }
+                "standalone" => {
+                    if standalone.is_some() {
+                        return Err(XmlError::SyntaxError {
+                            message: "Duplicate 'standalone' in XML declaration".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    // XML 1.0 §2.9 [32]: standalone value must be strictly "yes" or "no" (lowercase)
+                    if val != "yes" && val != "no" {
+                        return Err(XmlError::SyntaxError {
+                            message: format!("Invalid standalone value '{val}', must be 'yes' or 'no'"),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    standalone = Some(val == "yes");
+                }
+                other => {
+                    return Err(XmlError::SyntaxError {
+                        message: format!("Unexpected attribute '{other}' in XML declaration"),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
             }
-            self.source.skip_whitespace();
         }
 
+        self.source.skip_whitespace();
         if !self.source.consume("?>") {
             return Err(XmlError::SyntaxError {
                 message: "Unclosed XML declaration".into(),
@@ -244,7 +333,17 @@ impl<'a> XmlParser<'a> {
             self.options.check_attribute_count(attributes.len())?;
             self.options.check_total_attribute_count(self.total_attribute_count)?;
 
-            self.source.skip_whitespace();
+            let ws = self.source.skip_whitespace();
+            if self.source.starts_with(">") || self.source.starts_with("/>") {
+                break;
+            }
+            if ws == 0 {
+                return Err(XmlError::SyntaxError {
+                    message: "Whitespace required between attributes in element tag".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
         }
 
         // Validate namespace prefixes and collisions
@@ -625,7 +724,21 @@ impl<'a> XmlParser<'a> {
                 col: self.source.col(),
             });
         }
-        self.source.skip_whitespace();
+        if self.source.starts_with("?>") {
+            self.source.consume("?>");
+            return Ok(doc.add_node(NodeKind::ProcessingInstruction {
+                target: target.into_boxed_str(),
+                data: "".into(),
+            }));
+        }
+
+        if self.source.skip_whitespace() == 0 {
+            return Err(XmlError::SyntaxError {
+                message: "Whitespace required between processing instruction target and data".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
 
         let mut data = String::new();
         while !self.source.is_eof() {
@@ -671,75 +784,36 @@ impl<'a> XmlParser<'a> {
         let mut internal_subset = None;
 
         if self.source.consume("PUBLIC") {
-            self.source.skip_whitespace();
-            public_id = Some(self.parse_quoted_string()?);
-            self.source.skip_whitespace();
+            if self.source.skip_whitespace() == 0 {
+                return Err(XmlError::SyntaxError {
+                    message: "Whitespace required after 'PUBLIC'".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+            public_id = Some(self.parse_pubid_literal()?);
+            if self.source.skip_whitespace() == 0 {
+                return Err(XmlError::SyntaxError {
+                    message: "Whitespace required between Public ID and System ID".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
             system_id = Some(self.parse_quoted_string()?);
         } else if self.source.consume("SYSTEM") {
-            self.source.skip_whitespace();
+            if self.source.skip_whitespace() == 0 {
+                return Err(XmlError::SyntaxError {
+                    message: "Whitespace required after 'SYSTEM'".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
             system_id = Some(self.parse_quoted_string()?);
         }
 
         self.source.skip_whitespace();
         if self.source.consume("[") {
-            let mut subset = String::new();
-            let mut in_quote: Option<char> = None;
-            while !self.source.is_eof() {
-                if let Some(q) = in_quote {
-                    let ch = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
-                        message: "Unterminated quote in DOCTYPE subset".into(),
-                        line: self.source.line(),
-                        col: self.source.col(),
-                    })?;
-                    subset.push(ch);
-                    if ch == q {
-                        in_quote = None;
-                    }
-                } else if self.source.starts_with("<!--") {
-                    self.source.consume("<!--");
-                    subset.push_str("<!--");
-                    while !self.source.is_eof() {
-                        if self.source.starts_with("-->") {
-                            self.source.consume("-->");
-                            subset.push_str("-->");
-                            break;
-                        }
-                        let ch = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
-                            message: "Unterminated comment in DOCTYPE subset".into(),
-                            line: self.source.line(),
-                            col: self.source.col(),
-                        })?;
-                        subset.push(ch);
-                    }
-                } else {
-                    if self.source.starts_with("]") {
-                        break;
-                    }
-                    let ch = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
-                        message: "Unterminated DOCTYPE subset".into(),
-                        line: self.source.line(),
-                        col: self.source.col(),
-                    })?;
-                    if ch == '"' || ch == '\'' {
-                        in_quote = Some(ch);
-                    }
-                    subset.push(ch);
-                }
-            }
-            if !self.source.consume("]") {
-                return Err(XmlError::SyntaxError {
-                    message: "Unclosed DOCTYPE internal subset".into(),
-                    line: self.source.line(),
-                    col: self.source.col(),
-                });
-            }
-            if subset.contains("<![INCLUDE[") || subset.contains("<![IGNORE[") {
-                return Err(XmlError::SyntaxError {
-                    message: "Conditional sections are not allowed in the internal subset".into(),
-                    line: self.source.line(),
-                    col: self.source.col(),
-                });
-            }
+            let subset = self.parse_internal_subset()?;
             internal_subset = Some(subset);
         }
 
@@ -952,5 +1026,886 @@ impl<'a> XmlParser<'a> {
             line: self.source.line(),
             col: self.source.col(),
         })
+    }
+
+    fn is_pubid_char(ch: char) -> bool {
+        matches!(ch, ' ' | '\r' | '\n' | 'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '\'' | '(' | ')' | '+' | ',' | '.' | '/' | ':' | '=' | '?' | ';' | '!' | '*' | '#' | '@' | '$' | '_' | '%')
+    }
+
+    fn parse_pubid_literal(&mut self) -> Result<String> {
+        let quote = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
+            message: "Expected quote for PubidLiteral".into(),
+            line: self.source.line(),
+            col: self.source.col(),
+        })?;
+        if quote != '"' && quote != '\'' {
+            return Err(XmlError::SyntaxError {
+                message: "PubidLiteral must start with single or double quote".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        let mut s = String::new();
+        while let Some(ch) = self.source.next_char() {
+            if ch == quote {
+                return Ok(s);
+            }
+            if !Self::is_pubid_char(ch) || (quote == '\'' && ch == '\'') {
+                return Err(XmlError::SyntaxError {
+                    message: format!("Illegal character in PubidLiteral: '{}'", ch),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+            s.push(ch);
+        }
+        Err(XmlError::SyntaxError {
+            message: "Unterminated PubidLiteral".into(),
+            line: self.source.line(),
+            col: self.source.col(),
+        })
+    }
+
+    fn parse_nmtoken(&mut self) -> Result<String> {
+        let start = self.source.position();
+        while let Some(ch) = self.source.peek() {
+            if is_xml_name_char(ch) {
+                self.source.next_char();
+            } else {
+                break;
+            }
+        }
+        let end = self.source.position();
+        if start == end {
+            return Err(XmlError::SyntaxError {
+                message: "Expected Nmtoken".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        Ok(self.source.slice_range(start, end).to_string())
+    }
+
+    fn parse_entity_value(&mut self) -> Result<String> {
+        let quote = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
+            message: "Expected quote for EntityValue".into(),
+            line: self.source.line(),
+            col: self.source.col(),
+        })?;
+        if quote != '"' && quote != '\'' {
+            return Err(XmlError::SyntaxError {
+                message: "EntityValue must be quoted".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        let mut s = String::new();
+        while let Some(ch) = self.source.peek() {
+            if ch == quote {
+                self.source.next_char();
+                return Ok(s);
+            }
+            if ch == '%' {
+                self.source.next_char();
+                s.push('%');
+                let name = self.parse_name()?;
+                if name.is_empty() {
+                    return Err(XmlError::SyntaxError {
+                        message: "Expected Name in PEReference inside EntityValue".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+                s.push_str(&name);
+                if !self.source.consume(";") {
+                    return Err(XmlError::SyntaxError {
+                        message: "Expected ';' terminating PEReference inside EntityValue".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+                s.push(';');
+            } else if ch == '&' {
+                self.source.next_char();
+                s.push('&');
+                if self.source.consume("#") {
+                    s.push('#');
+                    let hex = self.source.consume("x");
+                    if hex {
+                        s.push('x');
+                    }
+                    let mut num_str = String::new();
+                    while let Some(nc) = self.source.peek() {
+                        if (hex && nc.is_ascii_hexdigit()) || (!hex && nc.is_ascii_digit()) {
+                            num_str.push(nc);
+                            s.push(nc);
+                            self.source.next_char();
+                        } else {
+                            break;
+                        }
+                    }
+                    if num_str.is_empty() {
+                        return Err(XmlError::SyntaxError {
+                            message: "Expected digits in numeric character reference".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    if !self.source.consume(";") {
+                        return Err(XmlError::SyntaxError {
+                            message: "Expected ';' terminating numeric character reference".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    s.push(';');
+                } else {
+                    let name = self.parse_name()?;
+                    if name.is_empty() {
+                        return Err(XmlError::SyntaxError {
+                            message: "Expected Name in entity reference inside EntityValue".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    s.push_str(&name);
+                    if !self.source.consume(";") {
+                        return Err(XmlError::SyntaxError {
+                            message: "Expected ';' terminating entity reference inside EntityValue".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    s.push(';');
+                }
+            } else {
+                self.source.next_char();
+                s.push(ch);
+            }
+        }
+        Err(XmlError::SyntaxError {
+            message: "Unterminated EntityValue".into(),
+            line: self.source.line(),
+            col: self.source.col(),
+        })
+    }
+
+    fn parse_mixed(&mut self) -> Result<()> {
+        let mut count = 0;
+        loop {
+            self.source.skip_whitespace();
+            if self.source.consume("|") {
+                count += 1;
+                self.source.skip_whitespace();
+                let name = self.parse_name()?;
+                if name.is_empty() {
+                    return Err(XmlError::SyntaxError {
+                        message: "Expected element name after '|' in Mixed content".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+            } else {
+                break;
+            }
+        }
+        self.source.skip_whitespace();
+        if !self.source.consume(")") {
+            return Err(XmlError::SyntaxError {
+                message: "Expected ')' terminating Mixed content".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        if count > 0 {
+            if !self.source.consume("*") {
+                return Err(XmlError::SyntaxError {
+                    message: "Mixed content with element names must end with ')*'".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+        } else {
+            let _ = self.source.consume("*");
+        }
+        if let Some(ch) = self.source.peek() {
+            if ch == '?' || ch == '+' || ch == '*' {
+                return Err(XmlError::SyntaxError {
+                    message: "Illegal quantifier on Mixed content".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+        }
+        Ok(())
+    }
+
+    fn parse_cp(&mut self) -> Result<()> {
+        self.source.skip_whitespace();
+        if self.source.peek() == Some('(') {
+            self.parse_children_group()?;
+        } else {
+            let name = self.parse_name()?;
+            if name.is_empty() {
+                return Err(XmlError::SyntaxError {
+                    message: "Expected element name in content particle".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+        }
+        if let Some(ch) = self.source.peek() {
+            if ch == '?' || ch == '*' || ch == '+' {
+                self.source.next_char();
+            }
+        }
+        Ok(())
+    }
+
+    fn parse_children_group(&mut self) -> Result<()> {
+        if !self.source.consume("(") {
+            return Err(XmlError::SyntaxError {
+                message: "Expected '(' starting children group".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        self.source.skip_whitespace();
+        if self.source.peek() == Some(')') {
+            return Err(XmlError::SyntaxError {
+                message: "Empty children group '()' is not allowed".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        self.parse_cp()?;
+
+        let mut sep_choice = false;
+        let mut sep_seq = false;
+
+        loop {
+            self.source.skip_whitespace();
+            if self.source.consume("|") {
+                if sep_seq {
+                    return Err(XmlError::SyntaxError {
+                        message: "Cannot mix '|' and ',' in the same content group".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+                sep_choice = true;
+                self.source.skip_whitespace();
+                self.parse_cp()?;
+            } else if self.source.consume(",") {
+                if sep_choice {
+                    return Err(XmlError::SyntaxError {
+                        message: "Cannot mix '|' and ',' in the same content group".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+                sep_seq = true;
+                self.source.skip_whitespace();
+                self.parse_cp()?;
+            } else if self.source.consume(")") {
+                break;
+            } else {
+                return Err(XmlError::SyntaxError {
+                    message: "Expected '|', ',', or ')' in children group".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+        }
+
+        if let Some(ch) = self.source.peek() {
+            if ch == '?' || ch == '*' || ch == '+' {
+                self.source.next_char();
+            }
+        }
+        Ok(())
+    }
+
+    fn parse_element_contentspec(&mut self) -> Result<()> {
+        if self.source.starts_with("EMPTY") {
+            let next = self.source.peek_offset(5);
+            if next.map_or(true, |c| !is_xml_name_char(c)) {
+                self.source.consume("EMPTY");
+                return Ok(());
+            }
+        }
+        if self.source.starts_with("ANY") {
+            let next = self.source.peek_offset(3);
+            if next.map_or(true, |c| !is_xml_name_char(c)) {
+                self.source.consume("ANY");
+                return Ok(());
+            }
+        }
+        if self.source.peek() == Some('(') {
+            let mut offset = 1;
+            while let Some(ch) = self.source.peek_offset(offset) {
+                if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
+                    offset += 1;
+                } else {
+                    break;
+                }
+            }
+            let is_pcdata = self.source.peek_offset(offset) == Some('#')
+                && self.source.peek_offset(offset + 1) == Some('P')
+                && self.source.peek_offset(offset + 2) == Some('C')
+                && self.source.peek_offset(offset + 3) == Some('D')
+                && self.source.peek_offset(offset + 4) == Some('A')
+                && self.source.peek_offset(offset + 5) == Some('T')
+                && self.source.peek_offset(offset + 6) == Some('A');
+            if is_pcdata {
+                self.source.consume("(");
+                self.source.skip_whitespace();
+                self.source.consume("#PCDATA");
+                self.parse_mixed()
+            } else {
+                self.parse_children_group()
+            }
+        } else {
+            Err(XmlError::SyntaxError {
+                message: "Invalid element contentspec, expected EMPTY, ANY, or parenthesized model".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            })
+        }
+    }
+
+    fn parse_element_decl(&mut self, _subset: &mut String) -> Result<()> {
+        if self.source.skip_whitespace() == 0 {
+            return Err(XmlError::SyntaxError {
+                message: "Whitespace required after '<!ELEMENT'".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        let name = self.parse_name()?;
+        if name.is_empty() {
+            return Err(XmlError::SyntaxError {
+                message: "Expected element name in element declaration".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        if self.source.skip_whitespace() == 0 {
+            return Err(XmlError::SyntaxError {
+                message: "Whitespace required between element name and contentspec".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        self.parse_element_contentspec()?;
+        self.source.skip_whitespace();
+        if !self.source.consume(">") {
+            return Err(XmlError::SyntaxError {
+                message: "Unclosed ELEMENT declaration, expected '>'".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        Ok(())
+    }
+
+    fn parse_attlist_decl(&mut self, _subset: &mut String) -> Result<()> {
+        if self.source.skip_whitespace() == 0 {
+            return Err(XmlError::SyntaxError {
+                message: "Whitespace required after '<!ATTLIST'".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        let elem_name = self.parse_name()?;
+        if elem_name.is_empty() {
+            return Err(XmlError::SyntaxError {
+                message: "Expected element name in ATTLIST declaration".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+
+        loop {
+            let ws = self.source.skip_whitespace();
+            if self.source.consume(">") {
+                return Ok(());
+            }
+            if ws == 0 {
+                return Err(XmlError::SyntaxError {
+                    message: "Whitespace required before attribute definition".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+            let att_name = self.parse_name()?;
+            if att_name.is_empty() {
+                return Err(XmlError::SyntaxError {
+                    message: "Expected attribute name in ATTLIST declaration".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+            if self.source.skip_whitespace() == 0 {
+                return Err(XmlError::SyntaxError {
+                    message: "Whitespace required after attribute name".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+
+            if self.source.consume("CDATA") {
+                // ok
+            } else if self.source.consume("IDREFS") {
+                // ok
+            } else if self.source.consume("IDREF") {
+                // ok
+            } else if self.source.consume("ID") {
+                // ok
+            } else if self.source.consume("ENTITIES") {
+                // ok
+            } else if self.source.consume("ENTITY") {
+                // ok
+            } else if self.source.consume("NMTOKENS") {
+                // ok
+            } else if self.source.consume("NMTOKEN") {
+                // ok
+            } else if self.source.consume("NOTATION") {
+                if self.source.skip_whitespace() == 0 {
+                    return Err(XmlError::SyntaxError {
+                        message: "Whitespace required after 'NOTATION'".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+                if !self.source.consume("(") {
+                    return Err(XmlError::SyntaxError {
+                        message: "Expected '(' after NOTATION".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+                self.source.skip_whitespace();
+                let first_not = self.parse_name()?;
+                if first_not.is_empty() {
+                    return Err(XmlError::SyntaxError {
+                        message: "Expected notation name in NOTATION enumeration".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+                loop {
+                    self.source.skip_whitespace();
+                    if self.source.consume("|") {
+                        self.source.skip_whitespace();
+                        let not = self.parse_name()?;
+                        if not.is_empty() {
+                            return Err(XmlError::SyntaxError {
+                                message: "Expected notation name after '|'".into(),
+                                line: self.source.line(),
+                                col: self.source.col(),
+                            });
+                        }
+                    } else if self.source.consume(")") {
+                        break;
+                    } else {
+                        return Err(XmlError::SyntaxError {
+                            message: "Expected '|' or ')' in NOTATION enumeration".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                }
+            } else if self.source.peek() == Some('(') {
+                self.source.next_char();
+                self.source.skip_whitespace();
+                let first_tok = self.parse_nmtoken()?;
+                if first_tok.is_empty() {
+                    return Err(XmlError::SyntaxError {
+                        message: "Expected Nmtoken in enumeration".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+                loop {
+                    self.source.skip_whitespace();
+                    if self.source.consume("|") {
+                        self.source.skip_whitespace();
+                        let tok = self.parse_nmtoken()?;
+                        if tok.is_empty() {
+                            return Err(XmlError::SyntaxError {
+                                message: "Expected Nmtoken after '|' in enumeration".into(),
+                                line: self.source.line(),
+                                col: self.source.col(),
+                            });
+                        }
+                    } else if self.source.consume(")") {
+                        break;
+                    } else {
+                        return Err(XmlError::SyntaxError {
+                            message: "Expected '|' or ')' in enumeration".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                }
+            } else {
+                return Err(XmlError::SyntaxError {
+                    message: "Invalid attribute type in ATTLIST declaration".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+
+            if self.source.skip_whitespace() == 0 {
+                return Err(XmlError::SyntaxError {
+                    message: "Whitespace required before DefaultDecl in ATTLIST".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+            if self.source.consume("#REQUIRED") {
+                // ok
+            } else if self.source.consume("#IMPLIED") {
+                // ok
+            } else if self.source.consume("#FIXED") {
+                if self.source.skip_whitespace() == 0 {
+                    return Err(XmlError::SyntaxError {
+                        message: "Whitespace required after '#FIXED'".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+                let _val = self.parse_quoted_string()?;
+            } else if let Some(ch) = self.source.peek() {
+                if ch == '"' || ch == '\'' {
+                    let _val = self.parse_quoted_string()?;
+                } else {
+                    return Err(XmlError::SyntaxError {
+                        message: "Invalid DefaultDecl in ATTLIST declaration".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+            } else {
+                return Err(XmlError::SyntaxError {
+                    message: "Unexpected end of input in ATTLIST declaration".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+        }
+    }
+
+    fn parse_entity_decl(&mut self, subset: &mut String) -> Result<()> {
+        if self.source.skip_whitespace() == 0 {
+            return Err(XmlError::SyntaxError {
+                message: "Whitespace required after '<!ENTITY'".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        let is_param = if self.source.consume("%") {
+            if self.source.skip_whitespace() == 0 {
+                return Err(XmlError::SyntaxError {
+                    message: "Whitespace required after '%' in parameter entity decl".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+            true
+        } else {
+            false
+        };
+        let name = self.parse_name()?;
+        if name.is_empty() {
+            return Err(XmlError::SyntaxError {
+                message: "Expected entity name in entity declaration".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        if self.source.skip_whitespace() == 0 {
+            return Err(XmlError::SyntaxError {
+                message: "Whitespace required after entity name".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+
+        if self.source.consume("SYSTEM") {
+            if self.source.skip_whitespace() == 0 {
+                return Err(XmlError::SyntaxError {
+                    message: "Whitespace required after 'SYSTEM'".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+            let _sys_lit = self.parse_quoted_string()?;
+            if !is_param {
+                let ws = self.source.skip_whitespace();
+                if self.source.consume("NDATA") {
+                    if ws == 0 {
+                        return Err(XmlError::SyntaxError {
+                            message: "Whitespace required before 'NDATA'".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    if self.source.skip_whitespace() == 0 {
+                        return Err(XmlError::SyntaxError {
+                            message: "Whitespace required after 'NDATA'".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    let ndata_name = self.parse_name()?;
+                    if ndata_name.is_empty() {
+                        return Err(XmlError::SyntaxError {
+                            message: "Expected notation name after 'NDATA'".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                } else if self.source.consume("ndata") {
+                    return Err(XmlError::SyntaxError {
+                        message: "'NDATA' must be uppercase".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+            } else {
+                self.source.skip_whitespace();
+                if self.source.consume("NDATA") || self.source.consume("ndata") {
+                    return Err(XmlError::SyntaxError {
+                        message: "Parameter entities cannot have NDataDecl".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+            }
+        } else if self.source.consume("PUBLIC") {
+            if self.source.skip_whitespace() == 0 {
+                return Err(XmlError::SyntaxError {
+                    message: "Whitespace required after 'PUBLIC'".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+            let _pub_lit = self.parse_pubid_literal()?;
+            if self.source.skip_whitespace() == 0 {
+                return Err(XmlError::SyntaxError {
+                    message: "Whitespace required between Public ID and System ID".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+            let _sys_lit = self.parse_quoted_string()?;
+            if !is_param {
+                let ws = self.source.skip_whitespace();
+                if self.source.consume("NDATA") {
+                    if ws == 0 {
+                        return Err(XmlError::SyntaxError {
+                            message: "Whitespace required before 'NDATA'".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    if self.source.skip_whitespace() == 0 {
+                        return Err(XmlError::SyntaxError {
+                            message: "Whitespace required after 'NDATA'".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    let ndata_name = self.parse_name()?;
+                    if ndata_name.is_empty() {
+                        return Err(XmlError::SyntaxError {
+                            message: "Expected notation name after 'NDATA'".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                } else if self.source.consume("ndata") {
+                    return Err(XmlError::SyntaxError {
+                        message: "'NDATA' must be uppercase".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+            } else {
+                self.source.skip_whitespace();
+                if self.source.consume("NDATA") || self.source.consume("ndata") {
+                    return Err(XmlError::SyntaxError {
+                        message: "Parameter entities cannot have NDataDecl".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+            }
+        } else if let Some(ch) = self.source.peek() {
+            if ch == '"' || ch == '\'' {
+                let val = self.parse_entity_value()?;
+                if !is_param {
+                    subset.push_str(&format!("<!ENTITY {} \"{}\">", name, val.replace('"', "&quot;")));
+                }
+            } else {
+                return Err(XmlError::SyntaxError {
+                    message: "Expected EntityValue, SYSTEM, or PUBLIC in entity declaration".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+        } else {
+            return Err(XmlError::SyntaxError {
+                message: "Unexpected end of input in entity declaration".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+
+        self.source.skip_whitespace();
+        if !self.source.consume(">") {
+            return Err(XmlError::SyntaxError {
+                message: "Unclosed ENTITY declaration, expected '>'".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        Ok(())
+    }
+
+    fn parse_notation_decl(&mut self, _subset: &mut String) -> Result<()> {
+        if self.source.skip_whitespace() == 0 {
+            return Err(XmlError::SyntaxError {
+                message: "Whitespace required after '<!NOTATION'".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        let name = self.parse_name()?;
+        if name.is_empty() {
+            return Err(XmlError::SyntaxError {
+                message: "Expected notation name".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        if self.source.skip_whitespace() == 0 {
+            return Err(XmlError::SyntaxError {
+                message: "Whitespace required after notation name".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        if self.source.consume("SYSTEM") {
+            if self.source.skip_whitespace() == 0 {
+                return Err(XmlError::SyntaxError {
+                    message: "Whitespace required after 'SYSTEM'".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+            let _sys = self.parse_quoted_string()?;
+        } else if self.source.consume("PUBLIC") {
+            if self.source.skip_whitespace() == 0 {
+                return Err(XmlError::SyntaxError {
+                    message: "Whitespace required after 'PUBLIC'".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+            let _pub = self.parse_pubid_literal()?;
+            if self.source.skip_whitespace() > 0 {
+                if let Some(ch) = self.source.peek() {
+                    if ch == '"' || ch == '\'' {
+                        let _sys = self.parse_quoted_string()?;
+                    }
+                }
+            }
+        } else {
+            return Err(XmlError::SyntaxError {
+                message: "Expected SYSTEM or PUBLIC in notation declaration".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+
+        self.source.skip_whitespace();
+        if !self.source.consume(">") {
+            return Err(XmlError::SyntaxError {
+                message: "Unclosed NOTATION declaration, expected '>'".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+        Ok(())
+    }
+
+    fn parse_internal_subset(&mut self) -> Result<String> {
+        let start = self.source.position();
+        let mut subset = String::new();
+        loop {
+            self.source.skip_whitespace();
+            if self.source.peek() == Some(']') {
+                let end = self.source.position();
+                self.source.next_char();
+                return Ok(self.source.slice_range(start, end).to_string());
+            }
+            if self.source.starts_with("<!--") {
+                let mut dummy_doc = Document::new();
+                self.parse_comment(&mut dummy_doc)?;
+            } else if self.source.starts_with("<?") {
+                let mut dummy_doc = Document::new();
+                self.parse_pi(&mut dummy_doc)?;
+            } else if self.source.starts_with("<!ELEMENT") {
+                self.source.consume("<!ELEMENT");
+                self.parse_element_decl(&mut subset)?;
+            } else if self.source.starts_with("<!ATTLIST") {
+                self.source.consume("<!ATTLIST");
+                self.parse_attlist_decl(&mut subset)?;
+            } else if self.source.starts_with("<!ENTITY") {
+                self.source.consume("<!ENTITY");
+                self.parse_entity_decl(&mut subset)?;
+            } else if self.source.starts_with("<!NOTATION") {
+                self.source.consume("<!NOTATION");
+                self.parse_notation_decl(&mut subset)?;
+            } else if self.source.starts_with("%") {
+                self.source.next_char();
+                let name = self.parse_name()?;
+                if name.is_empty() {
+                    return Err(XmlError::SyntaxError {
+                        message: "Expected Name in parameter entity reference".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+                if !self.source.consume(";") {
+                    return Err(XmlError::SyntaxError {
+                        message: "Expected ';' in parameter entity reference".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                }
+            } else if self.source.starts_with("<!") {
+                return Err(XmlError::SyntaxError {
+                    message: "Invalid markup declaration in internal subset".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            } else if self.source.is_eof() {
+                return Err(XmlError::SyntaxError {
+                    message: "Unclosed internal DTD subset, expected ']'".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            } else {
+                return Err(XmlError::SyntaxError {
+                    message: "Unexpected character in internal DTD subset".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+        }
     }
 }

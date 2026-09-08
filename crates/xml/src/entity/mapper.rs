@@ -110,6 +110,12 @@ impl EntityMapper {
                         match codepoint {
                             Ok(cp) => {
                                 if let Some(ch) = char::from_u32(cp) {
+                                    // XML 1.0 §4.1 [66] WFC: Legal Character
+                                    if !crate::io::char_utils::is_valid_xml_char(ch) {
+                                        return Err(XmlError::EntityError(format!(
+                                            "Forbidden XML character in character reference: &#x{cp:x};"
+                                        )));
+                                    }
                                     *total_expanded += ch.len_utf8();
                                     if *total_expanded > self.max_expansion_size {
                                         return Err(XmlError::SecurityLimitExceeded(format!(
@@ -131,6 +137,21 @@ impl EntityMapper {
                             }
                         }
                     } else {
+                        // XML 1.0 §4.1 [68] EntityRef ::= '&' Name ';'
+                        let mut name_chars = entity_ref.chars();
+                        let is_valid_name = match name_chars.next() {
+                            Some(first) => {
+                                crate::io::char_utils::is_xml_name_start(first)
+                                    && name_chars.all(crate::io::char_utils::is_xml_name_char)
+                            }
+                            None => false,
+                        };
+                        if !is_valid_name {
+                            return Err(XmlError::EntityError(format!(
+                                "Malformed entity reference with invalid name: &{entity_ref};"
+                            )));
+                        }
+
                         // Named reference
                         match entity_ref {
                             "lt" => { *total_expanded += 1; result.push('<'); }
