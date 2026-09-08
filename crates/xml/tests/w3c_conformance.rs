@@ -273,6 +273,7 @@ fn test_w3c_xml_conformance_suite() {
 
     let mut suite_results: BTreeMap<String, SuiteStats> = BTreeMap::new();
     let mut overall = SuiteStats::default();
+    let mut failures: Vec<String> = Vec::new();
 
     for test in &all_tests {
         let stats = suite_results.entry(test.suite_name.clone()).or_default();
@@ -367,6 +368,10 @@ fn test_w3c_xml_conformance_suite() {
                         } else {
                             stats.not_wf_failed += 1;
                             overall.not_wf_failed += 1;
+                            failures.push(format!(
+                                "[{}] {} (not-wf, uri: {}): parser accepted invalid XML (expected rejection)",
+                                test.suite_name, test.id, test.uri
+                            ));
                         }
                     }
                     "invalid" => {
@@ -380,12 +385,16 @@ fn test_w3c_xml_conformance_suite() {
                     _ => {}
                 }
             }
-            Ok(Err(_err)) => {
+            Ok(Err(err)) => {
                 match test.test_type.as_str() {
                     "valid" => {
                         // Valid document was rejected
                         stats.valid_failed += 1;
                         overall.valid_failed += 1;
+                        failures.push(format!(
+                            "[{}] {} (valid, uri: {}): parser rejected valid XML with error: {:?}",
+                            test.suite_name, test.id, test.uri, err
+                        ));
                     }
                     "not-wf" => {
                         // Correctly rejected malformed document
@@ -395,6 +404,10 @@ fn test_w3c_xml_conformance_suite() {
                     "invalid" => {
                         stats.invalid_failed += 1;
                         overall.invalid_failed += 1;
+                        failures.push(format!(
+                            "[{}] {} (invalid, uri: {}): parser error: {:?}",
+                            test.suite_name, test.id, test.uri, err
+                        ));
                     }
                     "error" => {
                         stats.error_passed += 1;
@@ -414,6 +427,10 @@ fn test_w3c_xml_conformance_suite() {
                     stats.valid_failed += 1;
                     overall.valid_failed += 1;
                 }
+                failures.push(format!(
+                    "[{}] {} (type: {}, uri: {}): parser panicked during execution",
+                    test.suite_name, test.id, test.test_type, test.uri
+                ));
             }
         }
     }
@@ -453,6 +470,13 @@ fn test_w3c_xml_conformance_suite() {
 
     // Restore standard panic hook before testing assertions
     drop(_panic_guard);
+
+    assert!(
+        failures.is_empty(),
+        "W3C XML conformance suite had {} failure(s):\n  {}",
+        failures.len(),
+        failures.iter().take(25).cloned().collect::<Vec<_>>().join("\n  ")
+    );
 
     assert!(
         overall.total_tested() >= 1800,
