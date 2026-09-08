@@ -26,6 +26,10 @@ pub struct ParseOptions {
     pub max_total_entity_expansion_size: usize,
     /// Allow fetching external entity URIs (default: false for XXE protection).
     pub allow_external_entities: bool,
+    /// Base directory for resolving relative external entity and DTD paths.
+    pub base_dir: Option<String>,
+    /// Whether the document was decoded from a UTF-16 byte stream.
+    pub is_utf16: bool,
 }
 
 impl Default for ParseOptions {
@@ -40,6 +44,8 @@ impl Default for ParseOptions {
             max_text_node_size: 1024 * 1024,
             max_total_entity_expansion_size: 10 * 1024 * 1024,
             allow_external_entities: false,
+            base_dir: None,
+            is_utf16: false,
         }
     }
 }

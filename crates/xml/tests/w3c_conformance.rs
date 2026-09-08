@@ -62,13 +62,14 @@ struct SuiteStats {
     not_wf_failed: usize,
     invalid_passed: usize,
     invalid_failed: usize,
+    error_passed: usize,
     skipped_encoding: usize,
     panics: usize,
 }
 
 impl SuiteStats {
     fn total_passed(&self) -> usize {
-        self.valid_passed + self.not_wf_passed + self.invalid_passed
+        self.valid_passed + self.not_wf_passed + self.invalid_passed + self.error_passed
     }
 
     fn total_tested(&self) -> usize {
@@ -267,8 +268,8 @@ fn test_w3c_xml_conformance_suite() {
 
         // Detect text encoding (UTF-8, UTF-16 LE/BE)
         let text_result = babbel_core::encoding::detect_encoding_and_strip_bom(&bytes);
-        let input_text = match text_result {
-            Ok((cow_str, _)) => cow_str,
+        let (input_text, enc) = match text_result {
+            Ok((cow_str, enc)) => (cow_str, enc),
             Err(_) => {
                 // Non-Unicode encoding (e.g. ISO-8859-1 or Shift-JIS without converter)
                 // For well-formedness of non-wf files, invalid UTF-8 is itself not-wf
@@ -283,9 +284,20 @@ fn test_w3c_xml_conformance_suite() {
             }
         };
 
+        let is_utf16 = matches!(
+            enc,
+            babbel_core::encoding::Encoding::Utf16Le | babbel_core::encoding::Encoding::Utf16Be
+        );
+        let options = babbel_xml::options::ParseOptions {
+            allow_external_entities: true,
+            base_dir: test.file_path.parent().map(|p| p.to_string_lossy().to_string()),
+            is_utf16,
+            ..babbel_xml::options::ParseOptions::default()
+        };
+
         // Safely parse inside catch_unwind to handle any potential panics
         let parse_result = panic::catch_unwind(AssertUnwindSafe(|| {
-            Document::parse_str(&input_text)
+            babbel_xml::parse_with_options(&input_text, options)
         }));
 
         match parse_result {
@@ -304,6 +316,11 @@ fn test_w3c_xml_conformance_suite() {
                         // Non-validating parser successfully parsed structure
                         stats.invalid_passed += 1;
                         overall.invalid_passed += 1;
+                    }
+                    "error" => {
+                        // Optional / non-fatal error test
+                        stats.error_passed += 1;
+                        overall.error_passed += 1;
                     }
                     _ => {}
                 }
@@ -324,6 +341,11 @@ fn test_w3c_xml_conformance_suite() {
                         // Well-formedness was rejected
                         stats.invalid_failed += 1;
                         overall.invalid_failed += 1;
+                    }
+                    "error" => {
+                        // Process signaled optional error
+                        stats.error_passed += 1;
+                        overall.error_passed += 1;
                     }
                     _ => {}
                 }

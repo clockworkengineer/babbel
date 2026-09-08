@@ -25,6 +25,7 @@ pub struct EntityMapper {
     entities: HashMap<String, String>,
     max_depth: usize,
     max_expansion_size: usize,
+    pub allow_undeclared: bool,
 }
 
 impl Default for EntityMapper {
@@ -37,6 +38,7 @@ impl Default for EntityMapper {
             entities: map,
             max_depth: 512,
             max_expansion_size: 10 * 1024 * 1024,
+            allow_undeclared: false,
         }
     }
 }
@@ -140,6 +142,10 @@ impl EntityMapper {
                                 if let Some(val) = self.entities.get(entity_ref) {
                                     let expanded_val = self.expand_with_depth(val, depth + 1, total_expanded)?;
                                     result.push_str(&expanded_val);
+                                } else if self.allow_undeclared {
+                                    result.push('&');
+                                    result.push_str(entity_ref);
+                                    result.push(';');
                                 } else {
                                     return Err(XmlError::EntityError(format!(
                                         "Undeclared entity reference: &{entity_ref};"

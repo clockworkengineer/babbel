@@ -6,7 +6,7 @@ use crate::alloc_prelude::*;
 use crate::document::Document;
 use crate::entity::EntityMapper;
 use crate::error::{Result, XmlError};
-use crate::io::{is_valid_xml_char, is_xml_name_char, XmlSource};
+use crate::io::{is_valid_xml_char, is_xml_name_char, is_xml_name_start, XmlSource};
 use crate::node::{Attribute, NodeId, NodeKind};
 use crate::options::ParseOptions;
 
@@ -102,6 +102,21 @@ impl<'a> XmlParser<'a> {
             });
         }
 
+        // XML 1.0 §4.3.3: Fatal error if declared encoding conflicts with actual stream encoding
+        if let Some(enc) = &encoding {
+            if (enc.eq_ignore_ascii_case("UTF-16")
+                || enc.eq_ignore_ascii_case("UTF-16LE")
+                || enc.eq_ignore_ascii_case("UTF-16BE"))
+                && !self.options.is_utf16
+            {
+                return Err(XmlError::SyntaxError {
+                    message: format!("Declared encoding '{enc}' does not match byte stream encoding"),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                });
+            }
+        }
+
         let decl_id = doc.add_node(NodeKind::Declaration(Box::new(crate::node::DeclarationData {
             version: version.into_boxed_str(),
             encoding: encoding.map(String::into_boxed_str),
@@ -175,6 +190,15 @@ impl<'a> XmlParser<'a> {
         if name.is_empty() {
             return Err(XmlError::SyntaxError {
                 message: "Empty element tag name".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            });
+        }
+
+        // Namespaces in XML 1.0 §3: Elements must not have the prefix 'xmlns'
+        if name.starts_with("xmlns:") {
+            return Err(XmlError::SyntaxError {
+                message: format!("Element <{name}> must not have prefix 'xmlns'"),
                 line: self.source.line(),
                 col: self.source.col(),
             });
@@ -312,6 +336,54 @@ impl<'a> XmlParser<'a> {
         while let Some(ch) = self.source.next_char() {
             if ch == quote {
                 let expanded_val = self.entity_mapper.expand(&raw_val)?;
+
+                // Namespaces in XML 1.0 validation checks
+                if key == "xmlns" {
+                    if expanded_val == "http://www.w3.org/XML/1998/namespace" {
+                        return Err(XmlError::SyntaxError {
+                            message: "The xml namespace must not be declared as the default namespace".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    if expanded_val == "http://www.w3.org/2000/xmlns/" {
+                        return Err(XmlError::SyntaxError {
+                            message: "The xmlns namespace must not be declared as a namespace".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                } else if key == "xmlns:xml" {
+                    if expanded_val != "http://www.w3.org/XML/1998/namespace" {
+                        return Err(XmlError::SyntaxError {
+                            message: "The prefix 'xml' can only be bound to 'http://www.w3.org/XML/1998/namespace'".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                } else if key == "xmlns:xmlns" {
+                    return Err(XmlError::SyntaxError {
+                        message: "The prefix 'xmlns' must not be declared".into(),
+                        line: self.source.line(),
+                        col: self.source.col(),
+                    });
+                } else if key.starts_with("xmlns:") {
+                    if expanded_val == "http://www.w3.org/2000/xmlns/" {
+                        return Err(XmlError::SyntaxError {
+                            message: "Prefix cannot be bound to the xmlns namespace".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                    if expanded_val.is_empty() {
+                        return Err(XmlError::SyntaxError {
+                            message: "Empty namespace URI is illegal for prefixed namespace in XML 1.0".into(),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                }
+
                 return Ok((key, expanded_val));
             }
             raw_val.push(ch);
@@ -478,25 +550,34 @@ impl<'a> XmlParser<'a> {
             });
         }
 
-        // Register entity declarations from internal subset
-        if let Some(subset) = &internal_subset {
-            for line in subset.lines() {
-                let trimmed = line.trim();
-                if trimmed.starts_with("<!ENTITY") {
-                    let parts: Vec<&str> = trimmed.split_whitespace().collect();
-                    if parts.len() >= 3 {
-                        let ent_name = parts[1];
-                        if (trimmed.contains("SYSTEM") || trimmed.contains("PUBLIC")) && !self.options.allow_external_entities {
-                            return Err(XmlError::SecurityLimitExceeded(
-                                "External entity references in DOCTYPE are forbidden by security policy".into(),
-                            ));
-                        }
-                        let raw_val = parts[2..].join(" ");
-                        let val = raw_val.trim_matches(|c| c == '"' || c == '\'' || c == '>');
-                        self.entity_mapper.register(ent_name, val);
-                    }
+        // Register external DTD entity declarations if allowed
+        #[cfg(feature = "std")]
+        if let Some(sys_id) = &system_id {
+            if self.options.allow_external_entities {
+                let dtd_path = if let Some(base) = &self.options.base_dir {
+                    std::path::Path::new(base).join(sys_id.as_str())
+                } else {
+                    std::path::PathBuf::from(sys_id.as_str())
+                };
+                if let Ok(content) = std::fs::read_to_string(&dtd_path) {
+                    let _ = self.register_entities_from_text(&content);
                 }
             }
+        }
+
+        // Register entity declarations from internal subset
+        if let Some(subset) = &internal_subset {
+            self.register_entities_from_text(subset)?;
+        }
+
+        // XML 1.0 §4.1: If DOCTYPE contains parameter entities or external subsets,
+        // undeclared entity references are validity errors, not well-formedness errors.
+        if self.options.allow_external_entities
+            || system_id.is_some()
+            || public_id.is_some()
+            || internal_subset.as_ref().map(|s| s.contains('%')).unwrap_or(false)
+        {
+            self.entity_mapper.allow_undeclared = true;
         }
 
         Ok(doc.add_node(NodeKind::DocTypeDefinition(Box::new(crate::node::DocTypeData {
@@ -507,9 +588,91 @@ impl<'a> XmlParser<'a> {
         }))))
     }
 
+    /// Helper registering entity declarations from a DTD text subset.
+    fn register_entities_from_text(&mut self, text: &str) -> Result<()> {
+        let mut external_entities: Vec<String> = Vec::new();
+
+        for line in text.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("<!ENTITY") {
+                let parts: Vec<&str> = trimmed.split_whitespace().collect();
+                if parts.len() >= 3 {
+                    let is_param = parts[1] == "%";
+                    let (name_idx, val_idx) = if is_param && parts.len() >= 4 {
+                        (2, 3)
+                    } else {
+                        (1, 2)
+                    };
+                    let ent_name = parts[name_idx];
+                    let is_external = trimmed.contains("SYSTEM") || trimmed.contains("PUBLIC");
+                    if is_external {
+                        external_entities.push(ent_name.to_string());
+                    }
+                    if is_external && !self.options.allow_external_entities {
+                        return Err(XmlError::SecurityLimitExceeded(
+                            "External entity references in DOCTYPE are forbidden by security policy".into(),
+                        ));
+                    }
+                    if is_external && self.options.allow_external_entities && trimmed.contains("SYSTEM") && !trimmed.contains("NDATA") {
+                        let raw_val = parts[val_idx..].join(" ");
+                        let sys_val = raw_val.trim_matches(|c| c == '"' || c == '\'' || c == '>' || c == ';').trim();
+                        let file_name = sys_val.strip_prefix("SYSTEM").unwrap_or(sys_val).trim().trim_matches(|c| c == '"' || c == '\'');
+                        #[cfg(feature = "std")]
+                        {
+                            let file_path = if let Some(base) = &self.options.base_dir {
+                                std::path::Path::new(base).join(file_name)
+                            } else {
+                                std::path::PathBuf::from(file_name)
+                            };
+                            if let Ok(bytes) = std::fs::read(&file_path) {
+                                if let Ok((loaded_text, _)) = babbel_core::encoding::detect_encoding_and_strip_bom(&bytes) {
+                                    // XML 1.0 §4.3.4: An XML 1.0 document cannot include external entity with version 1.1
+                                    if loaded_text.contains("<?xml") && (loaded_text.contains("version=\"1.1\"") || loaded_text.contains("version='1.1'")) {
+                                        return Err(XmlError::SyntaxError {
+                                            message: "XML 1.0 document cannot include external entity with version 1.1".into(),
+                                            line: self.source.line(),
+                                            col: self.source.col(),
+                                        });
+                                    }
+                                    if is_param {
+                                        let _ = self.register_entities_from_text(&loaded_text);
+                                    }
+                                    self.entity_mapper.register(ent_name, &*loaded_text);
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                    let raw_val = parts[val_idx..].join(" ");
+                    let val = raw_val.trim_matches(|c| c == '"' || c == '\'' || c == '>');
+                    self.entity_mapper.register(ent_name, val);
+                }
+            } else if trimmed.starts_with("<!ATTLIST") {
+                // W3C XML 1.0 §3.1: Attribute values must not contain references to external entities
+                for ext in &external_entities {
+                    let needle = format!("&{ext};");
+                    if trimmed.contains(&needle) {
+                        return Err(XmlError::SyntaxError {
+                            message: format!("Attribute values must not contain references to external entity '&{ext};'"),
+                            line: self.source.line(),
+                            col: self.source.col(),
+                        });
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Helper parsing an identifier / tag name string.
     fn parse_name(&mut self) -> Result<String> {
         let start = self.source.position();
+        if let Some(ch) = self.source.peek() {
+            if !is_xml_name_start(ch) {
+                return Ok(String::new());
+            }
+            self.source.next_char();
+        }
         while let Some(ch) = self.source.peek() {
             if is_xml_name_char(ch) {
                 self.source.next_char();
