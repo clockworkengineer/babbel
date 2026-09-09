@@ -17,5 +17,7 @@ target
 # External test suites
 **/yaml-test-suite/
 **/xmlconf/
+**/JSONTestSuite/
+**/json-test-suite/
 *.zip
 notes/

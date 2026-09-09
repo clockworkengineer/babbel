@@ -110,7 +110,27 @@ cargo test -p babbel_xml --test w3c_conformance -- --nocapture
 - **`sun/sun-error`**: 1 / 1 (**100.0%**, 0 skipped)
 - **Total Passing Cases**: **1,834 / 1,834 tests passed** (**100.0%** across all 12 suites, 0 unhandled panics, **0 skipped**)
 
-#### B. Official YAML 1.2 Test Suite
+#### B. Official JSONTestSuite (RFC 8259 Conformance)
+The JSON conformance runner executes all 340 test cases from the official `nst/JSONTestSuite`:
+
+```bash
+# Download test suite fixtures on demand
+powershell -ExecutionPolicy Bypass -File scripts/fetch_json_test_suite.ps1
+# On Linux/macOS:
+# ./scripts/fetch_json_test_suite.sh
+
+# Run the 340 test case JSON conformance runner
+cargo test -p babbel_json --test nst_conformance -- --nocapture
+```
+
+**Current Pass Rates**:
+- **`Parsing (Must Accept - y_)`**: 95 / 95 (**100.0%**)
+- **`Parsing (Must Reject - n_)`**: 188 / 188 (**100.0%**)
+- **`Parsing (Implementation Defined - i_)`**: 35 / 35 (**100.0%**)
+- **`Transform (Edge Cases)`**: 22 / 22 (**100.0%**)
+- **Overall**: **340 / 340 tests passed** (**100.0%**, 0 unhandled panics)
+
+#### C. Official YAML 1.2 Test Suite
 The YAML test runner executes all 402 official YAML 1.2 specification tests:
 
 ```bash

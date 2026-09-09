@@ -39,3 +39,12 @@ pub const ERR_EXPECT_FALSE: &str = "Expected 'false'";
 
 /// Error message when null literal is expected but not found
 pub const ERR_EXPECT_NULL: &str = "Expected 'null'";
+
+/// Error message for invalid UTF-8 encoding
+pub const ERR_INVALID_UTF8: &str = "Invalid UTF-8 encoding";
+
+/// Error message for invalid number format
+pub const ERR_INVALID_NUMBER: &str = "Invalid number format";
+
+/// Error message for unescaped control character in string
+pub const ERR_UNESCAPED_CONTROL_CHAR: &str = "Unescaped control character in string";

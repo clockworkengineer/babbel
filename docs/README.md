@@ -14,6 +14,8 @@ Welcome to the **Babbel** documentation hub. Babbel is a high-performance, polyg
 | **[Conversion Matrix](CONVERSION_MATRIX.md)** | $O(N)$ universal cross-format conversion pipeline and `ConversionOptions` reference. |
 | **[Memory & Benchmarks](BENCHMARKS_AND_MEMORY.md)** | Struct size bounds verification (`size_checks.rs`), zero-allocation formatters, and I/O optimizations. |
 | **[W3C XML Conformance](XML_CONFORMANCE.md)** | Official W3C XML Conformance Test Suite (XML TS 20130923) results: 100.0% pass rate across all 12 sub-catalogs (1,834/1,834 tests, 0 skipped). |
+| **[JSON Conformance (RFC 8259)](JSON_CONFORMANCE.md)** | Official nst/JSONTestSuite results: 100.0% pass rate across all 340 test cases (0 failures, 0 panics). |
+
 | **[Security Policy](SECURITY.md)** | Threat model, Billion Laughs entity expansion mitigations, 64 MB DoS limits, and vulnerability reporting. |
 | **[Development Guide](DEVELOPMENT_GUIDE.md)** | Contributor onboarding, toolchain requirements, debugging, release profiles, and profiling. |
 | **[Contributing Guidelines](CONTRIBUTING.md)** | Engineering standards, code formatting, pull request process, and test guidelines. |

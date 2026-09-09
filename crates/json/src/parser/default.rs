@@ -1,4 +1,4 @@
-﻿//! JSON parser implementation that converts JSON text into Node structures
+//! JSON parser implementation that converts JSON text into Node structures
 //! Provides functions for parsing different JSON data types including objects,
 //! arrays, strings, numbers, boolean and null values.
 
@@ -31,7 +31,10 @@ use smallvec::SmallVec;
 /// # Returns
 /// * `Result<Node, String>` - Parsed Node or error message if parsing fails
 pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
-    parse_with_config(source, &ParserConfig::unlimited())
+    parse_with_config(
+        source,
+        &ParserConfig::unlimited().with_max_depth(Some(256)),
+    )
 }
 
 /// Convenience function to parse JSON from a string slice
@@ -77,9 +80,7 @@ pub fn from_bytes(bytes: &[u8]) -> Result<Node, String> {
         let mut source = SliceSource::new(s);
         parse(&mut source)
     } else {
-        use crate::io::sources::buffer::Buffer as BufferSource;
-        let mut source = BufferSource::new(bytes);
-        parse(&mut source)
+        Err(ERR_INVALID_UTF8.to_string())
     }
 }
 
@@ -92,7 +93,12 @@ pub fn from_bytes(bytes: &[u8]) -> Result<Node, String> {
 /// # Returns
 /// * `Result<Node, String>` - Parsed Node or error message if parsing fails
 pub fn parse_with_config(source: &mut dyn ISource, config: &ParserConfig) -> Result<Node, String> {
-    parse_value(source, config, 0)
+    let node = parse_value(source, config, 0)?;
+    skip_whitespace(source);
+    if let Some(c) = source.current() {
+        return Err(format!("{}{}", ERR_UNEXPECTED_CHAR, c));
+    }
+    Ok(node)
 }
 
 /// Internal parsing function with depth tracking
@@ -385,20 +391,38 @@ fn parse_string_with_config(
                                 _ => return Err(ERR_INVALID_ESCAPE.to_string()),
                             }
                         }
-                        if let Ok(hex_str) = core::str::from_utf8(&hex) {
-                            if let Ok(code) = u32::from_str_radix(hex_str, 16) {
-                                if let Some(ch) = char::from_u32(code) {
-                                    let mut utf8_buf = [0u8; 4];
-                                    let encoded = ch.encode_utf8(&mut utf8_buf);
-                                    for b in encoded.as_bytes() {
-                                        if let Some(ref mut v) = heap_buf {
-                                            v.push(*b);
-                                        } else if buf.try_push(*b).is_err() {
-                                            let mut v =
-                                                buf.clone().into_iter().collect::<Vec<u8>>();
-                                            v.push(*b);
-                                            heap_buf = Some(v);
+                        let hex_str = core::str::from_utf8(&hex)
+                            .map_err(|_| ERR_INVALID_ESCAPE.to_string())?;
+                        let code = u32::from_str_radix(hex_str, 16)
+                            .map_err(|_| ERR_INVALID_ESCAPE.to_string())?;
+
+                        // Handle surrogate pairs per RFC 8259 Section 7
+                        let decoded_char = if (0xD800..=0xDBFF).contains(&code) {
+                            if source.current() == Some('\\') {
+                                source.next();
+                                if source.current() == Some('u') {
+                                    source.next();
+                                    let mut low_hex: ArrayVec<u8, 4> = ArrayVec::new();
+                                    for _ in 0..4 {
+                                        match source.current() {
+                                            Some(d) if d.is_ascii_hexdigit() => {
+                                                let _ = low_hex.push(d as u8);
+                                                source.next();
+                                            }
+                                            _ => return Err(ERR_INVALID_ESCAPE.to_string()),
                                         }
+                                    }
+                                    let low_hex_str = core::str::from_utf8(&low_hex)
+                                        .map_err(|_| ERR_INVALID_ESCAPE.to_string())?;
+                                    let low_code = u32::from_str_radix(low_hex_str, 16)
+                                        .map_err(|_| ERR_INVALID_ESCAPE.to_string())?;
+                                    if (0xDC00..=0xDFFF).contains(&low_code) {
+                                        let scalar = 0x10000
+                                            + (((code - 0xD800) << 10) | (low_code - 0xDC00));
+                                        char::from_u32(scalar)
+                                            .ok_or_else(|| ERR_INVALID_ESCAPE.to_string())?
+                                    } else {
+                                        return Err(ERR_INVALID_ESCAPE.to_string());
                                     }
                                 } else {
                                     return Err(ERR_INVALID_ESCAPE.to_string());
@@ -406,14 +430,31 @@ fn parse_string_with_config(
                             } else {
                                 return Err(ERR_INVALID_ESCAPE.to_string());
                             }
-                        } else {
+                        } else if (0xDC00..=0xDFFF).contains(&code) {
                             return Err(ERR_INVALID_ESCAPE.to_string());
+                        } else {
+                            char::from_u32(code).ok_or_else(|| ERR_INVALID_ESCAPE.to_string())?
+                        };
+
+                        let mut utf8_buf = [0u8; 4];
+                        let encoded = decoded_char.encode_utf8(&mut utf8_buf);
+                        for b in encoded.as_bytes() {
+                            if let Some(ref mut v) = heap_buf {
+                                v.push(*b);
+                            } else if buf.try_push(*b).is_err() {
+                                let mut v = buf.clone().into_iter().collect::<Vec<u8>>();
+                                v.push(*b);
+                                heap_buf = Some(v);
+                            }
                         }
                         continue;
                     }
                     _ => return Err(ERR_INVALID_ESCAPE.to_string()),
                 }
                 source.next();
+            }
+            c if (c as u32) < 0x20 => {
+                return Err(ERR_UNESCAPED_CONTROL_CHAR.to_string());
             }
             _ => {
                 // Push UTF-8 bytes for char
@@ -446,42 +487,89 @@ fn parse_string_with_config(
 /// * `Result<Node, String>` - Number Node or error message
 fn parse_number(source: &mut dyn ISource) -> Result<Node, String> {
     use arrayvec::ArrayString;
-    let mut num_buf: ArrayString<32> = ArrayString::new();
+    let mut num_buf: ArrayString<256> = ArrayString::new();
     let mut is_float = false;
 
     // Handle negative numbers
     if source.current() == Some(MINUS) {
-        let _ = num_buf.push(MINUS);
+        num_buf.try_push(MINUS).map_err(|_| ERR_INVALID_NUMBER.to_string())?;
         source.next();
     }
 
-    while let Some(c) = source.current() {
-        match c {
-            '0'..='9' => {
-                let _ = num_buf.push(c);
-                source.next();
-            }
-            DECIMAL_POINT => {
-                if is_float {
-                    return Err(ERR_MULTIPLE_DECIMAL.to_string());
+    // Must have at least one digit
+    match source.current() {
+        Some('0') => {
+            num_buf.try_push('0').map_err(|_| ERR_INVALID_NUMBER.to_string())?;
+            source.next();
+            // In JSON, leading zeros are forbidden: '0' must not be followed by another digit
+            if let Some(c) = source.current() {
+                if c.is_ascii_digit() {
+                    return Err(ERR_INVALID_NUMBER.to_string());
                 }
-                is_float = true;
-                let _ = num_buf.push(c);
-                source.next();
             }
-            EXPONENT_LOWER | EXPONENT_UPPER => {
-                is_float = true;
-                let _ = num_buf.push(c);
-                source.next();
+        }
+        Some(c) if c.is_ascii_digit() => {
+            while let Some(d) = source.current() {
+                if d.is_ascii_digit() {
+                    num_buf.try_push(d).map_err(|_| ERR_INVALID_NUMBER.to_string())?;
+                    source.next();
+                } else {
+                    break;
+                }
+            }
+        }
+        _ => return Err(ERR_INVALID_NUMBER.to_string()),
+    }
 
-                if let Some(sign) = source.current() {
-                    if sign == PLUS || sign == MINUS {
-                        let _ = num_buf.push(sign);
+    // Fractional part
+    if source.current() == Some(DECIMAL_POINT) {
+        is_float = true;
+        num_buf.try_push(DECIMAL_POINT).map_err(|_| ERR_INVALID_NUMBER.to_string())?;
+        source.next();
+
+        // Must have at least one digit after decimal point
+        match source.current() {
+            Some(d) if d.is_ascii_digit() => {
+                while let Some(d) = source.current() {
+                    if d.is_ascii_digit() {
+                        num_buf.try_push(d).map_err(|_| ERR_INVALID_NUMBER.to_string())?;
                         source.next();
+                    } else {
+                        break;
                     }
                 }
             }
-            _ => break,
+            _ => return Err(ERR_INVALID_NUMBER.to_string()),
+        }
+    }
+
+    // Exponent part
+    if matches!(source.current(), Some(EXPONENT_LOWER) | Some(EXPONENT_UPPER)) {
+        is_float = true;
+        let exp_char = source.current().unwrap();
+        num_buf.try_push(exp_char).map_err(|_| ERR_INVALID_NUMBER.to_string())?;
+        source.next();
+
+        if let Some(sign) = source.current() {
+            if sign == PLUS || sign == MINUS {
+                num_buf.try_push(sign).map_err(|_| ERR_INVALID_NUMBER.to_string())?;
+                source.next();
+            }
+        }
+
+        // Must have at least one digit in exponent
+        match source.current() {
+            Some(d) if d.is_ascii_digit() => {
+                while let Some(d) = source.current() {
+                    if d.is_ascii_digit() {
+                        num_buf.try_push(d).map_err(|_| ERR_INVALID_NUMBER.to_string())?;
+                        source.next();
+                    } else {
+                        break;
+                    }
+                }
+            }
+            _ => return Err(ERR_INVALID_NUMBER.to_string()),
         }
     }
 
@@ -494,7 +582,10 @@ fn parse_number(source: &mut dyn ISource) -> Result<Node, String> {
     } else {
         match num_str.parse::<i64>() {
             Ok(n) => Ok(Node::Number(Numeric::Integer(n))),
-            Err(_) => Err(ERR_INVALID_INTEGER.to_string()),
+            Err(_) => match num_str.parse::<f64>() {
+                Ok(n) => Ok(Node::Number(Numeric::Float(n))),
+                Err(_) => Err(ERR_INVALID_INTEGER.to_string()),
+            },
         }
     }
 }

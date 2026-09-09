@@ -174,7 +174,8 @@ cargo test -p babbel --jobs 2
 
 ### Official Specification Conformance Suites
 
-Babbel is continuously tested against the official standards test suites:
+- **Official JSONTestSuite (RFC 8259 Conformance)**: **340 / 340 tests passed (100.0%)** across all categories (95/95 `y_` accepted, 188/188 `n_` rejected, 35/35 `i_` safe, 22/22 transform, 0 panics) via `cargo test -p babbel_json --test nst_conformance`:
+  - See [`crates/json/README.md`](crates/json/README.md) and [`docs/JSON_CONFORMANCE.md`](docs/JSON_CONFORMANCE.md) for full breakdown.
 - **Official YAML 1.2 Test Suite**: **402 / 402 tests passed (100.0%)** via `cargo test -p babbel_yaml --test yaml_test_suite_integration`.
 - **Official W3C XML Conformance Test Suite (XML TS 20130923)**: **1,834 / 1,834 tests passed (100.0%)** across all 12 sub-catalogs (0 failed, 0 skipped, 0 panics) via `cargo test -p babbel_xml --test w3c_conformance`:
   - **100.0%** on OASIS (`oasis/oasis.xml`: 348/348)

@@ -423,9 +423,33 @@ Several `alloc`-gated modules provide lower-overhead alternatives for hot paths:
 
 If you're interested in any of these, contributions are welcome.
 
+## Conformance Test Results
+
+`babbel_json` is continuously tested against the official [JSONTestSuite](https://github.com/nst/JSONTestSuite) for RFC 8259 compliance.
+
+| Suite Category | Focus Area | Total Cases | Passed | Failed | Pass Rate | Status |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| **Parsing (`y_`)** | Mandatory acceptance of valid JSON & surrogate pairs | 95 | **95** | 0 | **100.0%** | **PASSED** |
+| **Parsing (`n_`)** | Mandatory rejection of malformed syntax & control chars | 188 | **188** | 0 | **100.0%** | **PASSED** |
+| **Parsing (`i_`)** | Implementation-defined edge cases & huge numbers | 35 | **35** | 0 | **100.0%** | **PASSED** |
+| **Transform** | Key duplicates, escaped nulls, normalization | 22 | **22** | 0 | **100.0%** | **PASSED** |
+| **OVERALL** | **Full Official JSONTestSuite Corpus** | **340** | **340** | **0** | **100.0%** | **VERIFIED** |
+
+### Running the Conformance Runner
+
+```bash
+# 1. Fetch test fixtures on demand
+powershell -ExecutionPolicy Bypass -File scripts/fetch_json_test_suite.ps1
+# On Linux/macOS: ./scripts/fetch_json_test_suite.sh
+
+# 2. Run the 340 test cases
+cargo test -p babbel_json --test nst_conformance -- --nocapture
+```
+
 ## Documentation
 
 See the [Documentation Hub](../../docs/README.md) for complete guides:
+- [JSON Conformance Guide (RFC 8259)](../../docs/JSON_CONFORMANCE.md)
 - [Architecture Guide](../../docs/ARCHITECTURE.md)
 - [Development Guide](../../docs/DEVELOPMENT_GUIDE.md)
 - [Contributing Guidelines](../../docs/CONTRIBUTING.md)

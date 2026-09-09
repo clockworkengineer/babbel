@@ -1,0 +1,4 @@
+# Paths to search for JSONTestSuite repository
+JSONTestSuite
+../JSONTestSuite
+tests/JSONTestSuite

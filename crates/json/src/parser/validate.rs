@@ -1,4 +1,4 @@
-﻿//! JSON validation without allocation
+//! JSON validation without allocation
 //!
 //! Provides fast validation of JSON syntax without building a Node tree.
 //! Useful for rejecting invalid data before attempting full parsing.
@@ -35,7 +35,12 @@ use crate::parser::constants::*;
 /// ```
 pub fn validate_json(source: &mut dyn ISource, config: &ParserConfig) -> Result<(), String> {
     let mut depth = 0;
-    validate_value(source, config, &mut depth)
+    validate_value(source, config, &mut depth)?;
+    skip_whitespace(source);
+    if let Some(c) = source.current() {
+        return Err(format!("Unexpected character: {}", c));
+    }
+    Ok(())
 }
 
 fn validate_value(
@@ -211,16 +216,66 @@ fn validate_string(source: &mut dyn ISource, config: &ParserConfig) -> Result<()
                     Some('u') => {
                         // Validate unicode escape
                         source.next();
-                        for _ in 0..4 {
+                        let mut hex = [0u8; 4];
+                        for i in 0..4 {
                             match source.current() {
-                                Some(d) if d.is_ascii_hexdigit() => source.next(),
+                                Some(d) if d.is_ascii_hexdigit() => {
+                                    hex[i] = d as u8;
+                                    source.next();
+                                }
                                 _ => return Err("Invalid unicode escape".to_string()),
                             }
+                        }
+                        if let Ok(hex_str) = core::str::from_utf8(&hex) {
+                            if let Ok(code) = u32::from_str_radix(hex_str, 16) {
+                                if (0xD800..=0xDBFF).contains(&code) {
+                                    if source.current() == Some('\\') {
+                                        source.next();
+                                        if source.current() == Some('u') {
+                                            source.next();
+                                            let mut low_hex = [0u8; 4];
+                                            for i in 0..4 {
+                                                match source.current() {
+                                                    Some(d) if d.is_ascii_hexdigit() => {
+                                                        low_hex[i] = d as u8;
+                                                        source.next();
+                                                    }
+                                                    _ => return Err("Invalid unicode escape".to_string()),
+                                                }
+                                            }
+                                            if let Ok(low_hex_str) = core::str::from_utf8(&low_hex) {
+                                                if let Ok(low_code) = u32::from_str_radix(low_hex_str, 16) {
+                                                    if !(0xDC00..=0xDFFF).contains(&low_code) {
+                                                        return Err("Invalid surrogate pair".to_string());
+                                                    }
+                                                } else {
+                                                    return Err("Invalid unicode escape".to_string());
+                                                }
+                                            } else {
+                                                return Err("Invalid unicode escape".to_string());
+                                            }
+                                        } else {
+                                            return Err("Expected \\u after high surrogate".to_string());
+                                        }
+                                    } else {
+                                        return Err("Unpaired high surrogate".to_string());
+                                    }
+                                } else if (0xDC00..=0xDFFF).contains(&code) {
+                                    return Err("Unpaired low surrogate".to_string());
+                                }
+                            } else {
+                                return Err("Invalid unicode escape".to_string());
+                            }
+                        } else {
+                            return Err("Invalid unicode escape".to_string());
                         }
                         length += 1;
                     }
                     _ => return Err("Invalid escape sequence".to_string()),
                 }
+            }
+            c if (c as u32) < 0x20 => {
+                return Err("Unescaped control character in string".to_string());
             }
             _ => {
                 source.next();

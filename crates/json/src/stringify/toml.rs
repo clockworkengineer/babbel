@@ -693,7 +693,7 @@ mod tests {
 
     #[test]
     fn test_stringify_nested_array() {
-        let mut source = BufferSource::new(b"{ \"info\": {\r\n    \"files\": [\r\n      {\r\n        \"length\": 351874,\r\n        \"path\": [\r\n          \"large.jpeg\"\r\n        ]\r\n      },\r\n      {\r\n        \"length\": 100,\r\n        \"path\": [\r\n          \"2\"\r\n        ]\r\n        \r\n      }\r\n      ]\r\n    }\r\n      \r\n   }.");
+        let mut source = BufferSource::new(b"{ \"info\": {\r\n    \"files\": [\r\n      {\r\n        \"length\": 351874,\r\n        \"path\": [\r\n          \"large.jpeg\"\r\n        ]\r\n      },\r\n      {\r\n        \"length\": 100,\r\n        \"path\": [\r\n          \"2\"\r\n        ]\r\n        \r\n      }\r\n      ]\r\n    }\r\n      \r\n   }");
         let node = crate::parse(&mut source).unwrap();
         let mut dest = BufferDestination::new();
         stringify(&node, &mut dest).unwrap();
