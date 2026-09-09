@@ -19,5 +19,6 @@ target
 **/xmlconf/
 **/JSONTestSuite/
 **/json-test-suite/
+**/toml-test/
 *.zip
 notes/

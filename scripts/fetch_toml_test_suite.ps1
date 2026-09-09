@@ -1,5 +1,5 @@
-# Fetch official toml-test (TOML v1.0.0 Conformance Test Suite)
-# URL: https://github.com/toml-lang/toml-test
+# Fetch official toml-test (TOML Conformance Test Suite)
+# URL: https://github.com/skystrife/toml-test
 
 $ErrorActionPreference = "Stop"
 
@@ -7,11 +7,11 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir = Split-Path -Parent $scriptDir
 $targetDir = Join-Path $rootDir "crates\toml\tests"
 $suiteDir = Join-Path $targetDir "toml-test"
-$repoUrl = "https://github.com/toml-lang/toml-test.git"
-$zipUrl = "https://github.com/toml-lang/toml-test/archive/refs/heads/master.zip"
+$repoUrl = "https://github.com/skystrife/toml-test.git"
+$zipUrl = "https://github.com/skystrife/toml-test/archive/refs/heads/master.zip"
 $zipPath = Join-Path $targetDir "toml-test-master.zip"
 
-Write-Host "=== toml-lang/toml-test Conformance Suite Downloader ===" -ForegroundColor Cyan
+Write-Host "=== skystrife/toml-test Conformance Suite Downloader ===" -ForegroundColor Cyan
 
 if (Test-Path (Join-Path $suiteDir "tests")) {
     Write-Host "[OK] toml-test already present at: $suiteDir" -ForegroundColor Green

@@ -1,0 +1,5 @@
+# Paths to search for toml-test repository
+toml-test
+../toml-test
+tests/toml-test
+crates/toml/tests/toml-test

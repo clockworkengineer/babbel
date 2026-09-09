@@ -237,21 +237,31 @@ impl<'a> Lexer<'a> {
 
                 if self.peek() == Some(b'\\') {
                     self.advance();
-                    match self.peek() {
-                        Some(b'\r') | Some(b'\n') => {
-                            // Line ending backslash: trim whitespace and newlines
-                            while let Some(w) = self.peek() {
-                                if w == b' ' || w == b'\t' || w == b'\r' || w == b'\n' {
-                                    self.advance();
-                                } else {
-                                    break;
-                                }
+                    let mut is_eol_backslash = false;
+                    let mut lookahead = 0;
+                    while let Some(b) = self.peek_ahead(lookahead) {
+                        if b == b' ' || b == b'\t' {
+                            lookahead += 1;
+                        } else if b == b'\r' || b == b'\n' {
+                            is_eol_backslash = true;
+                            break;
+                        } else {
+                            break;
+                        }
+                    }
+
+                    if is_eol_backslash {
+                        // Line ending backslash: trim whitespace and newlines
+                        while let Some(w) = self.peek() {
+                            if w == b' ' || w == b'\t' || w == b'\r' || w == b'\n' {
+                                self.advance();
+                            } else {
+                                break;
                             }
                         }
-                        _ => {
-                            let ch = self.parse_escape_sequence(start_line, start_col, start_pos)?;
-                            out.push(ch);
-                        }
+                    } else {
+                        let ch = self.parse_escape_sequence(start_line, start_col, start_pos)?;
+                        out.push(ch);
                     }
                 } else if self.peek() == Some(b'\r') && self.peek_ahead(1) == Some(b'\n') {
                     self.advance();
@@ -597,6 +607,9 @@ impl<'a> Lexer<'a> {
 
         // 4. Hex, Octal, Binary Integers
         if text.starts_with("0x") || text.starts_with("0X") {
+            if let Err(e) = validate_toml_number_syntax(&text) {
+                return Err(TomlError::syntax(e, start_line, start_col, start_pos));
+            }
             let clean = text[2..].replace('_', "");
             if let Ok(i) = i64::from_str_radix(&clean, 16) {
                 return Ok(SpannedToken {
@@ -608,6 +621,9 @@ impl<'a> Lexer<'a> {
             }
         }
         if text.starts_with("0o") || text.starts_with("0O") {
+            if let Err(e) = validate_toml_number_syntax(&text) {
+                return Err(TomlError::syntax(e, start_line, start_col, start_pos));
+            }
             let clean = text[2..].replace('_', "");
             if let Ok(i) = i64::from_str_radix(&clean, 8) {
                 return Ok(SpannedToken {
@@ -619,6 +635,9 @@ impl<'a> Lexer<'a> {
             }
         }
         if text.starts_with("0b") || text.starts_with("0B") {
+            if let Err(e) = validate_toml_number_syntax(&text) {
+                return Err(TomlError::syntax(e, start_line, start_col, start_pos));
+            }
             let clean = text[2..].replace('_', "");
             if let Ok(i) = i64::from_str_radix(&clean, 2) {
                 return Ok(SpannedToken {
@@ -631,25 +650,37 @@ impl<'a> Lexer<'a> {
         }
 
         // 5. Decimal integer or float
-        let clean = text.replace('_', "");
-        if let Ok(i) = clean.parse::<i64>() {
-            return Ok(SpannedToken {
-                token: Token::Integer(i),
-                line: start_line,
-                column: start_col,
-                position: start_pos,
-            });
-        }
-        if (clean.contains('.') || clean.contains('e') || clean.contains('E'))
-            && !clean.contains(':')
-        {
-            if let Ok(f) = clean.parse::<f64>() {
-                return Ok(SpannedToken {
-                    token: Token::Float(f),
-                    line: start_line,
-                    column: start_col,
-                    position: start_pos,
-                });
+        if is_numeric_or_sign {
+            match validate_toml_number_syntax(&text) {
+                Ok(()) => {
+                    let clean = text.replace('_', "");
+                    if let Ok(i) = clean.parse::<i64>() {
+                        return Ok(SpannedToken {
+                            token: Token::Integer(i),
+                            line: start_line,
+                            column: start_col,
+                            position: start_pos,
+                        });
+                    }
+                    if (clean.contains('.') || clean.contains('e') || clean.contains('E'))
+                        && !clean.contains(':')
+                    {
+                        if let Ok(f) = clean.parse::<f64>() {
+                            return Ok(SpannedToken {
+                                token: Token::Float(f),
+                                line: start_line,
+                                column: start_col,
+                                position: start_pos,
+                            });
+                        }
+                    }
+                }
+                Err(e) => {
+                    let has_non_key_chars = text.chars().any(|c| !c.is_ascii_alphanumeric() && c != '_' && c != '-');
+                    if has_non_key_chars {
+                        return Err(TomlError::syntax(e, start_line, start_col, start_pos));
+                    }
+                }
             }
         }
 
@@ -661,4 +692,73 @@ impl<'a> Lexer<'a> {
             position: start_pos,
         })
     }
+}
+
+fn validate_toml_number_syntax(text: &str) -> Result<(), &'static str> {
+    if text.starts_with('_') || text.ends_with('_') {
+        return Err("Underscore must be surrounded by digits");
+    }
+    if text.contains("__") {
+        return Err("Double underscore is not permitted");
+    }
+    if text.starts_with("0x") || text.starts_with("0X")
+        || text.starts_with("0o") || text.starts_with("0O")
+        || text.starts_with("0b") || text.starts_with("0B")
+    {
+        if text.len() <= 2 || text.as_bytes()[2] == b'_' {
+            return Err("Underscore directly after base prefix is not permitted");
+        }
+        return Ok(());
+    }
+
+    if text.contains("._") || text.contains("_.")
+        || text.contains("e_") || text.contains("_e")
+        || text.contains("E_") || text.contains("_E")
+    {
+        return Err("Underscore cannot be adjacent to decimal point or exponent");
+    }
+
+    let clean = text.replace('_', "");
+    let mut num_str = clean.as_str();
+    if num_str.starts_with('+') || num_str.starts_with('-') {
+        num_str = &num_str[1..];
+    }
+    if num_str.is_empty() {
+        return Err("Missing digits");
+    }
+
+    let (int_and_frac, _has_exp) = if let Some(pos) = num_str.find(|c| c == 'e' || c == 'E') {
+        let exp_part = &num_str[pos + 1..];
+        let exp_digits = if exp_part.starts_with('+') || exp_part.starts_with('-') {
+            &exp_part[1..]
+        } else {
+            exp_part
+        };
+        if exp_digits.is_empty() || !exp_digits.chars().all(|c| c.is_ascii_digit()) {
+            return Err("Malformed exponent");
+        }
+        (&num_str[..pos], true)
+    } else {
+        (num_str, false)
+    };
+
+    let (int_part, _has_frac) = if let Some(pos) = int_and_frac.find('.') {
+        let frac_part = &int_and_frac[pos + 1..];
+        if frac_part.is_empty() || !frac_part.chars().all(|c| c.is_ascii_digit()) {
+            return Err("Fractional part must contain digits after decimal point");
+        }
+        (&int_and_frac[..pos], true)
+    } else {
+        (int_and_frac, false)
+    };
+
+    if int_part.is_empty() || !int_part.chars().all(|c| c.is_ascii_digit()) {
+        return Err("Malformed integer part");
+    }
+
+    if int_part.len() > 1 && int_part.starts_with('0') {
+        return Err("Leading zero is not permitted in decimal numbers");
+    }
+
+    Ok(())
 }

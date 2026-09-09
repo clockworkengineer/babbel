@@ -15,6 +15,7 @@ A high-performance, polyglot serialization, parsing, and document manipulation w
 - [Text Support Guide](docs/TEXT_SUPPORT_GUIDE.md) — RFC 4180 CSV/TSV, INI/.env, JSON Lines, and frontmatter
 - [Conversion Matrix](docs/CONVERSION_MATRIX.md) — $O(N)$ cross-format conversion reference & options
 - [Memory & Benchmarks](docs/BENCHMARKS_AND_MEMORY.md) — Struct size bounds verification (`size_checks.rs`)
+- [TOML Conformance](docs/TOML_CONFORMANCE.md) — Official skystrife/toml-test suite results: 100.0% pass rate across 148 test cases
 - [Security Policy](docs/SECURITY.md) — Threat model, Billion Laughs mitigations, and 64 MB DoS limits
 - [Development Guide](docs/DEVELOPMENT_GUIDE.md) — Contributor onboarding, toolchain, testing, and release builds
 - [Contributing Guidelines](docs/CONTRIBUTING.md) — Engineering standards and code conventions

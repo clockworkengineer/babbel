@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Fetch official toml-test (TOML v1.0.0 Conformance Test Suite)
-# URL: https://github.com/toml-lang/toml-test
+# Fetch official toml-test (TOML Conformance Test Suite)
+# URL: https://github.com/skystrife/toml-test
 
 set -euo pipefail
 
@@ -8,11 +8,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 TARGET_DIR="$ROOT_DIR/crates/toml/tests"
 SUITE_DIR="$TARGET_DIR/toml-test"
-REPO_URL="https://github.com/toml-lang/toml-test.git"
-ZIP_URL="https://github.com/toml-lang/toml-test/archive/refs/heads/master.zip"
+REPO_URL="https://github.com/skystrife/toml-test.git"
+ZIP_URL="https://github.com/skystrife/toml-test/archive/refs/heads/master.zip"
 ZIP_PATH="$TARGET_DIR/toml-test-master.zip"
 
-echo "=== toml-lang/toml-test Conformance Suite Downloader ==="
+echo "=== skystrife/toml-test Conformance Suite Downloader ==="
 
 if [ -d "$SUITE_DIR/tests" ]; then
     echo "[OK] toml-test already present at: $SUITE_DIR"

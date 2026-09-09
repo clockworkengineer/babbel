@@ -8,7 +8,7 @@ use crate::nodes::Node;
 use super::lexer::Lexer;
 use super::tokens::{SpannedToken, Token};
 
-/// Parser for TOML v1.0.0 documents.
+/// Parser for TOML documents.
 pub struct Parser {
     tokens: Vec<SpannedToken>,
     pos: usize,
@@ -17,6 +17,9 @@ pub struct Parser {
     current_table_path: Vec<String>,
     // Tracks whether current target is in an array of tables
     in_array_of_tables: bool,
+    explicit_tables: Vec<Vec<String>>,
+    array_tables: Vec<Vec<String>>,
+    static_keys: Vec<(Vec<String>, String)>,
 }
 
 impl Parser {
@@ -30,6 +33,9 @@ impl Parser {
             root: Node::new_table(),
             current_table_path: Vec::new(),
             in_array_of_tables: false,
+            explicit_tables: Vec::new(),
+            array_tables: Vec::new(),
+            static_keys: Vec::new(),
         })
     }
 
@@ -49,6 +55,26 @@ impl Parser {
         &self.tokens[p]
     }
 
+    fn expect_line_end(&mut self) -> Result<(), TomlError> {
+        match self.peek().token {
+            Token::Newline | Token::Eof => {
+                if self.peek().token == Token::Newline {
+                    self.advance();
+                }
+                Ok(())
+            }
+            _ => {
+                let tok = self.peek();
+                Err(TomlError::syntax(
+                    format!("Expected newline or EOF after statement, found {:?}", tok.token),
+                    tok.line,
+                    tok.column,
+                    tok.position,
+                ))
+            }
+        }
+    }
+
     fn skip_newlines(&mut self) {
         while self.peek().token == Token::Newline {
             self.advance();
@@ -65,9 +91,17 @@ impl Parser {
                     self.advance();
                 }
                 Token::LBracket => {
-                    self.advance(); // eat first '['
+                    let first = self.advance().clone();
                     if self.peek().token == Token::LBracket {
-                        self.advance(); // eat second '['
+                        let second = self.advance().clone();
+                        if second.position != first.position + 1 {
+                            return Err(TomlError::syntax(
+                                "Whitespace is not permitted between opening brackets in array of tables header",
+                                second.line,
+                                second.column,
+                                second.position,
+                            ));
+                        }
                         self.parse_array_of_tables_header()?;
                     } else {
                         self.parse_table_header()?;
@@ -86,7 +120,7 @@ impl Parser {
     fn parse_table_header(&mut self) -> Result<(), TomlError> {
         let path = self.parse_key_path()?;
 
-        let tok = self.advance();
+        let tok = self.advance().clone();
         if tok.token != Token::RBracket {
             return Err(TomlError::syntax(
                 "Expected ']' closing table header",
@@ -99,9 +133,39 @@ impl Parser {
         // Must be followed by newline or EOF
         self.expect_line_end()?;
 
+        if self.explicit_tables.contains(&path) {
+            return Err(TomlError::syntax(
+                format!("Table '{:?}' is defined more than once", path),
+                tok.line,
+                tok.column,
+                tok.position,
+            ));
+        }
+        if self.array_tables.contains(&path) {
+            return Err(TomlError::syntax(
+                format!("Table '{:?}' conflicts with existing array of tables", path),
+                tok.line,
+                tok.column,
+                tok.position,
+            ));
+        }
+        if !path.is_empty() {
+            let parent = &path[..path.len() - 1];
+            let key = &path[path.len() - 1];
+            if self.static_keys.iter().any(|(p, k)| p == parent && k == key) {
+                return Err(TomlError::syntax(
+                    format!("Table '{:?}' conflicts with statically defined key", path),
+                    tok.line,
+                    tok.column,
+                    tok.position,
+                ));
+            }
+        }
+
         // Ensure table path exists in root
         ensure_table_exists(&mut self.root, &path)?;
 
+        self.explicit_tables.push(path.clone());
         self.current_table_path = path;
         self.in_array_of_tables = false;
         Ok(())
@@ -120,11 +184,47 @@ impl Parser {
                 tok1.position,
             ));
         }
+        if tok2.position != tok1.position + 1 {
+            return Err(TomlError::syntax(
+                "Whitespace is not permitted between closing brackets in array of tables header",
+                tok2.line,
+                tok2.column,
+                tok2.position,
+            ));
+        }
 
         self.expect_line_end()?;
 
+        if self.explicit_tables.contains(&path) {
+            return Err(TomlError::syntax(
+                format!("Array of tables '{:?}' conflicts with existing table", path),
+                tok1.line,
+                tok1.column,
+                tok1.position,
+            ));
+        }
+        if !path.is_empty() {
+            let parent = &path[..path.len() - 1];
+            let key = &path[path.len() - 1];
+            if self.static_keys.iter().any(|(p, k)| p == parent && k == key) {
+                return Err(TomlError::syntax(
+                    format!("Array of tables '{:?}' conflicts with statically defined key", path),
+                    tok1.line,
+                    tok1.column,
+                    tok1.position,
+                ));
+            }
+        }
+
         // Append new table to array of tables
         append_array_table(&mut self.root, &path)?;
+        if !self.array_tables.contains(&path) {
+            self.array_tables.push(path.clone());
+        }
+
+        // Reset descendant explicit tables and static keys for the new array-of-tables element
+        self.explicit_tables.retain(|t| !t.starts_with(&path));
+        self.static_keys.retain(|(p, _)| !p.starts_with(&path));
 
         self.current_table_path = path;
         self.in_array_of_tables = true;
@@ -199,25 +299,12 @@ impl Parser {
             value,
         )?;
 
+        self.static_keys.push((self.current_table_path.clone(), key_path[0].clone()));
+
         Ok(())
     }
 
-    fn expect_line_end(&mut self) -> Result<(), TomlError> {
-        let tok = self.peek();
-        if tok.token == Token::Newline || tok.token == Token::Eof {
-            if tok.token == Token::Newline {
-                self.advance();
-            }
-            Ok(())
-        } else {
-            Err(TomlError::syntax(
-                format!("Expected newline or EOF, found {:?}", tok.token),
-                tok.line,
-                tok.column,
-                tok.position,
-            ))
-        }
-    }
+
 
     fn parse_value(&mut self) -> Result<Node, TomlError> {
         let tok = self.peek().clone();
@@ -303,7 +390,7 @@ impl Parser {
 
             let key_path = self.parse_key_path()?;
             self.skip_newlines();
-            let eq = self.advance();
+            let eq = self.advance().clone();
             if eq.token != Token::Equals {
                 return Err(TomlError::syntax(
                     "Expected '=' after key in inline table",
@@ -317,7 +404,16 @@ impl Parser {
             let val = self.parse_value()?;
             // Simple inline insertion
             if key_path.len() == 1 {
-                entries.push((key_path[0].clone(), val));
+                let key = &key_path[0];
+                if entries.iter().any(|(k, _)| k == key) {
+                    return Err(TomlError::syntax(
+                        format!("Duplicate key '{}' in inline table", key),
+                        eq.line,
+                        eq.column,
+                        eq.position,
+                    ));
+                }
+                entries.push((key.clone(), val));
             } else {
                 // Nested dotted key inside inline table
                 insert_nested_entry(&mut entries, &key_path, val)?;
@@ -358,7 +454,11 @@ fn insert_nested_entry(
         return Ok(());
     }
     if path.len() == 1 {
-        entries.push((path[0].clone(), val));
+        let key = &path[0];
+        if entries.iter().any(|(k, _)| k == key) {
+            return Err(TomlError::custom(format!("Duplicate key '{}'", key)));
+        }
+        entries.push((key.clone(), val));
         return Ok(());
     }
 

@@ -15,6 +15,7 @@ Welcome to the **Babbel** documentation hub. Babbel is a high-performance, polyg
 | **[Memory & Benchmarks](BENCHMARKS_AND_MEMORY.md)** | Struct size bounds verification (`size_checks.rs`), zero-allocation formatters, and I/O optimizations. |
 | **[W3C XML Conformance](XML_CONFORMANCE.md)** | Official W3C XML Conformance Test Suite (XML TS 20130923) results: 100.0% pass rate across all 12 sub-catalogs (1,834/1,834 tests, 0 skipped). |
 | **[JSON Conformance (RFC 8259)](JSON_CONFORMANCE.md)** | Official nst/JSONTestSuite results: 100.0% pass rate across all 340 test cases (0 failures, 0 panics). |
+| **[TOML Conformance](TOML_CONFORMANCE.md)** | Official skystrife/toml-test suite results: 100.0% pass rate across all 148 test cases (0 failures, 0 panics). |
 
 | **[Security Policy](SECURITY.md)** | Threat model, Billion Laughs entity expansion mitigations, 64 MB DoS limits, and vulnerability reporting. |
 | **[Development Guide](DEVELOPMENT_GUIDE.md)** | Contributor onboarding, toolchain requirements, debugging, release profiles, and profiling. |
@@ -25,7 +26,7 @@ Welcome to the **Babbel** documentation hub. Babbel is a high-performance, polyg
 
 ## 📦 Workspace Crates
 
-Babbel is partitioned into six decoupled, focused crates:
+Babbel is partitioned into seven decoupled, focused crates:
 
 | Crate | Package Docs | Path | Role |
 | :--- | :--- | :--- | :--- |
@@ -35,6 +36,7 @@ Babbel is partitioned into six decoupled, focused crates:
 | **`babbel_yaml`** | [README](../crates/yaml/README.md) | `crates/yaml` | YAML 1.2 compliant DOM, anchors/aliases, custom tags, multiline block scalars, fluent builders. |
 | **`babbel_bencode`** | [README](../crates/bencode/README.md) | `crates/bencode` | BitTorrent Bencode parser/serializer, borrowed zero-copy DOM, stack-based iterative parser. |
 | **`babbel_xml`** | [README](../crates/xml/README.md) | `crates/xml` | W3C XML DOM, validating pull parser, C14N 1.0/1.1 canonicalization, DTD, XSD, XPath 1.0. |
+| **`babbel_toml`** | [README](../crates/toml/README.md) | `crates/toml` | TOML v1.1.0 DOM engine, streaming pull parser, AST serializer, strict validation. |
 
 ---
 
