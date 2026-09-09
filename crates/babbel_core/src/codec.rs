@@ -95,3 +95,15 @@ impl FormatEmitter for BencodeEmitter {
         Ok(())
     }
 }
+
+/// Standard built-in TOML format emitter delegating to universal Value serialization.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct TomlEmitter;
+
+impl FormatEmitter for TomlEmitter {
+    fn emit(&self, value: &Value, dest: &mut dyn IDestination) -> Result<(), BabbelError> {
+        value.serialize_toml(dest);
+        Ok(())
+    }
+}
+

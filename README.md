@@ -6,7 +6,7 @@
 [![Architecture: DRY & SOLID](https://img.shields.io/badge/architecture-DRY%20%26%20SOLID-purple.svg)](docs/ARCHITECTURE.md)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Donate-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/roberttizz1)
 
-A high-performance, polyglot serialization, parsing, and document manipulation workspace in Rust. Babbel brings together **JSON**, **YAML**, **Bencode**, **XML**, **CSV / TSV**, **INI / Properties**, and **JSON Lines** under a unified, modular architecture adhering strictly to **DRY** (Don't Repeat Yourself) and **SOLID** engineering principles.
+A high-performance, polyglot serialization, parsing, and document manipulation workspace in Rust. Babbel brings together **JSON**, **YAML**, **Bencode**, **XML**, **TOML**, **CSV / TSV**, **INI / Properties**, and **JSON Lines** under a unified, modular architecture adhering strictly to **DRY** (Don't Repeat Yourself) and **SOLID** engineering principles.
 
 📖 **Documentation & Guides**:
 - [Documentation Hub](docs/README.md) — Central directory of all specifications, guides, and tutorials
@@ -27,12 +27,13 @@ Babbel is structured as an interconnected multi-crate workspace:
 
 | Crate | Package Docs | Directory | Description |
 | :--- | :--- | :--- | :--- |
-| **`babbel`** | [README](crates/babbel/README.md) | [`crates/babbel`](crates/babbel) | Master facade crate providing high-level ergonomics, prelude, and open-ended cross-format conversion pipelines across 8 formats. |
+| **`babbel`** | [README](crates/babbel/README.md) | [`crates/babbel`](crates/babbel) | Master facade crate providing high-level ergonomics, prelude, and open-ended cross-format conversion pipelines across 9 formats. |
 | **`babbel_core`** | [README](crates/babbel_core/README.md) | [`crates/babbel_core`](crates/babbel_core) | Core architectural kernel containing streaming traits (`ISource`, `IDestination`, `ILineReader`), universal `Value` AST, RFC 4180 CSV/TSV, sectioned INI/.env, frontmatter processing, Unicode BOM detection, and format codec abstractions. |
 | **`babbel_json`** | [README](crates/json/README.md) | [`crates/json`](crates/json) | Full-featured JSON DOM engine supporting RFC 6901 JSON Pointer, RFC 7396 JSON Merge Patch, JSON Lines (`.jsonl`/`.ndjson`) streaming, and zero-copy parsing. |
 | **`babbel_yaml`** | [README](crates/yaml/README.md) | [`crates/yaml`](crates/yaml) | YAML 1.2 parser and emitter with full support for anchors, aliases, custom tags, multiline block scalars, and multi-document streams. |
 | **`babbel_bencode`** | [README](crates/bencode/README.md) | [`crates/bencode`](crates/bencode) | High-speed, binary-safe BitTorrent Bencode parser and serializer supporting zero-copy borrowed slices and iterative streaming. |
 | **`babbel_xml`** | [README](crates/xml/README.md) | [`crates/xml`](crates/xml) | Robust XML DOM parser, W3C Canonical XML (C14N 1.0/1.1), DTD validation, XSD schema validator, and XPath 1.0 query engine. |
+| **`babbel_toml`** | [README](crates/toml/README.md) | [`crates/toml`](crates/toml) | Fast, modular, pure-Rust TOML v1.1.0 parser, serializer, streaming pull parser, and DOM with zero external parser dependencies. |
 
 ---
 

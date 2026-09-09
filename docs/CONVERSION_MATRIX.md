@@ -89,15 +89,16 @@ pub fn convert_bytes<P: FormatParser, E: FormatEmitter>(
 
 The table below outlines semantic behavior across conversion pairs:
 
-| From \ To | JSON | YAML | XML | Bencode | CSV / TSV | INI / .env | JSON Lines |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **JSON** | Formatting / minification | 1:1 structural mapping | Tag/attribute mapping | String keys, ints, lists | Array of objects $\rightarrow$ columns | Nested objects $\rightarrow$ `[sections]` | Array $\rightarrow$ 1 record/line |
-| **YAML** | Full mapping, drops anchors | Direct emission | Structured tags | Ints, dicts, byte strings | Sequence of mappings $\rightarrow$ table | Mapping $\rightarrow$ sections & keys | Sequence $\rightarrow$ line records |
-| **XML** | Element tree $\rightarrow$ JSON | Elements $\rightarrow$ mapping | C14N Canonicalization | Encoded element nodes | Flat row elements $\rightarrow$ CSV | Key elements $\rightarrow$ properties | Sequence elements $\rightarrow$ JSONL |
-| **Bencode** | Dictionary $\rightarrow$ Object | Dict $\rightarrow$ Map, lists | Bytes $\rightarrow$ Base64 nodes | Re-sorting dictionary keys | List of dicts $\rightarrow$ CSV | Dict $\rightarrow$ key-value pairs | List of dicts $\rightarrow$ JSONL |
-| **CSV / TSV**| Array of row objects | Sequence of mapping rows | Rows $\rightarrow$ `<row>` elements | List of dictionary rows | Delimiter swap (CSV $\leftrightarrow$ TSV) | Not recommended (flat table) | 1 record per line |
-| **INI / .env**| Nested object of sections| Section mappings | Properties $\rightarrow$ XML nodes| Key-value dictionary | Sections $\rightarrow$ table records | Delimiter swap (`=` $\leftrightarrow$ `:`) | Section objects $\rightarrow$ JSONL |
-| **JSON Lines**| Array of all records | Multi-document stream | Line records $\rightarrow$ XML | List of dictionary rows | Unified header table | Object records $\rightarrow$ sections | Filter / re-chunk stream |
+| From \ To | JSON | YAML | XML | Bencode | TOML | CSV / TSV | INI / .env | JSON Lines |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **JSON** | Formatting / minification | 1:1 structural mapping | Tag/attribute mapping | String keys, ints, lists | Object $\rightarrow$ TOML tables | Array of objects $\rightarrow$ columns | Nested objects $\rightarrow$ `[sections]` | Array $\rightarrow$ 1 record/line |
+| **YAML** | Full mapping, drops anchors | Direct emission | Structured tags | Ints, dicts, byte strings | 1:1 table/array mapping | Sequence of mappings $\rightarrow$ table | Mapping $\rightarrow$ sections & keys | Sequence $\rightarrow$ line records |
+| **XML** | Element tree $\rightarrow$ JSON | Elements $\rightarrow$ mapping | C14N Canonicalization | Encoded element nodes | Elements $\rightarrow$ TOML tables | Flat row elements $\rightarrow$ CSV | Key elements $\rightarrow$ properties | Sequence elements $\rightarrow$ JSONL |
+| **Bencode** | Dictionary $\rightarrow$ Object | Dict $\rightarrow$ Map, lists | Bytes $\rightarrow$ Base64 nodes | Re-sorting dictionary keys | Dictionaries $\rightarrow$ tables | List of dicts $\rightarrow$ CSV | Dict $\rightarrow$ key-value pairs | List of dicts $\rightarrow$ JSONL |
+| **TOML** | Table $\rightarrow$ JSON Object | Tables $\rightarrow$ Mappings | Tables $\rightarrow$ XML nodes | Dicts, ints, byte strings | Standard / pretty format | Array of tables $\rightarrow$ rows | Sections $\leftrightarrow$ tables | Array of tables $\rightarrow$ JSONL |
+| **CSV / TSV**| Array of row objects | Sequence of mapping rows | Rows $\rightarrow$ `<row>` elements | List of dictionary rows | Rows $\rightarrow$ array of tables | Delimiter swap (CSV $\leftrightarrow$ TSV) | Not recommended (flat table) | 1 record per line |
+| **INI / .env**| Nested object of sections| Section mappings | Properties $\rightarrow$ XML nodes| Key-value dictionary | Sections $\rightarrow$ tables | Sections $\rightarrow$ table records | Delimiter swap (`=` $\leftrightarrow$ `:`) | Section objects $\rightarrow$ JSONL |
+| **JSON Lines**| Array of all records | Multi-document stream | Line records $\rightarrow$ XML | List of dictionary rows | Records $\rightarrow$ array of tables| Unified header table | Object records $\rightarrow$ sections | Filter / re-chunk stream |
 
 ---
 
@@ -138,6 +139,10 @@ let ini_doc  = convert::json_to_ini(&json_doc)?;
 // INI <-> YAML
 let yaml_doc = convert::ini_to_yaml(ini_data)?;
 let ini_back = convert::yaml_to_ini(&yaml_doc)?;
+
+// INI <-> TOML
+let toml_doc = convert::ini_to_toml(ini_data)?;
+let ini_back = convert::toml_to_ini(&toml_doc)?;
 ```
 
 ### Stream Conversions (JSON Lines)
@@ -150,13 +155,21 @@ let json_array   = convert::jsonlines_to_json(jsonl_input)?;
 let jsonl_output = convert::json_to_jsonlines(&json_array)?;
 ```
 
-### Core Hierarchical Conversions
+### Core Hierarchical Conversions (JSON, YAML, XML, Bencode, TOML)
 ```rust
 use babbel::convert;
 
 // JSON <-> YAML
 let yaml = convert::json_to_yaml(r#"{"service": "auth"}"#)?;
 let json = convert::yaml_to_json(&yaml)?;
+
+// JSON <-> TOML
+let toml = convert::json_to_toml(r#"{"service": "auth", "port": 8080}"#)?;
+let json = convert::toml_to_json(&toml)?;
+
+// TOML <-> YAML
+let yaml = convert::toml_to_yaml("service = \"auth\"\nport = 8080\n")?;
+let toml = convert::yaml_to_toml(&yaml)?;
 
 // JSON <-> XML
 let xml  = convert::json_to_xml(r#"{"status": "ok"}"#)?;

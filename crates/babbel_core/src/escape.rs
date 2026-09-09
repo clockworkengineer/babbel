@@ -169,6 +169,83 @@ pub fn write_xml_escaped_string(s: &str, dest: &mut dyn IDestination) {
     }
 }
 
+/// Checks whether an identifier is a valid TOML bare key (`[A-Za-z0-9_-]+`).
+#[inline]
+pub fn is_valid_toml_bare_key(key: &str) -> bool {
+    if key.is_empty() {
+        return false;
+    }
+    key.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+}
+
+/// Escapes a string for a TOML basic string literal (inside double quotes).
+pub fn escape_for_toml(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\x08' => out.push_str("\\b"),
+            '\t' => out.push_str("\\t"),
+            '\n' => out.push_str("\\n"),
+            '\x0C' => out.push_str("\\f"),
+            '\r' => out.push_str("\\r"),
+            '\x1B' => out.push_str("\\e"),
+            c if (c as u32) < 0x20 || (c as u32) == 0x7F => {
+                out.push_str(&format!("\\u{:04x}", c as u32));
+            }
+            other => out.push(other),
+        }
+    }
+    out
+}
+
+/// Writes a quoted, escaped TOML basic string into `dest`.
+pub fn write_toml_escaped_string(s: &str, dest: &mut dyn IDestination) {
+    dest.add_byte(b'"');
+    let bytes = s.as_bytes();
+    let mut start = 0;
+    let mut i = 0;
+
+    while i < bytes.len() {
+        let esc = match bytes[i] {
+            b'"' => Some("\\\""),
+            b'\\' => Some("\\\\"),
+            0x08 => Some("\\b"),
+            b'\t' => Some("\\t"),
+            b'\n' => Some("\\n"),
+            0x0C => Some("\\f"),
+            b'\r' => Some("\\r"),
+            0x1B => Some("\\e"),
+            _ => None,
+        };
+
+        if let Some(replacement) = esc {
+            if i > start {
+                dest.add_bytes(core::str::from_utf8(&bytes[start..i]).unwrap_or(""));
+            }
+            dest.add_bytes(replacement);
+            i += 1;
+            start = i;
+        } else if bytes[i] < 0x20 || bytes[i] == 0x7F {
+            if i > start {
+                dest.add_bytes(core::str::from_utf8(&bytes[start..i]).unwrap_or(""));
+            }
+            let hex = format!("\\u{:04x}", bytes[i]);
+            dest.add_bytes(&hex);
+            i += 1;
+            start = i;
+        } else {
+            i += 1;
+        }
+    }
+
+    if start < bytes.len() {
+        dest.add_bytes(core::str::from_utf8(&bytes[start..]).unwrap_or(""));
+    }
+    dest.add_byte(b'"');
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -197,5 +274,15 @@ mod tests {
             core::str::from_utf8(dest.as_bytes()).unwrap(),
             "\"hello\\n\\\"world\\\"\""
         );
+    }
+
+    #[test]
+    fn test_escape_for_toml() {
+        assert_eq!(escape_for_toml("hello \"world\""), "hello \\\"world\\\"");
+        assert_eq!(escape_for_toml("path\\to\\file"), "path\\\\to\\\\file");
+        assert_eq!(escape_for_toml("\t\n\r"), "\\t\\n\\r");
+        assert!(is_valid_toml_bare_key("foo_bar-123"));
+        assert!(!is_valid_toml_bare_key("foo.bar"));
+        assert!(!is_valid_toml_bare_key(""));
     }
 }

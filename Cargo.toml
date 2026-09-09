@@ -7,6 +7,7 @@ members = [
     "crates/json",
     "crates/yaml",
     "crates/bencode",
+    "crates/toml",
 ]
 
 [workspace.dependencies]
@@ -15,6 +16,7 @@ babbel_xml = { path = "crates/xml", version = "0.1.2" }
 babbel_json = { path = "crates/json", version = "0.1.2" }
 babbel_yaml = { path = "crates/yaml", version = "0.1.2" }
 babbel_bencode = { path = "crates/bencode", version = "0.1.2" }
+babbel_toml = { path = "crates/toml", version = "0.1.2" }
 
 
 [workspace.package]

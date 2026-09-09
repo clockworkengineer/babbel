@@ -26,6 +26,11 @@ fn test_polyglot_smoke() {
     let bencode_data = b"d4:name6:babbel4:spaml4:eggsee";
     let bencode_doc = babbel::bencode::parse_bytes(bencode_data);
     assert!(bencode_doc.is_ok(), "Bencode parsing failed");
+
+    // 6. TOML via babbel::toml
+    let toml_text = "service = \"babbel\"\nport = 8080\nenabled = true\n";
+    let toml_doc = babbel::toml::from_str(toml_text);
+    assert!(toml_doc.is_ok(), "TOML parsing failed");
 }
 
 #[test]
@@ -53,4 +58,17 @@ fn test_cross_format_conversions() {
     let bencode_out = babbel::convert::json_to_bencode(json).expect("JSON -> Bencode failed");
     let reparsed = babbel::bencode::parse_bytes(&bencode_out).expect("Reparsing bencode failed");
     assert!(reparsed.is_dictionary());
+
+    // 6. TOML -> JSON
+    let toml_sample = "app = \"babbel\"\nthreads = 4\n";
+    let json_from_toml = babbel::convert::toml_to_json(toml_sample).expect("TOML -> JSON failed");
+    assert!(json_from_toml.contains("babbel") && json_from_toml.contains("4"));
+
+    // 7. JSON -> TOML
+    let toml_from_json = babbel::convert::json_to_toml(r#"{"app":"babbel","threads":4}"#).expect("JSON -> TOML failed");
+    assert!(toml_from_json.contains("app = \"babbel\""));
+
+    // 8. TOML -> YAML
+    let yaml_from_toml = babbel::convert::toml_to_yaml(toml_sample).expect("TOML -> YAML failed");
+    assert!(yaml_from_toml.contains("babbel"));
 }

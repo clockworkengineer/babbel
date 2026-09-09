@@ -3,7 +3,7 @@
 //! Locks in memory compaction optimizations to ensure struct sizes
 //! do not regress as new features are added.
 
-use babbel::{bencode as bencode_lib, json as json_lib, xml as xml_lib, yaml as yaml_lib};
+use babbel::{bencode as bencode_lib, json as json_lib, toml as toml_lib, xml as xml_lib, yaml as yaml_lib};
 
 #[test]
 fn test_core_value_memory_size() {
@@ -54,3 +54,13 @@ fn test_bencode_node_memory_size() {
         "bencode_lib::Node must be <= 56 bytes"
     );
 }
+
+#[test]
+fn test_toml_node_memory_size() {
+    use core::mem::size_of;
+    assert!(
+        size_of::<toml_lib::Node>() <= 48,
+        "toml_lib::Node must be <= 48 bytes"
+    );
+}
+

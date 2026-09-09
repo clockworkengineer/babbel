@@ -1,4 +1,4 @@
-﻿# Babbel Architecture & Design Principles
+# Babbel Architecture & Design Principles
 
 Babbel is a high-performance, polyglot serialization, parsing, and document manipulation ecosystem in Rust. It unifies **JSON**, **YAML**, **Bencode**, **XML**, **CSV / TSV**, **INI / Properties**, and **JSON Lines** under a cohesive multi-crate architecture adhering strictly to **DRY** (Don't Repeat Yourself) and **SOLID** engineering principles.
 
@@ -12,7 +12,7 @@ Babbel is architected across three distinct, decoupled tiers:
 graph TD
     subgraph "Tier 2: Facade & Interoperability"
         Babbel["babbel (Master Facade & Prelude)"]
-        Convert["babbel::convert (O(N) 8-Format Universal Conversion Pipeline)"]
+        Convert["babbel::convert (O(N) 9-Format Universal Conversion Pipeline)"]
     end
 
     subgraph "Tier 1: Domain Format Engines"
@@ -20,6 +20,7 @@ graph TD
         YAML["babbel_yaml (YAML 1.2, Anchors/Aliases, Custom Tags)"]
         XML["babbel_xml (W3C DOM, C14N, DTD, XSD, XPath 1.0)"]
         Bencode["babbel_bencode (BitTorrent, Zero-Copy Slices)"]
+        TOML["babbel_toml (TOML v1.0.0, Zero-Allocation Pull Parser)"]
     end
 
     subgraph "Tier 0: Foundational Kernel"
@@ -38,12 +39,14 @@ graph TD
     Babbel --> YAML
     Babbel --> XML
     Babbel --> Bencode
+    Babbel --> TOML
     Babbel --> CoreText
 
     JSON --> Core
     YAML --> Core
     XML --> Core
     Bencode --> Core
+    TOML --> Core
 ```
 
 ### Layer 0: The Core Kernel (`babbel_core`)
@@ -62,7 +65,7 @@ graph TD
     * **Memory Control**: `StackBuffer<const N>`, `MemoryTracker`, `EmbeddedLimits`, and 8-byte `CompactError` ensure deterministic execution without heap fragmentation.
   * **DRY Primitives**: Unicode BOM auto-detection (UTF-8, UTF-16 LE/BE, UTF-32 LE/BE), newline normalization, zero-allocation integer formatting via `itoa`, fast float formatting via `dtoa`, and canonical string escaping.
 
-### Layer 1: Domain Format Engines (`babbel_json`, `babbel_yaml`, `babbel_bencode`, `babbel_xml`)
+### Layer 1: Domain Format Engines (`babbel_json`, `babbel_yaml`, `babbel_bencode`, `babbel_xml`, `babbel_toml`)
 * **Grammar & Semantics**: Each engine implements parsing, syntax validation, document navigation, and serialization for its specific specification.
 * **JSON Lines Streaming**: `babbel_json::lines` provides streaming `JsonLinesReader` and `to_json_lines` over `ILineReader`.
 * **Abstractions**: All format engines depend on `babbel_core::io` abstractions rather than hardcoded OS files or heap buffers.
@@ -134,16 +137,16 @@ pub enum Value {
 
 ### Format Mapping Matrix
 
-| `Value` Variant | JSON | YAML | XML | Bencode | CSV / TSV | INI / .env | JSON Lines |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `Null` | `null` | `null` / `~` | `<item nil="true"/>` / empty | *(omitted/empty)* | empty cell | empty / omitted | `null` |
-| `Bool(b)` | `true` / `false` | `true` / `false` | `<item>true</item>` | `i1e` / `i0e` | `true` / `false` | `true` / `false` | `true` / `false` |
-| `Integer(i)`| Number (`42`) | Integer (`42`) | `<item>42</item>` | `i42e` | Integer string | Integer string | Number (`42`) |
-| `Float(f)` | Number (`3.14`) | Float (`3.14`) | `<item>3.14</item>` | Stringified float | Float string | Float string | Number (`3.14`) |
-| `String(s)` | String (`"hi"`) | String (`hi`) | Text node (`hi`) | `2:hi` | Escaped cell | Quoted / raw string| String (`"hi"`) |
-| `Array(v)` | Array (`[...]`) | Sequence (`- ...`)| Elements (`<item>...`) | `l...e` | Row cells or rows | `<array>` fallback | Single-line arrays |
-| `Object(o)` | Object (`{...}`) | Mapping (`k: v`) | Element tags / attrs | `d...e` | Header $\rightarrow$ cell map| `[section]` & `k = v`| Record per line |
-| `Bytes(b)` | Base64 string | `!!binary` (Base64) | Base64 text node | `len:bytes` | `<bytes>` fallback | `<bytes>` fallback | Base64 string |
+| `Value` Variant | JSON | YAML | XML | Bencode | TOML | CSV / TSV | INI / .env | JSON Lines |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `Null` | `null` | `null` / `~` | `<item nil="true"/>` / empty | *(omitted/empty)* | `""` / *(omitted)* | empty cell | empty / omitted | `null` |
+| `Bool(b)` | `true` / `false` | `true` / `false` | `<item>true</item>` | `i1e` / `i0e` | `true` / `false` | `true` / `false` | `true` / `false` | `true` / `false` |
+| `Integer(i)`| Number (`42`) | Integer (`42`) | `<item>42</item>` | `i42e` | Integer (`42`) | Integer string | Integer string | Number (`42`) |
+| `Float(f)` | Number (`3.14`) | Float (`3.14`) | `<item>3.14</item>` | Stringified float | Float (`3.14`) | Float string | Float string | Number (`3.14`) |
+| `String(s)` | String (`"hi"`) | String (`hi`) | Text node (`hi`) | `2:hi` | String (`"hi"`) | Escaped cell | Quoted / raw string| String (`"hi"`) |
+| `Array(v)` | Array (`[...]`) | Sequence (`- ...`)| Elements (`<item>...`) | `l...e` | Array (`[...]`) | Row cells or rows | `<array>` fallback | Single-line arrays |
+| `Object(o)` | Object (`{...}`) | Mapping (`k: v`) | Element tags / attrs | `d...e` | Table / inline `{}` | Header $\rightarrow$ cell map| `[section]` & `k = v`| Record per line |
+| `Bytes(b)` | Base64 string | `!!binary` (Base64) | Base64 text node | `len:bytes` | Escaped string | `<bytes>` fallback | `<bytes>` fallback | Base64 string |
 
 ---
 
@@ -151,6 +154,7 @@ pub enum Value {
 
 1. **Memory Compacted Node Layouts**:
    - `babbel_core::Value`: compacted to **32 bytes**.
+   - `babbel_toml::Node`: compacted to **48 bytes**.
    - `babbel_json::Node`: compacted to **56 bytes**.
    - `babbel_xml::NodeKind`: compacted from 72 bytes to **48 bytes** via targeted boxing.
    - `babbel_xml::NodeData`: compacted from 112 bytes to **88 bytes**.

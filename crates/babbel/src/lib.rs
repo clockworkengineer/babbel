@@ -56,7 +56,10 @@ pub use babbel_xml as xml;
 #[cfg(feature = "bencode")]
 pub use babbel_bencode as bencode;
 
-// Backwards-compatible aliases (prefer babbel::json, babbel::yaml, babbel::xml, babbel::bencode)
+#[cfg(feature = "toml")]
+pub use babbel_toml as toml;
+
+// Backwards-compatible aliases (prefer babbel::json, babbel::yaml, babbel::xml, babbel::bencode, babbel::toml)
 #[cfg(feature = "json")]
 #[deprecated(since = "0.2.0", note = "Use `babbel::json` instead")]
 pub use babbel_json as json_lib;
@@ -69,6 +72,9 @@ pub use babbel_xml as xml_lib;
 #[cfg(feature = "bencode")]
 #[deprecated(since = "0.2.0", note = "Use `babbel::bencode` instead")]
 pub use babbel_bencode as bencode_lib;
+#[cfg(feature = "toml")]
+#[deprecated(since = "0.2.0", note = "Use `babbel::toml` instead")]
+pub use babbel_toml as toml_lib;
 
 #[cfg(feature = "convert")]
 pub mod convert;
@@ -84,6 +90,8 @@ pub mod embedded {
     pub use babbel_json::parser::pull_parser::{JsonPullEvent, JsonPullParser, JsonScalar};
     #[cfg(feature = "xml")]
     pub use babbel_xml::parser::{XmlPullAttribute, XmlPullEvent, XmlPullParser};
+    #[cfg(feature = "toml")]
+    pub use babbel_toml::parser::{TomlPullEvent, TomlPullParser};
 }
 
 // Re-export text, CSV, and INI processing from core

@@ -11,10 +11,12 @@ use babbel_yaml as yaml_lib;
 use babbel_bencode as bencode_lib;
 #[cfg(feature = "xml")]
 use babbel_xml as xml_lib;
+#[cfg(feature = "toml")]
+use babbel_toml as toml_lib;
 
 use babbel_core::{
     csv::emit_csv_to, ini::emit_ini_to, parse_csv, parse_ini, BabbelError, Buffer,
-    CsvOptions, FormatEmitter, FormatParser, IniOptions, JsonEmitter, Value, YamlEmitter,
+    CsvOptions, FormatEmitter, FormatParser, IniOptions, JsonEmitter, TomlEmitter, Value, YamlEmitter,
 };
 
 /// Supported serialization format identifiers.
@@ -24,6 +26,7 @@ pub enum Format {
     Yaml,
     Xml,
     Bencode,
+    Toml,
     Csv,
     Tsv,
     Ini,
@@ -156,6 +159,19 @@ impl FormatParser for XmlParser {
         let doc = xml_lib::parse(input)?;
         let name = doc.get_root_element_name().unwrap_or("xml").to_string();
         Ok(Value::Object(vec![(name, Value::String(input.to_string()))]))
+    }
+}
+
+/// TOML parser implementing `FormatParser`.
+#[cfg(feature = "toml")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct TomlParser;
+
+#[cfg(feature = "toml")]
+impl FormatParser for TomlParser {
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        let node = toml_lib::from_str(input)?;
+        Ok(Value::from(&node))
     }
 }
 
@@ -446,3 +462,95 @@ pub fn jsonlines_to_csv(jsonl: &str) -> Result<String, BabbelError> {
 pub fn csv_to_jsonlines(csv: &str) -> Result<String, BabbelError> {
     convert_text(csv, &CsvParser::default(), &JsonLinesEmitter)
 }
+
+// =========================================================================
+// TOML Cross-Format Conversions
+// =========================================================================
+
+/// Convert TOML string to JSON string.
+#[cfg(all(feature = "toml", feature = "json"))]
+pub fn toml_to_json(toml: &str) -> Result<String, BabbelError> {
+    convert_text(toml, &TomlParser, &JsonEmitter)
+}
+
+/// Convert JSON string to TOML string.
+#[cfg(all(feature = "json", feature = "toml"))]
+pub fn json_to_toml(json: &str) -> Result<String, BabbelError> {
+    convert_text(json, &JsonParser, &TomlEmitter)
+}
+
+/// Convert TOML string to YAML string.
+#[cfg(all(feature = "toml", feature = "yaml"))]
+pub fn toml_to_yaml(toml: &str) -> Result<String, BabbelError> {
+    convert_text(toml, &TomlParser, &YamlEmitter)
+}
+
+/// Convert YAML string to TOML string.
+#[cfg(all(feature = "yaml", feature = "toml"))]
+pub fn yaml_to_toml(yaml: &str) -> Result<String, BabbelError> {
+    convert_text(yaml, &YamlParser, &TomlEmitter)
+}
+
+/// Convert TOML string to XML string.
+#[cfg(all(feature = "toml", feature = "xml"))]
+pub fn toml_to_xml(toml: &str) -> Result<String, BabbelError> {
+    convert_text(toml, &TomlParser, &babbel_core::XmlEmitter)
+}
+
+/// Convert XML string to TOML string.
+#[cfg(all(feature = "xml", feature = "toml"))]
+pub fn xml_to_toml(xml: &str) -> Result<String, BabbelError> {
+    convert_text(xml, &XmlParser, &TomlEmitter)
+}
+
+/// Convert TOML string to Bencode byte vector.
+#[cfg(all(feature = "toml", feature = "bencode"))]
+pub fn toml_to_bencode(toml: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_bytes(toml.as_bytes(), &TomlParser, &babbel_core::BencodeEmitter)
+}
+
+/// Convert Bencode binary payload to TOML string.
+#[cfg(all(feature = "bencode", feature = "toml"))]
+pub fn bencode_to_toml(bencode: &[u8]) -> Result<String, BabbelError> {
+    let value = BencodeParser.parse_bytes(bencode)?;
+    let mut dest = Buffer::new();
+    TomlEmitter.emit(&value, &mut dest)?;
+    Ok(dest.to_string())
+}
+
+/// Convert TOML string to CSV string.
+#[cfg(feature = "toml")]
+pub fn toml_to_csv(toml: &str) -> Result<String, BabbelError> {
+    convert_text(toml, &TomlParser, &CsvEmitter::default())
+}
+
+/// Convert CSV string to TOML string.
+#[cfg(feature = "toml")]
+pub fn csv_to_toml(csv: &str) -> Result<String, BabbelError> {
+    convert_text(csv, &CsvParser::default(), &TomlEmitter)
+}
+
+/// Convert TOML string to INI string.
+#[cfg(feature = "toml")]
+pub fn toml_to_ini(toml: &str) -> Result<String, BabbelError> {
+    convert_text(toml, &TomlParser, &IniEmitter::default())
+}
+
+/// Convert INI string to TOML string.
+#[cfg(feature = "toml")]
+pub fn ini_to_toml(ini: &str) -> Result<String, BabbelError> {
+    convert_text(ini, &IniParser::default(), &TomlEmitter)
+}
+
+/// Convert TOML string to JSON Lines string.
+#[cfg(all(feature = "toml", feature = "json"))]
+pub fn toml_to_jsonlines(toml: &str) -> Result<String, BabbelError> {
+    convert_text(toml, &TomlParser, &JsonLinesEmitter)
+}
+
+/// Convert JSON Lines string to TOML string.
+#[cfg(all(feature = "json", feature = "toml"))]
+pub fn jsonlines_to_toml(jsonl: &str) -> Result<String, BabbelError> {
+    convert_text(jsonl, &JsonLinesParser, &TomlEmitter)
+}
+

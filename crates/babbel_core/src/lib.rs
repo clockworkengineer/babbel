@@ -27,7 +27,7 @@ pub mod text;
 // Re-export key primitives for ergonomic downstream usage
 pub use chars::{is_digit, is_hex_digit, is_newline, is_whitespace};
 pub use codec::{
-    BencodeEmitter, FormatCodec, FormatEmitter, FormatParser, JsonEmitter, XmlEmitter,
+    BencodeEmitter, FormatCodec, FormatEmitter, FormatParser, JsonEmitter, TomlEmitter, XmlEmitter,
     YamlEmitter,
 };
 pub use csv::{
@@ -38,8 +38,8 @@ pub use embedded::{CompactError, EmbeddedLimits, MemoryTracker, StackBuffer};
 pub use encoding::{detect_encoding_and_strip_bom, normalize_newlines, Encoding};
 pub use error::{format_error_snippet, BabbelError, ErrorCode, Location, Span};
 pub use escape::{
-    escape_for_json, escape_for_xml, json_needs_escaping, write_json_escaped_string,
-    write_xml_escaped_string,
+    escape_for_json, escape_for_toml, escape_for_xml, is_valid_toml_bare_key, json_needs_escaping,
+    write_json_escaped_string, write_toml_escaped_string, write_xml_escaped_string,
 };
 #[cfg(feature = "file-io")]
 pub use file::{detect_format, read_file_to_string, write_file_from_string, Format};
