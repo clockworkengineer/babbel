@@ -116,6 +116,40 @@ while let Ok(Some(event)) = parser.next_event() {
 
 ---
 
+## Examples
+
+`babbel_toml` comes with a comprehensive suite of 10 runnable examples in `examples/`:
+
+| Example | File | Description |
+| :--- | :--- | :--- |
+| **Parse & Stringify** | [`toml_parse_and_stringify.rs`](examples/toml_parse_and_stringify.rs) | Parsing, field inspection, in-place DOM modification, and standard / pretty serialization. |
+| **Runtime DOM Creation** | [`toml_create_at_runtime.rs`](examples/toml_create_at_runtime.rs) | Constructing tables, nested tables, arrays, and array-of-tables programmatically. |
+| **TOML v1.1.0 Features** | [`toml_1_1_features.rs`](examples/toml_1_1_features.rs) | Byte escapes `\xHH`, escape `\e`, optional seconds in datetimes, and multiline inline tables. |
+| **Fibonacci Sequence** | [`toml_fibonacci.rs`](examples/toml_fibonacci.rs) | Standard Babbel calculation fixture maintaining and persisting numbers with checked addition. |
+| **Streaming Pull Parser** | [`toml_streaming_pull.rs`](examples/toml_streaming_pull.rs) | $O(1)$ stack memory pull-parser for embedded and microcontroller environments. |
+| **Format Conversions** | [`toml_format_conversions.rs`](examples/toml_format_conversions.rs) | Bidirectional conversion to/from JSON, YAML, XML, and Bencode via `babbel_core::Value`. |
+| **Error Handling** | [`toml_error_handling.rs`](examples/toml_error_handling.rs) | Detailed diagnostic syntax error reporting with 1-based line, column, and byte offset. |
+| **Query & Traversal** | [`toml_query_traverse.rs`](examples/toml_query_traverse.rs) | Deep query chains, recursive node visitor, tree metrics, and in-place transformations. |
+| **Config Layering** | [`toml_config_layers.rs`](examples/toml_config_layers.rs) | Production configuration pattern: merging base defaults with environment-specific overrides. |
+| **Date & Time Guide** | [`toml_datetimes.rs`](examples/toml_datetimes.rs) | Offset Date-Time, Local Date-Time, Local Date, and Local Time parsing & creation. |
+
+Run any example directly using Cargo:
+
+```bash
+cargo run --package babbel_toml --example toml_parse_and_stringify
+cargo run --package babbel_toml --example toml_create_at_runtime
+cargo run --package babbel_toml --example toml_1_1_features
+cargo run --package babbel_toml --example toml_fibonacci
+cargo run --package babbel_toml --example toml_streaming_pull
+cargo run --package babbel_toml --example toml_format_conversions
+cargo run --package babbel_toml --example toml_error_handling
+cargo run --package babbel_toml --example toml_query_traverse
+cargo run --package babbel_toml --example toml_config_layers
+cargo run --package babbel_toml --example toml_datetimes
+```
+
+---
+
 ## Conformance & Testing
 
 Run the automated test suite:
@@ -123,4 +157,6 @@ Run the automated test suite:
 ```bash
 cargo test -p babbel_toml
 cargo test -p babbel_toml --test conformance
+cargo test -p babbel_toml --test toml_test_suite -- --nocapture
 ```
+

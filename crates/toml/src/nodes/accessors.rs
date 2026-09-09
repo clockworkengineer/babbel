@@ -22,12 +22,22 @@ impl Node {
         }
     }
 
+    /// Alias for `as_integer`.
+    pub fn as_i64(&self) -> Option<i64> {
+        self.as_integer()
+    }
+
     /// Returns floating-point number if node is `Node::Float`.
     pub fn as_float(&self) -> Option<f64> {
         match self {
             Node::Float(f) => Some(*f),
             _ => None,
         }
+    }
+
+    /// Alias for `as_float`.
+    pub fn as_f64(&self) -> Option<f64> {
+        self.as_float()
     }
 
     /// Returns boolean if node is `Node::Boolean`.

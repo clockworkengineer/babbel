@@ -22,8 +22,14 @@ pub use nodes::{DatetimeKind, Node, TomlDatetime};
 pub use parser::{Lexer, Parser, TomlPullEvent, TomlPullParser};
 pub use stringify::{emit_pretty_to, emit_to, PrettyOptions};
 
-use babbel_core::io::destinations::BufferDestination;
-use babbel_core::io::traits::{ICharStream, IDestination};
+pub use babbel_core::io::destinations::BufferDestination;
+pub use babbel_core::io::sources::BufferSource;
+pub use babbel_core::io::traits::{ICharStream, IDestination, ISource};
+
+#[cfg(feature = "file-io")]
+pub use babbel_core::io::destinations::FileDestination;
+#[cfg(feature = "file-io")]
+pub use babbel_core::io::sources::FileSource;
 
 /// Parses a TOML formatted UTF-8 string into a `Node::Table`.
 pub fn from_str(input: &str) -> Result<Node, TomlError> {

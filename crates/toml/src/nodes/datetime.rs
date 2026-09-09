@@ -24,6 +24,14 @@ pub struct TomlDatetime {
 }
 
 impl TomlDatetime {
+    /// Constructs a new `TomlDatetime` with specified kind and raw string.
+    pub fn new(kind: DatetimeKind, raw: impl Into<String>) -> Self {
+        Self {
+            kind,
+            raw: raw.into(),
+        }
+    }
+
     /// Attempts to parse an RFC 3339 date/time string (supporting TOML v1.0.0 and v1.1.0).
     pub fn parse(s: &str) -> Option<Self> {
         let trimmed = s.trim();

@@ -1,0 +1,22 @@
+# Database Cluster Configuration
+cluster_name = "production-cluster-eu"
+primary_datacenter = "eu-central-1"
+
+[database]
+engine = "postgresql"
+host = "10.0.0.15"
+port = 5432
+connection_pool_size = 64
+ssl_mode = "require"
+
+[[database.replicas]]
+name = "replica-read-01"
+host = "10.0.0.16"
+port = 5432
+weight = 100
+
+[[database.replicas]]
+name = "replica-read-02"
+host = "10.0.0.17"
+port = 5432
+weight = 50

@@ -109,6 +109,28 @@ impl Node {
         }
     }
 
+    /// Push an element to an Array node.
+    pub fn push(&mut self, val: Node) {
+        if let Node::Array(items) = self {
+            items.push(val);
+        }
+    }
+
+    /// Number of elements in Table or Array, or length of String.
+    pub fn len(&self) -> usize {
+        match self {
+            Node::Table(entries) => entries.len(),
+            Node::Array(items) => items.len(),
+            Node::String(s) => s.len(),
+            _ => 0,
+        }
+    }
+
+    /// Returns `true` if this container or string is empty.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// If this node is an array of tables, returns the active (last) table, otherwise self.
     pub fn get_nested_target_mut(&mut self) -> &mut Node {
         let is_arr_table = matches!(self, Node::Array(items) if !items.is_empty() && items.last().map_or(false, Node::is_table));
