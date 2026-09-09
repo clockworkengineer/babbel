@@ -22,6 +22,8 @@ This document records the official conformance test results, architecture, and v
 
 ## 2. Official Test Suite Pass Rates
 
+### A. Results by Conformance Category
+
 | Suite Category | Focus Area | Total Cases | Passed | Failed | Rate % | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Parsing (Must Accept - `y_`)** | Valid RFC 8259 documents, unicode surrogates, exponents | 95 | **95** | 0 | **100.0%** | **PASSED** |
@@ -29,6 +31,47 @@ This document records the official conformance test results, architecture, and v
 | **Parsing (Implementation Defined - `i_`)** | Ambiguous edge cases (extreme numbers, lone surrogates) | 35 | **35** | 0 | **100.0%** | **PASSED** |
 | **Transform (`test_transform/`)** | Key duplicates, escaped nulls, huge numbers | 22 | **22** | 0 | **100.0%** | **PASSED** |
 | **OVERALL** | **Full Official JSONTestSuite Corpus** | **340** | **340** | **0** | **100.0%** | **VERIFIED** |
+
+### B. Results by Production Area / Topic
+
+| Topic / Grammar Feature | Total Cases | `y_` (Must Accept) | `n_` (Must Reject) | `i_` (Implementation Defined) | Pass Rate % | Status |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Strings & Escapes** (`string`) | 94 | 43 / 43 | 29 / 29 | 22 / 22 | **100.0%** | **PASSED** |
+| **Numbers & Exponents** (`number`) | 80 | 19 / 19 | 51 / 51 | 10 / 10 | **100.0%** | **PASSED** |
+| **Document Structure** (`structure`) | 61 | 10 / 10 | 49 / 49 | 2 / 2 | **100.0%** | **PASSED** |
+| **Objects & Key-Values** (`object`) | 41 | 12 / 12 | 28 / 28 | 1 / 1 | **100.0%** | **PASSED** |
+| **Arrays & Lists** (`array`) | 37 | 11 / 11 | 26 / 26 | 0 / 0 | **100.0%** | **PASSED** |
+| **Incomplete Literals & Tokens** | 5 | 0 / 0 | 5 / 5 | 0 / 0 | **100.0%** | **PASSED** |
+| **Transform Edge Cases** (`test_transform`) | 22 | - | - | 22 / 22 | **100.0%** | **PASSED** |
+| **TOTAL** | **340** | **95 / 95** | **188 / 188** | **57 / 57** | **100.0%** | **VERIFIED** |
+
+### C. Automated Test Runner Output
+
+```text
+running 1 test
+
+============================================================
+  Running Official nst/JSONTestSuite (RFC 8259 Conformance)
+  Root: crates/json/tests/JSONTestSuite
+============================================================
+Discovered 340 test cases across categories.
+
++---------------------------------------+-------+--------+--------+---------+
+| Suite Category                        | Total | Passed | Failed | Rate %  |
++---------------------------------------+-------+--------+--------+---------+
+| Parsing (Implementation Defined)      |    35 |     35 |      0 |  100.0% |
+| Parsing (Must Accept)                 |    95 |     95 |      0 |  100.0% |
+| Parsing (Must Reject)                 |   188 |    188 |      0 |  100.0% |
+| Transform (Edge Cases)                |    22 |     22 |      0 |  100.0% |
++---------------------------------------+-------+--------+--------+---------+
+| OVERALL                               |   340 |    340 |      0 |  100.0% |
++---------------------------------------+-------+--------+--------+---------+
+Executed in 0.044s with 0 unhandled panics.
+
+test test_nst_json_conformance_suite ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+```
 
 ---
 
