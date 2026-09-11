@@ -188,8 +188,8 @@ graph TD
 2. [x] Author `docs/BENCODE_SPEC_AND_CONFORMANCE.md` based on BEP 0003 and Bencode tests. - **Completed**
 
 ### Milestone 2: Extensibility & Architecture Guides
-1. Author `docs/FORMAT_ENGINE_PLUGIN_GUIDE.md` detailing `FormatEngine` and `FormatRegistry`.
-2. Author `docs/SOLID_ARCHITECTURE_GUIDE.md` detailing the 6-phase SOLID implementation.
+1. [x] Author `docs/FORMAT_ENGINE_PLUGIN_GUIDE.md` detailing `FormatEngine` and `FormatRegistry`. - **Completed**
+2. [x] Author `docs/SOLID_ARCHITECTURE_GUIDE.md` detailing the 6-phase SOLID implementation. - **Completed**
 
 ### Milestone 3: Core Docs Updates
 1. Update `docs/ARCHITECTURE.md` with the 3-Tier Layering diagram and SOLID implementation details.
