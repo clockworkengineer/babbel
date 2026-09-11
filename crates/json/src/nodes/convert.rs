@@ -14,59 +14,7 @@ impl<T: Into<Node>> From<Vec<T>> for Node {
     }
 }
 
-impl From<i64> for Numeric {
-    fn from(value: i64) -> Self {
-        Numeric::Integer(value)
-    }
-}
 
-impl From<f64> for Numeric {
-    fn from(value: f64) -> Self {
-        Numeric::Float(value)
-    }
-}
-
-impl From<u64> for Numeric {
-    fn from(value: u64) -> Self {
-        Numeric::UInteger(value)
-    }
-}
-
-impl From<u8> for Numeric {
-    fn from(value: u8) -> Self {
-        Numeric::Byte(value)
-    }
-}
-
-impl From<i32> for Numeric {
-    fn from(value: i32) -> Self {
-        Numeric::Int32(value)
-    }
-}
-
-impl From<u32> for Numeric {
-    fn from(value: u32) -> Self {
-        Numeric::UInt32(value)
-    }
-}
-
-impl From<i16> for Numeric {
-    fn from(value: i16) -> Self {
-        Numeric::Int16(value)
-    }
-}
-
-impl From<u16> for Numeric {
-    fn from(value: u16) -> Self {
-        Numeric::UInt16(value)
-    }
-}
-
-impl From<i8> for Numeric {
-    fn from(value: i8) -> Self {
-        Numeric::Int8(value)
-    }
-}
 
 impl From<i64> for Node {
     fn from(value: i64) -> Self {
@@ -171,22 +119,7 @@ impl<T: Into<Node>> From<HashMap<String, T>> for Node {
     }
 }
 
-// Display implementations for better debugging
-impl fmt::Display for Numeric {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Numeric::Integer(n) => write!(f, "{}", n),
-            Numeric::Float(n) => write!(f, "{}", n),
-            Numeric::UInteger(n) => write!(f, "{}", n),
-            Numeric::Byte(n) => write!(f, "{}", n),
-            Numeric::Int32(n) => write!(f, "{}", n),
-            Numeric::UInt32(n) => write!(f, "{}", n),
-            Numeric::Int16(n) => write!(f, "{}", n),
-            Numeric::UInt16(n) => write!(f, "{}", n),
-            Numeric::Int8(n) => write!(f, "{}", n),
-        }
-    }
-}
+
 
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -345,6 +278,7 @@ impl From<&Node> for babbel_core::model::Value {
                 Numeric::Int16(i) => babbel_core::model::Value::Integer(*i as i128),
                 Numeric::UInt16(u) => babbel_core::model::Value::Integer(*u as i128),
                 Numeric::Int8(i) => babbel_core::model::Value::Integer(*i as i128),
+                Numeric::UInt8(u) => babbel_core::model::Value::Integer(*u as i128),
                 Numeric::Float(f) => babbel_core::model::Value::Float(*f),
             },
             Node::Array(arr) => {

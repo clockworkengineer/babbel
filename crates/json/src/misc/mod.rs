@@ -3,9 +3,6 @@
 
 use crate::Node;
 use crate::io::traits::{IDestination, ISource};
-use crate::nodes::node::Numeric;
-use dtoa;
-use itoa;
 
 /// Returns the current version of the package as specified in Cargo.toml.
 /// Uses CARGO_PKG_VERSION environment variable that is set during compilation
@@ -49,19 +46,7 @@ fn pretty_print(
         Node::Boolean(value) => destination.add_bytes(if *value { "true" } else { "false" }),
         // Handle various numeric types
         Node::Number(value) => {
-            let mut ibuf = itoa::Buffer::new();
-            let mut fbuf = dtoa::Buffer::new();
-            match value {
-                Numeric::Integer(i) => destination.add_bytes(ibuf.format(*i)),
-                Numeric::UInteger(u) => destination.add_bytes(ibuf.format(*u)),
-                Numeric::Float(f) => destination.add_bytes(fbuf.format(*f)),
-                Numeric::Byte(b) => destination.add_bytes(ibuf.format(*b)),
-                Numeric::Int8(i) => destination.add_bytes(ibuf.format(*i)),
-                Numeric::Int16(i) => destination.add_bytes(ibuf.format(*i)),
-                Numeric::UInt16(u) => destination.add_bytes(ibuf.format(*u)),
-                Numeric::Int32(i) => destination.add_bytes(ibuf.format(*i)),
-                Numeric::UInt32(u) => destination.add_bytes(ibuf.format(*u)),
-            }
+            value.format_to(destination);
         }
         // Handle string values with proper JSON escaping
         Node::Str(value) => {
@@ -140,7 +125,7 @@ pub fn strip(source: &mut dyn ISource, destination: &mut dyn IDestination) {
 mod tests {
     use super::*;
     use crate::BufferDestination;
-    use crate::Node;
+    use crate::{Node, Numeric};
     use std::collections::BTreeMap;
 
     #[test]

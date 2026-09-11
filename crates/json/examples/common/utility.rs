@@ -1,9 +1,6 @@
 //! Utility library for handling JSON files and related operations.
 //! Provides functionality for file system operations specific to JSON files.
 
-use std::fs;
-use std::path::Path;
-
 /// Returns a list of JSON file paths from the specified directory.
 ///
 /// # Arguments
@@ -14,25 +11,9 @@ use std::path::Path;
 ///
 /// A vector of strings containing paths to all .json files in the directory
 pub fn get_json_file_list(file_path: &str) -> Vec<String> {
-    let files_dir = Path::new(file_path);
-    if !files_dir.exists() {
-        let _ = fs::create_dir_all("files");
-        return vec![];
-    }
-
-    fs::read_dir(files_dir)
-        .map(|entries| {
-            entries
-                .filter_map(|entry| {
-                    let entry = entry.ok()?;
-                    let path = entry.path();
-                    if path.extension()? == "json" {
-                        Some(path.to_string_lossy().into_owned())
-                    } else {
-                        None
-                    }
-                })
-                .collect()
-        })
+    babbel_core::file::list_files_by_extension(file_path, "json")
         .unwrap_or_default()
+        .into_iter()
+        .map(|p| p.to_string_lossy().into_owned())
+        .collect()
 }

@@ -42,7 +42,9 @@ pub use escape::{
     write_json_escaped_string, write_toml_escaped_string, write_xml_escaped_string,
 };
 #[cfg(feature = "file-io")]
-pub use file::{detect_format, read_file_to_string, write_file_from_string, Format};
+pub use file::{
+    detect_format, list_files_by_extension, read_file_to_string, write_file_from_string, Format,
+};
 pub use ini::{emit_ini, emit_ini_to, parse_ini, IniEvent, IniOptions, IniPullParser};
 pub use io::{
     ArrayVecDestination, Buffer, BufferDestination, BufferSource, ByteSliceSource, IByteStream,
@@ -52,7 +54,7 @@ pub use io::{
 #[cfg(feature = "file-io")]
 pub use io::{FileDestination, FileSource};
 pub use model::{FormatVisitor, Value};
-pub use num::{format_float, format_integer};
+pub use num::{format_float, format_integer, Numeric};
 pub use text::{
     dedent, indent, line_count, split_frontmatter, trim_lines, DocumentWithFrontmatter,
     FrontmatterFormat,

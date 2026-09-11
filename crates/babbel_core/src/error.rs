@@ -173,6 +173,37 @@ pub fn format_error_snippet(source: &str, loc: Location, message: &str) -> Strin
     )
 }
 
+/// Standardized parse error constants and formatting helpers.
+pub mod messages {
+    #[cfg(not(feature = "std"))]
+    use alloc::{format, string::String};
+
+    pub const FILE_NOT_FOUND: &str = "File not found";
+    pub const ERR_EMPTY_INPUT: &str = "Empty input";
+    pub const ERR_UNEXPECTED_CHAR: &str = "Unexpected character: ";
+    pub const ERR_OBJECT_KEY: &str = "Object key must be a string";
+    pub const ERR_EXPECT_COLON: &str = "Expected ':' after object key";
+    pub const ERR_EXPECT_OBJECT_END: &str = "Expected ',' or '}' in object";
+    pub const ERR_EXPECT_ARRAY_END: &str = "Expected ',' or ']' in array";
+    pub const ERR_INVALID_ESCAPE: &str = "Invalid escape sequence";
+    pub const ERR_UNTERMINATED_STRING: &str = "Unterminated string";
+    pub const ERR_MULTIPLE_DECIMAL: &str = "Multiple decimal points in number";
+    pub const ERR_INVALID_FLOAT: &str = "Invalid float number";
+    pub const ERR_INVALID_INTEGER: &str = "Invalid integer number";
+    pub const ERR_EXPECT_TRUE: &str = "Expected 'true'";
+    pub const ERR_EXPECT_FALSE: &str = "Expected 'false'";
+    pub const ERR_EXPECT_NULL: &str = "Expected 'null'";
+    pub const ERR_INVALID_UTF8: &str = "Invalid UTF-8 encoding";
+    pub const ERR_INVALID_NUMBER: &str = "Invalid number format";
+    pub const ERR_UNESCAPED_CONTROL_CHAR: &str = "Unescaped control character in string";
+
+    /// Helper for constructing formatted unexpected character error messages.
+    #[inline]
+    pub fn unexpected_character(c: char) -> String {
+        format!("Unexpected character: {}", c)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

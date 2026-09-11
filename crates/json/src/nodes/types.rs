@@ -7,18 +7,7 @@ use alloc::{collections::BTreeMap as HashMap, string::String, vec::Vec};
 use smallvec::SmallVec;
 
 /// Represents different numeric types that can be stored in a JSON node
-#[derive(Clone, Debug, PartialEq)]
-pub enum Numeric {
-    Integer(i64),  // 64-bit signed integer
-    Float(f64),    // 64-bit floating point
-    UInteger(u64), // 64-bit unsigned integer
-    Byte(u8),      // 8-bit unsigned integer
-    Int32(i32),    // 32-bit signed integer
-    UInt32(u32),   // 32-bit unsigned integer
-    Int16(i16),    // 16-bit signed integer
-    UInt16(u16),   // 16-bit unsigned integer
-    Int8(i8),      // 8-bit signed integer
-}
+pub use babbel_core::num::Numeric;
 
 /// A node in the JSON data structure that can represent different types of values.
 #[derive(Clone, Debug, PartialEq)]

@@ -393,18 +393,22 @@ fn serialize_toml_table(
     prefix: &str,
     dest: &mut dyn crate::io::IDestination,
 ) {
+    let mut has_written_direct = false;
     // 1. Emit direct scalar/inline properties
     for (k, v) in entries {
         if matches!(v, Value::Object(_)) || is_array_of_objects(v) {
             continue;
         }
-        if matches!(v, Value::Null) {
-            continue;
+        if !prefix.is_empty() && !has_written_direct {
+            dest.add_bytes("[");
+            format_toml_table_path(prefix, dest);
+            dest.add_bytes("]\n");
         }
         format_toml_key(k, dest);
         dest.add_bytes(" = ");
         serialize_toml_value(v, dest);
         dest.add_byte(b'\n');
+        has_written_direct = true;
     }
 
     // 2. Emit sub-tables
@@ -415,10 +419,13 @@ fn serialize_toml_table(
             } else {
                 alloc::format!("{}.{}", prefix, k)
             };
-            dest.add_bytes("\n[");
-            format_toml_table_path(&full_key, dest);
-            dest.add_bytes("]\n");
-            serialize_toml_table(sub_entries, &full_key, dest);
+            if sub_entries.is_empty() {
+                dest.add_bytes("[");
+                format_toml_table_path(&full_key, dest);
+                dest.add_bytes("]\n");
+            } else {
+                serialize_toml_table(sub_entries, &full_key, dest);
+            }
         }
     }
 
@@ -432,7 +439,7 @@ fn serialize_toml_table(
                     alloc::format!("{}.{}", prefix, k)
                 };
                 for item in items {
-                    dest.add_bytes("\n[[");
+                    dest.add_bytes("[[");
                     format_toml_table_path(&full_key, dest);
                     dest.add_bytes("]]\n");
                     if let Value::Object(sub_entries) = item {

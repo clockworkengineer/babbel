@@ -33,44 +33,7 @@ fn stringify_pretty_internal(
     match node {
         Node::None => destination.add_bytes(JSON_NULL),
         Node::Boolean(value) => destination.add_bytes(if *value { JSON_TRUE } else { JSON_FALSE }),
-        Node::Number(value) => match value {
-            Numeric::Integer(n) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes(buf.format(*n));
-            }
-            Numeric::UInteger(n) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes(buf.format(*n));
-            }
-            Numeric::Float(f) => {
-                let mut buf = dtoa::Buffer::new();
-                destination.add_bytes(buf.format(*f));
-            }
-            Numeric::Byte(b) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes(buf.format(*b as u64));
-            }
-            Numeric::Int32(i) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes(buf.format(*i));
-            }
-            Numeric::UInt32(u) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes(buf.format(*u));
-            }
-            Numeric::Int16(i) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes(buf.format(*i));
-            }
-            Numeric::UInt16(u) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes(buf.format(*u));
-            }
-            Numeric::Int8(i) => {
-                let mut buf = itoa::Buffer::new();
-                destination.add_bytes(buf.format(*i));
-            }
-        },
+        Node::Number(value) => value.format_to(destination),
         Node::Str(value) => write_escaped_string(value, destination),
         Node::Array(items) => {
             if items.is_empty() {
@@ -110,7 +73,7 @@ fn stringify_pretty_internal(
                     }
                     write_escaped_string(key, destination);
                     destination.add_bytes(": ");
-                    let value = map.get(*key).unwrap();
+                    let value = map.get(key.as_str()).unwrap();
                     stringify_pretty_internal(value, destination, indent, depth + 1)?;
                     if index < keys.len() - 1 {
                         destination.add_bytes(STR_COMMA);

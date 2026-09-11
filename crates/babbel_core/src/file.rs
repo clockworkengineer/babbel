@@ -165,6 +165,29 @@ pub fn read_file_to_string(path: impl AsRef<std::path::Path>) -> Result<String> 
     Ok(content.replace("\r\n", "\n"))
 }
 
+/// Lists all files in a directory ending with the specified extension, sorted deterministically.
+pub fn list_files_by_extension(
+    dir: impl AsRef<std::path::Path>,
+    extension: &str,
+) -> Result<alloc::vec::Vec<std::path::PathBuf>> {
+    let ext_trimmed = extension.trim_start_matches('.');
+    let mut files = alloc::vec::Vec::new();
+    if let Ok(entries) = std::fs::read_dir(dir.as_ref()) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                    if ext.eq_ignore_ascii_case(ext_trimmed) {
+                        files.push(path);
+                    }
+                }
+            }
+        }
+    }
+    files.sort();
+    Ok(files)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

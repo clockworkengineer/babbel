@@ -33,6 +33,7 @@ impl Arena {
 
     /// Allocates a byte slice from the arena.
     /// Returns None if there's insufficient space.
+    #[allow(clippy::mut_from_ref)]
     pub fn alloc_bytes(&self, size: usize) -> Option<&mut [u8]> {
         let pos = self.position.get();
         let new_pos = pos + size;

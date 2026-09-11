@@ -1,4 +1,4 @@
-﻿//! YAML Node Definitions
+//! YAML Node Definitions
 //!
 //! Defines the core `Node` enum and related traits for representing YAML data structures.
 //! Includes conversion, cloning, and utility methods for node manipulation and introspection.
@@ -49,23 +49,7 @@ use std::ops::{Index, IndexMut};
 use core::ops::{Index, IndexMut};
 
 /// Represents different numeric types that can be stored in a YAML node
-///
-/// For embedded systems, consider using smaller numeric types (i32/f32)
-/// to reduce memory footprint. The full enum provides maximum flexibility.
-#[derive(Clone, Debug, PartialEq)]
-/// Numeric
-pub enum Numeric {
-    Integer(i64),
-    Float(f64),
-    UInteger(u64),
-    Byte(u8),
-    Int32(i32),
-    UInt32(u32),
-    Int16(i16),
-    UInt16(u16),
-    Int8(i8),
-    UInt8(u8),
-}
+pub use babbel_core::num::Numeric;
 
 /// Represents how a string was quoted in the source YAML
 
@@ -221,82 +205,6 @@ impl<T: Into<Node>> From<Vec<T>> for Node {
     }
 }
 
-impl From<i64> for Numeric {
-    fn from(value: i64) -> Self {
-        Numeric::Integer(value)
-    }
-}
-
-impl From<f64> for Numeric {
-    fn from(value: f64) -> Self {
-        Numeric::Float(value)
-    }
-}
-
-impl From<u64> for Numeric {
-    fn from(value: u64) -> Self {
-        Numeric::UInteger(value)
-    }
-}
-
-impl From<u8> for Numeric {
-    fn from(value: u8) -> Self {
-        Numeric::Byte(value)
-    }
-}
-
-impl From<i32> for Numeric {
-    fn from(value: i32) -> Self {
-        Numeric::Int32(value)
-    }
-}
-
-impl From<u32> for Numeric {
-    fn from(value: u32) -> Self {
-        Numeric::UInt32(value)
-    }
-}
-
-impl From<i16> for Numeric {
-    fn from(value: i16) -> Self {
-        Numeric::Int16(value)
-    }
-}
-
-impl From<u16> for Numeric {
-    fn from(value: u16) -> Self {
-        Numeric::UInt16(value)
-    }
-}
-
-impl From<i8> for Numeric {
-    fn from(value: i8) -> Self {
-        Numeric::Int8(value)
-    }
-}
-
-#[cfg(feature = "alloc")]
-impl Numeric {
-    /// Lossy string conversion for all numeric variants.
-    ///
-    /// This is intended for formatting and key generation where
-    /// a human-readable representation is sufficient.
-    #[inline]
-    pub fn to_string_lossy(&self) -> alloc::string::String {
-        match self {
-            Numeric::Integer(i) => i.to_string(),
-            Numeric::Float(f) => f.to_string(),
-            Numeric::UInteger(u) => u.to_string(),
-            Numeric::Byte(b) => b.to_string(),
-            Numeric::Int32(i) => i.to_string(),
-            Numeric::UInt32(u) => u.to_string(),
-            Numeric::Int16(i) => i.to_string(),
-            Numeric::UInt16(u) => u.to_string(),
-            Numeric::Int8(i) => i.to_string(),
-            Numeric::UInt8(u) => u.to_string(),
-        }
-    }
-}
 
 #[cfg(feature = "alloc")]
 impl From<&Node> for babbel_core::model::Value {
@@ -344,83 +252,6 @@ impl From<Node> for babbel_core::model::Value {
 }
 
 
-/// Embedded systems helper methods for Numeric
-#[cfg(feature = "embedded")]
-impl Numeric {
-    /// Convert to i32, recommended for embedded systems
-    ///
-    /// This method provides safe conversion of all numeric types to i32,
-    /// which is typically the most efficient integer type on 32-bit embedded platforms.
-    ///
-    /// Returns None if the value cannot fit in an i32.
-    pub fn to_i32(&self) -> Option<i32> {
-        match self {
-            Numeric::Integer(v) => i32::try_from(*v).ok(),
-            Numeric::Float(v) => {
-                if v.is_finite() && *v >= i32::MIN as f64 && *v <= i32::MAX as f64 {
-                    Some(*v as i32)
-                } else {
-                    None
-                }
-            }
-            #[cfg(feature = "alloc")]
-            Numeric::UInteger(v) => i32::try_from(*v).ok(),
-            Numeric::Byte(v) => Some(*v as i32),
-            Numeric::Int32(v) => Some(*v),
-            Numeric::UInt32(v) => i32::try_from(*v).ok(),
-            Numeric::Int16(v) => Some(*v as i32),
-            Numeric::UInt16(v) => Some(*v as i32),
-            Numeric::Int8(v) => Some(*v as i32),
-            Numeric::UInt8(v) => Some(*v as i32),
-        }
-    }
-
-    /// Convert to f32, recommended for embedded systems
-    ///
-    /// This method provides conversion of all numeric types to f32,
-    /// which is typically the most efficient floating-point type on embedded platforms.
-    ///
-    /// Note: Conversion from 64-bit types may lose precision.
-    pub fn to_f32(&self) -> f32 {
-        match self {
-            Numeric::Integer(v) => *v as f32,
-            Numeric::Float(v) => *v as f32,
-            Numeric::UInteger(v) => *v as f32,
-            Numeric::Byte(v) => *v as f32,
-            Numeric::Int32(v) => *v as f32,
-            Numeric::UInt32(v) => *v as f32,
-            Numeric::Int16(v) => *v as f32,
-            Numeric::UInt16(v) => *v as f32,
-            Numeric::Int8(v) => *v as f32,
-            Numeric::UInt8(v) => *v as f32,
-        }
-    }
-
-    /// Check if this numeric value fits in i32 range
-    ///
-    /// Returns true if the value can be safely converted to i32 without loss.
-    pub fn fits_in_i32(&self) -> bool {
-        self.to_i32().is_some()
-    }
-
-    /// Get the memory size of this numeric variant in bytes
-    ///
-    /// Useful for memory accounting in embedded systems.
-    pub fn size_bytes(&self) -> usize {
-        match self {
-            Numeric::Integer(_) => 8,
-            Numeric::Float(_) => 8,
-            Numeric::UInteger(_) => 8,
-            Numeric::Byte(_) => 1,
-            Numeric::Int32(_) => 4,
-            Numeric::UInt32(_) => 4,
-            Numeric::Int16(_) => 2,
-            Numeric::UInt16(_) => 2,
-            Numeric::Int8(_) => 1,
-            Numeric::UInt8(_) => 1,
-        }
-    }
-}
 
 impl From<i64> for Node {
     fn from(value: i64) -> Self {

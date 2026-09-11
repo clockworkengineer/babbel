@@ -41,34 +41,7 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), 
         // Convert numeric values to XML with type-specific handling
         Node::Number(value) => {
             destination.add_bytes("<number>");
-            match value {
-                Numeric::Integer(n) => {
-                    let mut buf = itoa::Buffer::new();
-                    destination.add_bytes(buf.format(*n));
-                }
-                Numeric::UInteger(n) => {
-                    let mut buf = itoa::Buffer::new();
-                    destination.add_bytes(buf.format(*n));
-                }
-                Numeric::Float(f) => {
-                    let mut buf = dtoa::Buffer::new();
-                    destination.add_bytes(buf.format(*f));
-                }
-                Numeric::Byte(b) => {
-                    let mut buf = itoa::Buffer::new();
-                    destination.add_bytes(buf.format(*b as u64));
-                }
-                Numeric::Int32(i) => {
-                    let mut buf = itoa::Buffer::new();
-                    destination.add_bytes(buf.format(*i));
-                }
-                Numeric::UInt32(u) => {
-                    let mut buf = itoa::Buffer::new();
-                    destination.add_bytes(buf.format(*u));
-                }
-                #[allow(unreachable_patterns)]
-                _ => destination.add_bytes(&format!("{:?}", value)),
-            }
+            value.format_to(destination);
             destination.add_bytes("</number>");
         }
         // Convert string values to XML with proper escaping
