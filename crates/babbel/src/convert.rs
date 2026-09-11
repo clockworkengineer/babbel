@@ -4,19 +4,20 @@
 //! CSV, TSV, INI, and JSON Lines.
 
 #[cfg(feature = "json")]
-use babbel_json as json_lib;
+use babbel_json::JsonEngine;
 #[cfg(feature = "yaml")]
-use babbel_yaml as yaml_lib;
+use babbel_yaml::YamlEngine;
 #[cfg(feature = "bencode")]
-use babbel_bencode as bencode_lib;
+use babbel_bencode::BencodeEngine;
 #[cfg(feature = "xml")]
-use babbel_xml as xml_lib;
+use babbel_xml::XmlEngine;
 #[cfg(feature = "toml")]
-use babbel_toml as toml_lib;
+use babbel_toml::TomlEngine;
 
 use babbel_core::{
-    csv::emit_csv_to, ini::emit_ini_to, parse_csv, parse_ini, BabbelError, Buffer,
-    CsvOptions, FormatEmitter, FormatParser, IniOptions, JsonEmitter, TomlEmitter, Value, YamlEmitter,
+    csv::emit_csv_to, ini::emit_ini_to, parse_csv, parse_ini, BabbelError, Buffer, BufferDestination,
+    CsvOptions, FormatEmitter, FormatEngine, FormatOptions, FormatParser, IniOptions, JsonEmitter,
+    TomlEmitter, Value, YamlEmitter,
 };
 
 /// Supported serialization format identifiers.
@@ -67,6 +68,58 @@ impl ConversionOptions {
     }
 }
 
+/// Universal cross-format text conversion pipeline adhering to OCP and DIP.
+///
+/// Parses input text via `from` engine, translates into universal `Value`, and serializes via `to` engine.
+pub fn convert_format<F: FormatEngine + ?Sized, T: FormatEngine + ?Sized>(
+    input: &str,
+    from: &F,
+    to: &T,
+    options: &ConversionOptions,
+) -> Result<String, BabbelError> {
+    let value = from.parse_str(input)?;
+    let mut dest = BufferDestination::new();
+    let format_opts = FormatOptions {
+        pretty: options.pretty,
+        indent: options.indent,
+    };
+    to.serialize(&value, &mut dest, &format_opts)?;
+    dest.into_string()
+        .map_err(|_| BabbelError::encoding("output is not valid UTF-8"))
+}
+
+/// Universal cross-format byte conversion pipeline adhering to OCP and DIP.
+///
+/// Parses input bytes via `from` engine, translates into universal `Value`, and serializes via `to` engine.
+pub fn convert_format_bytes<F: FormatEngine + ?Sized, T: FormatEngine + ?Sized>(
+    input: &[u8],
+    from: &F,
+    to: &T,
+    options: &ConversionOptions,
+) -> Result<Vec<u8>, BabbelError> {
+    let value = from.parse_bytes(input)?;
+    let mut dest = BufferDestination::new();
+    let format_opts = FormatOptions {
+        pretty: options.pretty,
+        indent: options.indent,
+    };
+    to.serialize(&value, &mut dest, &format_opts)?;
+    Ok(dest.into_vec())
+}
+
+/// Universal cross-format byte-to-string conversion pipeline adhering to OCP and DIP.
+///
+/// Parses input bytes via `from` engine, translates into universal `Value`, and serializes via `to` engine into a UTF-8 string.
+pub fn convert_format_bytes_to_str<F: FormatEngine + ?Sized, T: FormatEngine + ?Sized>(
+    input: &[u8],
+    from: &F,
+    to: &T,
+    options: &ConversionOptions,
+) -> Result<String, BabbelError> {
+    let bytes = convert_format_bytes(input, from, to, options)?;
+    String::from_utf8(bytes).map_err(|_| BabbelError::encoding("output is not valid UTF-8"))
+}
+
 /// Generic, open-ended conversion pipeline from any format parser to any format emitter (OCP & DIP).
 pub fn convert_text<P: FormatParser, E: FormatEmitter>(
     input: &str,
@@ -113,8 +166,11 @@ pub struct JsonParser;
 #[cfg(feature = "json")]
 impl FormatParser for JsonParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        let node = json_lib::from_str(input)?;
-        Ok(Value::from(&node))
+        JsonEngine.parse_str(input)
+    }
+
+    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
+        JsonEngine.parse_bytes(input)
     }
 }
 
@@ -126,8 +182,11 @@ pub struct YamlParser;
 #[cfg(feature = "yaml")]
 impl FormatParser for YamlParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        let node = yaml_lib::parse_string(input)?;
-        Ok(Value::from(&node))
+        YamlEngine.parse_str(input)
+    }
+
+    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
+        YamlEngine.parse_bytes(input)
     }
 }
 
@@ -139,12 +198,11 @@ pub struct BencodeParser;
 #[cfg(feature = "bencode")]
 impl FormatParser for BencodeParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        self.parse_bytes(input.as_bytes())
+        BencodeEngine.parse_str(input)
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        let node = bencode_lib::parse_bytes(input)?;
-        Ok(Value::from(&node))
+        BencodeEngine.parse_bytes(input)
     }
 }
 
@@ -156,9 +214,11 @@ pub struct XmlParser;
 #[cfg(feature = "xml")]
 impl FormatParser for XmlParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        let doc = xml_lib::parse(input)?;
-        let name = doc.get_root_element_name().unwrap_or("xml").to_string();
-        Ok(Value::Object(vec![(name, Value::String(input.to_string()))]))
+        XmlEngine.parse_str(input)
+    }
+
+    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
+        XmlEngine.parse_bytes(input)
     }
 }
 
@@ -170,8 +230,11 @@ pub struct TomlParser;
 #[cfg(feature = "toml")]
 impl FormatParser for TomlParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        let node = toml_lib::from_str(input)?;
-        Ok(Value::from(&node))
+        TomlEngine.parse_str(input)
+    }
+
+    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
+        TomlEngine.parse_bytes(input)
     }
 }
 
@@ -271,7 +334,7 @@ pub struct JsonLinesParser;
 #[cfg(feature = "json")]
 impl FormatParser for JsonLinesParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        let nodes = json_lib::parse_json_lines(input).map_err(BabbelError::syntax)?;
+        let nodes = babbel_json::parse_json_lines(input).map_err(BabbelError::syntax)?;
         let values: Vec<Value> = nodes.iter().map(Value::from).collect();
         Ok(Value::Array(values))
     }
@@ -305,75 +368,52 @@ impl FormatEmitter for JsonLinesEmitter {
 
 /// Convert JSON string to YAML string.
 #[cfg(all(feature = "json", feature = "yaml"))]
-pub fn json_to_yaml(json: &str) -> Result<String, String> {
-    let node = json_lib::from_str(json).map_err(|e| e.to_string())?;
-    let mut dest = json_lib::BufferDestination::new();
-    json_lib::to_yaml(&node, &mut dest)?;
-    Ok(dest.to_string())
+pub fn json_to_yaml(json: &str) -> Result<String, BabbelError> {
+    convert_format(json, &JsonEngine, &YamlEngine, &ConversionOptions::default())
 }
 
 /// Convert JSON string to XML string.
 #[cfg(all(feature = "json", feature = "xml"))]
-pub fn json_to_xml(json: &str) -> Result<String, String> {
-    let node = json_lib::from_str(json).map_err(|e| e.to_string())?;
-    let mut dest = json_lib::BufferDestination::new();
-    json_lib::to_xml(&node, &mut dest)?;
-    Ok(dest.to_string())
+pub fn json_to_xml(json: &str) -> Result<String, BabbelError> {
+    convert_format(json, &JsonEngine, &XmlEngine, &ConversionOptions::default())
 }
 
 /// Convert JSON string to Bencode byte vector.
 #[cfg(all(feature = "json", feature = "bencode"))]
-pub fn json_to_bencode(json: &str) -> Result<Vec<u8>, String> {
-    let node = json_lib::from_str(json).map_err(|e| e.to_string())?;
-    let mut dest = json_lib::BufferDestination::new();
-    json_lib::to_bencode(&node, &mut dest)?;
-    Ok(dest.buffer)
+pub fn json_to_bencode(json: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(json.as_bytes(), &JsonEngine, &BencodeEngine, &ConversionOptions::default())
 }
 
 /// Convert YAML string to JSON string.
 #[cfg(all(feature = "yaml", feature = "json"))]
-pub fn yaml_to_json(yaml: &str) -> Result<String, String> {
-    let node = yaml_lib::parse_string(yaml).map_err(|e| e.to_string())?;
-    let mut dest = yaml_lib::BufferDestination::new();
-    yaml_lib::to_json(&node, &mut dest).map_err(|e| e.to_string())?;
-    Ok(dest.to_string())
+pub fn yaml_to_json(yaml: &str) -> Result<String, BabbelError> {
+    convert_format(yaml, &YamlEngine, &JsonEngine, &ConversionOptions::default())
 }
 
 /// Convert YAML string to XML string.
 #[cfg(all(feature = "yaml", feature = "xml"))]
-pub fn yaml_to_xml(yaml: &str) -> Result<String, String> {
-    let node = yaml_lib::parse_string(yaml).map_err(|e| e.to_string())?;
-    let mut dest = yaml_lib::BufferDestination::new();
-    yaml_lib::to_xml(&node, &mut dest).map_err(|e| e.to_string())?;
-    Ok(dest.to_string())
+pub fn yaml_to_xml(yaml: &str) -> Result<String, BabbelError> {
+    convert_format(yaml, &YamlEngine, &XmlEngine, &ConversionOptions::default())
 }
 
 /// Convert Bencode binary payload to JSON string.
 #[cfg(all(feature = "bencode", feature = "json"))]
-pub fn bencode_to_json(bencode: &[u8]) -> Result<String, String> {
-    let node = bencode_lib::parse_bytes(bencode).map_err(|e| e.to_string())?;
-    let mut dest = bencode_lib::BufferDestination::new();
-    bencode_lib::to_json(&node, &mut dest)?;
-    Ok(dest.to_string())
+pub fn bencode_to_json(bencode: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bencode, &BencodeEngine, &JsonEngine, &ConversionOptions::default())
 }
 
 /// Convert Bencode binary payload to YAML string.
 #[cfg(all(feature = "bencode", feature = "yaml"))]
-pub fn bencode_to_yaml(bencode: &[u8]) -> Result<String, String> {
-    let node = bencode_lib::parse_bytes(bencode).map_err(|e| e.to_string())?;
-    let mut dest = bencode_lib::BufferDestination::new();
-    bencode_lib::to_yaml(&node, &mut dest)?;
-    Ok(dest.to_string())
+pub fn bencode_to_yaml(bencode: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bencode, &BencodeEngine, &YamlEngine, &ConversionOptions::default())
 }
 
 /// Convert Bencode binary payload to XML string.
 #[cfg(all(feature = "bencode", feature = "xml"))]
-pub fn bencode_to_xml(bencode: &[u8]) -> Result<String, String> {
-    let node = bencode_lib::parse_bytes(bencode).map_err(|e| e.to_string())?;
-    let mut dest = bencode_lib::BufferDestination::new();
-    bencode_lib::to_xml(&node, &mut dest)?;
-    Ok(dest.to_string())
+pub fn bencode_to_xml(bencode: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bencode, &BencodeEngine, &XmlEngine, &ConversionOptions::default())
 }
+
 
 // =========================================================================
 // Text Format Conversions (CSV, TSV, INI, JSON Lines)
@@ -470,52 +510,49 @@ pub fn csv_to_jsonlines(csv: &str) -> Result<String, BabbelError> {
 /// Convert TOML string to JSON string.
 #[cfg(all(feature = "toml", feature = "json"))]
 pub fn toml_to_json(toml: &str) -> Result<String, BabbelError> {
-    convert_text(toml, &TomlParser, &JsonEmitter)
+    convert_format(toml, &TomlEngine, &JsonEngine, &ConversionOptions::default())
 }
 
 /// Convert JSON string to TOML string.
 #[cfg(all(feature = "json", feature = "toml"))]
 pub fn json_to_toml(json: &str) -> Result<String, BabbelError> {
-    convert_text(json, &JsonParser, &TomlEmitter)
+    convert_format(json, &JsonEngine, &TomlEngine, &ConversionOptions::default())
 }
 
 /// Convert TOML string to YAML string.
 #[cfg(all(feature = "toml", feature = "yaml"))]
 pub fn toml_to_yaml(toml: &str) -> Result<String, BabbelError> {
-    convert_text(toml, &TomlParser, &YamlEmitter)
+    convert_format(toml, &TomlEngine, &YamlEngine, &ConversionOptions::default())
 }
 
 /// Convert YAML string to TOML string.
 #[cfg(all(feature = "yaml", feature = "toml"))]
 pub fn yaml_to_toml(yaml: &str) -> Result<String, BabbelError> {
-    convert_text(yaml, &YamlParser, &TomlEmitter)
+    convert_format(yaml, &YamlEngine, &TomlEngine, &ConversionOptions::default())
 }
 
 /// Convert TOML string to XML string.
 #[cfg(all(feature = "toml", feature = "xml"))]
 pub fn toml_to_xml(toml: &str) -> Result<String, BabbelError> {
-    convert_text(toml, &TomlParser, &babbel_core::XmlEmitter)
+    convert_format(toml, &TomlEngine, &XmlEngine, &ConversionOptions::default())
 }
 
 /// Convert XML string to TOML string.
 #[cfg(all(feature = "xml", feature = "toml"))]
 pub fn xml_to_toml(xml: &str) -> Result<String, BabbelError> {
-    convert_text(xml, &XmlParser, &TomlEmitter)
+    convert_format(xml, &XmlEngine, &TomlEngine, &ConversionOptions::default())
 }
 
 /// Convert TOML string to Bencode byte vector.
 #[cfg(all(feature = "toml", feature = "bencode"))]
 pub fn toml_to_bencode(toml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_bytes(toml.as_bytes(), &TomlParser, &babbel_core::BencodeEmitter)
+    convert_format_bytes(toml.as_bytes(), &TomlEngine, &BencodeEngine, &ConversionOptions::default())
 }
 
 /// Convert Bencode binary payload to TOML string.
 #[cfg(all(feature = "bencode", feature = "toml"))]
 pub fn bencode_to_toml(bencode: &[u8]) -> Result<String, BabbelError> {
-    let value = BencodeParser.parse_bytes(bencode)?;
-    let mut dest = Buffer::new();
-    TomlEmitter.emit(&value, &mut dest)?;
-    Ok(dest.to_string())
+    convert_format_bytes_to_str(bencode, &BencodeEngine, &TomlEngine, &ConversionOptions::default())
 }
 
 /// Convert TOML string to CSV string.

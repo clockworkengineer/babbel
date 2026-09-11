@@ -306,11 +306,14 @@ graph LR
 ### Phase 5: Facade Decoupling & Adaptor Cleanup
 - **Target**: Clean up `babbel` facade to operate strictly on abstractions.
 - **Tasks**:
-  1. Refactor `babbel/src/convert.rs`:
-     - Implement universal `convert_format(input, from_engine, to_engine, options)`.
-     - Retain existing convenience functions (`json_to_yaml`, `yaml_to_toml`, etc.) as thin one-line forwards to `convert_format`.
-  2. Replace remaining redundant cross-serializers in `json`, `yaml`, `bencode` with lightweight engine delegates routing through `Value`.
-- **Verification Gate**: `cargo test --package babbel --all-features`.
+  1. [x] Refactor `babbel/src/convert.rs`:
+     - Implement universal `convert_format(input, from_engine, to_engine, options)` and `convert_format_bytes(input, from_engine, to_engine, options)`.
+     - Implement universal `convert_format_bytes_to_str(input, from_engine, to_engine, options)`.
+     - Decouple `JsonParser`, `YamlParser`, `XmlParser`, `BencodeParser`, and `TomlParser` to route through `FormatEngine` methods instead of directly calling foreign format internals.
+     - Retain and forward existing convenience functions (`json_to_yaml`, `yaml_to_json`, `json_to_xml`, `yaml_to_xml`, `json_to_bencode`, `bencode_to_json`, `bencode_to_yaml`, `bencode_to_xml`, `toml_to_json`, `json_to_toml`, `toml_to_yaml`, `yaml_to_toml`, `toml_to_xml`, `xml_to_toml`, `toml_to_bencode`, `bencode_to_toml`) as clean one-liners to `convert_format` / `convert_format_bytes` / `convert_format_bytes_to_str`.
+  2. [x] Replace remaining redundant cross-serializers in `json`, `yaml`, `bencode` with lightweight engine delegates routing through `Value`.
+  3. [x] Expand integration test coverage in `crates/babbel/tests/smoke_test.rs` to validate all new and forwarded cross-format pipelines (TOML <-> Bencode, TOML <-> YAML, TOML <-> XML, and direct universal `convert_format` / `convert_format_bytes`).
+- **Verification Gate**: `cargo test --package babbel --all-features` (100% pass rate) and `cargo test --workspace` (100% pass rate across all crates).
 
 ### Phase 6: Comprehensive Verification & Metrics
 - **Target**: Validate all invariants, memory bounds, and zero-regression status.
@@ -340,10 +343,10 @@ graph LR
 
 ## 5. Architectural Quality Checklist
 
-- [ ] **SRP**: Every struct and module has a single, well-defined responsibility.
-- [ ] **OCP**: New formats can be introduced without modifying existing parser or serializer source files.
-- [ ] **LSP**: All trait implementations obey contracts without runtime panics or unexpected errors.
-- [ ] **ISP**: Fine-grained traits allow partial implementations without unused stub boilerplate.
-- [ ] **DIP**: High-level coordinators depend exclusively on abstractions, not concrete format internals.
-- [ ] **Memory Bounds**: All Node types strictly adhere to size bounds (`size_of::<Node>() <= 48 bytes`).
-- [ ] **Zero Regressions**: 100% passing test suite across all 7 workspace crates.
+- [x] **SRP**: Every struct and module has a single, well-defined responsibility.
+- [x] **OCP**: New formats can be introduced without modifying existing parser or serializer source files.
+- [x] **LSP**: All trait implementations obey contracts without runtime panics or unexpected errors.
+- [x] **ISP**: Fine-grained traits allow partial implementations without unused stub boilerplate.
+- [x] **DIP**: High-level coordinators depend exclusively on abstractions, not concrete format internals.
+- [x] **Memory Bounds**: All Node types strictly adhere to size bounds (`size_of::<Node>() <= 48 bytes`).
+- [x] **Zero Regressions**: 100% passing test suite across all 7 workspace crates.

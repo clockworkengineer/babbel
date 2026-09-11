@@ -71,4 +71,30 @@ fn test_cross_format_conversions() {
     // 8. TOML -> YAML
     let yaml_from_toml = babbel::convert::toml_to_yaml(toml_sample).expect("TOML -> YAML failed");
     assert!(yaml_from_toml.contains("babbel"));
+
+    // 9. YAML -> TOML
+    let toml_from_yaml = babbel::convert::yaml_to_toml("app: babbel\n").expect("YAML -> TOML failed");
+    assert!(toml_from_yaml.contains("app = \"babbel\""));
+
+    // 10. TOML -> Bencode & Bencode -> TOML
+    let bencode_from_toml = babbel::convert::toml_to_bencode(toml_sample).expect("TOML -> Bencode failed");
+    let toml_from_bencode = babbel::convert::bencode_to_toml(&bencode_from_toml).expect("Bencode -> TOML failed");
+    assert!(toml_from_bencode.contains("app = \"babbel\""));
+
+    // 11. TOML -> XML
+    let xml_from_toml = babbel::convert::toml_to_xml(toml_sample).expect("TOML -> XML failed");
+    assert!(xml_from_toml.contains("babbel"));
+
+    // 12. Universal convert_format & convert_format_bytes
+    let json_engine = babbel::json::JsonEngine;
+    let yaml_engine = babbel::yaml::YamlEngine;
+    let opts = babbel::convert::ConversionOptions::default();
+    let direct_yaml = babbel::convert::convert_format(r#"{"hello":"world"}"#, &json_engine, &yaml_engine, &opts)
+        .expect("convert_format failed");
+    assert!(direct_yaml.contains("hello"));
+
+    let bencode_engine = babbel::bencode::BencodeEngine;
+    let direct_bytes = babbel::convert::convert_format_bytes(r#"{"hello":"world"}"#.as_bytes(), &json_engine, &bencode_engine, &opts)
+        .expect("convert_format_bytes failed");
+    assert!(!direct_bytes.is_empty());
 }
