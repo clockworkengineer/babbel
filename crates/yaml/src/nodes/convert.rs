@@ -35,8 +35,15 @@ impl From<&Node> for babbel_core::model::Value {
                 Numeric::UInt8(u) => babbel_core::model::Value::Integer(*u as i128),
                 Numeric::Float(f) => babbel_core::model::Value::Float(*f),
             },
-            Node::Array(arr) | Node::Set(arr) | Node::Document(arr) | Node::Documents(arr) => {
+            Node::Array(arr) | Node::Set(arr) => {
                 babbel_core::model::Value::Array(arr.iter().map(babbel_core::model::Value::from).collect())
+            }
+            Node::Document(arr) | Node::Documents(arr) => {
+                if arr.len() == 1 {
+                    babbel_core::model::Value::from(&arr[0])
+                } else {
+                    babbel_core::model::Value::Array(arr.iter().map(babbel_core::model::Value::from).collect())
+                }
             }
             Node::Mapping(pairs) => {
                 let entries: alloc::vec::Vec<(alloc::string::String, babbel_core::model::Value)> = pairs

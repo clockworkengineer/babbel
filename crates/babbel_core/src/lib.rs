@@ -27,9 +27,12 @@ pub mod text;
 // Re-export key primitives for ergonomic downstream usage
 pub use chars::{is_digit, is_hex_digit, is_newline, is_whitespace};
 pub use codec::{
-    BencodeEmitter, FormatCodec, FormatEmitter, FormatParser, JsonEmitter, TomlEmitter, XmlEmitter,
+    find_engine, find_engine_by_extension, find_engine_by_mime, BencodeEmitter, FormatCodec,
+    FormatEmitter, FormatEngine, FormatOptions, FormatParser, JsonEmitter, TomlEmitter, XmlEmitter,
     YamlEmitter,
 };
+#[cfg(feature = "alloc")]
+pub use codec::FormatRegistry;
 pub use csv::{
     emit_csv, emit_csv_to, parse_csv, sniff_delimiter, CsvFieldsIter, CsvOptions, CsvPullParser,
     CsvRecord,

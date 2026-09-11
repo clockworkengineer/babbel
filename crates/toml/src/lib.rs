@@ -16,6 +16,10 @@ pub mod nodes;
 pub mod parser;
 pub mod stringify;
 
+/// Format engine implementation adhering to OCP and DIP
+pub mod engine;
+pub use engine::TomlEngine;
+
 // Re-exports
 pub use error::TomlError;
 pub use nodes::{DatetimeKind, Node, TomlDatetime};

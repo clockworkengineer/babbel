@@ -227,3 +227,7 @@ pub use parser::json5;
 pub mod lines;
 #[cfg(feature = "alloc")]
 pub use lines::{parse_json_lines, to_json_lines, to_json_lines_stream, JsonLinesConfig, JsonLinesReader};
+
+/// Format engine implementation adhering to OCP and DIP
+pub mod engine;
+pub use engine::JsonEngine;

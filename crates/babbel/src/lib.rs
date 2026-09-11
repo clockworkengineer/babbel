@@ -42,6 +42,9 @@
 //! # }
 //! ```
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 pub use babbel_core as core;
 
 #[cfg(feature = "json")]
@@ -99,5 +102,42 @@ pub use babbel_core::{
     csv, emit_csv, emit_ini, ini, parse_csv, parse_ini, sniff_delimiter, split_frontmatter, text,
     ArrayVecDestination, BabbelError, CompactError, CsvFieldsIter, CsvOptions, CsvPullParser, CsvRecord,
     DocumentWithFrontmatter, EmbeddedLimits, ErrorCode, FrontmatterFormat, IniEvent, IniOptions, IniPullParser,
-    Location, MemoryTracker, SliceDestination, Span, StackBuffer,
+    Location, MemoryTracker, SliceDestination, Span, StackBuffer, Value,
 };
+
+// Re-export FormatEngine architecture (OCP & DIP)
+#[cfg(feature = "json")]
+pub use babbel_json::JsonEngine;
+#[cfg(feature = "yaml")]
+pub use babbel_yaml::YamlEngine;
+#[cfg(feature = "xml")]
+pub use babbel_xml::XmlEngine;
+#[cfg(feature = "bencode")]
+pub use babbel_bencode::BencodeEngine;
+#[cfg(feature = "toml")]
+pub use babbel_toml::TomlEngine;
+
+pub use babbel_core::{
+    find_engine, find_engine_by_extension, find_engine_by_mime, FormatCodec, FormatEmitter,
+    FormatEngine, FormatOptions, FormatParser,
+};
+#[cfg(feature = "alloc")]
+pub use babbel_core::FormatRegistry;
+
+/// Creates a format registry pre-populated with all enabled built-in format engines.
+#[cfg(feature = "alloc")]
+pub fn default_registry() -> babbel_core::FormatRegistry {
+    #[allow(unused_mut)]
+    let mut registry = babbel_core::FormatRegistry::new();
+    #[cfg(feature = "json")]
+    registry.register(alloc::sync::Arc::new(babbel_json::JsonEngine));
+    #[cfg(feature = "yaml")]
+    registry.register(alloc::sync::Arc::new(babbel_yaml::YamlEngine));
+    #[cfg(feature = "xml")]
+    registry.register(alloc::sync::Arc::new(babbel_xml::XmlEngine));
+    #[cfg(feature = "bencode")]
+    registry.register(alloc::sync::Arc::new(babbel_bencode::BencodeEngine));
+    #[cfg(feature = "toml")]
+    registry.register(alloc::sync::Arc::new(babbel_toml::TomlEngine));
+    registry
+}

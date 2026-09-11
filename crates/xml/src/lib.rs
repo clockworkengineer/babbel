@@ -222,3 +222,8 @@ pub fn parse_file_with_options(
     let mut parser = XmlParser::new(source, options);
     parser.parse()
 }
+
+/// Format engine implementation adhering to OCP and DIP
+pub mod engine;
+pub use engine::XmlEngine;
+

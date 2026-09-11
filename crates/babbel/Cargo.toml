@@ -12,7 +12,7 @@ homepage = "https://github.com/clockworkengineer/babbel"
 
 [features]
 default = ["std", "json", "yaml", "xml", "bencode", "toml", "convert"]
-std = ["babbel_core/std"]
+std = ["alloc", "babbel_core/std"]
 alloc = ["babbel_core/alloc"]
 json = ["dep:babbel_json", "babbel_json/format-yaml", "babbel_json/format-xml", "babbel_json/format-bencode"]
 yaml = ["dep:babbel_yaml"]

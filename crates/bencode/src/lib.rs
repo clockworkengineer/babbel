@@ -160,3 +160,7 @@ pub use stringify::xml::stringify as to_xml;
 #[cfg(feature = "yaml")]
 pub use stringify::yaml::stringify as to_yaml;
 
+/// Format engine implementation adhering to OCP and DIP
+pub mod engine;
+pub use engine::BencodeEngine;
+

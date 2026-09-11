@@ -289,18 +289,19 @@ graph LR
   4. [x] Add comprehensive test suite in `crates/babbel/tests/test_lsp_error_unification.rs` verifying diagnostic substitution and non-panicking safe access.
 - **Verification Gate**: `cargo test --workspace` (Zero regressions across all crates, 100% pass rate).
 
-### Phase 4: OCP & DIP FormatEngine Architecture
+### Phase 4: OCP & DIP FormatEngine Architecture (Completed)
 - **Target**: Make format registration open for extension and invert dependencies.
 - **Tasks**:
-  1. Add `babbel_core::codec::FormatEngine` trait.
-  2. Implement `FormatEngine` in each format crate:
+  1. [x] Add `babbel_core::codec::FormatEngine` trait, `FormatOptions`, and static lookup helpers (`find_engine`, `find_engine_by_extension`, `find_engine_by_mime`).
+  2. [x] Implement `FormatEngine` in each format crate:
      - `babbel_json::JsonEngine`
      - `babbel_yaml::YamlEngine`
      - `babbel_xml::XmlEngine`
      - `babbel_bencode::BencodeEngine`
      - `babbel_toml::TomlEngine`
-  3. Introduce `babbel_core::codec::FormatRegistry` supporting dynamic or static engine lookup by extension (`.json`, `.yaml`, `.toml`, `.xml`, `.torrent`) or MIME type.
-- **Verification Gate**: Compile with and without individual format feature flags.
+  3. [x] Introduce `babbel_core::codec::FormatRegistry` supporting dynamic engine registration and lookup by format ID, MIME type, or file extension, along with `babbel::default_registry()`.
+  4. [x] Add integration test suite in `crates/babbel/tests/test_ocp_dip_format_engines.rs` validating metadata, dynamic registry lookups, static slice lookups, and bidirectional cross-engine round-trips.
+- **Verification Gate**: Compile with and without individual format feature flags (Verified with `std`, `std,json,yaml`, `std,xml,toml,bencode`, and full features; 100% test pass rate across workspace).
 
 ### Phase 5: Facade Decoupling & Adaptor Cleanup
 - **Target**: Clean up `babbel` facade to operate strictly on abstractions.

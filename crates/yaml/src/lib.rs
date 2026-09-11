@@ -46,6 +46,9 @@ pub mod devtools;
 pub mod embedded;
 /// Module defining error types and handling for YAML operations.
 pub mod error;
+/// Format engine implementation adhering to OCP and DIP
+pub mod engine;
+pub use engine::YamlEngine;
 /// Module for detecting and handling different Unicode text file formats
 #[cfg(feature = "file-io")]
 mod file;
