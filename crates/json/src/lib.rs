@@ -29,8 +29,9 @@ extern crate alloc;
 /// Module defining error types and handling for JSON operations.
 pub mod error;
 
-// Re-export ParseError for convenience
+// Re-export ParseError and JsonError alias for convenience & format error consistency
 pub use error::parse_error::ParseError;
+pub use error::JsonError;
 
 /// Module handling JSON file reading and writing operations
 #[cfg(feature = "file-io")]

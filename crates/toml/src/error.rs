@@ -56,6 +56,8 @@ impl std::error::Error for TomlError {}
 impl From<TomlError> for BabbelError {
     fn from(err: TomlError) -> Self {
         let loc = Location::new(err.line, err.column, err.position);
-        BabbelError::syntax(err.message).with_span(Span::new(loc, loc))
+        BabbelError::syntax(err.message)
+            .with_format("toml")
+            .with_span(Span::new(loc, loc))
     }
 }

@@ -277,15 +277,17 @@ graph LR
   3. Implement automatic blanket implementations so any type implementing all three satisfies `ISource`.
 - **Verification Gate**: `cargo test -p babbel_core` and `cargo test -p babbel_json`.
 
-### Phase 3: LSP Invariant Hardening & Error Unification
+### Phase 3: LSP Invariant Hardening & Error Unification (Completed)
 - **Target**: Eliminate panicking index calls and guarantee uniform error propagation.
 - **Tasks**:
-  1. In `babbel_yaml::Node`, ensure all index operations adhere to predictable behavior:
-     - `Node::index(usize)` checks bounds and returns slice elements without unexpected panic on valid array nodes.
-     - Add `#[inline] pub fn get(&self, key: &str) -> Option<&Node>` and `#[inline] pub fn get_index(&self, idx: usize) -> Option<&Node>` as the safe, recommended API.
-  2. Implement `From<FormatError> for BabbelError` across all format crates (`JsonError`, `YamlError`, `XmlError`, `TomlError`, `BencodeError`).
-  3. Standardize internal serializers to return structured errors convertible to `BabbelError` instead of raw `Result<(), String>`.
-- **Verification Gate**: `cargo test --workspace` (Zero regressions).
+  1. [x] In `babbel_yaml::Node`, ensure all index operations adhere to predictable behavior:
+     - `NodeIndex` trait implemented for `usize`, `&str`, `&String`, `String` allowing safe, total `get` and `get_mut`.
+     - Explicit total accessors `#[inline] pub fn get_index(&self, idx: usize) -> Option<&Node>` and `#[inline] pub fn get_index_mut(&mut self, idx: usize) -> Option<&mut Node>`.
+     - Preserve standard slice semantics for `Index<usize>` and `IndexMut<usize>`.
+  2. [x] Implement `From<FormatError> for BabbelError` across all format crates (`JsonError` / `ParseError`, `YamlError`, `XmlError`, `TomlError`, `BencodeError`) with format tagging, span tracking, and `std::error::Error` implementation.
+  3. [x] Export `JsonError` alias in `babbel_json` and re-export `BabbelError` at `babbel` root for seamless diagnostic substitution.
+  4. [x] Add comprehensive test suite in `crates/babbel/tests/test_lsp_error_unification.rs` verifying diagnostic substitution and non-panicking safe access.
+- **Verification Gate**: `cargo test --workspace` (Zero regressions across all crates, 100% pass rate).
 
 ### Phase 4: OCP & DIP FormatEngine Architecture
 - **Target**: Make format registration open for extension and invert dependencies.

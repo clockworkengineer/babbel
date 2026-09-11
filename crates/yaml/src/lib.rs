@@ -124,6 +124,8 @@ pub use nodes::node::BlockStyle;
 pub use nodes::node::MappingBuilder;
 /// Core data structure representing a YAML node in the parsed tree
 pub use nodes::node::Node;
+/// Trait for indexing into a Node safely (by index or key)
+pub use nodes::access::NodeIndex;
 /// Core data structure representing a numeric value node in the parsed tree
 pub use nodes::node::Numeric;
 /// Quote type for string nodes

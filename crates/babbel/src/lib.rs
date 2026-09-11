@@ -97,7 +97,7 @@ pub mod embedded {
 // Re-export text, CSV, and INI processing from core
 pub use babbel_core::{
     csv, emit_csv, emit_ini, ini, parse_csv, parse_ini, sniff_delimiter, split_frontmatter, text,
-    ArrayVecDestination, CompactError, CsvFieldsIter, CsvOptions, CsvPullParser, CsvRecord,
-    DocumentWithFrontmatter, EmbeddedLimits, FrontmatterFormat, IniEvent, IniOptions, IniPullParser,
-    MemoryTracker, SliceDestination, StackBuffer,
+    ArrayVecDestination, BabbelError, CompactError, CsvFieldsIter, CsvOptions, CsvPullParser, CsvRecord,
+    DocumentWithFrontmatter, EmbeddedLimits, ErrorCode, FrontmatterFormat, IniEvent, IniOptions, IniPullParser,
+    Location, MemoryTracker, SliceDestination, Span, StackBuffer,
 };

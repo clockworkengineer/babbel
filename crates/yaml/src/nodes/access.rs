@@ -10,6 +10,60 @@ use super::types::{Node, Numeric};
 #[cfg(feature = "alloc")]
 use crate::nodes::builders::{ArrayBuilder, MappingBuilder, SetBuilder};
 
+/// Helper trait abstracting sequence index (`usize`) and mapping key (`&str`) lookup for [`Node`].
+pub trait NodeIndex {
+    /// Inspect element at this index/key from `node`.
+    fn index_into<'a>(&self, node: &'a Node) -> Option<&'a Node>;
+    /// Mutably inspect element at this index/key from `node`.
+    fn index_into_mut<'a>(&self, node: &'a mut Node) -> Option<&'a mut Node>;
+}
+
+impl NodeIndex for usize {
+    #[inline]
+    fn index_into<'a>(&self, node: &'a Node) -> Option<&'a Node> {
+        node.get_index(*self)
+    }
+    #[inline]
+    fn index_into_mut<'a>(&self, node: &'a mut Node) -> Option<&'a mut Node> {
+        node.get_index_mut(*self)
+    }
+}
+
+impl NodeIndex for &str {
+    #[inline]
+    fn index_into<'a>(&self, node: &'a Node) -> Option<&'a Node> {
+        node.get_key(self)
+    }
+    #[inline]
+    fn index_into_mut<'a>(&self, node: &'a mut Node) -> Option<&'a mut Node> {
+        node.get_key_mut(self)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl NodeIndex for &alloc::string::String {
+    #[inline]
+    fn index_into<'a>(&self, node: &'a Node) -> Option<&'a Node> {
+        node.get_key(self.as_str())
+    }
+    #[inline]
+    fn index_into_mut<'a>(&self, node: &'a mut Node) -> Option<&'a mut Node> {
+        node.get_key_mut(self.as_str())
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl NodeIndex for alloc::string::String {
+    #[inline]
+    fn index_into<'a>(&self, node: &'a Node) -> Option<&'a Node> {
+        node.get_key(self.as_str())
+    }
+    #[inline]
+    fn index_into_mut<'a>(&self, node: &'a mut Node) -> Option<&'a mut Node> {
+        node.get_key_mut(self.as_str())
+    }
+}
+
 #[cfg(feature = "alloc")]
 impl Node {
     /// Returns true if the node is considered blank (None, empty array, empty string, comment, or recursively blank document/anchored node)
@@ -28,9 +82,9 @@ impl Node {
         }
     }
 
-    /// Safely get an array element by index without panicking
+    /// Safely get an array element by index or mapping value by key without panicking
     ///
-    /// Returns None if the index is out of bounds or if the node is not an array/set.
+    /// Returns None if the index/key is out of bounds or if the node is not a matching container.
     /// This is the recommended method to avoid panics in production code.
     ///
     /// # Example
@@ -39,15 +93,42 @@ impl Node {
     /// let array = Node::Array(vec![Node::from(1), Node::from(2)]);
     /// assert!(array.get(0).is_some());
     /// assert!(array.get(5).is_none());
+    ///
+    /// let mapping = Node::Mapping(vec![(Node::from("key"), Node::from("value"))]);
+    /// assert!(mapping.get("key").is_some());
+    /// assert!(mapping.get("nonexistent").is_none());
     /// ```
     #[inline]
-    pub fn get(&self, index: usize) -> Option<&Node> {
+    pub fn get<I: NodeIndex>(&self, index: I) -> Option<&Node> {
+        index.index_into(self)
+    }
+
+    /// Safely get an array or set element by index without panicking
+    #[inline]
+    pub fn get_index(&self, index: usize) -> Option<&Node> {
         match self {
             Node::Array(arr) => arr.get(index),
             Node::Set(set) => set.get(index),
             _ => None,
         }
     }
+
+    /// Safely get a mutable element by index or key without panicking
+    #[inline]
+    pub fn get_mut<I: NodeIndex>(&mut self, index: I) -> Option<&mut Node> {
+        index.index_into_mut(self)
+    }
+
+    /// Safely get a mutable array or set element by index without panicking
+    #[inline]
+    pub fn get_index_mut(&mut self, index: usize) -> Option<&mut Node> {
+        match self {
+            Node::Array(arr) => arr.get_mut(index),
+            Node::Set(set) => set.get_mut(index),
+            _ => None,
+        }
+    }
+
 
     /// Safely get a mapping value by key without panicking
     ///
@@ -80,26 +161,6 @@ impl Node {
         }
     }
 
-    /// Safely get a mutable array element by index without panicking
-    ///
-    /// Returns None if the index is out of bounds or if the node is not an array/set.
-    ///
-    /// # Example
-    /// ```
-    /// # use babbel_yaml::Node;
-    /// let mut array = Node::Array(vec![Node::from(1), Node::from(2)]);
-    /// if let Some(node) = array.get_mut(0) {
-    ///     *node = Node::from(10);
-    /// }
-    /// ```
-    #[inline]
-    pub fn get_mut(&mut self, index: usize) -> Option<&mut Node> {
-        match self {
-            Node::Array(arr) => arr.get_mut(index),
-            Node::Set(set) => set.get_mut(index),
-            _ => None,
-        }
-    }
 
     /// Safely get a mutable mapping value by key without panicking
     ///
@@ -555,3 +616,91 @@ impl Node {
         SetBuilder::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloc::string::ToString;
+    use alloc::vec;
+
+    #[test]
+    fn test_lsp_safe_access_array() {
+        let mut arr = Node::Array(vec![Node::from(10), Node::from(20)]);
+
+        // Safe indexing with usize via NodeIndex trait
+        assert_eq!(arr.get(0), Some(&Node::from(10)));
+        assert_eq!(arr.get(1), Some(&Node::from(20)));
+        assert_eq!(arr.get(2), None);
+
+        // Safe indexing with get_index
+        assert_eq!(arr.get_index(0), Some(&Node::from(10)));
+        assert_eq!(arr.get_index(2), None);
+
+        // Array indexing with string key should safely return None (no panic)
+        assert_eq!(arr.get("key"), None);
+
+        // Mutable safe access
+        if let Some(val) = arr.get_mut(1) {
+            *val = Node::from(99);
+        }
+        assert_eq!(arr.get(1), Some(&Node::from(99)));
+
+        if let Some(val) = arr.get_index_mut(0) {
+            *val = Node::from(42);
+        }
+        assert_eq!(arr.get_index(0), Some(&Node::from(42)));
+        assert_eq!(arr.get_index_mut(5), None);
+    }
+
+    #[test]
+    fn test_lsp_safe_access_mapping() {
+        let mut map = Node::Mapping(vec![
+            (Node::from("name"), Node::from("babbel")),
+            (Node::from("version"), Node::from(1)),
+        ]);
+
+        // Safe lookup via &str, &String, String
+        assert_eq!(map.get("name"), Some(&Node::from("babbel")));
+        let key_string = "version".to_string();
+        assert_eq!(map.get(&key_string), Some(&Node::from(1)));
+        assert_eq!(map.get("nonexistent"), None);
+
+        // Mapping indexing with usize should safely return None (no panic)
+        assert_eq!(map.get(0), None);
+        assert_eq!(map.get_index(0), None);
+
+        // Mutable safe access
+        if let Some(val) = map.get_mut("name") {
+            *val = Node::from("babbel-solid");
+        }
+        assert_eq!(map.get("name"), Some(&Node::from("babbel-solid")));
+        assert_eq!(map.get_mut("nonexistent"), None);
+    }
+
+    #[test]
+    fn test_lsp_safe_access_non_containers() {
+        let scalar = Node::from(42);
+        assert_eq!(scalar.get(0), None);
+        assert_eq!(scalar.get("field"), None);
+        assert_eq!(scalar.get_index(0), None);
+
+        let mut scalar_mut = Node::from("hello");
+        assert_eq!(scalar_mut.get_mut(0), None);
+        assert_eq!(scalar_mut.get_mut("field"), None);
+        assert_eq!(scalar_mut.get_index_mut(0), None);
+    }
+
+    #[test]
+    fn test_lsp_safe_access_set() {
+        let mut set = Node::Set(vec![Node::from("alpha"), Node::from("beta")]);
+        assert_eq!(set.get(0), Some(&Node::from("alpha")));
+        assert_eq!(set.get(2), None);
+        assert_eq!(set.get_index(1), Some(&Node::from("beta")));
+
+        if let Some(elem) = set.get_mut(0) {
+            *elem = Node::from("gamma");
+        }
+        assert_eq!(set.get(0), Some(&Node::from("gamma")));
+    }
+}
+
