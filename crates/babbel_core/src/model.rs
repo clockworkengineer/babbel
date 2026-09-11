@@ -503,18 +503,108 @@ fn serialize_toml_value(val: &Value, dest: &mut dyn crate::io::IDestination) {
 }
 
 /// Visitor pattern for streaming serialization or traversal across polyglot formats.
+/// Provides default no-op implementations (ISP compliant) so implementers only need to
+/// override the callbacks relevant to their use case.
 pub trait FormatVisitor {
     type Error;
 
-    fn visit_null(&mut self) -> Result<(), Self::Error>;
-    fn visit_bool(&mut self, val: bool) -> Result<(), Self::Error>;
-    fn visit_integer(&mut self, val: i128) -> Result<(), Self::Error>;
-    fn visit_float(&mut self, val: f64) -> Result<(), Self::Error>;
-    fn visit_str(&mut self, val: &str) -> Result<(), Self::Error>;
-    fn visit_bytes(&mut self, val: &[u8]) -> Result<(), Self::Error>;
-    fn visit_array_start(&mut self) -> Result<(), Self::Error>;
-    fn visit_array_end(&mut self) -> Result<(), Self::Error>;
-    fn visit_object_start(&mut self) -> Result<(), Self::Error>;
-    fn visit_key(&mut self, key: &str) -> Result<(), Self::Error>;
-    fn visit_object_end(&mut self) -> Result<(), Self::Error>;
+    /// Called when visiting a null value.
+    fn visit_null(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Called when visiting a boolean value.
+    fn visit_bool(&mut self, _val: bool) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Called when visiting a signed integer value.
+    fn visit_integer(&mut self, _val: i128) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Called when visiting a 64-bit floating point value.
+    fn visit_float(&mut self, _val: f64) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Called when visiting a string slice.
+    fn visit_str(&mut self, _val: &str) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Called when visiting a raw byte slice.
+    fn visit_bytes(&mut self, _val: &[u8]) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Called at the start of an array sequence.
+    fn visit_array_start(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Called at the end of an array sequence.
+    fn visit_array_end(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Called at the start of a key-value mapping/object.
+    fn visit_object_start(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Called when visiting an object key.
+    fn visit_key(&mut self, _key: &str) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Called at the end of a key-value mapping/object.
+    fn visit_object_end(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloc::string::String;
+    use alloc::vec::Vec;
+
+    // Test visitor implementing ONLY visit_key and visit_str (testing ISP segregation)
+    struct KeyCollector {
+        keys: Vec<String>,
+    }
+
+    impl FormatVisitor for KeyCollector {
+        type Error = ();
+
+        fn visit_key(&mut self, key: &str) -> Result<(), Self::Error> {
+            self.keys.push(String::from(key));
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn test_format_visitor_isp_defaults() {
+        let mut collector = KeyCollector { keys: Vec::new() };
+
+        // Test that unimplemented methods return Ok(()) without error or boilerplate
+        assert_eq!(collector.visit_null(), Ok(()));
+        assert_eq!(collector.visit_bool(true), Ok(()));
+        assert_eq!(collector.visit_integer(42), Ok(()));
+        assert_eq!(collector.visit_float(3.14), Ok(()));
+        assert_eq!(collector.visit_str("hello"), Ok(()));
+        assert_eq!(collector.visit_bytes(b"bytes"), Ok(()));
+        assert_eq!(collector.visit_array_start(), Ok(()));
+        assert_eq!(collector.visit_array_end(), Ok(()));
+        assert_eq!(collector.visit_object_start(), Ok(()));
+        assert_eq!(collector.visit_object_end(), Ok(()));
+
+        // Test overridden method works as expected
+        assert_eq!(collector.visit_key("name"), Ok(()));
+        assert_eq!(collector.visit_key("version"), Ok(()));
+        assert_eq!(collector.keys, vec!["name", "version"]);
+    }
+}
+
+

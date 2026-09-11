@@ -1,6 +1,6 @@
 use super::traits::{
-    IByteStream, ICharStream, IIndentationAware, ILineReader, ILocationAware, IPositionAware,
-    IRewindable, ISource, IStatefulStream, SaveState,
+    IByteReader, ICharStream, IIndentationAware, ILineReader, ILocationAware, IPeekable,
+    IPositionAware, IRewindable, ISource, IStatefulStream, SaveState,
 };
 #[cfg(not(feature = "std"))]
 use alloc::string::String;
@@ -145,6 +145,7 @@ impl<'a> SliceSource<'a> {
         Some(&self.data[start..end])
     }
 }
+
 
 impl<'a> ISource for SliceSource<'a> {
     fn next(&mut self) {
@@ -320,6 +321,7 @@ impl IPositionAware for StringSource {
     }
 }
 
+
 impl ISource for StringSource {
     fn next(&mut self) {
         self.next();
@@ -376,6 +378,30 @@ impl<'a> ByteSliceSource<'a> {
     pub fn position(&self) -> usize {
         self.pos
     }
+
+    /// Peeks at current byte without advancing.
+    pub fn peek_byte(&mut self) -> Option<u8> {
+        self.slice.get(self.pos).copied()
+    }
+
+    /// Reads current byte and advances position by one byte.
+    pub fn read_byte(&mut self) -> Option<u8> {
+        let b = self.slice.get(self.pos).copied()?;
+        self.pos += 1;
+        Some(b)
+    }
+
+    /// Advances position by one byte.
+    pub fn advance(&mut self) {
+        if self.pos < self.slice.len() {
+            self.pos += 1;
+        }
+    }
+
+    /// Checks if there are more bytes available.
+    pub fn has_more(&mut self) -> bool {
+        self.pos < self.slice.len()
+    }
 }
 
 impl<'a> IPositionAware for ByteSliceSource<'a> {
@@ -384,33 +410,63 @@ impl<'a> IPositionAware for ByteSliceSource<'a> {
     }
 }
 
-impl<'a> IByteStream for ByteSliceSource<'a> {
-    fn peek_byte(&mut self) -> Option<u8> {
-        self.slice.get(self.pos).copied()
-    }
-
+impl<'a> IByteReader for ByteSliceSource<'a> {
     fn read_byte(&mut self) -> Option<u8> {
         let b = self.slice.get(self.pos).copied()?;
         self.pos += 1;
         Some(b)
     }
+}
 
-    fn advance(&mut self) {
+impl<'a> IPeekable for ByteSliceSource<'a> {
+    fn peek_byte(&mut self) -> Option<u8> {
+        self.slice.get(self.pos).copied()
+    }
+}
+
+impl<'a> ICharStream for ByteSliceSource<'a> {
+    fn next(&mut self) {
         if self.pos < self.slice.len() {
             self.pos += 1;
         }
     }
 
-    fn has_more(&mut self) -> bool {
+    fn current(&mut self) -> Option<char> {
+        self.slice.get(self.pos).copied().map(|b| b as char)
+    }
+
+    fn more(&mut self) -> bool {
         self.pos < self.slice.len()
     }
 }
+
 
 impl<'a> IRewindable for ByteSliceSource<'a> {
     fn reset(&mut self) {
         self.pos = 0;
     }
 }
+
+impl<'a> ISource for ByteSliceSource<'a> {
+    fn next(&mut self) {
+        if self.pos < self.slice.len() {
+            self.pos += 1;
+        }
+    }
+
+    fn current(&mut self) -> Option<char> {
+        self.slice.get(self.pos).copied().map(|b| b as char)
+    }
+
+    fn more(&mut self) -> bool {
+        self.pos < self.slice.len()
+    }
+
+    fn reset(&mut self) {
+        self.pos = 0;
+    }
+}
+
 
 /// In-memory byte vector input source supporting both binary byte streaming
 /// and Unicode UTF-8 character streaming.
@@ -558,6 +614,32 @@ impl BufferSource {
         }
         true
     }
+
+    /// Peeks at current byte without advancing.
+    pub fn peek_byte(&mut self) -> Option<u8> {
+        self.buffer.get(self.position).copied()
+    }
+
+    /// Reads current byte and advances position by one byte.
+    pub fn read_byte(&mut self) -> Option<u8> {
+        if self.position < self.buffer.len() {
+            let b = self.buffer[self.position];
+            self.position += 1;
+            Some(b)
+        } else {
+            None
+        }
+    }
+
+    /// Advances position by one byte.
+    pub fn advance(&mut self) {
+        self.position += 1;
+    }
+
+    /// Checks if there are more bytes available.
+    pub fn has_more(&mut self) -> bool {
+        self.position < self.buffer.len()
+    }
 }
 
 impl IPositionAware for BufferSource {
@@ -565,6 +647,7 @@ impl IPositionAware for BufferSource {
         self.position
     }
 }
+
 
 impl ISource for BufferSource {
     fn next(&mut self) {
@@ -641,29 +724,18 @@ impl IStatefulStream for BufferSource {
     }
 }
 
-impl IByteStream for BufferSource {
-    fn peek_byte(&mut self) -> Option<u8> {
-        self.buffer.get(self.position).copied()
-    }
-
+impl IByteReader for BufferSource {
     fn read_byte(&mut self) -> Option<u8> {
-        if self.position < self.buffer.len() {
-            let b = self.buffer[self.position];
-            self.position += 1;
-            Some(b)
-        } else {
-            None
-        }
-    }
-
-    fn advance(&mut self) {
-        self.position += 1;
-    }
-
-    fn has_more(&mut self) -> bool {
-        self.position < self.buffer.len()
+        self.read_byte()
     }
 }
+
+impl IPeekable for BufferSource {
+    fn peek_byte(&mut self) -> Option<u8> {
+        self.peek_byte()
+    }
+}
+
 
 #[cfg(feature = "file-io")]
 /// File input source reading binary or text data from disk.
@@ -812,20 +884,19 @@ impl ICharStream for FileSource {
 }
 
 #[cfg(feature = "file-io")]
-impl IByteStream for FileSource {
-    fn peek_byte(&mut self) -> Option<u8> {
-        self.inner.peek_byte()
-    }
+impl IByteReader for FileSource {
     fn read_byte(&mut self) -> Option<u8> {
-        self.inner.read_byte()
-    }
-    fn advance(&mut self) {
-        self.inner.advance();
-    }
-    fn has_more(&mut self) -> bool {
-        self.inner.has_more()
+        self.read_byte()
     }
 }
+
+#[cfg(feature = "file-io")]
+impl IPeekable for FileSource {
+    fn peek_byte(&mut self) -> Option<u8> {
+        self.peek_byte()
+    }
+}
+
 
 #[cfg(feature = "file-io")]
 impl IRewindable for FileSource {
@@ -973,9 +1044,111 @@ impl<R: std::io::Read> IIndentationAware for ReaderSource<R> {
     }
 }
 
+#[cfg(feature = "std")]
+impl<R: std::io::Read> IByteReader for ReaderSource<R> {
+    fn read_byte(&mut self) -> Option<u8> {
+        let b = self.current_byte?;
+        self.next();
+        Some(b)
+    }
+}
+
+#[cfg(feature = "std")]
+impl<R: std::io::Read> IPeekable for ReaderSource<R> {
+    fn peek_byte(&mut self) -> Option<u8> {
+        self.current_byte
+    }
+}
+
+/// Adapter that wraps any byte stream implementing [`IByteReader`] and [`IPeekable`]
+/// into a character stream and source.
+#[derive(Debug, Clone)]
+pub struct ByteSourceAdapter<T> {
+    inner: T,
+}
+
+impl<T> ByteSourceAdapter<T> {
+    /// Creates a new character source adapter wrapping a byte stream.
+    pub fn new(inner: T) -> Self {
+        Self { inner }
+    }
+
+    /// Unwraps and returns the underlying stream.
+    pub fn into_inner(self) -> T {
+        self.inner
+    }
+
+    /// Returns a reference to the underlying stream.
+    pub fn get_ref(&self) -> &T {
+        &self.inner
+    }
+
+    /// Returns a mutable reference to the underlying stream.
+    pub fn get_mut(&mut self) -> &mut T {
+        &mut self.inner
+    }
+}
+
+impl<T: IByteReader + IPeekable> ICharStream for ByteSourceAdapter<T> {
+    fn next(&mut self) {
+        let _ = self.inner.read_byte();
+    }
+
+    fn current(&mut self) -> Option<char> {
+        self.inner.peek_byte().map(|b| b as char)
+    }
+
+    fn more(&mut self) -> bool {
+        self.inner.peek_byte().is_some()
+    }
+}
+
+impl<T: IRewindable> IRewindable for ByteSourceAdapter<T> {
+    fn reset(&mut self) {
+        self.inner.reset();
+    }
+}
+
+impl<T: IByteReader + IPeekable + IRewindable> ISource for ByteSourceAdapter<T> {
+    fn next(&mut self) {
+        let _ = self.inner.read_byte();
+    }
+
+    fn current(&mut self) -> Option<char> {
+        self.inner.peek_byte().map(|b| b as char)
+    }
+
+    fn more(&mut self) -> bool {
+        self.inner.peek_byte().is_some()
+    }
+
+    fn reset(&mut self) {
+        self.inner.reset();
+    }
+}
+
+
+impl<T: IPositionAware> IPositionAware for ByteSourceAdapter<T> {
+    fn position(&self) -> usize {
+        self.inner.position()
+    }
+}
+
+impl<T: ILocationAware> ILocationAware for ByteSourceAdapter<T> {
+    fn line(&self) -> usize {
+        self.inner.line()
+    }
+
+    fn column(&self) -> usize {
+        self.inner.column()
+    }
+}
+
 #[cfg(test)]
+
 mod tests {
     use super::*;
+    use crate::io::traits::*;
 
     #[test]
     fn test_slice_source() {
@@ -1042,4 +1215,59 @@ mod tests {
         assert_eq!(slice_src.read_line_slice(), Some("Fourth line"));
         assert_eq!(slice_src.read_line_slice(), None);
     }
+
+    #[test]
+    fn test_isp_byte_reader_and_peekable() {
+        // Test that any type implementing IByteReader + IPeekable automatically satisfies IByteStream
+        let mut buf = BufferSource::new(b"hello");
+
+        // Use trait object of segregated capability
+        let reader: &mut dyn IByteReader = &mut buf;
+        assert_eq!(reader.read_byte(), Some(b'h'));
+
+        let peekable: &mut dyn IPeekable = &mut buf;
+        assert_eq!(peekable.peek_byte(), Some(b'e'));
+        assert_eq!(peekable.peek_byte(), Some(b'e'));
+
+        // Use composite IByteStream
+        let stream: &mut dyn IByteStream = &mut buf;
+        assert_eq!(stream.read_byte(), Some(b'e'));
+        stream.advance(); // skip 'l'
+        assert_eq!(stream.read_byte(), Some(b'l'));
+        assert_eq!(stream.read_byte(), Some(b'o'));
+        assert_eq!(stream.read_byte(), None);
+        assert!(!stream.has_more());
+    }
+
+    #[test]
+    fn test_isp_tracked_capability() {
+        let src = BufferSource::new(b"line 1\nline 2");
+        let tracked: &dyn ITracked = &src;
+
+        assert_eq!(tracked.line(), 1);
+        assert_eq!(tracked.column(), 1);
+        assert_eq!(tracked.offset(), 0);
+        assert_eq!(tracked.position(), 0);
+    }
+
+    #[test]
+    fn test_byte_source_adapter() {
+        let byte_src = BufferSource::new(b"abc");
+        let mut adapter = ByteSourceAdapter::new(byte_src);
+
+        // Verify it satisfies ISource
+        let src: &mut dyn ISource = &mut adapter;
+        assert_eq!(src.current(), Some('a'));
+        assert!(src.more());
+        src.next();
+        assert_eq!(src.current(), Some('b'));
+        src.next();
+        assert_eq!(src.current(), Some('c'));
+        src.next();
+        assert_eq!(src.current(), None);
+        assert!(!src.more());
+        src.reset();
+        assert_eq!(src.current(), Some('a'));
+    }
 }
+

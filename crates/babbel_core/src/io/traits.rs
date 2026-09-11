@@ -6,21 +6,32 @@ use crate::error::ErrorCode;
 // 1. Primitive Byte Streaming (ISP compliant)
 // ==========================================
 
-/// Interface for raw byte reading (essential for Bencode and binary protocol parsing).
-pub trait IByteStream {
-    /// Peeks at current byte without advancing.
-    fn peek_byte(&mut self) -> Option<u8>;
+/// Capability to read sequential bytes (forward byte stream, ISP compliant).
+pub trait IByteReader {
     /// Reads current byte and advances position by one byte.
     fn read_byte(&mut self) -> Option<u8>;
-    /// Advances position by one byte.
-    fn advance(&mut self);
-    /// Checks if there are more bytes available.
-    fn has_more(&mut self) -> bool;
 }
 
-/// Capability to read sequential bytes (ISP alias for IByteStream).
-pub trait IByteReader: IByteStream {}
-impl<T: IByteStream + ?Sized> IByteReader for T {}
+/// Capability to peek at the next byte without consuming it (ISP compliant).
+pub trait IPeekable {
+    /// Peeks at current byte without advancing.
+    fn peek_byte(&mut self) -> Option<u8>;
+}
+
+/// Composite interface for raw byte reading (essential for Bencode and binary protocol parsing).
+/// Automatically implemented for any type that satisfies [`IByteReader`] and [`IPeekable`].
+pub trait IByteStream: IByteReader + IPeekable {
+    /// Advances position by one byte.
+    fn advance(&mut self) {
+        let _ = self.read_byte();
+    }
+    /// Checks if there are more bytes available.
+    fn has_more(&mut self) -> bool {
+        self.peek_byte().is_some()
+    }
+}
+
+impl<T: IByteReader + IPeekable + ?Sized> IByteStream for T {}
 
 /// Capability to write sequential bytes (binary-safe output interface).
 pub trait IByteWriter {
@@ -60,6 +71,9 @@ pub trait ISource {
     fn reset(&mut self);
 }
 
+
+
+
 // ==========================================
 // 3. Segregated Capabilities (ISP compliant)
 // ==========================================
@@ -83,6 +97,19 @@ pub trait ILocationAware {
     /// Returns 1-based column index.
     fn column(&self) -> usize;
 }
+
+/// Unified tracking trait for 1-based source line, column, and byte offset metrics (ISP compliant).
+/// Automatically implemented for any type that satisfies [`ILocationAware`] and [`IPositionAware`].
+pub trait ITracked: ILocationAware + IPositionAware {
+    /// Returns current absolute byte offset (delegates to [`IPositionAware::position`]).
+    fn offset(&self) -> usize {
+        self.position()
+    }
+}
+
+impl<T: ILocationAware + IPositionAware + ?Sized> ITracked for T {}
+
+
 
 /// Interface for destinations that can be flushed to underlying storage.
 pub trait IFlushable {

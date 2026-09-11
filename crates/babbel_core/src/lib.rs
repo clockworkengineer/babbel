@@ -47,9 +47,10 @@ pub use file::{
 };
 pub use ini::{emit_ini, emit_ini_to, parse_ini, IniEvent, IniOptions, IniPullParser};
 pub use io::{
-    ArrayVecDestination, Buffer, BufferDestination, BufferSource, ByteSliceSource, IByteStream,
-    ICharStream, IClearable, IDestination, IIndentationAware, ILineReader, IPositionAware,
-    IRewindable, ISource, LineIter, SliceDestination, SliceSource, StringDestination, StringSource,
+    ArrayVecDestination, Buffer, BufferDestination, BufferSource, ByteSliceSource,
+    ByteSourceAdapter, IByteReader, IByteStream, ICharStream, IClearable, IDestination,
+    IIndentationAware, ILineReader, ILocationAware, IPeekable, IPositionAware, IRewindable,
+    ISource, ITracked, LineIter, SliceDestination, SliceSource, StringDestination, StringSource,
 };
 #[cfg(feature = "file-io")]
 pub use io::{FileDestination, FileSource};

@@ -241,6 +241,7 @@ impl XmlSource {
     }
 }
 
+
 impl babbel_core::io::traits::ISource for XmlSource {
     fn next(&mut self) {
         let _ = self.next_char();
