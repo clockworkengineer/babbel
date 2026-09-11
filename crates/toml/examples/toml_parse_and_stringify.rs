@@ -11,7 +11,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let source = r#"
 # Core configuration
 application = "Babbel TOML Engine"
-version = "0.1.2"
+version = "0.2.0"
 debug_mode = false
 
 [server]

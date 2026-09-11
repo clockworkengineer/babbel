@@ -30,7 +30,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-babbel_toml = "0.1.2"
+babbel_toml = "0.2.0"
 ```
 
 Or within the Babbel workspace:
@@ -44,7 +44,7 @@ To run in bare-metal / `no_std` environments:
 
 ```toml
 [dependencies]
-babbel_toml = { version = "0.1.2", default-features = false, features = ["alloc"] }
+babbel_toml = { version = "0.2.0", default-features = false, features = ["alloc"] }
 ```
 
 ---

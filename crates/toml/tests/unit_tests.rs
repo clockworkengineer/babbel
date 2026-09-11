@@ -128,7 +128,7 @@ fn test_core_value_conversions() {
     let input = r#"
 [package]
 name = "babbel"
-version = "0.1.2"
+version = "0.2.0"
 edition = 2024
 features = [ "json", "toml", "yaml" ]
 "#;

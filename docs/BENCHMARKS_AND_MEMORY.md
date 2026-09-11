@@ -84,6 +84,6 @@ Traditional implementations that track written length or check trailing bytes re
 All primitives in `babbel_core` compile cleanly in `no_std` environments:
 ```toml
 [dependencies]
-babbel_core = { version = "0.1.2", default-features = false, features = ["alloc"] }
+babbel_core = { version = "0.2.0", default-features = false, features = ["alloc"] }
 ```
 When `std` is disabled, `babbel_core` utilizes `alloc::string::String`, `alloc::vec::Vec`, and `core::*` primitives, making it suitable for WebAssembly, microcontrollers, and kernel modules.

@@ -11,16 +11,16 @@ members = [
 ]
 
 [workspace.dependencies]
-babbel_core = { path = "crates/babbel_core", version = "0.1.2" }
-babbel_xml = { path = "crates/xml", version = "0.1.2" }
-babbel_json = { path = "crates/json", version = "0.1.2" }
-babbel_yaml = { path = "crates/yaml", version = "0.1.2" }
-babbel_bencode = { path = "crates/bencode", version = "0.1.2" }
-babbel_toml = { path = "crates/toml", version = "0.1.2" }
+babbel_core = { path = "crates/babbel_core", version = "0.2.0" }
+babbel_xml = { path = "crates/xml", version = "0.2.0" }
+babbel_json = { path = "crates/json", version = "0.2.0" }
+babbel_yaml = { path = "crates/yaml", version = "0.2.0" }
+babbel_bencode = { path = "crates/bencode", version = "0.2.0" }
+babbel_toml = { path = "crates/toml", version = "0.2.0" }
 
 
 [workspace.package]
-version = "0.1.2"
+version = "0.2.0"
 authors = ["ClockworkEngineer", "Babbel Contributors"]
 edition = "2024"
 license = "MIT"

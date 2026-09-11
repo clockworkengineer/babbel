@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Top-level metadata
     root.insert("project".to_string(), Node::from("Babbel"));
-    root.insert("version".to_string(), Node::from("0.1.2"));
+    root.insert("version".to_string(), Node::from("0.2.0"));
     root.insert("release_channel".to_string(), Node::from("stable"));
     root.insert("uptime_hours".to_string(), Node::from(144));
     root.insert("load_average".to_string(), Node::from(0.42));

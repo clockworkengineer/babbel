@@ -1,12 +1,12 @@
 # Babbel Migration Guide & Changelog
 
-This document details the architectural enhancements, release highlights, backward compatibility guarantees, and migration pathways introduced in the **Babbel SOLID & Extensibility Release (v0.1.2)**.
+This document details the architectural enhancements, release highlights, backward compatibility guarantees, and migration pathways introduced in the **Babbel SOLID & Extensibility Release (v0.2.0)**.
 
 ---
 
 ## 1. Release Highlights
 
-The v0.1.2 release represents a comprehensive architectural modernization across all seven workspace crates (`babbel`, `babbel_core`, `babbel_json`, `babbel_yaml`, `babbel_xml`, `babbel_bencode`, and `babbel_toml`), delivering strict adherence to **SOLID** design principles without sacrificing high throughput or breaking backwards compatibility.
+The v0.2.0 release represents a comprehensive architectural modernization across all seven workspace crates (`babbel`, `babbel_core`, `babbel_json`, `babbel_yaml`, `babbel_xml`, `babbel_bencode`, and `babbel_toml`), delivering strict adherence to **SOLID** design principles without sacrificing high throughput or breaking backwards compatibility.
 
 ### Key Additions
 1. **Universal $O(N)$ Conversion Matrix**:
@@ -53,7 +53,7 @@ All existing code written against Babbel v0.1.0/v0.1.1 will continue to compile 
 
 ## 3. Performance & Memory Comparison
 
-| Metric / Struct | Pre-SOLID Baseline | v0.1.2 (Current) | Improvement |
+| Metric / Struct | Pre-SOLID Baseline | v0.2.0 (Current) | Improvement |
 | :--- | :---: | :---: | :--- |
 | **`babbel_core::Value`** | 48 bytes | **32 bytes** | **-33.3%** (Fits two values per 64-byte cache line) |
 | **`babbel_xml::NodeKind`** | 72 bytes | **$\le 48$ bytes** | **-33.3%** (Boxed ElementData and processing instructions) |
@@ -79,7 +79,7 @@ use babbel::yaml_lib;
 
 let node = json_lib::from_str(data)?;
 
-// After (v0.1.2 recommended):
+// After (v0.2.0 recommended):
 use babbel::json;
 use babbel::yaml;
 

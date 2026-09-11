@@ -1,6 +1,6 @@
 [package]
 name = "babbel_bencode"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2024"
 description = "Fast, binary-safe BitTorrent Bencode parser, serializer, and DOM in pure Rust"
 license = "MIT"
@@ -19,4 +19,4 @@ xml = []
 yaml = []
 
 [dependencies]
-babbel_core = { path = "../babbel_core", version = "0.1.2", default-features = false }
+babbel_core = { path = "../babbel_core", version = "0.2.0", default-features = false }

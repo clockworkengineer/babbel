@@ -13,12 +13,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let toml_input = r#"
 [package]
 name = "babbel"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2024"
 authors = [ "ClockworkEngineer", "Babbel Contributors" ]
 
 [dependencies]
-babbel_core = "0.1.2"
+babbel_core = "0.2.0"
 arrayvec = "0.7.6"
 smallvec = "1.15.1"
 
@@ -72,7 +72,7 @@ std = true
     // Assert that key fields survived roundtrip through the universal AST
     let pkg = roundtripped_node.get("package").expect("package table exists");
     assert_eq!(pkg.get("name").and_then(|n| n.as_str()), Some("babbel"));
-    assert_eq!(pkg.get("version").and_then(|n| n.as_str()), Some("0.1.2"));
+    assert_eq!(pkg.get("version").and_then(|n| n.as_str()), Some("0.2.0"));
 
     println!("Universal cross-format pipeline verified successfully!");
     Ok(())

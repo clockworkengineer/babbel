@@ -1,6 +1,6 @@
 [package]
 name = "babbel_yaml"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2024"
 description = "Fast, modular YAML 1.2 parser and emitter with anchors, aliases, and tags"
 license = "MIT"
@@ -32,7 +32,7 @@ debug-anchors = []
 validation = ["dep:regex", "alloc"]
 
 [dependencies]
-babbel_core = { path = "../babbel_core", version = "0.1.2", default-features = false }
+babbel_core = { path = "../babbel_core", version = "0.2.0", default-features = false }
 base64 = { version = "0.22.1", optional = true }
 log = "0.4.28"
 regex = { version = "1.12.2", optional = true }
