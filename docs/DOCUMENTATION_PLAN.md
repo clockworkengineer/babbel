@@ -184,8 +184,8 @@ graph TD
 ```
 
 ### Milestone 1: Conformance & Specification Docs
-1. Author `docs/YAML_CONFORMANCE.md` based on `tests/yaml_test_suite.rs` (1,085+ tests).
-2. Author `docs/BENCODE_SPEC_AND_CONFORMANCE.md` based on BEP 0003 and Bencode tests.
+1. [x] Author `docs/YAML_CONFORMANCE.md` based on `tests/yaml_test_suite.rs` (1,085+ tests). - **Completed**
+2. [x] Author `docs/BENCODE_SPEC_AND_CONFORMANCE.md` based on BEP 0003 and Bencode tests. - **Completed**
 
 ### Milestone 2: Extensibility & Architecture Guides
 1. Author `docs/FORMAT_ENGINE_PLUGIN_GUIDE.md` detailing `FormatEngine` and `FormatRegistry`.
