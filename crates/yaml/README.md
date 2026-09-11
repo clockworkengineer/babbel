@@ -292,29 +292,27 @@ The repository includes 23 comprehensive examples:
 
 | Example | Description |
 |---------|-------------|
-| [yaml_parse_and_stringify](../examples/yaml_parse_and_stringify/) | Basic parsing and serialization |
-| [yaml_to_json](../examples/yaml_to_json/) | YAML → JSON conversion |
-| [yaml_to_xml](../examples/yaml_to_xml/) | YAML → XML conversion |
-| [yaml_to_toml](../examples/yaml_to_toml/) | YAML → TOML conversion |
-| [yaml_to_bencode](../examples/yaml_to_bencode/) | YAML → Bencode conversion |
-| [yaml_anchors_aliases](../examples/yaml_anchors_aliases/) | Anchors, aliases, and merge keys |
-| [yaml_advanced_tags](../examples/yaml_advanced_tags/) | Custom and standard tag handling |
-| [yaml_multi_document](../examples/yaml_multi_document/) | Multi-document YAML streams |
-| [yaml_node_manipulation](../examples/yaml_node_manipulation/) | Programmatic tree building |
-| [yaml_fluent_api](../examples/yaml_fluent_api/) | Fluent builder API |
-| [yaml_error_handling](../examples/yaml_error_handling/) | Error codes and recovery |
-| [yaml_validation](../examples/yaml_validation/) | JSON Schema-style validation |
-| [yaml_safe_access](../examples/yaml_safe_access/) | Nil-safe deep path access |
-| [yaml_tree_traversal](../examples/yaml_tree_traversal/) | Iterators and traversal orders |
-| [yaml_streaming](../examples/yaml_streaming/) | Streaming serialization |
-| [yaml_string_interning](../examples/yaml_string_interning/) | String deduplication |
-| [yaml_performance](../examples/yaml_performance/) | Benchmark helpers |
-| [yaml_performance_opts](../examples/yaml_performance_opts/) | Optimization strategies |
-| [yaml_embedded_systems](../examples/yaml_embedded_systems/) | `no_std` / embedded target |
-| [yaml_embedded_safe](../examples/yaml_embedded_safe/) | Safe embedded parsing |
-| [yaml_fibonacci](../examples/yaml_fibonacci/) | Algorithmic YAML generation |
-| [yaml_comprehensive](../examples/yaml_comprehensive/) | End-to-end showcase |
-| [yaml_utility_lib](../examples/yaml_utility_lib/) | Library usage patterns |
+| [yaml_parse_and_stringify](examples/yaml_parse_and_stringify.rs) | Basic parsing and serialization |
+| [yaml_to_json](examples/yaml_to_json.rs) | YAML → JSON conversion |
+| [yaml_to_xml](examples/yaml_to_xml.rs) | YAML → XML conversion |
+| [yaml_to_toml](examples/yaml_to_toml.rs) | YAML → TOML conversion |
+| [yaml_to_bencode](examples/yaml_to_bencode.rs) | YAML → Bencode conversion |
+| [yaml_anchors_aliases](examples/yaml_anchors_aliases.rs) | Anchors, aliases, and merge keys |
+| [yaml_advanced_tags](examples/yaml_advanced_tags.rs) | Custom and standard tag handling |
+| [yaml_multi_document](examples/yaml_multi_document.rs) | Multi-document YAML streams |
+| [yaml_node_manipulation](examples/yaml_node_manipulation.rs) | Programmatic tree building |
+| [yaml_fluent_api](examples/yaml_fluent_api.rs) | Fluent builder API |
+| [yaml_error_handling](examples/yaml_error_handling.rs) | Error codes and recovery |
+| [yaml_validation](examples/yaml_validation.rs) | JSON Schema-style validation |
+| [yaml_safe_access](examples/yaml_safe_access.rs) | Nil-safe deep path access |
+| [yaml_tree_traversal](examples/yaml_tree_traversal.rs) | Iterators and traversal orders |
+| [yaml_streaming](examples/yaml_streaming.rs) | Streaming serialization |
+| [yaml_string_interning](examples/yaml_string_interning.rs) | String deduplication |
+| [yaml_performance](examples/yaml_performance.rs) | Benchmark helpers |
+| [yaml_performance_opts](examples/yaml_performance_opts.rs) | Optimization strategies |
+| [yaml_embedded_systems](examples/yaml_embedded_systems.rs) | `no_std` / embedded target |
+| [yaml_embedded_safe](examples/yaml_embedded_safe.rs) | Safe embedded parsing |
+| [yaml_fibonacci](examples/yaml_fibonacci.rs) | Algorithmic YAML generation |
 
 Run any example:
 ```bash

@@ -65,7 +65,7 @@ All format crates across Babbel share the same streaming abstractions from [`bab
   - [`IIndentationAware`](crates/babbel_core/src/io/traits.rs): Indentation calculation for whitespace-sensitive grammars.
 
 ### 2. Open-Closed & Dependency Inversion (OCP & DIP)
-- **Extensible `FormatEngine`**: New serialization formats can be integrated simply by implementing [`FormatEngine`](crates/babbel_core/src/engine.rs) (or `FormatParser` + `FormatEmitter`).
+- **Extensible `FormatEngine`**: New serialization formats can be integrated simply by implementing [`FormatEngine`](crates/babbel_core/src/codec.rs) (or `FormatParser` + `FormatEmitter`).
 - **Dynamic `FormatRegistry`**: Register and discover engines at runtime by format ID, MIME type, or file extension.
 - **Universal Data Pipeline**: Rather than $O(N^2)$ hand-rolled cross-serializers, conversions flow through the universal [`Value`](crates/babbel_core/src/model.rs) AST:
   ```rust

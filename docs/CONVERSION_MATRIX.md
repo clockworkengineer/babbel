@@ -58,7 +58,7 @@ graph LR
 ```
 
 Every format implements:
-- [`FormatEngine`](../crates/babbel_core/src/engine.rs): Unified facade providing parsing, serialization, MIME detection, and extension queries.
+- [`FormatEngine`](../crates/babbel_core/src/codec.rs): Unified facade providing parsing, serialization, MIME detection, and extension queries.
 - [`FormatParser`](../crates/babbel_core/src/codec.rs): Parses native bytes or text into universal `Value`.
 - [`FormatEmitter`](../crates/babbel_core/src/codec.rs): Emits universal `Value` into native bytes or text with optional indentation.
 
@@ -72,7 +72,7 @@ Babbel exposes two families of conversion pipelines in [`babbel::convert`](../cr
 
 ### 2.1 Engine-Driven Pipelines (Recommended)
 
-Engine-driven pipelines accept any type implementing [`FormatEngine`](../crates/babbel_core/src/engine.rs) (including trait objects `dyn FormatEngine`):
+Engine-driven pipelines accept any type implementing [`FormatEngine`](../crates/babbel_core/src/codec.rs) (including trait objects `dyn FormatEngine`):
 
 ```rust
 use babbel::convert::{convert_format, convert_format_bytes, convert_format_bytes_to_str, ConversionOptions};
@@ -250,7 +250,7 @@ let jsonl_out = convert::toml_to_jsonlines(&toml_out)?;
 
 ## 5. Dynamic Conversions with `FormatRegistry`
 
-When formats are determined dynamically at runtime (e.g. HTTP `Content-Type` headers, file extensions, or user CLI arguments), Babbel provides [`FormatRegistry`](../crates/babbel_core/src/engine.rs) and static lookup helpers:
+When formats are determined dynamically at runtime (e.g. HTTP `Content-Type` headers, file extensions, or user CLI arguments), Babbel provides [`FormatRegistry`](../crates/babbel_core/src/codec.rs) and static lookup helpers:
 
 ```rust
 use babbel::{default_registry, convert::convert_format, convert::ConversionOptions};

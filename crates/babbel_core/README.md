@@ -18,9 +18,9 @@ Foundational architectural kernel for the **Babbel** multi-format serialization 
   - Zero-allocation line slicing (`SliceSource::read_line_slice()`).
   - Safe in-memory tail tracking (`last()`) without file system re-opening.
   - Full Unicode scalar decoding preventing multi-byte UTF-8 corruption.
-- **Format Engine & Extensibility (`babbel_core::engine` & `babbel_core::codec`)**:
-  - [`FormatEngine`](src/engine.rs) trait unifying format ID, MIME types, file extensions, parsing, and serialization.
-  - [`FormatRegistry`](src/engine.rs) for dynamic format discovery and lookup.
+- **Format Engine & Extensibility (`babbel_core::codec`)**:
+  - [`FormatEngine`](src/codec.rs) trait unifying format ID, MIME types, file extensions, parsing, and serialization.
+  - [`FormatRegistry`](src/codec.rs) for dynamic format discovery and lookup.
   - Static resolution helpers: `find_engine`, `find_engine_by_mime`, `find_engine_by_extension`.
   - Codec traits: `FormatParser`, `FormatEmitter`, `FormatCodec`.
   - Visitor pattern: `ValueVisitor` and `NodeVisitor` with default no-op methods.
