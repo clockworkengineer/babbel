@@ -192,10 +192,10 @@ graph TD
 2. [x] Author `docs/SOLID_ARCHITECTURE_GUIDE.md` detailing the 6-phase SOLID implementation. - **Completed**
 
 ### Milestone 3: Core Docs Updates
-1. Update `docs/ARCHITECTURE.md` with the 3-Tier Layering diagram and SOLID implementation details.
-2. Update `docs/CONVERSION_MATRIX.md` with `convert_format` and dynamic registry.
-3. Update `docs/BENCHMARKS_AND_MEMORY.md` with TOML Node size and memory bounds.
-4. Update `docs/EMBEDDED_GUIDE.md` with verified `babbel_core::embedded` primitives.
+1. [x] Update `docs/ARCHITECTURE.md` with the 3-Tier Layering diagram and SOLID implementation details. - **Completed**
+2. [x] Update `docs/CONVERSION_MATRIX.md` with `convert_format` and dynamic registry. - **Completed**
+3. [x] Update `docs/BENCHMARKS_AND_MEMORY.md` with TOML Node size and memory bounds. - **Completed**
+4. [x] Update `docs/EMBEDDED_GUIDE.md` with verified `babbel_core::embedded` primitives and pull parsers. - **Completed**
 
 ### Milestone 4: Hub, READMEs & Changelog
 1. Author `docs/MIGRATION_AND_CHANGELOG.md`.

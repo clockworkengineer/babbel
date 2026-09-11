@@ -12,15 +12,16 @@ Babbel is architected across three distinct, decoupled tiers:
 graph TD
     subgraph "Tier 2: Facade & Interoperability"
         Babbel["babbel (Master Facade & Prelude)"]
-        Convert["babbel::convert (O(N) 9-Format Universal Conversion Pipeline)"]
+        Convert["babbel::convert (convert_format / convert_format_bytes)"]
+        Registry["babbel::default_registry() (Dynamic FormatRegistry)"]
     end
 
     subgraph "Tier 1: Domain Format Engines"
-        JSON["babbel_json (RFC 6901, RFC 7396, JSON5, JSON Lines)"]
-        YAML["babbel_yaml (YAML 1.2, Anchors/Aliases, Custom Tags)"]
-        XML["babbel_xml (W3C DOM, C14N, DTD, XSD, XPath 1.0)"]
-        Bencode["babbel_bencode (BitTorrent, Zero-Copy Slices)"]
-        TOML["babbel_toml (TOML v1.0.0, Zero-Allocation Pull Parser)"]
+        JSON["babbel_json::JsonEngine (RFC 6901, RFC 7396, JSON5, JSON Lines)"]
+        YAML["babbel_yaml::YamlEngine (YAML 1.2, Anchors/Aliases, Custom Tags)"]
+        XML["babbel_xml::XmlEngine (W3C DOM, C14N, DTD, XSD, XPath 1.0)"]
+        Bencode["babbel_bencode::BencodeEngine (BitTorrent, Zero-Copy Slices)"]
+        TOML["babbel_toml::TomlEngine (TOML v1.1.0, Streaming Pull Parser)"]
     end
 
     subgraph "Tier 0: Foundational Kernel"
@@ -28,13 +29,16 @@ graph TD
         CoreIO["babbel_core::io (ILineReader, IByteStream, ICharStream, ISource, IDestination)"]
         CoreAST["babbel_core::model (Universal Value AST)"]
         CoreText["babbel_core (RFC 4180 CSV/TSV, INI/.env, Frontmatter)"]
-        CoreCodec["babbel_core::codec (FormatCodec, FormatParser, FormatEmitter)"]
+        CoreCodec["babbel_core::codec (FormatEngine, FormatRegistry, FormatParser, FormatEmitter)"]
         CoreUtils["babbel_core (BOM Detection, Escaping, Diagnostic Errors)"]
     end
 
     Babbel --> Convert
+    Babbel --> Registry
     Convert --> CoreAST
     Convert --> CoreCodec
+    Registry --> CoreCodec
+
     Babbel --> JSON
     Babbel --> YAML
     Babbel --> XML
@@ -42,23 +46,29 @@ graph TD
     Babbel --> TOML
     Babbel --> CoreText
 
-    JSON --> Core
-    YAML --> Core
-    XML --> Core
-    Bencode --> Core
-    TOML --> Core
+    JSON -.->|implements FormatEngine| CoreCodec
+    YAML -.->|implements FormatEngine| CoreCodec
+    XML -.->|implements FormatEngine| CoreCodec
+    Bencode -.->|implements FormatEngine| CoreCodec
+    TOML -.->|implements FormatEngine| CoreCodec
+
+    JSON --> CoreIO
+    YAML --> CoreIO
+    XML --> CoreIO
+    Bencode --> CoreIO
+    TOML --> CoreIO
 ```
 
 ### Layer 0: The Core Kernel (`babbel_core`)
-* **Independence**: Has zero dependencies on any format parser. Compiles for both standard library and `no_std` + `alloc` environments.
+* **Independence**: Zero dependencies on foreign format parsers. Compiles cleanly for standard library and `no_std` + `alloc` environments.
 * **Responsibilities**:
   * **Streaming I/O**: Segregated interfaces for pull-based character streaming (`ICharStream`), binary byte reading (`IByteStream`), line-by-line streaming across mixed CRLF/LF/CR (`ILineReader`), rewindability (`IRewindable`), location awareness (`ILocationAware`), and buffered destinations (`IDestination`).
-  * **Universal AST (`Value`)**: Canonically represents arbitrary structured data (`Null`, `Bool`, `Integer(i128)`, `Float`, `String`, `Array`, `Object`, `Bytes`).
+  * **Universal AST (`Value`)**: Canonically represents arbitrary structured data (`Null`, `Bool`, `Integer(i128)`, `Float`, `String`, `Array`, `Object`, `Bytes`) in a cache-aligned 32-byte layout.
+  * **Format Engine Abstractions (`babbel_core::codec`)**: Defines `FormatEngine`, `FormatParser`, `FormatEmitter`, `FormatOptions`, and `FormatRegistry` with dynamic registration and static slice lookup (`find_engine*`).
   * **Text Engines**:
     * **RFC 4180 Delimited Text (`csv`)**: High-performance CSV & TSV parsing and emission, delimiter auto-sniffing, multi-line quoted fields, and scalar type inference.
     * **Configuration Text (`ini`)**: Section-based INI (`[section]`), `.properties`, and `.env` parsing, comment handling (`#`, `;`, `!`), and emission.
     * **Frontmatter & Line Utilities (`text`)**: Extracting YAML (`---`) and TOML (`+++`) metadata blocks (`split_frontmatter`), indentation trimming (`indent`, `dedent`, `trim_lines`).
-  * **Codec Interfaces**: Defines `FormatParser`, `FormatEmitter`, and `FormatCodec` abstractions.
   * **Embedded Systems & Zero-Allocation (`embedded`)**:
     * **Stack Destinations**: `SliceDestination<'a>` and `ArrayVecDestination<const N>` allow writing directly into caller-provided stack memory with zero dynamic allocations.
     * **Streaming Pull Parsers**: `JsonPullParser`, `XmlPullParser`, `CsvPullParser`, and `IniPullParser` enable microcontrollers with 16–64 KB RAM to parse documents of arbitrary size with $O(1)$ stack memory.
@@ -67,35 +77,41 @@ graph TD
 
 ### Layer 1: Domain Format Engines (`babbel_json`, `babbel_yaml`, `babbel_bencode`, `babbel_xml`, `babbel_toml`)
 * **Grammar & Semantics**: Each engine implements parsing, syntax validation, document navigation, and serialization for its specific specification.
+* **FormatEngine Implementation**: Each crate exposes an autonomous engine struct (`JsonEngine`, `YamlEngine`, `XmlEngine`, `BencodeEngine`, `TomlEngine`) implementing `babbel_core::FormatEngine`.
 * **JSON Lines Streaming**: `babbel_json::lines` provides streaming `JsonLinesReader` and `to_json_lines` over `ILineReader`.
 * **Abstractions**: All format engines depend on `babbel_core::io` abstractions rather than hardcoded OS files or heap buffers.
 * **Autonomy**: Each crate can be consumed independently with minimal binary footprint.
 
 ### Layer 2: Facade & Interoperability (`babbel`)
 * **Ergonomics**: Provides unified prelude imports and re-exports all format engines and core text engines under feature flags.
-* **$O(N)$ Universal Conversion**: Cross-format conversion pipelines (`babbel::convert`) between JSON, YAML, XML, Bencode, CSV, TSV, INI, and JSON Lines run through the intermediate `Value` AST or streaming codecs without requiring $O(N^2)$ point-to-point converters.
+* **$O(N)$ Universal Conversion**: Cross-format conversion pipelines (`babbel::convert::convert_format`, `convert_format_bytes`, `convert_format_bytes_to_str`) between JSON, YAML, XML, Bencode, TOML, CSV, TSV, INI, and JSON Lines route through abstract `FormatEngine` and `Value` AST with zero circular dependencies.
 
 ---
 
 ## 2. SOLID Principles in Rust
 
 ### Single Responsibility Principle (SRP)
+* **Decomposed AST Submodules**: Monolithic files have been broken down into single-responsibility submodules (e.g. YAML's `nodes/` split into `access.rs` for scalar/map queries, `search.rs` for traversal, `convert.rs` for `Value` bridging, and `scalar.rs` for numeric conversions).
 * **Transport vs. Syntax**: `FileSource`, `BufferSource`, and `FileDestination` manage strictly binary and character transfer. They contain zero knowledge of JSON brackets, YAML indentation, CSV quotes, or XML tags.
 * **Segregated Operations**: Reading (`IByteStream`, `ICharStream`, `ILineReader`), writing (`IByteWriter`), tail inspection (`ITailInspectable`), stream resetting (`IRewindable`), and storage synchronization (`IFlushable`) are decoupled into single-focus traits.
 
 ### Open/Closed Principle (OCP)
-* **Format Extensibility**: Introducing a new format (e.g. TOML, MessagePack) requires only implementing `FormatParser` and `FormatEmitter` from `babbel_core::codec`. The conversion pipeline (`babbel::convert`) immediately supports the new format without any modifications.
+* **Pluggable Format Engines**: Introducing a new format (e.g. MessagePack, CBOR) requires only implementing `FormatEngine` from `babbel_core::codec`. The conversion pipeline (`babbel::convert`) immediately supports the new format without modifying existing crates.
+* **Dynamic & Static Registry**: `FormatRegistry` allows runtime engine registration and lookup by MIME type or file extension, while `find_engine*` enables compile-time slice lookup.
 * **Stream Extensibility**: Custom streams (e.g., memory-mapped files, compressed streams, network sockets) implement `ICharStream`, `IByteStream`, or `ILineReader` and can be passed directly to all parsers.
 
 ### Liskov Substitution Principle (LSP)
+* **Infallible Document Navigation**: Tree accessors (`get()`, `at()`, `pointer()`) return `Option<&Node>` or `Result`, never panicking on out-of-bounds indices or type mismatches.
+* **Error Type Unification**: All format errors implement `std::error::Error + Send + Sync + 'static` and convert into `BabbelError`, ensuring standardized error handling across all formats.
 * **Consistent Stream Invariants**:
   * Character streams (`ICharStream`) guarantee valid UTF-8 scalar decoding across all implementations (`SliceSource`, `BufferSource`, `FileSource`). Multi-byte UTF-8 sequences are never truncated by naive byte casts.
   * Line readers (`ILineReader`) correctly handle `\r\n`, `\n`, and `\r` across all sources.
   * Destinations (`IDestination`) guarantee safe tail inspection (`last()`) without file system side-effects or file handle reopening locks on Windows.
-* **Substitutability**: Any function expecting `&mut dyn ISource` behaves identically whether given a file on disk or an in-memory buffer.
 
 ### Interface Segregation Principle (ISP)
 Clients bind only to the minimal interface required for their operation:
+* **Fine-Grained Streaming Traits**: Clients bind only to the minimal interface required for their operation (`ILineReader`, `IByteStream`, `ICharStream`, etc.).
+* **Visitor Default Methods**: `ValueVisitor` and `NodeVisitor` provide sensible default no-op methods, removing mandatory stub boilerplate.
 
 | Trait | Focus | Primary Implementor / Consumer |
 | :--- | :--- | :--- |
@@ -112,6 +128,7 @@ Clients bind only to the minimal interface required for their operation:
 | `IIndentationAware`| Current column / indent calculation | Whitespace-sensitive grammars (`babbel_yaml`) |
 
 ### Dependency Inversion Principle (DIP)
+* **High-level conversion coordinators** (`babbel::convert`) depend upon abstract traits (`FormatEngine`, `Value`), never concrete format parser functions.
 * **High-level parsers** depend upon trait abstractions (`ISource`, `ICharStream`, `IByteStream`, `ILineReader`).
 * **High-level serializers** depend upon `IDestination` and `IByteWriter`.
 * Concrete OS file handles and heap buffers depend upon these abstractions via implementations in `babbel_core::io`.
