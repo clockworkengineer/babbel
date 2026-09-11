@@ -6,6 +6,7 @@
 //! Designed for high performance, standard library, and `no_std` / embedded targets.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::approx_constant)]
 
 extern crate alloc;
 

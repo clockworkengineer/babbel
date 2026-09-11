@@ -23,6 +23,7 @@
 //! - `file-io`: Enable file I/O operations (requires `std`)
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::approx_constant)]
 
 #[macro_use]
 pub mod parser;

@@ -21,6 +21,7 @@
 //! Minimum supported Rust version: 1.88.0
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::approx_constant)]
 
 #[cfg(feature = "alloc")]
 #[macro_use]

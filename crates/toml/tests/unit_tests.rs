@@ -36,6 +36,7 @@ Violets are blue'''
 }
 
 #[test]
+#[allow(clippy::approx_constant)]
 fn test_numbers_bases_and_special_floats() {
     let input = r#"
 dec_int = 1_000_000

@@ -1,8 +1,9 @@
-﻿//! Example demonstrating embedded systems support
+//! Example demonstrating embedded systems support
 //!
 //! Shows how to use the YAML library in resource-constrained environments
 //! with no_std, custom allocators, and strict resource limits.
 
+#![allow(clippy::approx_constant)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;

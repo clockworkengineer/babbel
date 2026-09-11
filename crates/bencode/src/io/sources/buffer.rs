@@ -17,7 +17,6 @@ impl ISource for Buffer {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::io::traits::BencodeRead;
 
     #[test]
     fn create_source_buffer_works() {

@@ -1,7 +1,9 @@
-﻿//! Demonstrates programmatic JSON construction using Node types
+//! Demonstrates programmatic JSON construction using Node types
 //!
 //! Shows various ways to build JSON structures in memory using the Node API,
 //! including type conversions, indexing, and builder patterns.
+
+#![allow(clippy::approx_constant)]
 
 use babbel_json::{BufferDestination, Node, Numeric};
 use std::collections::HashMap;

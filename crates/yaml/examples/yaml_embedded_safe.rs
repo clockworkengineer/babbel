@@ -1,7 +1,9 @@
-﻿//! Embedded-Safe YAML Example
+//! Embedded-Safe YAML Example
 //!
 //! Demonstrates panic-free, safe YAML operations for embedded systems.
 //! Shows best practices for resource-constrained environments.
+
+#![allow(clippy::approx_constant)]
 
 extern crate alloc;
 

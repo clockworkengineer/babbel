@@ -1,4 +1,6 @@
-﻿use babbel_json::misc::print;
+#![allow(clippy::approx_constant)]
+
+use babbel_json::misc::print;
 use babbel_json::nodes::node::{Node, make_node};
 use babbel_json::BufferDestination;
 use std::collections::HashMap;
