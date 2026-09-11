@@ -198,10 +198,10 @@ graph TD
 4. [x] Update `docs/EMBEDDED_GUIDE.md` with verified `babbel_core::embedded` primitives and pull parsers. - **Completed**
 
 ### Milestone 4: Hub, READMEs & Changelog
-1. Author `docs/MIGRATION_AND_CHANGELOG.md`.
-2. Update `docs/README.md` (Documentation Hub) with the 4-tier structured layout.
-3. Update root `README.md` with badges, new links, and `FormatEngine` quickstart.
-4. Update `crates/babbel/README.md` and `crates/babbel_core/README.md`.
+1. [x] Author `docs/MIGRATION_AND_CHANGELOG.md`. - **Completed**
+2. [x] Update `docs/README.md` (Documentation Hub) with the 4-tier structured layout. - **Completed**
+3. [x] Update root `README.md` with badges, new links, and `FormatEngine` quickstart. - **Completed**
+4. [x] Update `crates/babbel/README.md` and `crates/babbel_core/README.md`. - **Completed**
 
 ### Milestone 5: Final Review & Verification
 1. Verify all markdown internal links across the workspace.

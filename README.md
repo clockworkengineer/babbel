@@ -3,19 +3,26 @@
 [![Rust](https://img.shields.io/badge/rust-2024%20edition-orange.svg)](https://www.rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-3500%2B%20passing-brightgreen.svg)]()
-[![Architecture: DRY & SOLID](https://img.shields.io/badge/architecture-DRY%20%26%20SOLID-purple.svg)](docs/ARCHITECTURE.md)
+[![Architecture: SOLID](https://img.shields.io/badge/architecture-SOLID%20%26%20DRY-purple.svg)](docs/SOLID_ARCHITECTURE_GUIDE.md)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Donate-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/roberttizz1)
 
 A high-performance, polyglot serialization, parsing, and document manipulation workspace in Rust. Babbel brings together **JSON**, **YAML**, **Bencode**, **XML**, **TOML**, **CSV / TSV**, **INI / Properties**, and **JSON Lines** under a unified, modular architecture adhering strictly to **DRY** (Don't Repeat Yourself) and **SOLID** engineering principles.
 
 📖 **Documentation & Guides**:
 - [Documentation Hub](docs/README.md) — Central directory of all specifications, guides, and tutorials
-- [Architecture Guide](docs/ARCHITECTURE.md) — 3-tier layering model and SOLID design principles
-- [Embedded Systems Guide](docs/EMBEDDED_GUIDE.md) — `no_std`, stack buffers (`StackBuffer`), and zero-allocation streaming
-- [Text Support Guide](docs/TEXT_SUPPORT_GUIDE.md) — RFC 4180 CSV/TSV, INI/.env, JSON Lines, and frontmatter
-- [Conversion Matrix](docs/CONVERSION_MATRIX.md) — $O(N)$ cross-format conversion reference & options
+- [SOLID Architecture Whitepaper](docs/SOLID_ARCHITECTURE_GUIDE.md) — Comprehensive guide to the 6-phase SOLID implementation
+- [Format Engine Plugin Guide](docs/FORMAT_ENGINE_PLUGIN_GUIDE.md) — Tutorial on implementing and registering custom format engines
+- [Architecture Guide](docs/ARCHITECTURE.md) — 3-tier layering model, memory bounds, and design principles
+- [Conversion Matrix](docs/CONVERSION_MATRIX.md) — Universal $O(N)$ cross-format conversion reference & options
+- [Embedded Systems Guide](docs/EMBEDDED_GUIDE.md) — `no_std`, stack buffers (`StackBuffer`), and zero-allocation pull parsers
 - [Memory & Benchmarks](docs/BENCHMARKS_AND_MEMORY.md) — Struct size bounds verification (`size_checks.rs`)
-- [TOML Conformance](docs/TOML_CONFORMANCE.md) — Official skystrife/toml-test suite results: 100.0% pass rate across 148 test cases
+- [YAML 1.2 Conformance](docs/YAML_CONFORMANCE.md) — Official YAML test suite results (1,085+ tests passing)
+- [Bencode Spec & Conformance](docs/BENCODE_SPEC_AND_CONFORMANCE.md) — BitTorrent BEP 0003 specification & test breakdown
+- [TOML Conformance](docs/TOML_CONFORMANCE.md) — Official skystrife/toml-test suite results (100.0% pass rate)
+- [JSON Conformance](docs/JSON_CONFORMANCE.md) — Official nst/JSONTestSuite results (100.0% pass rate)
+- [W3C XML Conformance](docs/XML_CONFORMANCE.md) — W3C XML Conformance Suite results (100.0% across 1,834 tests)
+- [Text Support Guide](docs/TEXT_SUPPORT_GUIDE.md) — RFC 4180 CSV/TSV, INI/.env, JSON Lines, and frontmatter
+- [Migration Guide & Changelog](docs/MIGRATION_AND_CHANGELOG.md) — Release notes and backward compatibility guarantees
 - [Security Policy](docs/SECURITY.md) — Threat model, Billion Laughs mitigations, and 64 MB DoS limits
 - [Development Guide](docs/DEVELOPMENT_GUIDE.md) — Contributor onboarding, toolchain, testing, and release builds
 - [Contributing Guidelines](docs/CONTRIBUTING.md) — Engineering standards and code conventions
@@ -28,13 +35,13 @@ Babbel is structured as an interconnected multi-crate workspace:
 
 | Crate | Package Docs | Directory | Description |
 | :--- | :--- | :--- | :--- |
-| **`babbel`** | [README](crates/babbel/README.md) | [`crates/babbel`](crates/babbel) | Master facade crate providing high-level ergonomics, prelude, and open-ended cross-format conversion pipelines across 9 formats. |
-| **`babbel_core`** | [README](crates/babbel_core/README.md) | [`crates/babbel_core`](crates/babbel_core) | Core architectural kernel containing streaming traits (`ISource`, `IDestination`, `ILineReader`), universal `Value` AST, RFC 4180 CSV/TSV, sectioned INI/.env, frontmatter processing, Unicode BOM detection, and format codec abstractions. |
-| **`babbel_json`** | [README](crates/json/README.md) | [`crates/json`](crates/json) | Full-featured JSON DOM engine supporting RFC 6901 JSON Pointer, RFC 7396 JSON Merge Patch, JSON Lines (`.jsonl`/`.ndjson`) streaming, and zero-copy parsing. |
-| **`babbel_yaml`** | [README](crates/yaml/README.md) | [`crates/yaml`](crates/yaml) | YAML 1.2 parser and emitter with full support for anchors, aliases, custom tags, multiline block scalars, and multi-document streams. |
-| **`babbel_bencode`** | [README](crates/bencode/README.md) | [`crates/bencode`](crates/bencode) | High-speed, binary-safe BitTorrent Bencode parser and serializer supporting zero-copy borrowed slices and iterative streaming. |
-| **`babbel_xml`** | [README](crates/xml/README.md) | [`crates/xml`](crates/xml) | Robust XML DOM parser, W3C Canonical XML (C14N 1.0/1.1), DTD validation, XSD schema validator, and XPath 1.0 query engine. |
-| **`babbel_toml`** | [README](crates/toml/README.md) | [`crates/toml`](crates/toml) | Fast, modular, pure-Rust TOML v1.1.0 parser, serializer, streaming pull parser, and DOM with zero external parser dependencies. |
+| **`babbel`** | [README](crates/babbel/README.md) | [`crates/babbel`](crates/babbel) | Master facade crate providing high-level ergonomics, prelude, dynamic `FormatRegistry`, and open-ended conversion pipelines across 9 formats. |
+| **`babbel_core`** | [README](crates/babbel_core/README.md) | [`crates/babbel_core`](crates/babbel_core) | Core architectural kernel containing streaming traits (`ISource`, `IDestination`, `ILineReader`), `FormatEngine` interface, universal `Value` AST, RFC 4180 CSV/TSV, sectioned INI/.env, frontmatter processing, Unicode BOM detection, and embedded primitives. |
+| **`babbel_json`** | [README](crates/json/README.md) | [`crates/json`](crates/json) | Full-featured JSON DOM engine, `JsonEngine`, RFC 6901 JSON Pointer, RFC 7396 JSON Merge Patch, JSON Lines streaming, and zero-allocation `JsonPullParser`. |
+| **`babbel_yaml`** | [README](crates/yaml/README.md) | [`crates/yaml`](crates/yaml) | YAML 1.2 parser and emitter, `YamlEngine`, anchors, aliases, custom tags, multiline block scalars, and SRP-decomposed modules. |
+| **`babbel_bencode`** | [README](crates/bencode/README.md) | [`crates/bencode`](crates/bencode) | High-speed, binary-safe BitTorrent Bencode parser and serializer, `BencodeEngine`, supporting zero-copy borrowed slices and iterative streaming. |
+| **`babbel_xml`** | [README](crates/xml/README.md) | [`crates/xml`](crates/xml) | Robust XML DOM parser, `XmlEngine`, W3C Canonical XML (C14N 1.0/1.1), DTD validation, XSD schema validator, zero-allocation `XmlPullParser`, and XPath 1.0 query engine. |
+| **`babbel_toml`** | [README](crates/toml/README.md) | [`crates/toml`](crates/toml) | Fast, modular, pure-Rust TOML v1.1.0 parser, `TomlEngine`, serializer, streaming pull parser, and compacted DOM with zero external parser dependencies. |
 
 ---
 
@@ -42,8 +49,8 @@ Babbel is structured as an interconnected multi-crate workspace:
 
 ### 1. Unified Streaming I/O (`ISource` & `IDestination`)
 All format crates across Babbel share the same streaming abstractions from [`babbel_core::io`](crates/babbel_core/src/io):
-- **Streaming Input (`ISource`)**: Every parser (`babbel_json::parse`, `babbel_yaml::parse`, `babbel_bencode::parse`, `babbel_xml::parse_source`) ingests data via `&mut dyn ISource`.
-- **Streaming Output (`IDestination`)**: Every emitter and serializer (`to_json`, `to_yaml`, `to_bencode`, `to_xml`, `stringify_to`, `emit_csv_to`, `emit_ini_to`) writes sequentially to `&mut dyn IDestination`.
+- **Streaming Input (`ISource`)**: Every parser ingests data via `&mut dyn ISource`.
+- **Streaming Output (`IDestination`)**: Every emitter and serializer writes sequentially to `&mut dyn IDestination`.
 - **Interface Segregation (ISP)**: Minimal sub-traits allow clients to bind only to the capabilities they require:
   - [`ILineReader`](crates/babbel_core/src/io/traits.rs): Line-by-line reading across mixed `\r\n`, `\n`, `\r` endings without full buffering.
   - [`ICharStream`](crates/babbel_core/src/io/traits.rs): Minimal pull-based character stream (`current()`, `next()`, `more()`).
@@ -52,17 +59,18 @@ All format crates across Babbel share the same streaming abstractions from [`bab
   - [`IRewindable`](crates/babbel_core/src/io/traits.rs): Reset streams to initial state.
   - [`IPositionAware`](crates/babbel_core/src/io/traits.rs): Absolute byte offset tracking.
   - [`ILocationAware`](crates/babbel_core/src/io/traits.rs): 1-based line and column metric tracking.
-  - [`ITailInspectable`](crates/babbel_core/src/io/traits.rs): Inspect last written byte without file reopening.
+  - [`ITailInspectable`](crates/babbel_core/src/io/traits.rs): Inspect last written byte in-memory without OS file seek syscalls.
   - [`IClearable`](crates/babbel_core/src/io/traits.rs): Buffer/destination truncation.
   - [`IFlushable`](crates/babbel_core/src/io/traits.rs): Storage buffer synchronization.
   - [`IIndentationAware`](crates/babbel_core/src/io/traits.rs): Indentation calculation for whitespace-sensitive grammars.
 
 ### 2. Open-Closed & Dependency Inversion (OCP & DIP)
-- **Extensible Codecs**: New serialization formats can be integrated simply by implementing [`FormatParser`](crates/babbel_core/src/codec.rs) and [`FormatEmitter`](crates/babbel_core/src/codec.rs).
+- **Extensible `FormatEngine`**: New serialization formats can be integrated simply by implementing [`FormatEngine`](crates/babbel_core/src/engine.rs) (or `FormatParser` + `FormatEmitter`).
+- **Dynamic `FormatRegistry`**: Register and discover engines at runtime by format ID, MIME type, or file extension.
 - **Universal Data Pipeline**: Rather than $O(N^2)$ hand-rolled cross-serializers, conversions flow through the universal [`Value`](crates/babbel_core/src/model.rs) AST:
   ```rust
-  let output = babbel::convert::convert_text(input_str, &parser, &emitter)?;
-  let bytes  = babbel::convert::convert_bytes(input_bytes, &parser, &emitter)?;
+  let output = babbel::convert::convert_format(input_str, &from_engine, &to_engine, &options)?;
+  let bytes  = babbel::convert::convert_format_bytes(input_bytes, &from_engine, &to_engine, &options)?;
   ```
 - **Unified Error Handling**: Format-specific errors implement `Into<BabbelError>` with normalized classification codes (`ErrorCode::Syntax`, `ErrorCode::Encoding`, `ErrorCode::Io`, etc.).
 
@@ -79,13 +87,14 @@ Add `babbel` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-babbel = { path = "crates/babbel", features = ["json", "yaml", "xml", "bencode"] }
+babbel = { path = "crates/babbel", features = ["json", "yaml", "xml", "bencode", "toml", "convert"] }
 ```
 
 ### Parsing & Document Access
 
 ```rust
 use babbel::json;
+use babbel::toml;
 use babbel::yaml;
 use babbel::xml;
 use babbel::bencode;
@@ -94,69 +103,78 @@ use babbel::bencode;
 let json_node = json::from_str(r#"{"service": "babbel", "status": "active"}"#)?;
 assert_eq!(json_node.get("status").and_then(|n| n.as_str()), Some("active"));
 
-// 2. Parse YAML
+// 2. Parse TOML
+let toml_node = toml::parse_string("service = \"babbel\"\nport = 8080\n")?;
+assert_eq!(toml_node.get("service").and_then(|n| n.as_str()), Some("babbel"));
+
+// 3. Parse YAML
 let yaml_node = yaml::parse_string("service: babbel\nstatus: active\n")?;
 assert_eq!(yaml_node.get("service").and_then(|n| n.as_str()), Some("babbel"));
 
-// 3. Parse XML
+// 4. Parse XML
 let xml_doc = xml::parse("<service name=\"babbel\"><status>active</status></service>")?;
 assert_eq!(xml_doc.get_root_element_name(), Some("service"));
 
-// 4. Parse Bencode
+// 5. Parse Bencode
 let bencode_node = bencode::parse_bytes(b"d7:service6:babbel6:status6:activee")?;
 ```
 
-### Streaming I/O
+### Universal Cross-Format Conversions
 
 ```rust
-use babbel::core::io::{Buffer, BufferSource, ISource, IDestination};
-use babbel::xml;
+use babbel::convert::{convert_format, ConversionOptions};
+use babbel_json::JsonEngine;
+use babbel_toml::TomlEngine;
+use babbel_yaml::YamlEngine;
 
-// Stream from any ISource
-let mut source = BufferSource::new(b"<config><timeout>30</timeout></config>");
-let doc = xml::parse_source(&mut source)?;
+// High-level engine pipeline: JSON <-> TOML
+let toml_str = convert_format(
+    r#"{"host": "localhost", "port": 8080}"#,
+    &JsonEngine,
+    &TomlEngine,
+    &ConversionOptions::pretty(),
+)?;
 
-// Stream directly to any IDestination
-let mut dest = Buffer::new();
-xml::stringify_to(&doc, &mut dest);
-println!("Serialized XML: {}", dest.to_string());
+// Convenience functions:
+let yaml_str = babbel::convert::toml_to_yaml(&toml_str)?;
+let json_str = babbel::convert::yaml_to_json(&yaml_str)?;
+let bencode_bytes = babbel::convert::toml_to_bencode(&toml_str)?;
 ```
 
-### Cross-Format Conversions
+### Dynamic Format Resolution via `FormatRegistry`
 
 ```rust
-use babbel::convert;
+use babbel::{default_registry, convert::convert_format, convert::ConversionOptions};
 
-// JSON <-> YAML
-let yaml_str = convert::json_to_yaml(r#"{"host": "localhost", "port": 8080}"#)?;
-let json_str = convert::yaml_to_json(&yaml_str)?;
+let registry = default_registry();
+if let (Some(from), Some(to)) = (registry.get_by_id("json"), registry.get_by_id("xml")) {
+    let xml_output = convert_format(
+        r#"{"status": "ok"}"#,
+        from.as_ref(),
+        to.as_ref(),
+        &ConversionOptions::default(),
+    )?;
+}
+```
 
-// JSON <-> XML
-let xml_str = convert::json_to_xml(r#"{"message": "hello"}"#)?;
+### Embedded Zero-Allocation Streaming
 
-// CSV <-> JSON
-let csv_data = "id,name\n1,Alice\n2,Bob\n";
-let json_from_csv = convert::csv_to_json(csv_data)?;
-let csv_roundtrip = convert::json_to_csv(&json_from_csv)?;
+```rust
+use babbel::embedded::{JsonPullParser, JsonPullEvent, JsonScalar};
 
-// INI <-> JSON
-let ini_doc = "[server]\nhost = 127.0.0.1\nport = 8080\n";
-let json_from_ini = convert::ini_to_json(ini_doc)?;
-
-// JSON Lines <-> JSON
-let jsonl = "{\"id\":1}\n{\"id\":2}\n";
-let json_arr = convert::jsonlines_to_json(jsonl)?;
-
-// Binary Bencode conversions
-let bencode_bytes = convert::json_to_bencode(r#"{"id": 101}"#)?;
-let yaml_from_bencode = convert::bencode_to_yaml(&bencode_bytes)?;
+let mut parser = JsonPullParser::new(r#"{"temp": 24.5, "sensor": "DHT22"}"#);
+while let Some(event) = parser.next_event()? {
+    if let JsonPullEvent::Scalar(JsonScalar::Float(val)) = event {
+        println!("Temperature: {}", val);
+    }
+}
 ```
 
 ---
 
 ## Building and Testing
 
-Babbel features a rigorous test suite of over **3,000 unit, integration, and doc tests** across all crates.
+Babbel features a rigorous test suite of over **3,500 unit, integration, and doc tests** across all crates.
 
 ```bash
 # Check all workspace crates
@@ -165,28 +183,17 @@ cargo check --workspace
 # Run tests across all workspace crates
 cargo test --workspace --jobs 2
 
-# Run tests for a specific crate
-cargo test -p babbel_xml --jobs 2
-cargo test -p babbel_json --jobs 2
-cargo test -p babbel_yaml --jobs 2
-cargo test -p babbel_bencode --jobs 2
-cargo test -p babbel_core --jobs 2
-cargo test -p babbel --jobs 2
+# Verify struct size bounds
+cargo test -p babbel --test size_checks
 ```
 
 ### Official Specification Conformance Suites
 
-- **Official JSONTestSuite (RFC 8259 Conformance)**: **340 / 340 tests passed (100.0%)** across all categories (95/95 `y_` accepted, 188/188 `n_` rejected, 35/35 `i_` safe, 22/22 transform, 0 panics) via `cargo test -p babbel_json --test nst_conformance`:
-  - See [`crates/json/README.md`](crates/json/README.md) and [`docs/JSON_CONFORMANCE.md`](docs/JSON_CONFORMANCE.md) for full breakdown.
-- **Official YAML 1.2 Test Suite**: **402 / 402 tests passed (100.0%)** via `cargo test -p babbel_yaml --test yaml_test_suite_integration`.
-- **Official W3C XML Conformance Test Suite (XML TS 20130923)**: **1,834 / 1,834 tests passed (100.0%)** across all 12 sub-catalogs (0 failed, 0 skipped, 0 panics) via `cargo test -p babbel_xml --test w3c_conformance`:
-  - **100.0%** on OASIS (`oasis/oasis.xml`: 348/348)
-  - **100.0%** on XMLTest (`xmltest/xmltest.xml`: 363/363)
-  - **100.0%** on IBM OASIS Not-WF (`ibm/ibm_oasis_not-wf.xml`: 424/424)
-  - **100.0%** on Edinburgh Univ. Errata 4e (392/392), 2e (33/33), 3e (13/13), Namespaces 1.0 (48/48), and Namespaces Errata 1e (3/3)
-  - **100.0%** on IBM OASIS Valid (149/149) and Invalid (48/48)
-  - **100.0%** on Japanese (12/12) and Sun error suites (1/1)
-  - See [`crates/xml/README.md`](crates/xml/README.md) and [`docs/XML_CONFORMANCE.md`](docs/XML_CONFORMANCE.md) for full breakdown.
+- **Official YAML 1.2 Test Suite**: **1,085+ tests passed** via `cargo test -p babbel_yaml`.
+- **Official W3C XML Conformance Test Suite (XML TS 20130923)**: **1,834 / 1,834 tests passed (100.0%)** across all 12 sub-catalogs (0 failed, 0 skipped, 0 panics) via `cargo test -p babbel_xml --test w3c_conformance`.
+- **Official JSONTestSuite (RFC 8259 Conformance)**: **340 / 340 tests passed (100.0%)** across all categories (95/95 `y_` accepted, 188/188 `n_` rejected, 35/35 `i_` safe, 22/22 transform, 0 panics) via `cargo test -p babbel_json --test nst_conformance`.
+- **Official TOML skystrife/toml-test**: **148 / 148 tests passed (100.0%)** via `cargo test -p babbel_toml --test toml_test_suite`.
+- **BitTorrent Bencode BEP 0003**: Full conformance with zero-copy and recursive limits verification.
 
 ---
 

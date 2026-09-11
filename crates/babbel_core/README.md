@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Rust Edition](https://img.shields.io/badge/edition-2024-orange)](Cargo.toml)
 
-Foundational architectural kernel for the **Babbel** multi-format serialization ecosystem. `babbel_core` provides unified streaming I/O abstractions adhering strictly to **SOLID** principles, universal `Value` AST, RFC 4180 CSV/TSV, sectioned INI/.env, frontmatter processing, Unicode BOM detection, zero-allocation numeric formatting, diagnostic error reporting, and string escaping.
+Foundational architectural kernel for the **Babbel** multi-format serialization ecosystem. `babbel_core` provides unified streaming I/O abstractions adhering strictly to **SOLID** principles, the universal `FormatEngine` and `FormatRegistry` architecture, universal `Value` AST, RFC 4180 CSV/TSV, sectioned INI/.env, frontmatter processing, Unicode BOM detection, zero-allocation numeric formatting, diagnostic error reporting, and string escaping.
 
 ---
 
@@ -18,11 +18,17 @@ Foundational architectural kernel for the **Babbel** multi-format serialization 
   - Zero-allocation line slicing (`SliceSource::read_line_slice()`).
   - Safe in-memory tail tracking (`last()`) without file system re-opening.
   - Full Unicode scalar decoding preventing multi-byte UTF-8 corruption.
+- **Format Engine & Extensibility (`babbel_core::engine` & `babbel_core::codec`)**:
+  - [`FormatEngine`](src/engine.rs) trait unifying format ID, MIME types, file extensions, parsing, and serialization.
+  - [`FormatRegistry`](src/engine.rs) for dynamic format discovery and lookup.
+  - Static resolution helpers: `find_engine`, `find_engine_by_mime`, `find_engine_by_extension`.
+  - Codec traits: `FormatParser`, `FormatEmitter`, `FormatCodec`.
+  - Visitor pattern: `ValueVisitor` and `NodeVisitor` with default no-op methods.
 - **Embedded & Zero-Allocation Primitives (`babbel_core::embedded`)**:
   - Stack allocation: `StackBuffer<const N>`, `MemoryTracker`, `EmbeddedLimits`, `CompactError` (8 bytes).
   - Zero-allocation destinations: `SliceDestination<'a>` and `ArrayVecDestination<const N>`.
 - **Universal Data Model (`babbel_core::model`)**:
-  - `Value` AST (`Null`, `Bool`, `Integer(i128)`, `Float`, `String`, `Array`, `Object`, `Bytes`) powering cross-format conversions.
+  - `Value` AST (`Null`, `Bool`, `Integer(i128)`, `Float`, `String`, `Array`, `Object`, `Bytes`) compacted to **32 bytes** (half a cache line).
 - **Tabular Text Engine (`babbel_core::csv`)**:
   - RFC 4180 CSV and TSV parsing and serialization.
   - Delimiter auto-detection (`sniff_delimiter`) across `,`, `\t`, `;`, `|`.
@@ -33,8 +39,6 @@ Foundational architectural kernel for the **Babbel** multi-format serialization 
 - **Document Frontmatter & Text Utilities (`babbel_core::text`)**:
   - Frontmatter splitter (`split_frontmatter`) supporting YAML (`---`) and TOML (`+++`).
   - Indentation manipulation: `indent`, `dedent`, `trim_lines`, `line_count`.
-- **Unified Codec Interfaces (`babbel_core::codec`)**:
-  - `FormatParser`, `FormatEmitter`, and `FormatCodec` abstractions.
 - **Unicode & Text Engine (`babbel_core::encoding` & `babbel_core::escape`)**:
   - Automatic BOM detection for UTF-8, UTF-16 LE/BE, and UTF-32 LE/BE.
   - Cross-platform newline normalization (`\r\n` / `\r` $\rightarrow$ `\n`).
@@ -95,7 +99,30 @@ while let Some(slice) = source2.read_line_slice() {
 }
 ```
 
-### 2. Delimited Text (CSV / TSV)
+### 2. Format Engine Architecture
+
+```rust
+use babbel_core::{FormatEngine, FormatOptions, FormatRegistry, IDestination, Value, BabbelError};
+
+pub struct CustomEngine;
+
+impl FormatEngine for CustomEngine {
+    fn format_id(&self) -> &'static str { "custom" }
+    fn mime_types(&self) -> &'static [&'static str] { &["application/x-custom"] }
+    fn file_extensions(&self) -> &'static [&'static str] { &["custom"] }
+
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        Ok(Value::String(input.to_string()))
+    }
+
+    fn serialize(&self, value: &Value, dest: &mut dyn IDestination, _options: &FormatOptions) -> Result<(), BabbelError> {
+        dest.add_bytes(value.as_str().unwrap_or(""));
+        Ok(())
+    }
+}
+```
+
+### 3. Delimited Text (CSV / TSV)
 
 ```rust
 use babbel_core::csv::{parse_csv, emit_csv, sniff_delimiter, CsvOptions};
@@ -112,7 +139,7 @@ let csv_out = emit_csv(&val, &CsvOptions::default()).unwrap();
 println!("{}", csv_out);
 ```
 
-### 3. Configuration Text (INI / .env)
+### 4. Configuration Text (INI / .env)
 
 ```rust
 use babbel_core::ini::{parse_ini, emit_ini, IniOptions};
@@ -124,22 +151,6 @@ let val = parse_ini(ini_text, &IniOptions::default()).unwrap();
 // Parse .env
 let env_text = "PORT=3000\nDATABASE_URL=sqlite://data.db\n";
 let env_val = parse_ini(env_text, &IniOptions::env()).unwrap();
-```
-
-### 4. Document Frontmatter & Text Utilities
-
-```rust
-use babbel_core::text::{split_frontmatter, indent, dedent, FrontmatterFormat};
-
-// Split Markdown frontmatter
-let doc = "---\ntitle: Guide\n---\n# Welcome";
-let res = split_frontmatter(doc);
-assert_eq!(res.format, Some(FrontmatterFormat::Yaml));
-assert_eq!(res.content, "# Welcome");
-
-// Dedent code block
-let indented = "    fn run() {\n        42\n    }";
-assert_eq!(dedent(indented), "fn run() {\n    42\n}");
 ```
 
 ---
@@ -158,6 +169,7 @@ let node = Value::Object(vec![
 ]);
 
 assert!(matches!(node, Value::Object(_)));
+assert_eq!(core::mem::size_of::<Value>(), 32);
 ```
 
 ---
@@ -166,9 +178,10 @@ assert!(matches!(node, Value::Object(_)));
 
 See the [Documentation Hub](../../docs/README.md) for full workspace guides:
 - [Architecture Guide](../../docs/ARCHITECTURE.md)
+- [SOLID Architecture Whitepaper](../../docs/SOLID_ARCHITECTURE_GUIDE.md)
+- [Format Engine Plugin Guide](../../docs/FORMAT_ENGINE_PLUGIN_GUIDE.md)
 - [Embedded Systems Guide](../../docs/EMBEDDED_GUIDE.md)
-- [Text Support Guide](../../docs/TEXT_SUPPORT_GUIDE.md)
-- [Security Policy](../../docs/SECURITY.md)
+- [Conversion Matrix](../../docs/CONVERSION_MATRIX.md)
 - [Development Guide](../../docs/DEVELOPMENT_GUIDE.md)
 - [Contributing Guidelines](../../docs/CONTRIBUTING.md)
 
