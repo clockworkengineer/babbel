@@ -246,6 +246,118 @@ pub fn write_toml_escaped_string(s: &str, dest: &mut dyn IDestination) {
     dest.add_byte(b'"');
 }
 
+/// Checks if string `s` requires quotation/escaping in YAML.
+pub fn yaml_needs_quoting(s: &str) -> bool {
+    if s.is_empty() {
+        return true;
+    }
+    if s.starts_with(' ') || s.ends_with(' ') {
+        return true;
+    }
+    // Reserved scalars in YAML
+    match s {
+        "true" | "false" | "null" | "~" | "y" | "n" | "yes" | "no" | "on" | "off" => return true,
+        _ => {}
+    }
+    // If it can be parsed as a number, quote it to preserve string type
+    if s.parse::<i64>().is_ok() || s.parse::<f64>().is_ok() {
+        return true;
+    }
+    // Special YAML indicator characters
+    for b in s.bytes() {
+        match b {
+            b':' | b'#' | b'[' | b']' | b'{' | b'}' | b',' | b'&' | b'*' | b'?' | b'|'
+            | b'>' | b'!' | b'%' | b'@' | b'`' | b'"' | b'\'' | b'\\' | b'\n' | b'\r' | b'\t' => {
+                return true;
+            }
+            b if b < 0x20 => return true,
+            _ => {}
+        }
+    }
+    if s.starts_with("- ") || s == "-" || s.starts_with("? ") || s.starts_with(": ") {
+        return true;
+    }
+    false
+}
+
+/// Escapes a string for YAML serialization.
+pub fn escape_for_yaml(s: &str) -> String {
+    if !yaml_needs_quoting(s) {
+        return s.to_string();
+    }
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            '\x08' => out.push_str("\\b"),
+            '\x0C' => out.push_str("\\f"),
+            c if (c as u32) < 0x20 => {
+                #[cfg(feature = "alloc")]
+                out.push_str(&alloc::format!("\\u{:04x}", c as u32));
+                #[cfg(not(feature = "alloc"))]
+                out.push_str("\\u0000");
+            }
+            other => out.push(other),
+        }
+    }
+    out.push('"');
+    out
+}
+
+/// Writes a YAML escaped string into `dest`.
+pub fn write_yaml_escaped_string(s: &str, dest: &mut dyn IDestination) {
+    if !yaml_needs_quoting(s) {
+        dest.add_bytes(s);
+        return;
+    }
+    dest.add_byte(b'"');
+    let bytes = s.as_bytes();
+    let mut start = 0;
+    let mut i = 0;
+    while i < bytes.len() {
+        let esc = match bytes[i] {
+            b'"' => Some("\\\""),
+            b'\\' => Some("\\\\"),
+            b'\n' => Some("\\n"),
+            b'\r' => Some("\\r"),
+            b'\t' => Some("\\t"),
+            0x08 => Some("\\b"),
+            0x0C => Some("\\f"),
+            _ => None,
+        };
+        if let Some(replacement) = esc {
+            if i > start {
+                dest.add_bytes(core::str::from_utf8(&bytes[start..i]).unwrap_or(""));
+            }
+            dest.add_bytes(replacement);
+            i += 1;
+            start = i;
+        } else if bytes[i] < 0x20 {
+            if i > start {
+                dest.add_bytes(core::str::from_utf8(&bytes[start..i]).unwrap_or(""));
+            }
+            #[cfg(feature = "alloc")]
+            let hex = alloc::format!("\\u{:04x}", bytes[i]);
+            #[cfg(not(feature = "alloc"))]
+            let hex = "\\u0000";
+            dest.add_bytes(&hex);
+            i += 1;
+            start = i;
+        } else {
+            i += 1;
+        }
+    }
+    if start < bytes.len() {
+        dest.add_bytes(core::str::from_utf8(&bytes[start..]).unwrap_or(""));
+    }
+    dest.add_byte(b'"');
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -285,4 +397,18 @@ mod tests {
         assert!(!is_valid_toml_bare_key("foo.bar"));
         assert!(!is_valid_toml_bare_key(""));
     }
+
+    #[test]
+    fn test_escape_for_yaml() {
+        assert_eq!(escape_for_yaml("plain_string"), "plain_string");
+        assert_eq!(escape_for_yaml("hello: world"), "\"hello: world\"");
+        assert_eq!(escape_for_yaml("true"), "\"true\"");
+        assert_eq!(escape_for_yaml("123"), "\"123\"");
+        assert_eq!(escape_for_yaml("line1\nline2"), "\"line1\\nline2\"");
+
+        let mut dest = BufferDestination::new();
+        write_yaml_escaped_string("foo: bar", &mut dest);
+        assert_eq!(core::str::from_utf8(dest.as_bytes()).unwrap(), "\"foo: bar\"");
+    }
 }
+

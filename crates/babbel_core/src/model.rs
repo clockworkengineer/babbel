@@ -72,6 +72,165 @@ impl Value {
         }
     }
 
+    /// Returns 64-bit float if value is `Value::Float` or `Value::Integer`.
+    pub fn as_f64(&self) -> Option<f64> {
+        match self {
+            Value::Float(f) => Some(*f),
+            Value::Integer(i) => Some(*i as f64),
+            _ => None,
+        }
+    }
+
+    /// Returns unsigned 64-bit integer if value is non-negative `Value::Integer`.
+    pub fn as_u64(&self) -> Option<u64> {
+        match self {
+            Value::Integer(i) => (*i).try_into().ok(),
+            _ => None,
+        }
+    }
+
+    /// Returns 128-bit integer if value is `Value::Integer`.
+    pub fn as_i128(&self) -> Option<i128> {
+        match self {
+            Value::Integer(i) => Some(*i),
+            _ => None,
+        }
+    }
+
+    /// Returns raw byte slice if value is `Value::Bytes` or `Value::String`.
+    pub fn as_bytes(&self) -> Option<&[u8]> {
+        match self {
+            Value::Bytes(b) => Some(b.as_slice()),
+            Value::String(s) => Some(s.as_bytes()),
+            _ => None,
+        }
+    }
+
+    /// Check if the value is a boolean.
+    pub fn is_bool(&self) -> bool {
+        matches!(self, Value::Bool(_))
+    }
+
+    /// Check if the value is an integer.
+    pub fn is_integer(&self) -> bool {
+        matches!(self, Value::Integer(_))
+    }
+
+    /// Check if the value is a floating point number.
+    pub fn is_float(&self) -> bool {
+        matches!(self, Value::Float(_))
+    }
+
+    /// Check if the value is a string.
+    pub fn is_string(&self) -> bool {
+        matches!(self, Value::String(_))
+    }
+
+    /// Check if the value is raw binary bytes.
+    pub fn is_bytes(&self) -> bool {
+        matches!(self, Value::Bytes(_))
+    }
+
+    /// Check if the value is an array / sequence.
+    pub fn is_array(&self) -> bool {
+        matches!(self, Value::Array(_))
+    }
+
+    /// Check if the value is an object / mapping.
+    pub fn is_object(&self) -> bool {
+        matches!(self, Value::Object(_))
+    }
+
+    /// Infallible lookup of an object property by key.
+    pub fn get(&self, key: &str) -> Option<&Value> {
+        match self {
+            Value::Object(entries) => {
+                entries.iter().find(|(k, _)| k == key).map(|(_, v)| v)
+            }
+            _ => None,
+        }
+    }
+
+    /// Mutable lookup of an object property by key.
+    pub fn get_mut(&mut self, key: &str) -> Option<&mut Value> {
+        match self {
+            Value::Object(entries) => {
+                entries.iter_mut().find(|(k, _)| k == key).map(|(_, v)| v)
+            }
+            _ => None,
+        }
+    }
+
+    /// Infallible index-based lookup in an array.
+    pub fn get_index(&self, index: usize) -> Option<&Value> {
+        match self {
+            Value::Array(items) => items.get(index),
+            _ => None,
+        }
+    }
+
+    /// Mutable index-based lookup in an array.
+    pub fn get_index_mut(&mut self, index: usize) -> Option<&mut Value> {
+        match self {
+            Value::Array(items) => items.get_mut(index),
+            _ => None,
+        }
+    }
+
+    /// Infallible dot-separated path navigation (e.g. `"server.database.port"` or `"users.0.name"`).
+    pub fn get_path(&self, path: &str) -> Option<&Value> {
+        if path.is_empty() {
+            return Some(self);
+        }
+        let mut current = self;
+        for segment in path.split('.') {
+            if segment.is_empty() {
+                continue;
+            }
+            if let Ok(idx) = segment.parse::<usize>() {
+                if let Some(next) = current.get_index(idx) {
+                    current = next;
+                    continue;
+                }
+            }
+            match current.get(segment) {
+                Some(next) => current = next,
+                None => return None,
+            }
+        }
+        Some(current)
+    }
+
+    /// Infallible RFC 6901 JSON pointer navigation (e.g. `"/server/port"` or `"/users/0/name"`).
+    pub fn pointer(&self, pointer: &str) -> Option<&Value> {
+        if pointer.is_empty() {
+            return Some(self);
+        }
+        if !pointer.starts_with('/') {
+            return None;
+        }
+        let mut current = self;
+        for part in pointer.split('/').skip(1) {
+            let unescaped = if part.contains('~') {
+                part.replace("~1", "/").replace("~0", "~")
+            } else {
+                alloc::string::String::from(part)
+            };
+            if let Ok(idx) = unescaped.parse::<usize>() {
+                if let Some(next) = current.get_index(idx) {
+                    current = next;
+                    continue;
+                }
+            }
+            match current.get(&unescaped) {
+                Some(next) => current = next,
+                None => return None,
+            }
+        }
+        Some(current)
+    }
+
+
     /// Emits this value using a pluggable format emitter adhering to OCP.
     pub fn emit<E: crate::codec::FormatEmitter + ?Sized>(
         &self,
@@ -564,6 +723,122 @@ pub trait FormatVisitor {
     }
 }
 
+impl From<bool> for Value {
+    fn from(b: bool) -> Self {
+        Value::Bool(b)
+    }
+}
+
+impl From<i64> for Value {
+    fn from(i: i64) -> Self {
+        Value::Integer(i as i128)
+    }
+}
+
+impl From<i32> for Value {
+    fn from(i: i32) -> Self {
+        Value::Integer(i as i128)
+    }
+}
+
+impl From<i128> for Value {
+    fn from(i: i128) -> Self {
+        Value::Integer(i)
+    }
+}
+
+impl From<u64> for Value {
+    fn from(u: u64) -> Self {
+        Value::Integer(u as i128)
+    }
+}
+
+impl From<u32> for Value {
+    fn from(u: u32) -> Self {
+        Value::Integer(u as i128)
+    }
+}
+
+impl From<usize> for Value {
+    fn from(u: usize) -> Self {
+        Value::Integer(u as i128)
+    }
+}
+
+impl From<f64> for Value {
+    fn from(f: f64) -> Self {
+        Value::Float(f)
+    }
+}
+
+impl From<f32> for Value {
+    fn from(f: f32) -> Self {
+        Value::Float(f as f64)
+    }
+}
+
+impl From<alloc::string::String> for Value {
+    fn from(s: alloc::string::String) -> Self {
+        Value::String(s)
+    }
+}
+
+impl From<&str> for Value {
+    fn from(s: &str) -> Self {
+        Value::String(alloc::string::String::from(s))
+    }
+}
+
+impl From<alloc::vec::Vec<u8>> for Value {
+    fn from(b: alloc::vec::Vec<u8>) -> Self {
+        Value::Bytes(b)
+    }
+}
+
+impl From<&[u8]> for Value {
+    fn from(b: &[u8]) -> Self {
+        Value::Bytes(b.to_vec())
+    }
+}
+
+impl From<alloc::vec::Vec<Value>> for Value {
+    fn from(arr: alloc::vec::Vec<Value>) -> Self {
+        Value::Array(arr)
+    }
+}
+
+impl From<alloc::vec::Vec<(alloc::string::String, Value)>> for Value {
+    fn from(obj: alloc::vec::Vec<(alloc::string::String, Value)>) -> Self {
+        Value::Object(obj)
+    }
+}
+
+static NULL_VALUE: Value = Value::Null;
+
+impl core::ops::Index<&str> for Value {
+    type Output = Value;
+
+    fn index(&self, index: &str) -> &Self::Output {
+        self.get(index).unwrap_or(&NULL_VALUE)
+    }
+}
+
+impl core::ops::Index<&alloc::string::String> for Value {
+    type Output = Value;
+
+    fn index(&self, index: &alloc::string::String) -> &Self::Output {
+        self.get(index.as_str()).unwrap_or(&NULL_VALUE)
+    }
+}
+
+impl core::ops::Index<usize> for Value {
+    type Output = Value;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        self.get_index(index).unwrap_or(&NULL_VALUE)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -604,6 +879,67 @@ mod tests {
         assert_eq!(collector.visit_key("name"), Ok(()));
         assert_eq!(collector.visit_key("version"), Ok(()));
         assert_eq!(collector.keys, vec!["name", "version"]);
+    }
+
+    #[test]
+    fn test_value_navigation_and_accessors() {
+        let val = Value::Object(vec![
+            ("title".to_string(), Value::String("Babbel".to_string())),
+            ("version".to_string(), Value::Float(0.2)),
+            ("port".to_string(), Value::Integer(8080)),
+            ("active".to_string(), Value::Bool(true)),
+            (
+                "server".to_string(),
+                Value::Object(vec![
+                    ("host".to_string(), Value::String("127.0.0.1".to_string())),
+                    (
+                        "tags".to_string(),
+                        Value::Array(vec![
+                            Value::String("api".to_string()),
+                            Value::String("v1".to_string()),
+                        ]),
+                    ),
+                ]),
+            ),
+        ]);
+
+        assert_eq!(val.is_object(), true);
+        assert_eq!(val.get("title").and_then(|v| v.as_str()), Some("Babbel"));
+        assert_eq!(val.get("port").and_then(|v| v.as_i64()), Some(8080));
+        assert_eq!(val.get("port").and_then(|v| v.as_u64()), Some(8080));
+        assert_eq!(val.get("port").and_then(|v| v.as_i128()), Some(8080));
+        assert_eq!(val.get("version").and_then(|v| v.as_f64()), Some(0.2));
+        assert_eq!(val.get("active").and_then(|v| v.as_bool()), Some(true));
+
+        // Path navigation
+        assert_eq!(
+            val.get_path("server.host").and_then(|v| v.as_str()),
+            Some("127.0.0.1")
+        );
+        assert_eq!(
+            val.get_path("server.tags.0").and_then(|v| v.as_str()),
+            Some("api")
+        );
+        assert_eq!(
+            val.get_path("server.tags.1").and_then(|v| v.as_str()),
+            Some("v1")
+        );
+        assert_eq!(val.get_path("nonexistent.path"), None);
+
+        // JSON Pointer navigation
+        assert_eq!(
+            val.pointer("/server/host").and_then(|v| v.as_str()),
+            Some("127.0.0.1")
+        );
+        assert_eq!(
+            val.pointer("/server/tags/0").and_then(|v| v.as_str()),
+            Some("api")
+        );
+
+        // From conversions
+        assert_eq!(Value::from(42_i64), Value::Integer(42));
+        assert_eq!(Value::from("hello"), Value::String("hello".to_string()));
+        assert_eq!(Value::from(true), Value::Bool(true));
     }
 }
 

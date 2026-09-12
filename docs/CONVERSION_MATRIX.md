@@ -181,35 +181,54 @@ let json_from_benc = convert::bencode_to_json(&bencode_bytes)?;
 
 // YAML <-> XML
 let xml = convert::yaml_to_xml("status: ok\n")?;
+let yaml = convert::xml_to_yaml(&xml)?;
 
-// Bencode <-> YAML & XML
-let yaml_str = convert::bencode_to_yaml(&bencode_bytes)?;
-let xml_str  = convert::bencode_to_xml(&bencode_bytes)?;
+// YAML <-> Bencode
+let bencode = convert::yaml_to_bencode("key: value\n")?;
+let yaml = convert::bencode_to_yaml(&bencode)?;
+
+// XML <-> JSON & Bencode
+let xml = convert::json_to_xml(r#"{"status": "ok"}"#)?;
+let json = convert::xml_to_json(&xml)?;
+let bencode = convert::xml_to_bencode(&xml)?;
+let xml = convert::bencode_to_xml(&bencode)?;
 ```
 
 ### 4.2 Tabular Conversions (CSV / TSV)
 ```rust
 use babbel::convert;
 
-// CSV <-> JSON
+// CSV <-> JSON & YAML & XML & TOML & Bencode & INI & JSON Lines
 let json_str = convert::csv_to_json("id,name\n1,Alice\n")?;
 let csv_str  = convert::json_to_csv(&json_str)?;
-
-// TSV <-> JSON
-let json_tsv = convert::tsv_to_json("id\tname\n1\tAlice\n")?;
-let tsv_str  = convert::json_to_tsv(&json_tsv)?;
-
-// CSV <-> YAML
 let yaml_str = convert::csv_to_yaml("id,name\n1,Alice\n")?;
 let csv_back = convert::yaml_to_csv(&yaml_str)?;
-
-// CSV <-> TOML
+let xml_str  = convert::csv_to_xml("id,name\n1,Alice\n")?;
+let csv_back = convert::xml_to_csv(&xml_str)?;
 let toml_str = convert::csv_to_toml("id,name\n1,Alice\n")?;
 let csv_back = convert::toml_to_csv(&toml_str)?;
-
-// CSV <-> JSON Lines
+let benc_csv = convert::csv_to_bencode("id,name\n1,Alice\n")?;
+let csv_back = convert::bencode_to_csv(&benc_csv)?;
+let ini_str  = convert::csv_to_ini("id,name\n1,Alice\n")?;
+let csv_back = convert::ini_to_csv(&ini_str)?;
 let jsonl_str = convert::csv_to_jsonlines("id,name\n1,Alice\n")?;
 let csv_out   = convert::jsonlines_to_csv(&jsonl_str)?;
+
+// TSV <-> All Formats
+let json_tsv = convert::tsv_to_json("id\tname\n1\tAlice\n")?;
+let tsv_str  = convert::json_to_tsv(&json_tsv)?;
+let yaml_tsv = convert::tsv_to_yaml("id\tname\n1\tAlice\n")?;
+let tsv_back = convert::yaml_to_tsv(&yaml_tsv)?;
+let xml_tsv  = convert::tsv_to_xml("id\tname\n1\tAlice\n")?;
+let tsv_back = convert::xml_to_tsv(&xml_tsv)?;
+let toml_tsv = convert::tsv_to_toml("id\tname\n1\tAlice\n")?;
+let tsv_back = convert::toml_to_tsv(&toml_tsv)?;
+let benc_tsv = convert::tsv_to_bencode("id\tname\n1\tAlice\n")?;
+let tsv_back = convert::bencode_to_tsv(&benc_tsv)?;
+let ini_tsv  = convert::tsv_to_ini("id\tname\n1\tAlice\n")?;
+let tsv_back = convert::ini_to_tsv(&ini_tsv)?;
+let jsonl_tsv = convert::tsv_to_jsonlines("id\tname\n1\tAlice\n")?;
+let tsv_back  = convert::jsonlines_to_tsv(&jsonl_tsv)?;
 ```
 
 ### 4.3 Configuration Conversions (INI / .env)
@@ -218,17 +237,19 @@ use babbel::convert;
 
 let ini_data = "[server]\nhost = localhost\nport = 8080\n";
 
-// INI <-> JSON
+// INI <-> JSON, YAML, TOML, XML, Bencode, JSON Lines
 let json_doc = convert::ini_to_json(ini_data)?;
 let ini_doc  = convert::json_to_ini(&json_doc)?;
-
-// INI <-> YAML
 let yaml_doc = convert::ini_to_yaml(ini_data)?;
 let ini_back = convert::yaml_to_ini(&yaml_doc)?;
-
-// INI <-> TOML
 let toml_doc = convert::ini_to_toml(ini_data)?;
 let ini_back = convert::toml_to_ini(&toml_doc)?;
+let xml_doc  = convert::ini_to_xml(ini_data)?;
+let ini_back = convert::xml_to_ini(&xml_doc)?;
+let benc_doc = convert::ini_to_bencode(ini_data)?;
+let ini_back = convert::bencode_to_ini(&benc_doc)?;
+let jsonl_doc = convert::ini_to_jsonlines(ini_data)?;
+let ini_back  = convert::jsonlines_to_ini(&jsonl_doc)?;
 ```
 
 ### 4.4 Stream Conversions (JSON Lines)
@@ -237,13 +258,17 @@ use babbel::convert;
 
 let jsonl_input = "{\"id\": 1}\n{\"id\": 2}\n";
 
-// JSON Lines <-> JSON
+// JSON Lines <-> JSON, YAML, TOML, XML, Bencode
 let json_array   = convert::jsonlines_to_json(jsonl_input)?;
 let jsonl_output = convert::json_to_jsonlines(&json_array)?;
-
-// JSON Lines <-> TOML
-let toml_out  = convert::jsonlines_to_toml(jsonl_input)?;
-let jsonl_out = convert::toml_to_jsonlines(&toml_out)?;
+let yaml_out     = convert::jsonlines_to_yaml(jsonl_input)?;
+let jsonl_out    = convert::yaml_to_jsonlines(&yaml_out)?;
+let toml_out     = convert::jsonlines_to_toml(jsonl_input)?;
+let jsonl_out    = convert::toml_to_jsonlines(&toml_out)?;
+let xml_out      = convert::jsonlines_to_xml(jsonl_input)?;
+let jsonl_out    = convert::xml_to_jsonlines(&xml_out)?;
+let benc_out     = convert::jsonlines_to_bencode(jsonl_input)?;
+let jsonl_out    = convert::bencode_to_jsonlines(&benc_out)?;
 ```
 
 ---

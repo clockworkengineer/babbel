@@ -16,6 +16,7 @@ Architectural blueprints, SOLID engineering realizations, and extensibility manu
 | **[Architecture & Design Principles](ARCHITECTURE.md)** | Core 3-tier layering model, SOLID principles in Rust, DRY consolidation, and memory bounds. |
 | **[SOLID Architecture Whitepaper](SOLID_ARCHITECTURE_GUIDE.md)** | Comprehensive whitepaper detailing the 6-phase refactoring (SRP, OCP, LSP, ISP, and DIP). |
 | **[Format Engine Plugin Guide](FORMAT_ENGINE_PLUGIN_GUIDE.md)** | Step-by-step tutorial on implementing custom format engines and registering them in `FormatRegistry`. |
+| **[Ecosystem Features & Refactor Plan](REFACTOR_PLAN_MISSING_FEATURES.md)** | Concrete 8-phase refactoring adding cross-format conversions, Serde bridge, and FormatEngine unification. |
 
 ### 2. Specification & Conformance
 Official test suites, standards verification, and formal specification conformance reports.

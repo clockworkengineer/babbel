@@ -107,7 +107,7 @@ pub use babbel_core::{
 
 // Re-export FormatEngine architecture (OCP & DIP)
 #[cfg(feature = "json")]
-pub use babbel_json::JsonEngine;
+pub use babbel_json::{JsonEngine, JsonLinesEngine};
 #[cfg(feature = "yaml")]
 pub use babbel_yaml::YamlEngine;
 #[cfg(feature = "xml")]
@@ -118,8 +118,8 @@ pub use babbel_bencode::BencodeEngine;
 pub use babbel_toml::TomlEngine;
 
 pub use babbel_core::{
-    find_engine, find_engine_by_extension, find_engine_by_mime, FormatCodec, FormatEmitter,
-    FormatEngine, FormatOptions, FormatParser,
+    find_engine, find_engine_by_extension, find_engine_by_mime, CsvEngine, FormatCodec,
+    FormatEmitter, FormatEngine, FormatOptions, FormatParser, IniEngine, TsvEngine,
 };
 #[cfg(feature = "alloc")]
 pub use babbel_core::FormatRegistry;
@@ -130,7 +130,10 @@ pub fn default_registry() -> babbel_core::FormatRegistry {
     #[allow(unused_mut)]
     let mut registry = babbel_core::FormatRegistry::new();
     #[cfg(feature = "json")]
-    registry.register(alloc::sync::Arc::new(babbel_json::JsonEngine));
+    {
+        registry.register(alloc::sync::Arc::new(babbel_json::JsonEngine));
+        registry.register(alloc::sync::Arc::new(babbel_json::JsonLinesEngine));
+    }
     #[cfg(feature = "yaml")]
     registry.register(alloc::sync::Arc::new(babbel_yaml::YamlEngine));
     #[cfg(feature = "xml")]
@@ -139,5 +142,38 @@ pub fn default_registry() -> babbel_core::FormatRegistry {
     registry.register(alloc::sync::Arc::new(babbel_bencode::BencodeEngine));
     #[cfg(feature = "toml")]
     registry.register(alloc::sync::Arc::new(babbel_toml::TomlEngine));
+
+    registry.register(alloc::sync::Arc::new(babbel_core::CsvEngine));
+    registry.register(alloc::sync::Arc::new(babbel_core::TsvEngine));
+    registry.register(alloc::sync::Arc::new(babbel_core::IniEngine));
     registry
 }
+
+#[macro_use]
+pub mod macros;
+
+#[cfg(feature = "serde")]
+pub use babbel_core::{from_value, to_value, SerdeError};
+
+/// Convenient prelude re-exporting key format engines, universal Value AST, I/O traits,
+/// the declarative `value!` macro, and conversion routines.
+pub mod prelude {
+    pub use babbel_core::{
+        find_engine, find_engine_by_extension, find_engine_by_mime, BabbelError, ErrorCode,
+        FormatCodec, FormatEmitter, FormatEngine, FormatOptions, FormatParser, Location, Span,
+        Value,
+    };
+    pub use babbel_core::io::{
+        Buffer, BufferDestination, BufferSource, IDestination, ISource,
+    };
+    #[cfg(feature = "alloc")]
+    pub use babbel_core::FormatRegistry;
+    #[cfg(feature = "alloc")]
+    pub use crate::default_registry;
+    pub use crate::value;
+    #[cfg(feature = "convert")]
+    pub use crate::convert::*;
+    #[cfg(feature = "serde")]
+    pub use babbel_core::{from_value, to_value, SerdeError};
+}
+

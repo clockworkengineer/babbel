@@ -158,23 +158,23 @@ pub use stringify::bencode::stringify as to_bencode;
 pub use stringify::default::stringify;
 
 /// Serialize a JSON [`Node`] into an owned [`String`].
-pub fn to_string(node: &Node) -> Result<String, String> {
+pub fn to_string(node: &Node) -> Result<String, JsonError> {
     let mut dest = babbel_core::io::Buffer::new();
-    stringify(node, &mut dest)?;
+    stringify(node, &mut dest).map_err(JsonError::from)?;
     Ok(dest.to_string())
 }
 
 /// Serialize a JSON [`Node`] into a byte vector (`Vec<u8>`).
-pub fn to_vec(node: &Node) -> Result<alloc::vec::Vec<u8>, String> {
+pub fn to_vec(node: &Node) -> Result<alloc::vec::Vec<u8>, JsonError> {
     let mut dest = babbel_core::io::Buffer::new();
-    stringify(node, &mut dest)?;
+    stringify(node, &mut dest).map_err(JsonError::from)?;
     Ok(dest.into_vec())
 }
 
 /// Serialize a JSON [`Node`] directly to an [`IDestination`].
 #[inline]
-pub fn to_destination(node: &Node, dest: &mut dyn babbel_core::io::IDestination) -> Result<(), String> {
-    stringify(node, dest)
+pub fn to_destination(node: &Node, dest: &mut dyn babbel_core::io::IDestination) -> Result<(), JsonError> {
+    stringify(node, dest).map_err(JsonError::from)
 }
 
 /// Converts a Node tree to TOML format
@@ -231,4 +231,4 @@ pub use lines::{parse_json_lines, to_json_lines, to_json_lines_stream, JsonLines
 
 /// Format engine implementation adhering to OCP and DIP
 pub mod engine;
-pub use engine::JsonEngine;
+pub use engine::{JsonEngine, JsonLinesEngine};

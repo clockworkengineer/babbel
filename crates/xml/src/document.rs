@@ -1,4 +1,4 @@
-﻿//! # Document (DOM Arena Model)
+//! # Document (DOM Arena Model)
 //!
 //! Provides the primary [`Document`] container representing an XML DOM tree stored in a flat arena vector.
 
@@ -677,4 +677,113 @@ impl Document {
     pub fn is_empty(&self) -> bool {
         self.nodes.is_empty()
     }
+
+    /// Converts the Document DOM into a generic [`babbel_core::Value`].
+    pub fn to_value(&self) -> babbel_core::Value {
+        if let Some(root_id) = self.root_element_id() {
+            let name = self
+                .get_node(root_id)
+                .map(|n| n.kind.name().to_string())
+                .unwrap_or_else(|| "xml".into());
+            let val = self.element_to_value(root_id);
+            babbel_core::Value::Object(alloc::vec![(name, val)])
+        } else {
+            babbel_core::Value::Null
+        }
+    }
+
+    fn element_to_value(&self, id: NodeId) -> babbel_core::Value {
+        if let Some(node) = self.get_node(id) {
+            if let NodeKind::Element { attributes, .. } = &node.kind {
+                let mut entries = Vec::new();
+                for attr in attributes {
+                    entries.push((
+                        alloc::format!("@{}", attr.name),
+                        babbel_core::Value::String(attr.value.to_string()),
+                    ));
+                }
+                let child_elements = self.get_element_children(id);
+                if child_elements.is_empty() {
+                    let text = self.get_text_content(id);
+                    if !text.is_empty() {
+                        if entries.is_empty() {
+                            return babbel_core::Value::String(text);
+                        } else {
+                            entries.push(("#text".into(), babbel_core::Value::String(text)));
+                        }
+                    }
+                } else {
+                    for child_id in child_elements {
+                        if let Some(child_node) = self.get_node(child_id) {
+                            let child_val = self.element_to_value(child_id);
+                            entries.push((child_node.kind.name().into(), child_val));
+                        }
+                    }
+                }
+                return babbel_core::Value::Object(entries);
+            }
+        }
+        babbel_core::Value::Null
+    }
+
+    #[cfg(feature = "format-converters")]
+    /// Converts Document to JSON format writing to destination.
+    pub fn to_json(&self, dest: &mut dyn babbel_core::io::IDestination) -> Result<()> {
+        crate::stringify::converters::to_json(self, dest)
+    }
+
+    #[cfg(feature = "format-converters")]
+    /// Converts Document to an owned JSON String.
+    pub fn to_json_string(&self) -> Result<String> {
+        crate::stringify::converters::to_json_string(self)
+    }
+
+    #[cfg(feature = "format-converters")]
+    /// Converts Document to YAML format writing to destination.
+    pub fn to_yaml(&self, dest: &mut dyn babbel_core::io::IDestination) -> Result<()> {
+        crate::stringify::converters::to_yaml(self, dest)
+    }
+
+    #[cfg(feature = "format-converters")]
+    /// Converts Document to an owned YAML String.
+    pub fn to_yaml_string(&self) -> Result<String> {
+        crate::stringify::converters::to_yaml_string(self)
+    }
+
+    #[cfg(feature = "format-converters")]
+    /// Converts Document to TOML format writing to destination.
+    pub fn to_toml(&self, dest: &mut dyn babbel_core::io::IDestination) -> Result<()> {
+        crate::stringify::converters::to_toml(self, dest)
+    }
+
+    #[cfg(feature = "format-converters")]
+    /// Converts Document to an owned TOML String.
+    pub fn to_toml_string(&self) -> Result<String> {
+        crate::stringify::converters::to_toml_string(self)
+    }
+
+    #[cfg(feature = "format-converters")]
+    /// Converts Document to Bencode format writing to destination.
+    pub fn to_bencode(&self, dest: &mut dyn babbel_core::io::IDestination) -> Result<()> {
+        crate::stringify::converters::to_bencode(self, dest)
+    }
+
+    #[cfg(feature = "format-converters")]
+    /// Converts Document to an owned Bencode byte vector.
+    pub fn to_bencode_bytes(&self) -> Result<Vec<u8>> {
+        crate::stringify::converters::to_bencode_bytes(self)
+    }
 }
+
+impl From<&Document> for babbel_core::Value {
+    fn from(doc: &Document) -> Self {
+        doc.to_value()
+    }
+}
+
+impl From<Document> for babbel_core::Value {
+    fn from(doc: Document) -> Self {
+        doc.to_value()
+    }
+}
+

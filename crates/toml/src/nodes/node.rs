@@ -90,6 +90,48 @@ impl Node {
         }
     }
 
+    /// Infallible dot-separated path navigation in tables (e.g. `"server.database.port"` or `"servers.0.host"`).
+    pub fn get_path(&self, path: &str) -> Option<&Node> {
+        if path.is_empty() {
+            return Some(self);
+        }
+        let mut current = self;
+        for segment in path.split('.') {
+            if segment.is_empty() {
+                continue;
+            }
+            if let Ok(idx) = segment.parse::<usize>() {
+                if let Node::Array(arr) = current {
+                    current = arr.get(idx)?;
+                    continue;
+                }
+            }
+            current = current.get(segment)?;
+        }
+        Some(current)
+    }
+
+    /// Mutable dot-separated path navigation in tables.
+    pub fn get_path_mut(&mut self, path: &str) -> Option<&mut Node> {
+        if path.is_empty() {
+            return Some(self);
+        }
+        let mut current = self;
+        for segment in path.split('.') {
+            if segment.is_empty() {
+                continue;
+            }
+            if let Ok(idx) = segment.parse::<usize>() {
+                if let Node::Array(arr) = current {
+                    current = arr.get_mut(idx)?;
+                    continue;
+                }
+            }
+            current = current.get_mut(segment)?;
+        }
+        Some(current)
+    }
+
     /// Insert or overwrite a key-value entry in a Table.
     pub fn insert(&mut self, key: String, val: Node) {
         if let Node::Table(entries) = self {

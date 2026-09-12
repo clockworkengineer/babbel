@@ -11,7 +11,7 @@ documentation = "https://docs.rs/babbel"
 homepage = "https://github.com/clockworkengineer/babbel"
 
 [features]
-default = ["std", "json", "yaml", "xml", "bencode", "toml", "convert"]
+default = ["std", "json", "yaml", "xml", "bencode", "toml", "convert", "serde"]
 std = ["alloc", "babbel_core/std"]
 alloc = ["babbel_core/alloc"]
 json = ["dep:babbel_json", "babbel_json/format-yaml", "babbel_json/format-xml", "babbel_json/format-bencode"]
@@ -20,6 +20,7 @@ xml = ["dep:babbel_xml"]
 bencode = ["dep:babbel_bencode"]
 toml = ["dep:babbel_toml"]
 convert = ["json", "yaml", "xml", "bencode", "toml"]
+serde = ["babbel_core/serde"]
 
 [dependencies]
 babbel_core = { path = "../babbel_core", version = "0.2.0" }

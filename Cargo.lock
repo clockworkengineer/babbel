@@ -61,6 +61,7 @@ dependencies = [
  "arrayvec",
  "dtoa",
  "itoa",
+ "serde",
  "smallvec",
 ]
 

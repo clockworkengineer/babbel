@@ -51,6 +51,11 @@ pub use xsd::{
     Compositor, XsdAttributeRule, XsdComplexType, XsdElementRule, XsdRestriction, XsdValidator,
 };
 pub use xpath::{XPathEngine, XPathValue};
+#[cfg(feature = "format-converters")]
+pub use stringify::{
+    to_bencode, to_bencode_bytes, to_json, to_json_string, to_toml, to_toml_string, to_yaml,
+    to_yaml_string,
+};
 
 #[cfg(feature = "serde")]
 pub mod serde_impl;

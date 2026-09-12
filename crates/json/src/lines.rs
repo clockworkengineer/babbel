@@ -1,8 +1,9 @@
-﻿//! Line-delimited JSON (JSON Lines / NDJSON / JSONL) streaming parser and emitter.
+//! Line-delimited JSON (JSON Lines / NDJSON / JSONL) streaming parser and emitter.
 //!
 //! JSON Lines is a text format where each line contains a valid single-line JSON value.
 //! It is ideal for streaming large datasets, logs, and record-by-record processing.
 
+use crate::error::JsonError;
 use crate::nodes::node::Node;
 use crate::parser::default::from_str;
 use crate::stringify::default::stringify;
@@ -71,7 +72,7 @@ impl<R: ILineReader> JsonLinesReader<R> {
     /// Reads and parses the next JSON node from the line stream.
     ///
     /// Returns `None` when EOF is reached.
-    pub fn next_node(&mut self) -> Option<Result<Node, String>> {
+    pub fn next_node(&mut self) -> Option<Result<Node, JsonError>> {
         while let Some(line) = self.reader.read_line() {
             self.line_number += 1;
             let check_slice = if self.config.trim_whitespace {
@@ -88,7 +89,7 @@ impl<R: ILineReader> JsonLinesReader<R> {
                 continue;
             }
 
-            return Some(from_str(check_slice));
+            return Some(from_str(check_slice).map_err(JsonError::from));
         }
 
         None
@@ -96,7 +97,7 @@ impl<R: ILineReader> JsonLinesReader<R> {
 }
 
 impl<R: ILineReader> Iterator for JsonLinesReader<R> {
-    type Item = Result<Node, String>;
+    type Item = Result<Node, JsonError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next_node()
@@ -113,7 +114,7 @@ impl<R: ILineReader> Iterator for JsonLinesReader<R> {
 /// let records = parse_json_lines(data).unwrap();
 /// assert_eq!(records.len(), 2);
 /// ```
-pub fn parse_json_lines(input: &str) -> Result<Vec<Node>, String> {
+pub fn parse_json_lines(input: &str) -> Result<Vec<Node>, JsonError> {
     let source = SliceSource::new(input);
     let reader = JsonLinesReader::new(source);
     let mut nodes = Vec::new();

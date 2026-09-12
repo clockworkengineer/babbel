@@ -4,7 +4,7 @@
 //! CSV, TSV, INI, and JSON Lines.
 
 #[cfg(feature = "json")]
-use babbel_json::JsonEngine;
+use babbel_json::{JsonEngine, JsonLinesEngine};
 #[cfg(feature = "yaml")]
 use babbel_yaml::YamlEngine;
 #[cfg(feature = "bencode")]
@@ -16,8 +16,8 @@ use babbel_toml::TomlEngine;
 
 use babbel_core::{
     csv::emit_csv_to, ini::emit_ini_to, parse_csv, parse_ini, BabbelError, Buffer, BufferDestination,
-    CsvOptions, FormatEmitter, FormatEngine, FormatOptions, FormatParser, IniOptions, JsonEmitter,
-    TomlEmitter, Value, YamlEmitter,
+    CsvEngine, CsvOptions, FormatEmitter, FormatEngine, FormatOptions, FormatParser, IniEngine,
+    IniOptions, JsonEmitter, TomlEmitter, TsvEngine, Value,
 };
 
 /// Supported serialization format identifiers.
@@ -414,6 +414,30 @@ pub fn bencode_to_xml(bencode: &[u8]) -> Result<String, BabbelError> {
     convert_format_bytes_to_str(bencode, &BencodeEngine, &XmlEngine, &ConversionOptions::default())
 }
 
+/// Convert XML string to JSON string.
+#[cfg(all(feature = "xml", feature = "json"))]
+pub fn xml_to_json(xml: &str) -> Result<String, BabbelError> {
+    convert_format(xml, &XmlEngine, &JsonEngine, &ConversionOptions::default())
+}
+
+/// Convert XML string to YAML string.
+#[cfg(all(feature = "xml", feature = "yaml"))]
+pub fn xml_to_yaml(xml: &str) -> Result<String, BabbelError> {
+    convert_format(xml, &XmlEngine, &YamlEngine, &ConversionOptions::default())
+}
+
+/// Convert XML string to Bencode byte vector.
+#[cfg(all(feature = "xml", feature = "bencode"))]
+pub fn xml_to_bencode(xml: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(xml.as_bytes(), &XmlEngine, &BencodeEngine, &ConversionOptions::default())
+}
+
+/// Convert YAML string to Bencode byte vector.
+#[cfg(all(feature = "yaml", feature = "bencode"))]
+pub fn yaml_to_bencode(yaml: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(yaml.as_bytes(), &YamlEngine, &BencodeEngine, &ConversionOptions::default())
+}
+
 
 // =========================================================================
 // Text Format Conversions (CSV, TSV, INI, JSON Lines)
@@ -422,85 +446,261 @@ pub fn bencode_to_xml(bencode: &[u8]) -> Result<String, BabbelError> {
 /// Convert CSV string to JSON array string.
 #[cfg(feature = "json")]
 pub fn csv_to_json(csv: &str) -> Result<String, BabbelError> {
-    convert_text(csv, &CsvParser::default(), &JsonEmitter)
+    convert_format(csv, &CsvEngine, &JsonEngine, &ConversionOptions::default())
 }
 
 /// Convert JSON string (array of objects or rows) to CSV string.
 #[cfg(feature = "json")]
 pub fn json_to_csv(json: &str) -> Result<String, BabbelError> {
-    convert_text(json, &JsonParser, &CsvEmitter::default())
+    convert_format(json, &JsonEngine, &CsvEngine, &ConversionOptions::default())
 }
 
 /// Convert TSV string to JSON array string.
 #[cfg(feature = "json")]
 pub fn tsv_to_json(tsv: &str) -> Result<String, BabbelError> {
-    convert_text(tsv, &TsvParser::default(), &JsonEmitter)
+    convert_format(tsv, &TsvEngine, &JsonEngine, &ConversionOptions::default())
 }
 
 /// Convert JSON string (array of objects or rows) to TSV string.
 #[cfg(feature = "json")]
 pub fn json_to_tsv(json: &str) -> Result<String, BabbelError> {
-    convert_text(json, &JsonParser, &TsvEmitter::default())
+    convert_format(json, &JsonEngine, &TsvEngine, &ConversionOptions::default())
 }
 
 /// Convert CSV string to YAML string.
 #[cfg(feature = "yaml")]
 pub fn csv_to_yaml(csv: &str) -> Result<String, BabbelError> {
-    convert_text(csv, &CsvParser::default(), &YamlEmitter)
+    convert_format(csv, &CsvEngine, &YamlEngine, &ConversionOptions::default())
 }
 
 /// Convert YAML string to CSV string.
 #[cfg(feature = "yaml")]
 pub fn yaml_to_csv(yaml: &str) -> Result<String, BabbelError> {
-    convert_text(yaml, &YamlParser, &CsvEmitter::default())
+    convert_format(yaml, &YamlEngine, &CsvEngine, &ConversionOptions::default())
+}
+
+/// Convert CSV string to XML string.
+#[cfg(feature = "xml")]
+pub fn csv_to_xml(csv: &str) -> Result<String, BabbelError> {
+    convert_format(csv, &CsvEngine, &XmlEngine, &ConversionOptions::default())
+}
+
+/// Convert XML string to CSV string.
+#[cfg(feature = "xml")]
+pub fn xml_to_csv(xml: &str) -> Result<String, BabbelError> {
+    convert_format(xml, &XmlEngine, &CsvEngine, &ConversionOptions::default())
+}
+
+/// Convert CSV string to Bencode byte vector.
+#[cfg(feature = "bencode")]
+pub fn csv_to_bencode(csv: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(csv.as_bytes(), &CsvEngine, &BencodeEngine, &ConversionOptions::default())
+}
+
+/// Convert Bencode binary payload to CSV string.
+#[cfg(feature = "bencode")]
+pub fn bencode_to_csv(bencode: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bencode, &BencodeEngine, &CsvEngine, &ConversionOptions::default())
+}
+
+/// Convert CSV string to INI configuration string.
+pub fn csv_to_ini(csv: &str) -> Result<String, BabbelError> {
+    convert_format(csv, &CsvEngine, &IniEngine, &ConversionOptions::default())
+}
+
+/// Convert INI configuration string to CSV string.
+pub fn ini_to_csv(ini: &str) -> Result<String, BabbelError> {
+    convert_format(ini, &IniEngine, &CsvEngine, &ConversionOptions::default())
+}
+
+/// Convert TSV string to YAML string.
+#[cfg(feature = "yaml")]
+pub fn tsv_to_yaml(tsv: &str) -> Result<String, BabbelError> {
+    convert_format(tsv, &TsvEngine, &YamlEngine, &ConversionOptions::default())
+}
+
+/// Convert YAML string to TSV string.
+#[cfg(feature = "yaml")]
+pub fn yaml_to_tsv(yaml: &str) -> Result<String, BabbelError> {
+    convert_format(yaml, &YamlEngine, &TsvEngine, &ConversionOptions::default())
+}
+
+/// Convert TSV string to XML string.
+#[cfg(feature = "xml")]
+pub fn tsv_to_xml(tsv: &str) -> Result<String, BabbelError> {
+    convert_format(tsv, &TsvEngine, &XmlEngine, &ConversionOptions::default())
+}
+
+/// Convert XML string to TSV string.
+#[cfg(feature = "xml")]
+pub fn xml_to_tsv(xml: &str) -> Result<String, BabbelError> {
+    convert_format(xml, &XmlEngine, &TsvEngine, &ConversionOptions::default())
+}
+
+/// Convert TSV string to TOML string.
+#[cfg(feature = "toml")]
+pub fn tsv_to_toml(tsv: &str) -> Result<String, BabbelError> {
+    convert_format(tsv, &TsvEngine, &TomlEngine, &ConversionOptions::default())
+}
+
+/// Convert TOML string to TSV string.
+#[cfg(feature = "toml")]
+pub fn toml_to_tsv(toml: &str) -> Result<String, BabbelError> {
+    convert_format(toml, &TomlEngine, &TsvEngine, &ConversionOptions::default())
+}
+
+/// Convert TSV string to Bencode byte vector.
+#[cfg(feature = "bencode")]
+pub fn tsv_to_bencode(tsv: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(tsv.as_bytes(), &TsvEngine, &BencodeEngine, &ConversionOptions::default())
+}
+
+/// Convert Bencode binary payload to TSV string.
+#[cfg(feature = "bencode")]
+pub fn bencode_to_tsv(bencode: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bencode, &BencodeEngine, &TsvEngine, &ConversionOptions::default())
+}
+
+/// Convert TSV string to INI configuration string.
+pub fn tsv_to_ini(tsv: &str) -> Result<String, BabbelError> {
+    convert_format(tsv, &TsvEngine, &IniEngine, &ConversionOptions::default())
+}
+
+/// Convert INI configuration string to TSV string.
+pub fn ini_to_tsv(ini: &str) -> Result<String, BabbelError> {
+    convert_format(ini, &IniEngine, &TsvEngine, &ConversionOptions::default())
+}
+
+/// Convert TSV string to JSON Lines string.
+#[cfg(feature = "json")]
+pub fn tsv_to_jsonlines(tsv: &str) -> Result<String, BabbelError> {
+    convert_format(tsv, &TsvEngine, &JsonLinesEngine, &ConversionOptions::default())
+}
+
+/// Convert JSON Lines string to TSV string.
+#[cfg(feature = "json")]
+pub fn jsonlines_to_tsv(jsonl: &str) -> Result<String, BabbelError> {
+    convert_format(jsonl, &JsonLinesEngine, &TsvEngine, &ConversionOptions::default())
 }
 
 /// Convert INI string to JSON object string.
 #[cfg(feature = "json")]
 pub fn ini_to_json(ini: &str) -> Result<String, BabbelError> {
-    convert_text(ini, &IniParser::default(), &JsonEmitter)
+    convert_format(ini, &IniEngine, &JsonEngine, &ConversionOptions::default())
 }
 
 /// Convert JSON object string to INI configuration string.
 #[cfg(feature = "json")]
 pub fn json_to_ini(json: &str) -> Result<String, BabbelError> {
-    convert_text(json, &JsonParser, &IniEmitter::default())
+    convert_format(json, &JsonEngine, &IniEngine, &ConversionOptions::default())
 }
 
 /// Convert INI string to YAML string.
 #[cfg(feature = "yaml")]
 pub fn ini_to_yaml(ini: &str) -> Result<String, BabbelError> {
-    convert_text(ini, &IniParser::default(), &YamlEmitter)
+    convert_format(ini, &IniEngine, &YamlEngine, &ConversionOptions::default())
 }
 
 /// Convert YAML object string to INI configuration string.
 #[cfg(feature = "yaml")]
 pub fn yaml_to_ini(yaml: &str) -> Result<String, BabbelError> {
-    convert_text(yaml, &YamlParser, &IniEmitter::default())
+    convert_format(yaml, &YamlEngine, &IniEngine, &ConversionOptions::default())
+}
+
+/// Convert INI string to XML string.
+#[cfg(feature = "xml")]
+pub fn ini_to_xml(ini: &str) -> Result<String, BabbelError> {
+    convert_format(ini, &IniEngine, &XmlEngine, &ConversionOptions::default())
+}
+
+/// Convert XML string to INI configuration string.
+#[cfg(feature = "xml")]
+pub fn xml_to_ini(xml: &str) -> Result<String, BabbelError> {
+    convert_format(xml, &XmlEngine, &IniEngine, &ConversionOptions::default())
+}
+
+/// Convert INI string to Bencode byte vector.
+#[cfg(feature = "bencode")]
+pub fn ini_to_bencode(ini: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(ini.as_bytes(), &IniEngine, &BencodeEngine, &ConversionOptions::default())
+}
+
+/// Convert Bencode binary payload to INI string.
+#[cfg(feature = "bencode")]
+pub fn bencode_to_ini(bencode: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bencode, &BencodeEngine, &IniEngine, &ConversionOptions::default())
+}
+
+/// Convert INI string to JSON Lines string.
+#[cfg(feature = "json")]
+pub fn ini_to_jsonlines(ini: &str) -> Result<String, BabbelError> {
+    convert_format(ini, &IniEngine, &JsonLinesEngine, &ConversionOptions::default())
+}
+
+/// Convert JSON Lines string to INI string.
+#[cfg(feature = "json")]
+pub fn jsonlines_to_ini(jsonl: &str) -> Result<String, BabbelError> {
+    convert_format(jsonl, &JsonLinesEngine, &IniEngine, &ConversionOptions::default())
 }
 
 /// Convert JSON Lines string to JSON array string.
 #[cfg(feature = "json")]
 pub fn jsonlines_to_json(jsonl: &str) -> Result<String, BabbelError> {
-    convert_text(jsonl, &JsonLinesParser, &JsonEmitter)
+    convert_format(jsonl, &JsonLinesEngine, &JsonEngine, &ConversionOptions::default())
 }
 
 /// Convert JSON string to JSON Lines string.
 #[cfg(feature = "json")]
 pub fn json_to_jsonlines(json: &str) -> Result<String, BabbelError> {
-    convert_text(json, &JsonParser, &JsonLinesEmitter)
+    convert_format(json, &JsonEngine, &JsonLinesEngine, &ConversionOptions::default())
 }
 
 /// Convert JSON Lines string to CSV string.
 #[cfg(feature = "json")]
 pub fn jsonlines_to_csv(jsonl: &str) -> Result<String, BabbelError> {
-    convert_text(jsonl, &JsonLinesParser, &CsvEmitter::default())
+    convert_format(jsonl, &JsonLinesEngine, &CsvEngine, &ConversionOptions::default())
 }
 
 /// Convert CSV string to JSON Lines string.
 #[cfg(feature = "json")]
 pub fn csv_to_jsonlines(csv: &str) -> Result<String, BabbelError> {
-    convert_text(csv, &CsvParser::default(), &JsonLinesEmitter)
+    convert_format(csv, &CsvEngine, &JsonLinesEngine, &ConversionOptions::default())
+}
+
+/// Convert JSON Lines string to YAML string.
+#[cfg(all(feature = "json", feature = "yaml"))]
+pub fn jsonlines_to_yaml(jsonl: &str) -> Result<String, BabbelError> {
+    convert_format(jsonl, &JsonLinesEngine, &YamlEngine, &ConversionOptions::default())
+}
+
+/// Convert YAML string to JSON Lines string.
+#[cfg(all(feature = "yaml", feature = "json"))]
+pub fn yaml_to_jsonlines(yaml: &str) -> Result<String, BabbelError> {
+    convert_format(yaml, &YamlEngine, &JsonLinesEngine, &ConversionOptions::default())
+}
+
+/// Convert JSON Lines string to XML string.
+#[cfg(all(feature = "json", feature = "xml"))]
+pub fn jsonlines_to_xml(jsonl: &str) -> Result<String, BabbelError> {
+    convert_format(jsonl, &JsonLinesEngine, &XmlEngine, &ConversionOptions::default())
+}
+
+/// Convert XML string to JSON Lines string.
+#[cfg(all(feature = "xml", feature = "json"))]
+pub fn xml_to_jsonlines(xml: &str) -> Result<String, BabbelError> {
+    convert_format(xml, &XmlEngine, &JsonLinesEngine, &ConversionOptions::default())
+}
+
+/// Convert JSON Lines string to Bencode byte vector.
+#[cfg(all(feature = "json", feature = "bencode"))]
+pub fn jsonlines_to_bencode(jsonl: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(jsonl.as_bytes(), &JsonLinesEngine, &BencodeEngine, &ConversionOptions::default())
+}
+
+/// Convert Bencode binary payload to JSON Lines string.
+#[cfg(all(feature = "bencode", feature = "json"))]
+pub fn bencode_to_jsonlines(bencode: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bencode, &BencodeEngine, &JsonLinesEngine, &ConversionOptions::default())
 }
 
 // =========================================================================

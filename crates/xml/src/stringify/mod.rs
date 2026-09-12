@@ -1,13 +1,20 @@
-﻿//! # Stringify Subsystem
+//! # Stringify Subsystem
 //!
 //! Handles serialization of [`Document`] DOM trees back to valid, formatted XML string output
 //! and W3C Canonical XML (C14N).
 
 pub mod canonical;
 pub mod serializer;
+#[cfg(feature = "format-converters")]
+pub mod converters;
 
 pub use canonical::{CanonicalOptions, CanonicalSerializer};
 pub use serializer::{SerializeOptions, XmlSerializer};
+#[cfg(feature = "format-converters")]
+pub use converters::{
+    to_bencode, to_bencode_bytes, to_json, to_json_string, to_toml, to_toml_string, to_yaml,
+    to_yaml_string,
+};
 
 use crate::alloc_prelude::*;
 use crate::document::Document;

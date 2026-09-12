@@ -10,13 +10,14 @@ documentation = "https://docs.rs/babbel_xml"
 readme = "README.md"
 
 [features]
-default = ["std", "dtd", "xsd", "xpath", "stringify"]
+default = ["std", "dtd", "xsd", "xpath", "stringify", "format-converters"]
 std = ["alloc", "babbel_core/std"]
 alloc = ["babbel_core/alloc"]
 dtd = []
 xsd = []
 xpath = []
 stringify = []
+format-converters = []
 embedded = []
 small_nodes = []
 serde = ["dep:serde"]

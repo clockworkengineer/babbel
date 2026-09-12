@@ -213,6 +213,126 @@ pub trait FormatEngine: Send + Sync {
     }
 }
 
+fn read_source_to_string(source: &mut dyn crate::io::traits::ISource) -> alloc::string::String {
+    let mut s = alloc::string::String::new();
+    while source.more() {
+        if let Some(ch) = source.current() {
+            s.push(ch);
+        }
+        source.next();
+    }
+    s
+}
+
+/// Standard built-in CSV format engine implementing [`FormatEngine`].
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct CsvEngine;
+
+impl FormatEngine for CsvEngine {
+    fn format_id(&self) -> &'static str {
+        "csv"
+    }
+
+    fn mime_type(&self) -> &'static str {
+        "text/csv"
+    }
+
+    fn file_extensions(&self) -> &'static [&'static str] {
+        &["csv"]
+    }
+
+    fn parse(&self, source: &mut dyn crate::io::traits::ISource) -> Result<Value, BabbelError> {
+        let text = read_source_to_string(source);
+        self.parse_str(&text)
+    }
+
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        crate::csv::parse_csv(input, &crate::csv::CsvOptions::default())
+    }
+
+    fn serialize(
+        &self,
+        value: &Value,
+        destination: &mut dyn crate::io::traits::IDestination,
+        _options: &FormatOptions,
+    ) -> Result<(), BabbelError> {
+        crate::csv::emit_csv_to(value, &crate::csv::CsvOptions::default(), destination)
+    }
+}
+
+/// Standard built-in TSV format engine implementing [`FormatEngine`].
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct TsvEngine;
+
+impl FormatEngine for TsvEngine {
+    fn format_id(&self) -> &'static str {
+        "tsv"
+    }
+
+    fn mime_type(&self) -> &'static str {
+        "text/tab-separated-values"
+    }
+
+    fn file_extensions(&self) -> &'static [&'static str] {
+        &["tsv"]
+    }
+
+    fn parse(&self, source: &mut dyn crate::io::traits::ISource) -> Result<Value, BabbelError> {
+        let text = read_source_to_string(source);
+        self.parse_str(&text)
+    }
+
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        crate::csv::parse_csv(input, &crate::csv::CsvOptions::tsv())
+    }
+
+    fn serialize(
+        &self,
+        value: &Value,
+        destination: &mut dyn crate::io::traits::IDestination,
+        _options: &FormatOptions,
+    ) -> Result<(), BabbelError> {
+        crate::csv::emit_csv_to(value, &crate::csv::CsvOptions::tsv(), destination)
+    }
+}
+
+/// Standard built-in INI / properties / .env format engine implementing [`FormatEngine`].
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct IniEngine;
+
+impl FormatEngine for IniEngine {
+    fn format_id(&self) -> &'static str {
+        "ini"
+    }
+
+    fn mime_type(&self) -> &'static str {
+        "text/plain"
+    }
+
+    fn file_extensions(&self) -> &'static [&'static str] {
+        &["ini", "properties", "env", "conf"]
+    }
+
+    fn parse(&self, source: &mut dyn crate::io::traits::ISource) -> Result<Value, BabbelError> {
+        let text = read_source_to_string(source);
+        self.parse_str(&text)
+    }
+
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        crate::ini::parse_ini(input, &crate::ini::IniOptions::default())
+    }
+
+    fn serialize(
+        &self,
+        value: &Value,
+        destination: &mut dyn crate::io::traits::IDestination,
+        _options: &FormatOptions,
+    ) -> Result<(), BabbelError> {
+        crate::ini::emit_ini_to(value, &crate::ini::IniOptions::default(), destination)
+    }
+}
+
+
 /// Helper function to find an engine from a static slice by format ID.
 pub fn find_engine<'a>(engines: &'a [&'a dyn FormatEngine], id: &str) -> Option<&'a dyn FormatEngine> {
     engines.iter().copied().find(|e| e.format_id().eq_ignore_ascii_case(id))

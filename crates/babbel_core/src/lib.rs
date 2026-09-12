@@ -23,14 +23,16 @@ pub mod ini;
 pub mod io;
 pub mod model;
 pub mod num;
+#[cfg(feature = "serde")]
+pub mod serde_impl;
 pub mod text;
 
 // Re-export key primitives for ergonomic downstream usage
 pub use chars::{is_digit, is_hex_digit, is_newline, is_whitespace};
 pub use codec::{
-    find_engine, find_engine_by_extension, find_engine_by_mime, BencodeEmitter, FormatCodec,
-    FormatEmitter, FormatEngine, FormatOptions, FormatParser, JsonEmitter, TomlEmitter, XmlEmitter,
-    YamlEmitter,
+    find_engine, find_engine_by_extension, find_engine_by_mime, BencodeEmitter, CsvEngine,
+    FormatCodec, FormatEmitter, FormatEngine, FormatOptions, FormatParser, IniEngine, JsonEmitter,
+    TomlEmitter, TsvEngine, XmlEmitter, YamlEmitter,
 };
 #[cfg(feature = "alloc")]
 pub use codec::FormatRegistry;
@@ -42,8 +44,9 @@ pub use embedded::{CompactError, EmbeddedLimits, MemoryTracker, StackBuffer};
 pub use encoding::{detect_encoding_and_strip_bom, normalize_newlines, Encoding};
 pub use error::{format_error_snippet, BabbelError, ErrorCode, Location, Span};
 pub use escape::{
-    escape_for_json, escape_for_toml, escape_for_xml, is_valid_toml_bare_key, json_needs_escaping,
-    write_json_escaped_string, write_toml_escaped_string, write_xml_escaped_string,
+    escape_for_json, escape_for_toml, escape_for_xml, escape_for_yaml, is_valid_toml_bare_key,
+    json_needs_escaping, write_json_escaped_string, write_toml_escaped_string,
+    write_xml_escaped_string, write_yaml_escaped_string, yaml_needs_quoting,
 };
 #[cfg(feature = "file-io")]
 pub use file::{
@@ -64,4 +67,7 @@ pub use text::{
     dedent, indent, line_count, split_frontmatter, trim_lines, DocumentWithFrontmatter,
     FrontmatterFormat,
 };
+#[cfg(feature = "serde")]
+pub use serde_impl::{from_value, to_value, SerdeError};
+
 

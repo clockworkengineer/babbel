@@ -25,6 +25,11 @@ pub use error::TomlError;
 pub use nodes::{DatetimeKind, Node, TomlDatetime};
 pub use parser::{Lexer, Parser, TomlPullEvent, TomlPullParser};
 pub use stringify::{emit_pretty_to, emit_to, PrettyOptions};
+#[cfg(feature = "format-converters")]
+pub use stringify::{
+    to_bencode, to_bencode_bytes, to_json, to_json_string, to_xml, to_xml_string, to_yaml,
+    to_yaml_string,
+};
 
 pub use babbel_core::io::destinations::BufferDestination;
 pub use babbel_core::io::sources::BufferSource;

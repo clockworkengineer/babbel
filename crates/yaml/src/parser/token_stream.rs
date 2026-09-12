@@ -166,7 +166,7 @@ impl<'a> TokenStream<'a> {
             // Remember the token we just consumed so helpers like
             // skip_newlines_and_comments_with_flag can inspect the
             // context of comment tokens (standalone vs inline).
-            self.last_token = prev;
+            self.last_token = prev.clone();
         }
         #[cfg(feature = "debug-trace")]
         if let Ok(ref _t) = out {
