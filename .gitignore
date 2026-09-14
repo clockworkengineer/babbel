@@ -24,5 +24,6 @@ target
 **/test-vectors/
 **/bsonfy/
 **/ron-upstream/
+**/kdl-test/
 *.zip
 notes/

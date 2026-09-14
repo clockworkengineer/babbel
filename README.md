@@ -196,6 +196,7 @@ cargo test -p babbel --test size_checks
 - **Official W3C XML Conformance Test Suite (XML TS 20130923)**: **1,834 / 1,834 tests passed (100.0%)** across all 12 sub-catalogs (0 failed, 0 skipped, 0 panics) via `cargo test -p babbel_xml --test w3c_conformance`.
 - **Official JSONTestSuite (RFC 8259 Conformance)**: **340 / 340 tests passed (100.0%)** across all categories (95/95 `y_` accepted, 188/188 `n_` rejected, 35/35 `i_` safe, 22/22 transform, 0 panics) via `cargo test -p babbel_json --test nst_conformance`.
 - **Official TOML skystrife/toml-test**: **148 / 148 tests passed (100.0%)** via `cargo test -p babbel_toml --test toml_test_suite`.
+- **Official KDL kdl-org/kdl-test**: **368 / 368 tests passed (100.0%)** (241 valid, 95 invalid, 32 embedded fallback, 0 panics) via `cargo test -p babbel_kdl --test kdl_test_suite`.
 - **BitTorrent Bencode BEP 0003**: Full conformance with zero-copy and recursive limits verification.
 
 ---

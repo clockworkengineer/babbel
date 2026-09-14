@@ -84,7 +84,7 @@ fn test_numbers_and_raw_strings() {
     oct_num 0o755
     bin_num 0b1010
     big_num 1_000_000
-    raw_str r#"C:\Program Files\Rust"#
+    raw_str #"C:\Program Files\Rust"#
     "##;
 
     let val = from_str(kdl).expect("failed to parse numbers and raw strings");

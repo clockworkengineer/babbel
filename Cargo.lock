@@ -102,6 +102,7 @@ name = "babbel_kdl"
 version = "0.2.1"
 dependencies = [
  "babbel_core",
+ "babbel_json",
 ]
 
 [[package]]

@@ -1,0 +1,5 @@
+# Paths to search for kdl-org/kdl-test conformance suite
+kdl-test
+../kdl-test
+tests/kdl-test
+crates/kdl/tests/kdl-test
