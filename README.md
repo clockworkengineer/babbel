@@ -16,13 +16,18 @@ A high-performance, polyglot serialization, parsing, and document manipulation w
 - [Conversion Matrix](docs/CONVERSION_MATRIX.md) — Universal $O(N)$ cross-format conversion reference & options
 - [Embedded Systems Guide](docs/EMBEDDED_GUIDE.md) — `no_std`, stack buffers (`StackBuffer`), and zero-allocation pull parsers
 - [Memory & Benchmarks](docs/BENCHMARKS_AND_MEMORY.md) — Struct size bounds verification (`size_checks.rs`)
-- [YAML 1.2 Conformance](docs/YAML_CONFORMANCE.md) — Official YAML test suite results (1,085+ tests passing)
-- [Bencode Spec & Conformance](docs/BENCODE_SPEC_AND_CONFORMANCE.md) — BitTorrent BEP 0003 specification & test breakdown
-- [TOML Conformance](docs/TOML_CONFORMANCE.md) — Official skystrife/toml-test suite results (100.0% pass rate)
-- [JSON Conformance](docs/JSON_CONFORMANCE.md) — Official nst/JSONTestSuite results (100.0% pass rate)
-- [W3C XML Conformance](docs/XML_CONFORMANCE.md) — W3C XML Conformance Suite results (100.0% across 1,834 tests)
-- [KDL Conformance](docs/KDL_CONFORMANCE.md) — Official kdl-org/kdl-test suite results (100.0% across 368 tests)
-- [Apache Parquet Conformance](docs/PARQUET_CONFORMANCE.md) — Official Apache Parquet test suite results (100.0% pass rate)
+- [Official Conformance Matrix](docs/conformance/README.md) — Specification compliance directory & pass rates
+- [JSON Conformance](docs/conformance/JSON_CONFORMANCE.md) — Official nst/JSONTestSuite results (100.0% pass rate)
+- [YAML 1.2 Conformance](docs/conformance/YAML_CONFORMANCE.md) — Official YAML test suite results (1,085+ tests passing)
+- [W3C XML Conformance](docs/conformance/XML_CONFORMANCE.md) — W3C XML Conformance Suite results (100.0% across 1,834 tests)
+- [TOML Conformance](docs/conformance/TOML_CONFORMANCE.md) — Official skystrife/toml-test suite results (100.0% pass rate)
+- [CBOR Conformance](docs/conformance/CBOR_CONFORMANCE.md) — Official cbor/test-vectors suite results (100.0% pass rate)
+- [BSON Conformance](docs/conformance/BSON_CONFORMANCE.md) — Official mpaland/bsonfy test suite results (100.0% pass rate)
+- [MessagePack Conformance](docs/conformance/MSGPACK_CONFORMANCE.md) — Official kawanet/msgpack-test-suite results (100.0% pass rate)
+- [RON Conformance](docs/conformance/RON_CONFORMANCE.md) — Official starfederation/ron test suite results (100.0% pass rate)
+- [KDL Conformance](docs/conformance/KDL_CONFORMANCE.md) — Official kdl-org/kdl-test suite results (100.0% across 368 tests)
+- [Apache Parquet Conformance](docs/conformance/PARQUET_CONFORMANCE.md) — Official Apache Parquet test suite results (100.0% pass rate)
+- [Bencode Spec & Conformance](docs/conformance/BENCODE_SPEC_AND_CONFORMANCE.md) — BitTorrent BEP 0003 specification & test breakdown
 - [Text Support Guide](docs/TEXT_SUPPORT_GUIDE.md) — RFC 4180 CSV/TSV, INI/.env, JSON Lines, and frontmatter
 - [Migration Guide & Changelog](docs/MIGRATION_AND_CHANGELOG.md) — Release notes and backward compatibility guarantees
 - [Security Policy](docs/SECURITY.md) — Threat model, Billion Laughs mitigations, and 64 MB DoS limits

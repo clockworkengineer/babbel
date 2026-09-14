@@ -177,8 +177,8 @@ while let Some(event) = parser.next_event()? {
   - Zero-allocation `TomlPullParser`.
   - Node memory compaction ($\le 48$ bytes).
 - **Documentation**:
-  - `docs/YAML_CONFORMANCE.md` (1,085+ YAML test cases).
-  - `docs/BENCODE_SPEC_AND_CONFORMANCE.md` (BEP 0003 specification & test suite).
+  - `docs/conformance/YAML_CONFORMANCE.md` (1,085+ YAML test cases).
+  - `docs/conformance/BENCODE_SPEC_AND_CONFORMANCE.md` (BEP 0003 specification & test suite).
   - `docs/FORMAT_ENGINE_PLUGIN_GUIDE.md` (extensibility and custom format tutorial).
   - `docs/SOLID_ARCHITECTURE_GUIDE.md` (whitepaper on 6-phase SOLID implementation).
   - `docs/MIGRATION_AND_CHANGELOG.md` (release notes & migration guide).

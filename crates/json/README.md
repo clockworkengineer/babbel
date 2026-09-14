@@ -450,7 +450,7 @@ cargo test -p babbel_json --test nst_conformance -- --nocapture
 ## Documentation
 
 See the [Documentation Hub](../../docs/README.md) for complete guides:
-- [JSON Conformance Guide (RFC 8259)](../../docs/JSON_CONFORMANCE.md)
+- [JSON Conformance Guide (RFC 8259)](../../docs/conformance/JSON_CONFORMANCE.md)
 - [Architecture Guide](../../docs/ARCHITECTURE.md)
 - [Development Guide](../../docs/DEVELOPMENT_GUIDE.md)
 - [Contributing Guidelines](../../docs/CONTRIBUTING.md)

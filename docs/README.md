@@ -18,15 +18,22 @@ Architectural blueprints, SOLID engineering realizations, and extensibility manu
 | **[Format Engine Plugin Guide](FORMAT_ENGINE_PLUGIN_GUIDE.md)** | Step-by-step tutorial on implementing custom format engines and registering them in `FormatRegistry`. |
 
 ### 2. Specification & Conformance
-Official test suites, standards verification, and formal specification conformance reports.
+Official test suites, standards verification, and formal specification conformance reports located in [`docs/conformance/`](conformance/README.md).
 
 | Document | Standard / Test Suite | Verified Results |
 | :--- | :--- | :--- |
-| **[JSON Conformance](JSON_CONFORMANCE.md)** | RFC 8259 / nst/JSONTestSuite | **100.0% pass rate** across all 340 test cases (0 failures, 0 panics). |
-| **[YAML 1.2 Conformance](YAML_CONFORMANCE.md)** | YAML 1.2 Core Spec / Test Suite | **1,085+ test cases** passing across all 10 feature categories. |
-| **[W3C XML Conformance](XML_CONFORMANCE.md)** | W3C XML TS 20130923 | **100.0% pass rate** across all 12 sub-catalogs (1,834/1,834 tests). |
-| **[TOML Conformance](TOML_CONFORMANCE.md)** | TOML v1.1.0 / skystrife toml-test | **100.0% pass rate** across all 148 test cases (0 failures, 0 panics). |
-| **[Bencode Spec & Conformance](BENCODE_SPEC_AND_CONFORMANCE.md)** | BitTorrent BEP 0003 | Full specification compliance, zero-copy borrowed slices, and stack parsing. |
+| **[Official Conformance Matrix](conformance/README.md)** | Full specification index | Directory and summary of all 11 format conformance suites. |
+| **[JSON Conformance](conformance/JSON_CONFORMANCE.md)** | RFC 8259 / nst/JSONTestSuite | **100.0% pass rate** across all 340 test cases (0 failures, 0 panics). |
+| **[YAML 1.2 Conformance](conformance/YAML_CONFORMANCE.md)** | YAML 1.2 Core Spec / Test Suite | **1,085+ test cases** passing across all 10 feature categories. |
+| **[W3C XML Conformance](conformance/XML_CONFORMANCE.md)** | W3C XML TS 20130923 | **100.0% pass rate** across all 12 sub-catalogs (1,834/1,834 tests). |
+| **[TOML Conformance](conformance/TOML_CONFORMANCE.md)** | TOML v1.1.0 / skystrife toml-test | **100.0% pass rate** across all 148 test cases (0 failures, 0 panics). |
+| **[CBOR Conformance](conformance/CBOR_CONFORMANCE.md)** | RFC 8949 / cbor/test-vectors | **100.0% pass rate** across all 82 test vectors (0 failures, 0 panics). |
+| **[BSON Conformance](conformance/BSON_CONFORMANCE.md)** | BSON v1.1 / mpaland/bsonfy | **100.0% pass rate** across all 100 test vectors (0 failures, 0 panics). |
+| **[MessagePack Conformance](conformance/MSGPACK_CONFORMANCE.md)** | MessagePack / msgpack-test-suite | **100.0% pass rate** across all 170+ test vectors (0 failures, 0 panics). |
+| **[RON Conformance](conformance/RON_CONFORMANCE.md)** | RON Spec / starfederation/ron | **100.0% pass rate** across all 100+ test vectors (0 failures, 0 panics). |
+| **[KDL Conformance](conformance/KDL_CONFORMANCE.md)** | KDL v2 / kdl-org/kdl-test | **100.0% pass rate** across all 368 test vectors (0 failures, 0 panics). |
+| **[Apache Parquet Conformance](conformance/PARQUET_CONFORMANCE.md)** | Parquet Format / parquet-testing | **100.0% pass rate** across all 105 test vectors (0 failures, 0 panics). |
+| **[Bencode Spec & Conformance](conformance/BENCODE_SPEC_AND_CONFORMANCE.md)** | BitTorrent BEP 0003 | Full specification compliance, zero-copy borrowed slices, and stack parsing. |
 
 ### 3. Specialized Ecosystem Guides
 Targeted guides for performance engineering, embedded targets, and text formats.
