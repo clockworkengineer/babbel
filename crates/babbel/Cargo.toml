@@ -11,7 +11,7 @@ documentation = "https://docs.rs/babbel"
 homepage = "https://github.com/clockworkengineer/babbel"
 
 [features]
-default = ["std", "json", "yaml", "xml", "bencode", "toml", "msgpack", "cbor", "convert", "serde"]
+default = ["std", "json", "yaml", "xml", "bencode", "toml", "msgpack", "cbor", "bson", "convert", "serde"]
 std = ["alloc", "babbel_core/std"]
 alloc = ["babbel_core/alloc"]
 json = ["dep:babbel_json", "babbel_json/format-yaml", "babbel_json/format-xml", "babbel_json/format-bencode"]
@@ -21,7 +21,8 @@ bencode = ["dep:babbel_bencode"]
 toml = ["dep:babbel_toml"]
 msgpack = ["dep:babbel_msgpack"]
 cbor = ["dep:babbel_cbor"]
-convert = ["json", "yaml", "xml", "bencode", "toml", "msgpack", "cbor"]
+bson = ["dep:babbel_bson"]
+convert = ["json", "yaml", "xml", "bencode", "toml", "msgpack", "cbor", "bson"]
 serde = ["babbel_core/serde"]
 
 [dependencies]
@@ -33,3 +34,4 @@ babbel_bencode = { path = "../bencode", version = "0.2.1", optional = true }
 babbel_toml = { path = "../toml", version = "0.2.1", optional = true }
 babbel_msgpack = { path = "../msgpack", version = "0.2.1", optional = true }
 babbel_cbor = { path = "../cbor", version = "0.2.1", optional = true }
+babbel_bson = { path = "../bson", version = "0.2.1", optional = true }

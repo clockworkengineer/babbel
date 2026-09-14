@@ -44,6 +44,7 @@ Babbel is structured as an interconnected multi-crate workspace:
 | **`babbel_toml`** | [README](crates/toml/README.md) | [`crates/toml`](crates/toml) | Fast, modular, pure-Rust TOML v1.1.0 parser, `TomlEngine`, serializer, streaming pull parser, and compacted DOM with zero external parser dependencies. |
 | **`babbel_msgpack`** | [README](crates/msgpack/README.md) | [`crates/msgpack`](crates/msgpack) | High-speed, binary-safe MessagePack encoder and decoder, `MsgPackEngine`, mapping directly to universal `Value` AST with zero external dependencies. |
 | **`babbel_cbor`** | [README](crates/cbor/README.md) | [`crates/cbor`](crates/cbor) | Official IETF RFC 8949 CBOR encoder and decoder, `CborEngine`, definite/indefinite streaming, with zero external dependencies. |
+| **`babbel_bson`** | [README](crates/bson/README.md) | [`crates/bson`](crates/bson) | Fast, binary-safe BSON (Binary JSON) parser, serializer, and `BsonEngine` with zero external dependencies. |
 
 ---
 

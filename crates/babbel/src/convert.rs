@@ -17,6 +17,8 @@ use babbel_toml::TomlEngine;
 use babbel_msgpack::MsgPackEngine;
 #[cfg(feature = "cbor")]
 use babbel_cbor::CborEngine;
+#[cfg(feature = "bson")]
+use babbel_bson::BsonEngine;
 
 use babbel_core::{
     csv::emit_csv_to, ini::emit_ini_to, parse_csv, parse_ini, BabbelError, Buffer, BufferDestination,
@@ -34,6 +36,7 @@ pub enum Format {
     Toml,
     MsgPack,
     Cbor,
+    Bson,
     Csv,
     Tsv,
     Ini,
@@ -297,6 +300,34 @@ pub struct CborEmitter;
 impl FormatEmitter for CborEmitter {
     fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
         CborEngine.serialize(value, destination, &FormatOptions::compact())
+    }
+}
+
+/// BSON parser implementing `FormatParser`.
+#[cfg(feature = "bson")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct BsonParser;
+
+#[cfg(feature = "bson")]
+impl FormatParser for BsonParser {
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        BsonEngine.parse_bytes(input.as_bytes())
+    }
+
+    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
+        BsonEngine.parse_bytes(input)
+    }
+}
+
+/// BSON emitter implementing `FormatEmitter`.
+#[cfg(feature = "bson")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct BsonEmitter;
+
+#[cfg(feature = "bson")]
+impl FormatEmitter for BsonEmitter {
+    fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
+        BsonEngine.serialize(value, destination, &FormatOptions::compact())
     }
 }
 
@@ -1016,6 +1047,107 @@ pub fn csv_to_cbor(csv: &str) -> Result<Vec<u8>, BabbelError> {
 pub fn cbor_to_csv(cbor: &[u8]) -> Result<String, BabbelError> {
     convert_format_bytes_to_str(cbor, &CborEngine, &CsvEngine, &ConversionOptions::default())
 }
+
+// =========================================================================
+// BSON Cross-Format Conversions
+// =========================================================================
+
+/// Convert JSON string to BSON byte vector.
+#[cfg(all(feature = "json", feature = "bson"))]
+pub fn json_to_bson(json: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(json.as_bytes(), &JsonEngine, &BsonEngine, &ConversionOptions::default())
+}
+
+/// Convert BSON byte payload to JSON string.
+#[cfg(all(feature = "bson", feature = "json"))]
+pub fn bson_to_json(bson: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bson, &BsonEngine, &JsonEngine, &ConversionOptions::default())
+}
+
+/// Convert YAML string to BSON byte vector.
+#[cfg(all(feature = "yaml", feature = "bson"))]
+pub fn yaml_to_bson(yaml: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(yaml.as_bytes(), &YamlEngine, &BsonEngine, &ConversionOptions::default())
+}
+
+/// Convert BSON byte payload to YAML string.
+#[cfg(all(feature = "bson", feature = "yaml"))]
+pub fn bson_to_yaml(bson: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bson, &BsonEngine, &YamlEngine, &ConversionOptions::default())
+}
+
+/// Convert XML string to BSON byte vector.
+#[cfg(all(feature = "xml", feature = "bson"))]
+pub fn xml_to_bson(xml: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(xml.as_bytes(), &XmlEngine, &BsonEngine, &ConversionOptions::default())
+}
+
+/// Convert BSON byte payload to XML string.
+#[cfg(all(feature = "bson", feature = "xml"))]
+pub fn bson_to_xml(bson: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bson, &BsonEngine, &XmlEngine, &ConversionOptions::default())
+}
+
+/// Convert TOML string to BSON byte vector.
+#[cfg(all(feature = "toml", feature = "bson"))]
+pub fn toml_to_bson(toml: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(toml.as_bytes(), &TomlEngine, &BsonEngine, &ConversionOptions::default())
+}
+
+/// Convert BSON byte payload to TOML string.
+#[cfg(all(feature = "bson", feature = "toml"))]
+pub fn bson_to_toml(bson: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bson, &BsonEngine, &TomlEngine, &ConversionOptions::default())
+}
+
+/// Convert MessagePack byte payload to BSON byte vector.
+#[cfg(all(feature = "msgpack", feature = "bson"))]
+pub fn msgpack_to_bson(msgpack: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(msgpack, &MsgPackEngine, &BsonEngine, &ConversionOptions::default())
+}
+
+/// Convert BSON byte payload to MessagePack byte vector.
+#[cfg(all(feature = "bson", feature = "msgpack"))]
+pub fn bson_to_msgpack(bson: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(bson, &BsonEngine, &MsgPackEngine, &ConversionOptions::default())
+}
+
+/// Convert CBOR byte payload to BSON byte vector.
+#[cfg(all(feature = "cbor", feature = "bson"))]
+pub fn cbor_to_bson(cbor: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(cbor, &CborEngine, &BsonEngine, &ConversionOptions::default())
+}
+
+/// Convert BSON byte payload to CBOR byte vector.
+#[cfg(all(feature = "bson", feature = "cbor"))]
+pub fn bson_to_cbor(bson: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(bson, &BsonEngine, &CborEngine, &ConversionOptions::default())
+}
+
+/// Convert Bencode binary payload to BSON byte vector.
+#[cfg(all(feature = "bencode", feature = "bson"))]
+pub fn bencode_to_bson(bencode: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(bencode, &BencodeEngine, &BsonEngine, &ConversionOptions::default())
+}
+
+/// Convert BSON byte payload to Bencode byte vector.
+#[cfg(all(feature = "bson", feature = "bencode"))]
+pub fn bson_to_bencode(bson: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(bson, &BsonEngine, &BencodeEngine, &ConversionOptions::default())
+}
+
+/// Convert CSV string to BSON byte vector.
+#[cfg(feature = "bson")]
+pub fn csv_to_bson(csv: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(csv.as_bytes(), &CsvEngine, &BsonEngine, &ConversionOptions::default())
+}
+
+/// Convert BSON byte payload to CSV string.
+#[cfg(feature = "bson")]
+pub fn bson_to_csv(bson: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bson, &BsonEngine, &CsvEngine, &ConversionOptions::default())
+}
+
 
 
 

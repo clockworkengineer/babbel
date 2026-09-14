@@ -42,12 +42,14 @@ These formats share a 1:1 conceptual mapping with Babbel's universal `Value` AST
   - Can be parsed in $O(1)$ memory on embedded systems (`no_std`).
 - **Implementation**: Pure-Rust `babbel_cbor::CborEngine` implementing `FormatEngine`, zero runtime dependencies, full RFC 8949 major types 0–7, definite and indefinite length streaming, DoS memory and recursion bounds.
 
-### 2.3 BSON (Binary JSON)
+### 2.3 BSON (Binary JSON) — [IMPLEMENTED in `babbel_bson`]
+- **Status**: **Implemented** in `crates/bson` (`babbel_bson`), registered in `babbel::FormatRegistry` and `babbel::convert`.
 - **MIME Type**: `application/bson`
-- **Adoption**: MongoDB, document database exports.
+- **Adoption**: MongoDB, document database exports, NoSQL data storage.
 - **Value Proposition**:
-  - Includes explicit length prefixes and timestamps.
-- **Trade-off**: Strongly coupled to the MongoDB ecosystem; less universal than MessagePack and CBOR.
+  - Length-prefixed binary encoding of JSON documents.
+  - Native support for binary data, embedded documents, and typed integers/floats.
+- **Implementation**: Pure-Rust `babbel_bson::BsonEngine` implementing `FormatEngine`, zero runtime dependencies, full bsonspec.org types, DoS memory and recursion safeguards.
 
 ---
 
@@ -106,7 +108,7 @@ These formats share a 1:1 conceptual mapping with Babbel's universal `Value` AST
 | **JSON5 / JSONC** (`.json5`) | Human Configuration | High | 100% (Maps directly to JSON) | **Priority 1** (Next) |
 | **RON** (`.ron`) | Rust Configuration | Medium | 90% (Rust literal mapping) | **Priority 2** |
 | **KDL** (`.kdl`) | Modern CLI Config | Medium | 85% (Node/attribute mapping) | Priority 3 |
-| **BSON** (`.bson`) | Database Storage | Medium | 90% (JSON-extended mapping) | Priority 6 |
+| **BSON** (`.bson`) | Database Storage | Medium | 90% (JSON-extended mapping) | **IMPLEMENTED (`babbel_bson`)** |
 | **Apache Parquet** (`.parquet`)| Columnar Big Data | High (Data Science) | 70% (Batch tabular only) | Future / Specialized |
 | **Apache Avro** (`.avro`) | Event Streaming | High (Kafka) | 75% (Schema-bound) | Future / Specialized |
 
