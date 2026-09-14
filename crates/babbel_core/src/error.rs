@@ -98,6 +98,11 @@ impl BabbelError {
         self
     }
 
+    /// Wraps or converts any error into a `BabbelError` tagged with a format identifier.
+    pub fn for_format<E: Into<Self>>(err: E, format: &'static str) -> Self {
+        err.into().with_format(format)
+    }
+
     /// Creates a syntax error.
     pub fn syntax(message: impl Into<String>) -> Self {
         Self::new(ErrorCode::SyntaxError, message)

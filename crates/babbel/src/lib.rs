@@ -159,38 +159,35 @@ pub use babbel_core::{
 #[cfg(feature = "alloc")]
 pub use babbel_core::FormatRegistry;
 
+macro_rules! register_feature_engines {
+    ($registry:ident, $( ($feature:literal, $engine:expr) ),* $(,)?) => {
+        $(
+            #[cfg(feature = $feature)]
+            $registry.register(alloc::sync::Arc::new($engine));
+        )*
+    };
+}
+
 /// Creates a format registry pre-populated with all enabled built-in format engines.
 #[cfg(feature = "alloc")]
 pub fn default_registry() -> babbel_core::FormatRegistry {
-    #[allow(unused_mut)]
     let mut registry = babbel_core::FormatRegistry::new();
-    #[cfg(feature = "json")]
-    {
-        registry.register(alloc::sync::Arc::new(babbel_json::JsonEngine));
-        registry.register(alloc::sync::Arc::new(babbel_json::JsonLinesEngine));
-        registry.register(alloc::sync::Arc::new(babbel_json::Json5Engine));
-    }
-
-    #[cfg(feature = "yaml")]
-    registry.register(alloc::sync::Arc::new(babbel_yaml::YamlEngine));
-    #[cfg(feature = "xml")]
-    registry.register(alloc::sync::Arc::new(babbel_xml::XmlEngine));
-    #[cfg(feature = "bencode")]
-    registry.register(alloc::sync::Arc::new(babbel_bencode::BencodeEngine));
-    #[cfg(feature = "toml")]
-    registry.register(alloc::sync::Arc::new(babbel_toml::TomlEngine));
-    #[cfg(feature = "msgpack")]
-    registry.register(alloc::sync::Arc::new(babbel_msgpack::MsgPackEngine));
-    #[cfg(feature = "cbor")]
-    registry.register(alloc::sync::Arc::new(babbel_cbor::CborEngine));
-    #[cfg(feature = "bson")]
-    registry.register(alloc::sync::Arc::new(babbel_bson::BsonEngine));
-    #[cfg(feature = "ron")]
-    registry.register(alloc::sync::Arc::new(babbel_ron::RonEngine));
-    #[cfg(feature = "kdl")]
-    registry.register(alloc::sync::Arc::new(babbel_kdl::KdlEngine));
-    #[cfg(feature = "parquet")]
-    registry.register(alloc::sync::Arc::new(babbel_parquet::ParquetEngine));
+    register_feature_engines!(
+        registry,
+        ("json", babbel_json::JsonEngine),
+        ("json", babbel_json::JsonLinesEngine),
+        ("json", babbel_json::Json5Engine),
+        ("yaml", babbel_yaml::YamlEngine),
+        ("xml", babbel_xml::XmlEngine),
+        ("bencode", babbel_bencode::BencodeEngine),
+        ("toml", babbel_toml::TomlEngine),
+        ("msgpack", babbel_msgpack::MsgPackEngine),
+        ("cbor", babbel_cbor::CborEngine),
+        ("bson", babbel_bson::BsonEngine),
+        ("ron", babbel_ron::RonEngine),
+        ("kdl", babbel_kdl::KdlEngine),
+        ("parquet", babbel_parquet::ParquetEngine),
+    );
 
     registry.register(alloc::sync::Arc::new(babbel_core::CsvEngine));
     registry.register(alloc::sync::Arc::new(babbel_core::TsvEngine));
