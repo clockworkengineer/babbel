@@ -7,6 +7,7 @@ use alloc::{
     vec::Vec,
 };
 
+use babbel_core::encoding::varint;
 use crate::error::ParquetError;
 
 pub const TYPE_STOP: u8 = 0;
@@ -84,13 +85,11 @@ impl ThriftWriter {
     }
 
     pub fn write_i32(&mut self, val: i32) {
-        let zigzag = ((val << 1) ^ (val >> 31)) as u32;
-        self.write_varint_u32(zigzag);
+        varint::write_varint_u32(&mut self.buf, varint::zigzag_encode_i32(val));
     }
 
     pub fn write_i64(&mut self, val: i64) {
-        let zigzag = ((val << 1) ^ (val >> 63)) as u64;
-        self.write_varint_u64(zigzag);
+        varint::write_varint_u64(&mut self.buf, varint::zigzag_encode_i64(val));
     }
 
     pub fn write_i16(&mut self, val: i16) {
@@ -103,7 +102,7 @@ impl ThriftWriter {
     }
 
     pub fn write_binary(&mut self, bytes: &[u8]) {
-        self.write_varint_u32(bytes.len() as u32);
+        varint::write_varint_u32(&mut self.buf, bytes.len() as u32);
         self.write_bytes(bytes);
     }
 
@@ -118,33 +117,7 @@ impl ThriftWriter {
         } else {
             let b = 0xF0 | (elem_type & 0x0F);
             self.write_byte(b);
-            self.write_varint_u32(size as u32);
-        }
-    }
-
-    fn write_varint_u32(&mut self, mut val: u32) {
-        loop {
-            let byte = (val & 0x7F) as u8;
-            val >>= 7;
-            if val != 0 {
-                self.buf.push(byte | 0x80);
-            } else {
-                self.buf.push(byte);
-                break;
-            }
-        }
-    }
-
-    fn write_varint_u64(&mut self, mut val: u64) {
-        loop {
-            let byte = (val & 0x7F) as u8;
-            val >>= 7;
-            if val != 0 {
-                self.buf.push(byte | 0x80);
-            } else {
-                self.buf.push(byte);
-                break;
-            }
+            varint::write_varint_u32(&mut self.buf, size as u32);
         }
     }
 }
@@ -231,14 +204,12 @@ impl<'a> ThriftReader<'a> {
 
     pub fn read_i32(&mut self) -> Result<i32, ParquetError> {
         let zigzag = self.read_varint_u32()?;
-        let val = ((zigzag >> 1) as i32) ^ (-((zigzag & 1) as i32));
-        Ok(val)
+        Ok(varint::zigzag_decode_i32(zigzag))
     }
 
     pub fn read_i64(&mut self) -> Result<i64, ParquetError> {
         let zigzag = self.read_varint_u64()?;
-        let val = ((zigzag >> 1) as i64) ^ (-((zigzag & 1) as i64));
-        Ok(val)
+        Ok(varint::zigzag_decode_i64(zigzag))
     }
 
     pub fn read_i16(&mut self) -> Result<i16, ParquetError> {
@@ -327,36 +298,16 @@ impl<'a> ThriftReader<'a> {
     }
 
     fn read_varint_u32(&mut self) -> Result<u32, ParquetError> {
-        let mut result: u32 = 0;
-        let mut shift = 0;
-        loop {
-            let byte = self.read_byte()?;
-            result |= ((byte & 0x7F) as u32) << shift;
-            if (byte & 0x80) == 0 {
-                break;
-            }
-            shift += 7;
-            if shift >= 35 {
-                return Err(ParquetError::ThriftError("Varint overflow".to_string()));
-            }
-        }
+        let (result, bytes_read) = varint::read_varint_u32(self.buf, self.pos)
+            .map_err(|_| ParquetError::ThriftError("Varint overflow".to_string()))?;
+        self.pos += bytes_read;
         Ok(result)
     }
 
     fn read_varint_u64(&mut self) -> Result<u64, ParquetError> {
-        let mut result: u64 = 0;
-        let mut shift = 0;
-        loop {
-            let byte = self.read_byte()?;
-            result |= ((byte & 0x7F) as u64) << shift;
-            if (byte & 0x80) == 0 {
-                break;
-            }
-            shift += 7;
-            if shift >= 70 {
-                return Err(ParquetError::ThriftError("Varint64 overflow".to_string()));
-            }
-        }
+        let (result, bytes_read) = varint::read_varint_u64(self.buf, self.pos)
+            .map_err(|_| ParquetError::ThriftError("Varint64 overflow".to_string()))?;
+        self.pos += bytes_read;
         Ok(result)
     }
 }

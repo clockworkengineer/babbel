@@ -21,6 +21,7 @@ use std::panic::{self, AssertUnwindSafe};
 use std::path::PathBuf;
 use std::time::Instant;
 
+use babbel_core::testing::parse_dense_hex;
 use babbel_core::Value;
 use babbel_cbor::{from_bytes, to_vec};
 
@@ -59,24 +60,6 @@ impl CategoryStats {
             (self.passed as f64 / self.total as f64) * 100.0
         }
     }
-}
-
-/// Parses a dense hex string into raw bytes.
-fn parse_dense_hex(s: &str) -> Result<Vec<u8>, String> {
-    let s = s.trim();
-    if s.is_empty() {
-        return Ok(Vec::new());
-    }
-    if s.len() % 2 != 0 {
-        return Err(format!("Odd hex string length: {}", s));
-    }
-    (0..s.len())
-        .step_by(2)
-        .map(|i| {
-            u8::from_str_radix(&s[i..i + 2], 16)
-                .map_err(|e| format!("Invalid hex pair '{}': {}", &s[i..i + 2], e))
-        })
-        .collect()
 }
 
 /// Discovers the path to the cbor test-vectors directory.

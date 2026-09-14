@@ -277,7 +277,7 @@ impl KdlValue {
             Value::Null => KdlValue::Null,
             Value::Bytes(b) => {
                 // Encode bytes as base64 string or hex string
-                KdlValue::String(alloc::format!("0x{}", hex_encode(b)))
+                KdlValue::String(alloc::format!("0x{}", babbel_core::text::hex::encode_hex(b)))
             }
             Value::Array(_) | Value::Object(_) => {
                 // Complex values in scalar positions fall back to debug string representation
@@ -285,13 +285,4 @@ impl KdlValue {
             }
         }
     }
-}
-
-fn hex_encode(bytes: &[u8]) -> String {
-    let mut s = String::with_capacity(bytes.len() * 2);
-    for b in bytes {
-        use core::fmt::Write;
-        let _ = write!(s, "{:02x}", b);
-    }
-    s
 }

@@ -19,6 +19,8 @@ pub const ESC_BACKSLASH: &str = "\\\\";
 pub const ESC_NEWLINE: &str = "\\n";
 pub const ESC_CARRIAGE_RETURN: &str = "\\r";
 pub const ESC_TAB: &str = "\\t";
+pub const ESC_BACKSPACE: &str = "\\b";
+pub const ESC_FORMFEED: &str = "\\f";
 
 /// Byte constants for JSON escaping
 pub const BYTE_QUOTE: u8 = b'"';
@@ -26,6 +28,8 @@ pub const BYTE_BACKSLASH: u8 = b'\\';
 pub const BYTE_NEWLINE: u8 = b'\n';
 pub const BYTE_CARRIAGE_RETURN: u8 = b'\r';
 pub const BYTE_TAB: u8 = b'\t';
+pub const BYTE_BACKSPACE: u8 = b'\x08';
+pub const BYTE_FORMFEED: u8 = b'\x0C';
 pub const CONTROL_CHAR_LIMIT: u8 = 32;
 
 /// Checks if string `s` contains characters that require escaping in JSON.
@@ -48,11 +52,13 @@ pub fn escape_for_json(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for c in s.chars() {
         match c {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
+            '"' => out.push_str(ESC_QUOTE),
+            '\\' => out.push_str(ESC_BACKSLASH),
+            '\n' => out.push_str(ESC_NEWLINE),
+            '\r' => out.push_str(ESC_CARRIAGE_RETURN),
+            '\t' => out.push_str(ESC_TAB),
+            '\x08' => out.push_str(ESC_BACKSPACE),
+            '\x0C' => out.push_str(ESC_FORMFEED),
             c if (c as u32) < 0x20 => {
                 out.push_str(&format!("\\u{:04x}", c as u32));
             }
@@ -90,7 +96,7 @@ pub fn write_json_escaped_string(s: &str, dest: &mut dyn IDestination) {
 
     while i < bytes.len() {
         let needs_escape = match bytes[i] {
-            BYTE_QUOTE | BYTE_BACKSLASH | BYTE_NEWLINE | BYTE_CARRIAGE_RETURN | BYTE_TAB => true,
+            BYTE_QUOTE | BYTE_BACKSLASH | BYTE_NEWLINE | BYTE_CARRIAGE_RETURN | BYTE_TAB | BYTE_BACKSPACE | BYTE_FORMFEED => true,
             b if b < CONTROL_CHAR_LIMIT => true,
             _ => false,
         };
@@ -106,6 +112,8 @@ pub fn write_json_escaped_string(s: &str, dest: &mut dyn IDestination) {
                 BYTE_NEWLINE => dest.add_bytes(ESC_NEWLINE),
                 BYTE_CARRIAGE_RETURN => dest.add_bytes(ESC_CARRIAGE_RETURN),
                 BYTE_TAB => dest.add_bytes(ESC_TAB),
+                BYTE_BACKSPACE => dest.add_bytes(ESC_BACKSPACE),
+                BYTE_FORMFEED => dest.add_bytes(ESC_FORMFEED),
                 b => {
                     let b = b as u32;
                     let mut buf = [b'\\', b'u', b'0', b'0', b'0', b'0'];

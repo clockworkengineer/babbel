@@ -6,6 +6,7 @@ use alloc::{
     vec::Vec,
 };
 
+use babbel_core::encoding::varint::{read_varint_u32, write_varint_u32};
 use babbel_core::Value;
 use crate::error::ParquetError;
 use crate::metadata::Type;
@@ -157,7 +158,8 @@ impl ColumnData {
 
             // Decode RLE definition levels
             let mut def_reader_pos = 0;
-            let (header, h_len) = read_varint_u32(def_data, def_reader_pos)?;
+            let (header, h_len) = read_varint_u32(def_data, def_reader_pos)
+                .map_err(|_| ParquetError::CorruptedPage("Varint overflow in definition levels".into()))?;
             def_reader_pos += h_len;
 
             let mut def_bits = Vec::with_capacity(num_values);
@@ -271,39 +273,4 @@ impl ColumnData {
             ))),
         }
     }
-}
-
-fn write_varint_u32(buf: &mut Vec<u8>, mut val: u32) {
-    loop {
-        let byte = (val & 0x7F) as u8;
-        val >>= 7;
-        if val != 0 {
-            buf.push(byte | 0x80);
-        } else {
-            buf.push(byte);
-            break;
-        }
-    }
-}
-
-fn read_varint_u32(data: &[u8], mut pos: usize) -> Result<(u32, usize), ParquetError> {
-    let start = pos;
-    let mut result: u32 = 0;
-    let mut shift = 0;
-    loop {
-        if pos >= data.len() {
-            return Err(ParquetError::UnexpectedEof);
-        }
-        let byte = data[pos];
-        pos += 1;
-        result |= ((byte & 0x7F) as u32) << shift;
-        if (byte & 0x80) == 0 {
-            break;
-        }
-        shift += 7;
-        if shift >= 35 {
-            return Err(ParquetError::CorruptedPage("Varint overflow in definition levels".into()));
-        }
-    }
-    Ok((result, pos - start))
 }
