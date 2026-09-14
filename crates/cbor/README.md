@@ -51,3 +51,19 @@ let decoded2 = engine.parse_bytes(&bytes2)?;
 assert_eq!(data, decoded2);
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
+
+## Examples
+
+Run any of the included examples with cargo:
+
+```bash
+# Basic parse, serialize, and AST exploration
+cargo run --package babbel_cbor --example cbor_parse_and_serialize
+
+# RFC 8949 indefinite-length containers and chunked streaming
+cargo run --package babbel_cbor --example cbor_indefinite_streaming
+
+# Babbel FormatEngine integration and trait usage
+cargo run --package babbel_cbor --example cbor_format_engine
+```
+

@@ -38,7 +38,7 @@ Add `babbel` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-babbel = "0.2.0"
+babbel = "0.2.1"
 ```
 
 Or as a workspace path dependency:
@@ -50,7 +50,7 @@ babbel = { path = "crates/babbel" }
 
 ### Feature Flags
 
-By default, all formats and the conversion pipeline are enabled (`["std", "json", "toml", "yaml", "xml", "bencode", "convert"]`). To minimize binary size, enable only what you need:
+By default, all formats and the conversion pipeline are enabled (`["std", "json", "toml", "yaml", "xml", "bencode", "msgpack", "cbor", "bson", "convert", "serde"]`). To minimize binary size, enable only what you need:
 
 | Feature | Description |
 | :--- | :--- |
@@ -61,7 +61,12 @@ By default, all formats and the conversion pipeline are enabled (`["std", "json"
 | `yaml` *(default)* | Re-exports `babbel_yaml` (`babbel::yaml`, `YamlEngine`). |
 | `xml` *(default)* | Re-exports `babbel_xml` (`babbel::xml`, `XmlEngine`, pull parser). |
 | `bencode` *(default)* | Re-exports `babbel_bencode` (`babbel::bencode`, `BencodeEngine`). |
-| `convert` *(default)* | Enables the `babbel::convert` cross-format conversion pipeline across all 9 formats. |
+| `msgpack` *(default)* | Re-exports `babbel_msgpack` (`babbel::msgpack`, `MsgPackEngine`). |
+| `cbor` *(default)* | Re-exports `babbel_cbor` (`babbel::cbor`, `CborEngine`). |
+| `bson` *(default)* | Re-exports `babbel_bson` (`babbel::bson`, `BsonEngine`). |
+| `convert` *(default)* | Enables the `babbel::convert` cross-format conversion pipeline across all 12 formats. |
+| `serde` *(default)* | Enables universal `serde` serializing and deserializing for `Value`. |
+
 
 ---
 
@@ -194,6 +199,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 | `babbel_yaml` | [`crates/yaml`](../yaml) | YAML 1.2 specification compliance, anchors, aliases, and custom tags. |
 | `babbel_xml` | [`crates/xml`](../xml) | XML DOM, C14N Canonical XML, DTD validation, XSD schema, XPath 1.0, and `XmlPullParser`. |
 | `babbel_bencode` | [`crates/bencode`](../bencode) | Zero-copy borrowed parsing and streaming for BitTorrent Bencode. |
+| `babbel_msgpack` | [`crates/msgpack`](../msgpack) | Fast, binary-safe MessagePack parser, serializer, and `FormatEngine`. |
+| `babbel_cbor` | [`crates/cbor`](../cbor) | RFC 8949 CBOR parser, serializer, indefinite streaming, and `FormatEngine`. |
+| `babbel_bson` | [`crates/bson`](../bson) | BSON (Binary JSON) parser, serializer, document model, and `FormatEngine`. |
+
+---
+
+## Examples
+
+Run any of the root examples using cargo:
+
+```bash
+# Full 8-format conversion pipeline (JSON -> TOML -> YAML -> XML -> Bencode -> MsgPack -> CBOR -> BSON)
+cargo run --package babbel --example babbel_all_formats_roundtrip
+
+# Binary formats size and byte structure comparison (JSON vs Bencode vs BSON vs CBOR vs MsgPack)
+cargo run --package babbel --example binary_formats_comparison
+```
 
 ---
 
@@ -213,3 +235,4 @@ See the [Documentation Hub](../../docs/README.md) for full workspace guides:
 ## License
 
 Licensed under the [MIT License](../../LICENSE).
+

@@ -51,3 +51,19 @@ let decoded2 = engine.parse_bytes(&bytes2)?;
 assert_eq!(data, decoded2);
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
+
+## Examples
+
+Run any of the included examples with cargo:
+
+```bash
+# Basic parse, serialize, and AST exploration
+cargo run --package babbel_msgpack --example msgpack_parse_and_serialize
+
+# Binary file I/O (writing and reading .msgpack files)
+cargo run --package babbel_msgpack --example msgpack_file_io
+
+# Babbel FormatEngine integration and trait usage
+cargo run --package babbel_msgpack --example msgpack_format_engine
+```
+
