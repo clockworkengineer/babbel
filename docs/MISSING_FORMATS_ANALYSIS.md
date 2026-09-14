@@ -32,14 +32,15 @@ These formats share a 1:1 conceptual mapping with Babbel's universal `Value` AST
   - Up to 64-bit and 128-bit integer support matching `Value::Integer(i128)`.
 - **Implementation**: Pure-Rust `babbel_msgpack::MsgPackEngine` implementing `FormatEngine`, zero runtime dependencies, DoS memory and recursion safeguards.
 
-### 2.2 CBOR (Concise Binary Object Representation - RFC 8949)
+### 2.2 CBOR (Concise Binary Object Representation - RFC 8949) — [IMPLEMENTED in `babbel_cbor`]
+- **Status**: **Implemented** in `crates/cbor` (`babbel_cbor`), registered in `babbel::FormatRegistry` and `babbel::convert`.
 - **MIME Type**: `application/cbor`
 - **Adoption**: IETF standard, WebAuthn / FIDO2 tokens, COSE cryptography, IoT / CoAP networks, Cardano blockchain.
 - **Value Proposition**:
   - The official Internet standard binary format.
   - Extensible semantic tagging system (e.g. timestamps, UUIDs, BigNums).
   - Can be parsed in $O(1)$ memory on embedded systems (`no_std`).
-- **Implementation Complexity**: Medium. Core types map cleanly to `Value`; semantic tags can be optionally exposed or normalized.
+- **Implementation**: Pure-Rust `babbel_cbor::CborEngine` implementing `FormatEngine`, zero runtime dependencies, full RFC 8949 major types 0–7, definite and indefinite length streaming, DoS memory and recursion bounds.
 
 ### 2.3 BSON (Binary JSON)
 - **MIME Type**: `application/bson`
@@ -101,10 +102,10 @@ These formats share a 1:1 conceptual mapping with Babbel's universal `Value` AST
 | Format | Category | Ecosystem Demand | AST Mapping Alignment | Status / Priority |
 | :--- | :--- | :--- | :--- | :--- |
 | **MessagePack** (`.msgpack`) | Binary Interchange | Very High | 100% (Direct `Value` mapping) | **IMPLEMENTED (`babbel_msgpack`)** |
-| **CBOR** (`.cbor`) | Binary Interchange / IoT | High | 95% (Direct + Tag mapping) | **Priority 1** (Next) |
-| **JSON5 / JSONC** (`.json5`) | Human Configuration | High | 100% (Maps directly to JSON) | **Priority 2** |
-| **RON** (`.ron`) | Rust Configuration | Medium | 90% (Rust literal mapping) | **Priority 3** |
-| **KDL** (`.kdl`) | Modern CLI Config | Medium | 85% (Node/attribute mapping) | Priority 4 |
+| **CBOR** (`.cbor`) | Binary Interchange / IoT | High | 95% (Direct + Tag mapping) | **IMPLEMENTED (`babbel_cbor`)** |
+| **JSON5 / JSONC** (`.json5`) | Human Configuration | High | 100% (Maps directly to JSON) | **Priority 1** (Next) |
+| **RON** (`.ron`) | Rust Configuration | Medium | 90% (Rust literal mapping) | **Priority 2** |
+| **KDL** (`.kdl`) | Modern CLI Config | Medium | 85% (Node/attribute mapping) | Priority 3 |
 | **BSON** (`.bson`) | Database Storage | Medium | 90% (JSON-extended mapping) | Priority 6 |
 | **Apache Parquet** (`.parquet`)| Columnar Big Data | High (Data Science) | 70% (Batch tabular only) | Future / Specialized |
 | **Apache Avro** (`.avro`) | Event Streaming | High (Kafka) | 75% (Schema-bound) | Future / Specialized |

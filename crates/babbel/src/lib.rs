@@ -65,6 +65,9 @@ pub use babbel_toml as toml;
 #[cfg(feature = "msgpack")]
 pub use babbel_msgpack as msgpack;
 
+#[cfg(feature = "cbor")]
+pub use babbel_cbor as cbor;
+
 // Backwards-compatible aliases (prefer babbel::json, babbel::yaml, babbel::xml, babbel::bencode, babbel::toml)
 #[cfg(feature = "json")]
 #[deprecated(since = "0.2.0", note = "Use `babbel::json` instead")]
@@ -121,6 +124,8 @@ pub use babbel_bencode::BencodeEngine;
 pub use babbel_toml::TomlEngine;
 #[cfg(feature = "msgpack")]
 pub use babbel_msgpack::MsgPackEngine;
+#[cfg(feature = "cbor")]
+pub use babbel_cbor::CborEngine;
 
 pub use babbel_core::{
     find_engine, find_engine_by_extension, find_engine_by_mime, CsvEngine, FormatCodec,
@@ -149,6 +154,8 @@ pub fn default_registry() -> babbel_core::FormatRegistry {
     registry.register(alloc::sync::Arc::new(babbel_toml::TomlEngine));
     #[cfg(feature = "msgpack")]
     registry.register(alloc::sync::Arc::new(babbel_msgpack::MsgPackEngine));
+    #[cfg(feature = "cbor")]
+    registry.register(alloc::sync::Arc::new(babbel_cbor::CborEngine));
 
     registry.register(alloc::sync::Arc::new(babbel_core::CsvEngine));
     registry.register(alloc::sync::Arc::new(babbel_core::TsvEngine));

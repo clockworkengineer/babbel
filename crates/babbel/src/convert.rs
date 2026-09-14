@@ -15,6 +15,8 @@ use babbel_xml::XmlEngine;
 use babbel_toml::TomlEngine;
 #[cfg(feature = "msgpack")]
 use babbel_msgpack::MsgPackEngine;
+#[cfg(feature = "cbor")]
+use babbel_cbor::CborEngine;
 
 use babbel_core::{
     csv::emit_csv_to, ini::emit_ini_to, parse_csv, parse_ini, BabbelError, Buffer, BufferDestination,
@@ -31,6 +33,7 @@ pub enum Format {
     Bencode,
     Toml,
     MsgPack,
+    Cbor,
     Csv,
     Tsv,
     Ini,
@@ -266,6 +269,34 @@ pub struct MsgPackEmitter;
 impl FormatEmitter for MsgPackEmitter {
     fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
         MsgPackEngine.serialize(value, destination, &FormatOptions::compact())
+    }
+}
+
+/// CBOR parser implementing `FormatParser`.
+#[cfg(feature = "cbor")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct CborParser;
+
+#[cfg(feature = "cbor")]
+impl FormatParser for CborParser {
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        CborEngine.parse_bytes(input.as_bytes())
+    }
+
+    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
+        CborEngine.parse_bytes(input)
+    }
+}
+
+/// CBOR emitter implementing `FormatEmitter`.
+#[cfg(feature = "cbor")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct CborEmitter;
+
+#[cfg(feature = "cbor")]
+impl FormatEmitter for CborEmitter {
+    fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
+        CborEngine.serialize(value, destination, &FormatOptions::compact())
     }
 }
 
@@ -897,5 +928,94 @@ pub fn csv_to_msgpack(csv: &str) -> Result<Vec<u8>, BabbelError> {
 pub fn msgpack_to_csv(msgpack: &[u8]) -> Result<String, BabbelError> {
     convert_format_bytes_to_str(msgpack, &MsgPackEngine, &CsvEngine, &ConversionOptions::default())
 }
+
+// =========================================================================
+// CBOR Cross-Format Conversions
+// =========================================================================
+
+/// Convert JSON string to CBOR byte vector.
+#[cfg(all(feature = "json", feature = "cbor"))]
+pub fn json_to_cbor(json: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(json.as_bytes(), &JsonEngine, &CborEngine, &ConversionOptions::default())
+}
+
+/// Convert CBOR byte payload to JSON string.
+#[cfg(all(feature = "cbor", feature = "json"))]
+pub fn cbor_to_json(cbor: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(cbor, &CborEngine, &JsonEngine, &ConversionOptions::default())
+}
+
+/// Convert YAML string to CBOR byte vector.
+#[cfg(all(feature = "yaml", feature = "cbor"))]
+pub fn yaml_to_cbor(yaml: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(yaml.as_bytes(), &YamlEngine, &CborEngine, &ConversionOptions::default())
+}
+
+/// Convert CBOR byte payload to YAML string.
+#[cfg(all(feature = "cbor", feature = "yaml"))]
+pub fn cbor_to_yaml(cbor: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(cbor, &CborEngine, &YamlEngine, &ConversionOptions::default())
+}
+
+/// Convert XML string to CBOR byte vector.
+#[cfg(all(feature = "xml", feature = "cbor"))]
+pub fn xml_to_cbor(xml: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(xml.as_bytes(), &XmlEngine, &CborEngine, &ConversionOptions::default())
+}
+
+/// Convert CBOR byte payload to XML string.
+#[cfg(all(feature = "cbor", feature = "xml"))]
+pub fn cbor_to_xml(cbor: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(cbor, &CborEngine, &XmlEngine, &ConversionOptions::default())
+}
+
+/// Convert TOML string to CBOR byte vector.
+#[cfg(all(feature = "toml", feature = "cbor"))]
+pub fn toml_to_cbor(toml: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(toml.as_bytes(), &TomlEngine, &CborEngine, &ConversionOptions::default())
+}
+
+/// Convert CBOR byte payload to TOML string.
+#[cfg(all(feature = "cbor", feature = "toml"))]
+pub fn cbor_to_toml(cbor: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(cbor, &CborEngine, &TomlEngine, &ConversionOptions::default())
+}
+
+/// Convert MessagePack byte payload to CBOR byte vector.
+#[cfg(all(feature = "msgpack", feature = "cbor"))]
+pub fn msgpack_to_cbor(msgpack: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(msgpack, &MsgPackEngine, &CborEngine, &ConversionOptions::default())
+}
+
+/// Convert CBOR byte payload to MessagePack byte vector.
+#[cfg(all(feature = "cbor", feature = "msgpack"))]
+pub fn cbor_to_msgpack(cbor: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(cbor, &CborEngine, &MsgPackEngine, &ConversionOptions::default())
+}
+
+/// Convert Bencode binary payload to CBOR byte vector.
+#[cfg(all(feature = "bencode", feature = "cbor"))]
+pub fn bencode_to_cbor(bencode: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(bencode, &BencodeEngine, &CborEngine, &ConversionOptions::default())
+}
+
+/// Convert CBOR byte payload to Bencode byte vector.
+#[cfg(all(feature = "cbor", feature = "bencode"))]
+pub fn cbor_to_bencode(cbor: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(cbor, &CborEngine, &BencodeEngine, &ConversionOptions::default())
+}
+
+/// Convert CSV string to CBOR byte vector.
+#[cfg(feature = "cbor")]
+pub fn csv_to_cbor(csv: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(csv.as_bytes(), &CsvEngine, &CborEngine, &ConversionOptions::default())
+}
+
+/// Convert CBOR byte payload to CSV string.
+#[cfg(feature = "cbor")]
+pub fn cbor_to_csv(cbor: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(cbor, &CborEngine, &CsvEngine, &ConversionOptions::default())
+}
+
 
 

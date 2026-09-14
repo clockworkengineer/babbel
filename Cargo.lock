@@ -40,6 +40,7 @@ name = "babbel"
 version = "0.2.1"
 dependencies = [
  "babbel_bencode",
+ "babbel_cbor",
  "babbel_core",
  "babbel_json",
  "babbel_msgpack",
@@ -50,6 +51,13 @@ dependencies = [
 
 [[package]]
 name = "babbel_bencode"
+version = "0.2.1"
+dependencies = [
+ "babbel_core",
+]
+
+[[package]]
+name = "babbel_cbor"
 version = "0.2.1"
 dependencies = [
  "babbel_core",

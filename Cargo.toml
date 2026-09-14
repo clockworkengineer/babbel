@@ -9,6 +9,7 @@ members = [
     "crates/bencode",
     "crates/toml",
     "crates/msgpack",
+    "crates/cbor",
 ]
 
 [workspace.dependencies]
@@ -19,6 +20,7 @@ babbel_yaml = { path = "crates/yaml", version = "0.2.1" }
 babbel_bencode = { path = "crates/bencode", version = "0.2.1" }
 babbel_toml = { path = "crates/toml", version = "0.2.1" }
 babbel_msgpack = { path = "crates/msgpack", version = "0.2.1" }
+babbel_cbor = { path = "crates/cbor", version = "0.2.1" }
 
 
 [workspace.package]

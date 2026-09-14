@@ -66,6 +66,7 @@ Babbel is partitioned into seven decoupled, focused crates:
 | **`babbel_xml`** | [README](../crates/xml/README.md) | `crates/xml` | W3C XML DOM, `XmlEngine`, validating pull parser, C14N 1.0/1.1 canonicalization, DTD, XSD, XPath 1.0. |
 | **`babbel_toml`** | [README](../crates/toml/README.md) | `crates/toml` | TOML v1.1.0 DOM engine, `TomlEngine`, streaming pull parser, AST serializer, strict validation. |
 | **`babbel_msgpack`** | [README](../crates/msgpack/README.md) | `crates/msgpack` | MessagePack DOM engine, `MsgPackEngine`, streaming decoder/encoder, 100% AST fidelity. |
+| **`babbel_cbor`** | [README](../crates/cbor/README.md) | `crates/cbor` | RFC 8949 CBOR DOM engine, `CborEngine`, major types 0-7, streaming decoder/encoder. |
 
 ---
 

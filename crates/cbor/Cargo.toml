@@ -1,0 +1,19 @@
+[package]
+name = "babbel_cbor"
+version = "0.2.1"
+edition = "2024"
+description = "Fast, binary-safe RFC 8949 CBOR parser, serializer, and FormatEngine in pure Rust"
+license = "MIT"
+authors = ["ClockworkEngineer", "Babbel Contributors"]
+repository = "https://github.com/clockworkengineer/babbel"
+documentation = "https://docs.rs/babbel_cbor"
+homepage = "https://github.com/clockworkengineer/babbel"
+readme = "README.md"
+
+[features]
+default = ["std"]
+std = ["alloc", "babbel_core/std", "babbel_core/file-io"]
+alloc = ["babbel_core/alloc"]
+
+[dependencies]
+babbel_core = { path = "../babbel_core", version = "0.2.1", default-features = false }
