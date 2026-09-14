@@ -22,5 +22,6 @@ target
 **/toml-test/
 **/msgpack-test-suite/
 **/test-vectors/
+**/bsonfy/
 *.zip
 notes/

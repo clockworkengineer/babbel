@@ -1,0 +1,4 @@
+# Paths to search for mpaland/bsonfy repository
+bsonfy
+../bsonfy
+tests/bsonfy
