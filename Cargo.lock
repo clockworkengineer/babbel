@@ -44,6 +44,7 @@ dependencies = [
  "babbel_cbor",
  "babbel_core",
  "babbel_json",
+ "babbel_kdl",
  "babbel_msgpack",
  "babbel_ron",
  "babbel_toml",
@@ -92,6 +93,13 @@ dependencies = [
  "dtoa",
  "itoa",
  "smallvec",
+]
+
+[[package]]
+name = "babbel_kdl"
+version = "0.2.1"
+dependencies = [
+ "babbel_core",
 ]
 
 [[package]]

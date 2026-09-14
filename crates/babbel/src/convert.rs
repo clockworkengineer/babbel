@@ -21,6 +21,8 @@ use babbel_cbor::CborEngine;
 use babbel_bson::BsonEngine;
 #[cfg(feature = "ron")]
 use babbel_ron::RonEngine;
+#[cfg(feature = "kdl")]
+use babbel_kdl::KdlEngine;
 
 use babbel_core::{
     csv::emit_csv_to, ini::emit_ini_to, parse_csv, parse_ini, BabbelError, Buffer, BufferDestination,
@@ -40,6 +42,7 @@ pub enum Format {
     Cbor,
     Bson,
     Ron,
+    Kdl,
     Json5,
     Csv,
     Tsv,
@@ -390,6 +393,34 @@ pub struct RonEmitter;
 impl FormatEmitter for RonEmitter {
     fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
         RonEngine.serialize(value, destination, &FormatOptions::compact())
+    }
+}
+
+/// KDL parser implementing `FormatParser`.
+#[cfg(feature = "kdl")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct KdlParser;
+
+#[cfg(feature = "kdl")]
+impl FormatParser for KdlParser {
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        KdlEngine.parse_str(input)
+    }
+
+    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
+        KdlEngine.parse_bytes(input)
+    }
+}
+
+/// KDL emitter implementing `FormatEmitter`.
+#[cfg(feature = "kdl")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct KdlEmitter;
+
+#[cfg(feature = "kdl")]
+impl FormatEmitter for KdlEmitter {
+    fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
+        KdlEngine.serialize(value, destination, &FormatOptions::compact())
     }
 }
 
@@ -1396,6 +1427,118 @@ pub fn ron_to_json5(ron: &str) -> Result<String, BabbelError> {
 #[cfg(all(feature = "json", feature = "ron"))]
 pub fn json5_to_ron(json5: &str) -> Result<String, BabbelError> {
     convert_format(json5, &Json5Engine, &RonEngine, &ConversionOptions::default())
+}
+
+// =========================================================================
+// KDL Cross-Format Conversions
+// =========================================================================
+
+/// Convert KDL string to JSON string.
+#[cfg(all(feature = "kdl", feature = "json"))]
+pub fn kdl_to_json(kdl: &str) -> Result<String, BabbelError> {
+    convert_format(kdl, &KdlEngine, &JsonEngine, &ConversionOptions::default())
+}
+
+/// Convert JSON string to KDL string.
+#[cfg(all(feature = "json", feature = "kdl"))]
+pub fn json_to_kdl(json: &str) -> Result<String, BabbelError> {
+    convert_format(json, &JsonEngine, &KdlEngine, &ConversionOptions::default())
+}
+
+/// Convert KDL string to YAML string.
+#[cfg(all(feature = "kdl", feature = "yaml"))]
+pub fn kdl_to_yaml(kdl: &str) -> Result<String, BabbelError> {
+    convert_format(kdl, &KdlEngine, &YamlEngine, &ConversionOptions::default())
+}
+
+/// Convert YAML string to KDL string.
+#[cfg(all(feature = "yaml", feature = "kdl"))]
+pub fn yaml_to_kdl(yaml: &str) -> Result<String, BabbelError> {
+    convert_format(yaml, &YamlEngine, &KdlEngine, &ConversionOptions::default())
+}
+
+/// Convert KDL string to TOML string.
+#[cfg(all(feature = "kdl", feature = "toml"))]
+pub fn kdl_to_toml(kdl: &str) -> Result<String, BabbelError> {
+    convert_format(kdl, &KdlEngine, &TomlEngine, &ConversionOptions::default())
+}
+
+/// Convert TOML string to KDL string.
+#[cfg(all(feature = "toml", feature = "kdl"))]
+pub fn toml_to_kdl(toml: &str) -> Result<String, BabbelError> {
+    convert_format(toml, &TomlEngine, &KdlEngine, &ConversionOptions::default())
+}
+
+/// Convert KDL string to XML string.
+#[cfg(all(feature = "kdl", feature = "xml"))]
+pub fn kdl_to_xml(kdl: &str) -> Result<String, BabbelError> {
+    convert_format(kdl, &KdlEngine, &XmlEngine, &ConversionOptions::default())
+}
+
+/// Convert XML string to KDL string.
+#[cfg(all(feature = "xml", feature = "kdl"))]
+pub fn xml_to_kdl(xml: &str) -> Result<String, BabbelError> {
+    convert_format(xml, &XmlEngine, &KdlEngine, &ConversionOptions::default())
+}
+
+/// Convert KDL string to MessagePack byte vector.
+#[cfg(all(feature = "kdl", feature = "msgpack"))]
+pub fn kdl_to_msgpack(kdl: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(kdl.as_bytes(), &KdlEngine, &MsgPackEngine, &ConversionOptions::default())
+}
+
+/// Convert MessagePack byte payload to KDL string.
+#[cfg(all(feature = "msgpack", feature = "kdl"))]
+pub fn msgpack_to_kdl(msgpack: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &KdlEngine, &ConversionOptions::default())
+}
+
+/// Convert KDL string to CBOR byte vector.
+#[cfg(all(feature = "kdl", feature = "cbor"))]
+pub fn kdl_to_cbor(kdl: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(kdl.as_bytes(), &KdlEngine, &CborEngine, &ConversionOptions::default())
+}
+
+/// Convert CBOR byte payload to KDL string.
+#[cfg(all(feature = "cbor", feature = "kdl"))]
+pub fn cbor_to_kdl(cbor: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(cbor, &CborEngine, &KdlEngine, &ConversionOptions::default())
+}
+
+/// Convert KDL string to BSON byte vector.
+#[cfg(all(feature = "kdl", feature = "bson"))]
+pub fn kdl_to_bson(kdl: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(kdl.as_bytes(), &KdlEngine, &BsonEngine, &ConversionOptions::default())
+}
+
+/// Convert BSON byte payload to KDL string.
+#[cfg(all(feature = "bson", feature = "kdl"))]
+pub fn bson_to_kdl(bson: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bson, &BsonEngine, &KdlEngine, &ConversionOptions::default())
+}
+
+/// Convert KDL string to RON string.
+#[cfg(all(feature = "kdl", feature = "ron"))]
+pub fn kdl_to_ron(kdl: &str) -> Result<String, BabbelError> {
+    convert_format(kdl, &KdlEngine, &RonEngine, &ConversionOptions::default())
+}
+
+/// Convert RON string to KDL string.
+#[cfg(all(feature = "ron", feature = "kdl"))]
+pub fn ron_to_kdl(ron: &str) -> Result<String, BabbelError> {
+    convert_format(ron, &RonEngine, &KdlEngine, &ConversionOptions::default())
+}
+
+/// Convert KDL string to JSON5 string.
+#[cfg(all(feature = "kdl", feature = "json"))]
+pub fn kdl_to_json5(kdl: &str) -> Result<String, BabbelError> {
+    convert_format(kdl, &KdlEngine, &Json5Engine, &ConversionOptions::default())
+}
+
+/// Convert JSON5 string to KDL string.
+#[cfg(all(feature = "json", feature = "kdl"))]
+pub fn json5_to_kdl(json5: &str) -> Result<String, BabbelError> {
+    convert_format(json5, &Json5Engine, &KdlEngine, &ConversionOptions::default())
 }
 
 

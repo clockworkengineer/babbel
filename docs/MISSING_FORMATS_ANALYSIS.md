@@ -76,7 +76,7 @@ These formats share a 1:1 conceptual mapping with Babbel's universal `Value` AST
 - **Value Proposition**:
   - Node-and-attribute syntax designed specifically for human-authored configuration documents.
   - Type annotations and child nodes.
-- **Implementation Complexity**: Medium. Requires a node-attribute AST mapping to `Value::Object`.
+- **Implementation**: Pure-Rust zero-dependency crate `babbel_kdl::KdlEngine` implementing `FormatEngine`, recursive-descent parser, node hierarchies, positional arguments, properties (`key=val`), nested children blocks (`{ ... }`), line comments (`//`), nested multiline comments (`/* /* */ */`), slashdash comments (`/-`), raw strings (`r#"..."#`), number bases (hex `0x`, octal `0o`, binary `0b`, float, exponents, underscores), compact & pretty-printed serializers, and full cross-format conversion matrix integration.
 
 ### 3.4 HCL (HashiCorp Configuration Language - `.hcl`, `.tf`)
 - **Adoption**: Terraform, Nomad, Consul, Packer, cloud infrastructure-as-code.
@@ -108,7 +108,7 @@ These formats share a 1:1 conceptual mapping with Babbel's universal `Value` AST
 | **CBOR** (`.cbor`) | Binary Interchange / IoT | High | 95% (Direct + Tag mapping) | **IMPLEMENTED (`babbel_cbor`)** |
 | **JSON5 / JSONC** (`.json5`) | Human Configuration | High | 100% (Maps directly to JSON) | **IMPLEMENTED (`babbel_json::Json5Engine`)** |
 | **RON** (`.ron`) | Rust Configuration | Medium | 90% (Rust literal mapping) | **IMPLEMENTED (`babbel_ron`)** |
-| **KDL** (`.kdl`) | Modern CLI Config | Medium | 85% (Node/attribute mapping) | Priority 3 |
+| **KDL** (`.kdl`) | Modern CLI Config | Medium | 85% (Node/attribute mapping) | **IMPLEMENTED (`babbel_kdl`)** |
 | **BSON** (`.bson`) | Database Storage | Medium | 90% (JSON-extended mapping) | **IMPLEMENTED (`babbel_bson`)** |
 | **Apache Parquet** (`.parquet`)| Columnar Big Data | High (Data Science) | 70% (Batch tabular only) | Future / Specialized |
 | **Apache Avro** (`.avro`) | Event Streaming | High (Kafka) | 75% (Schema-bound) | Future / Specialized |
