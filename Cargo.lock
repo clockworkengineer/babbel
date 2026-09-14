@@ -124,6 +124,7 @@ name = "babbel_ron"
 version = "0.2.1"
 dependencies = [
  "babbel_core",
+ "babbel_json",
 ]
 
 [[package]]

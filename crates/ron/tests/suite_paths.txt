@@ -1,0 +1,5 @@
+# Paths to search for starfederation/ron conformance suite
+ron-upstream
+../ron-upstream
+tests/ron-upstream
+crates/ron/tests/ron-upstream

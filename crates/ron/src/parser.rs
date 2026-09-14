@@ -1,6 +1,7 @@
-//! RON (Rusty Object Notation) parser.
+//! RON (Rusty Object Notation / Readable Object Notation) parser.
 //!
 //! Parses RON documents into Babbel's universal `Value` AST.
+//! Supports both Rusty Object Notation and language-neutral Readable Object Notation (starfederation/ron).
 
 #[cfg(not(feature = "std"))]
 use alloc::{
@@ -15,12 +16,7 @@ use crate::error::RonError;
 /// Parse a RON string into a universal [`Value`] AST.
 pub fn from_str(input: &str) -> Result<Value, RonError> {
     let mut parser = RonParser::new(input);
-    let val = parser.parse_value()?;
-    parser.skip_whitespace_and_comments()?;
-    if let Some(ch) = parser.peek() {
-        let (line, col) = parser.current_line_col();
-        return Err(RonError::UnexpectedChar { ch, line, col });
-    }
+    let val = parser.parse_root()?;
     Ok(val)
 }
 
@@ -150,6 +146,119 @@ impl<'a> RonParser<'a> {
         Ok(())
     }
 
+    /// Root document parsing.
+    /// Supports top-level object elision per ADR-0001:
+    /// If document starts without `{`, `[`, or `(`, attempts to parse as an unbraced map.
+    /// Falls back to single value parsing if elided map parsing fails.
+    pub fn parse_root(&mut self) -> Result<Value, RonError> {
+        self.skip_whitespace_and_comments()?;
+        if self.cursor >= self.chars.len() {
+            return Err(RonError::UnexpectedEof);
+        }
+
+        // If explicitly starts with map, array, or paren container, parse directly
+        match self.peek() {
+            Some('{') => {
+                let val = self.parse_map()?;
+                self.skip_whitespace_and_comments()?;
+                if let Some(ch) = self.peek() {
+                    let (line, col) = self.current_line_col();
+                    return Err(RonError::UnexpectedChar { ch, line, col });
+                }
+                return Ok(val);
+            }
+            Some('[') => {
+                let val = self.parse_list()?;
+                self.skip_whitespace_and_comments()?;
+                if let Some(ch) = self.peek() {
+                    let (line, col) = self.current_line_col();
+                    return Err(RonError::UnexpectedChar { ch, line, col });
+                }
+                return Ok(val);
+            }
+            Some('(') => {
+                let val = self.parse_paren_container()?;
+                self.skip_whitespace_and_comments()?;
+                if let Some(ch) = self.peek() {
+                    let (line, col) = self.current_line_col();
+                    return Err(RonError::UnexpectedChar { ch, line, col });
+                }
+                return Ok(val);
+            }
+            _ => {}
+        }
+
+        // Check if it's a Rust-style struct like `Config(...)` or `Point(x: 1)`,
+        // or a raw/byte string literal like `b"..."` or `r#"..."#`
+        if !self.is_named_struct_start() && !self.is_raw_or_byte_literal_start() {
+            // Attempt elided map parsing from byte 0
+            let checkpoint = self.cursor;
+            let prev_depth = self.depth;
+            if let Ok(elided) = self.parse_elided_map() {
+                let check_cursor = self.cursor;
+                if self.skip_whitespace_and_comments().is_ok() && self.cursor >= self.chars.len() {
+                    return Ok(elided);
+                }
+                self.cursor = check_cursor;
+            }
+            self.cursor = checkpoint;
+            self.depth = prev_depth;
+        }
+
+        // Fallback: parse single value
+        let val = self.parse_value()?;
+        self.skip_whitespace_and_comments()?;
+        if let Some(ch) = self.peek() {
+            let (line, col) = self.current_line_col();
+            return Err(RonError::UnexpectedChar { ch, line, col });
+        }
+        Ok(val)
+    }
+
+    fn is_named_struct_start(&self) -> bool {
+        let mut i = self.cursor;
+        while i < self.chars.len() && self.chars[i].1.is_whitespace() {
+            i += 1;
+        }
+        if i < self.chars.len() && is_ident_start(self.chars[i].1) {
+            while i < self.chars.len()
+                && (is_ident_part(self.chars[i].1)
+                    || (self.chars[i].1 == ':' && i + 1 < self.chars.len() && self.chars[i + 1].1 == ':'))
+            {
+                if self.chars[i].1 == ':' {
+                    i += 2;
+                } else {
+                    i += 1;
+                }
+            }
+            while i < self.chars.len() && self.chars[i].1.is_whitespace() {
+                i += 1;
+            }
+            if i < self.chars.len() && self.chars[i].1 == '(' {
+                return true;
+            }
+        }
+        false
+    }
+
+    fn is_raw_or_byte_literal_start(&self) -> bool {
+        let mut i = self.cursor;
+        while i < self.chars.len() && self.chars[i].1.is_whitespace() {
+            i += 1;
+        }
+        if i < self.chars.len() {
+            let c = self.chars[i].1;
+            let next = if i + 1 < self.chars.len() { Some(self.chars[i + 1].1) } else { None };
+            if c == 'r' && (next == Some('"') || next == Some('#')) {
+                return true;
+            }
+            if c == 'b' && (next == Some('"') || next == Some('\'') || next == Some('r')) {
+                return true;
+            }
+        }
+        false
+    }
+
     pub fn parse_value(&mut self) -> Result<Value, RonError> {
         self.skip_whitespace_and_comments()?;
         let (line, col) = self.current_line_col();
@@ -158,16 +267,26 @@ impl<'a> RonParser<'a> {
             Some('(') => self.parse_paren_container(),
             Some('[') => self.parse_list(),
             Some('{') => self.parse_map(),
-            Some('"') => self.parse_string(),
-            Some('\'') => self.parse_char(),
+            Some('"') | Some('\'') => {
+                let s = self.parse_quoted_string()?;
+                Ok(Value::String(s))
+            }
+            Some(',') => {
+                let s = self.parse_comma_prefixed_token()?;
+                Ok(Value::String(s))
+            }
             Some('r') if self.peek_next() == Some('"') || self.peek_next() == Some('#') => {
                 self.parse_raw_string()
             }
-            Some('b') if self.peek_next() == Some('"') || self.peek_next() == Some('r') || self.peek_next() == Some('\'') => {
+            Some('b')
+                if self.peek_next() == Some('"')
+                    || self.peek_next() == Some('r')
+                    || self.peek_next() == Some('\'') =>
+            {
                 self.parse_byte_literal()
             }
-            Some('+') | Some('-') | Some('.') | Some('0'..='9') => self.parse_number(),
-            Some(c) if is_ident_start(c) => self.parse_ident_or_struct(),
+            Some('+') | Some('-') | Some('.') | Some('0'..='9') => self.parse_number_or_bare_token(),
+            Some(c) if !c.is_whitespace() && !is_structural_delimiter(c) => self.parse_bare_value(),
             Some(ch) => Err(RonError::UnexpectedChar { ch, line, col }),
             None => Err(RonError::UnexpectedEof),
         }
@@ -189,7 +308,6 @@ impl<'a> RonParser<'a> {
         }
 
         // Determine if this is a named-field struct `(a: 1)` or a tuple `(1, 2)`
-        // Look ahead to check if the first item has a colon
         let checkpoint = self.cursor;
         let is_struct = self.peek_is_struct_field()?;
         self.cursor = checkpoint;
@@ -208,7 +326,12 @@ impl<'a> RonParser<'a> {
                 self.skip_whitespace_and_comments()?;
                 if self.peek() != Some(':') {
                     let (line, col) = self.current_line_col();
-                    return Err(RonError::Expected { expected: "':' after field name", found: self.peek().map(|c| c.to_string()).unwrap_or_default(), line, col });
+                    return Err(RonError::Expected {
+                        expected: "':' after field name",
+                        found: self.peek().map(|c| c.to_string()).unwrap_or_default(),
+                        line,
+                        col,
+                    });
                 }
                 self.cursor += 1; // consume ':'
                 let val = self.parse_value()?;
@@ -224,11 +347,7 @@ impl<'a> RonParser<'a> {
                         self.depth -= 1;
                         return Ok(Value::Object(fields));
                     }
-                    Some(ch) => {
-                        let (line, col) = self.current_line_col();
-                        return Err(RonError::Expected { expected: "',' or ')'", found: ch.to_string(), line, col });
-                    }
-                    None => return Err(RonError::UnexpectedEof),
+                    _ => {}
                 }
             }
         } else {
@@ -255,11 +374,7 @@ impl<'a> RonParser<'a> {
                         self.depth -= 1;
                         return Ok(Value::Array(items));
                     }
-                    Some(ch) => {
-                        let (line, col) = self.current_line_col();
-                        return Err(RonError::Expected { expected: "',' or ')'", found: ch.to_string(), line, col });
-                    }
-                    None => return Err(RonError::UnexpectedEof),
+                    _ => {}
                 }
             }
         }
@@ -285,7 +400,6 @@ impl<'a> RonParser<'a> {
         Ok(false)
     }
 
-
     fn parse_list(&mut self) -> Result<Value, RonError> {
         if self.depth >= self.max_depth {
             return Err(RonError::RecursionLimitExceeded { depth: self.depth, max: self.max_depth });
@@ -307,20 +421,8 @@ impl<'a> RonParser<'a> {
             items.push(item);
 
             self.skip_whitespace_and_comments()?;
-            match self.peek() {
-                Some(',') => {
-                    self.cursor += 1;
-                }
-                Some(']') => {
-                    self.cursor += 1;
-                    self.depth -= 1;
-                    return Ok(Value::Array(items));
-                }
-                Some(ch) => {
-                    let (line, col) = self.current_line_col();
-                    return Err(RonError::Expected { expected: "',' or ']'", found: ch.to_string(), line, col });
-                }
-                None => return Err(RonError::UnexpectedEof),
+            if self.peek() == Some(',') {
+                self.cursor += 1;
             }
         }
     }
@@ -342,62 +444,168 @@ impl<'a> RonParser<'a> {
                 return Ok(Value::Object(entries));
             }
 
-            let key_val = self.parse_value()?;
-            let key = match key_val {
-                Value::String(s) => s,
-                Value::Integer(i) => i.to_string(),
-                Value::Bool(b) => b.to_string(),
-                other => format!("{:?}", other),
-            };
+            let key = self.parse_key_string()?;
 
             self.skip_whitespace_and_comments()?;
-            if self.peek() != Some(':') {
-                let (line, col) = self.current_line_col();
-                return Err(RonError::Expected { expected: "':' after map key", found: self.peek().map(|c| c.to_string()).unwrap_or_default(), line, col });
+            if self.peek() == Some(':') {
+                self.cursor += 1;
             }
-            self.cursor += 1; // consume ':'
+
+            self.skip_whitespace_and_comments()?;
+            if self.peek() == Some('}') || self.peek().is_none() {
+                let (line, col) = self.current_line_col();
+                return Err(RonError::Expected {
+                    expected: "value after map key",
+                    found: self.peek().map(|c| c.to_string()).unwrap_or_default(),
+                    line,
+                    col,
+                });
+            }
 
             let value = self.parse_value()?;
             entries.push((key, value));
 
             self.skip_whitespace_and_comments()?;
-            match self.peek() {
-                Some(',') => {
-                    self.cursor += 1;
-                }
-                Some('}') => {
-                    self.cursor += 1;
-                    self.depth -= 1;
-                    return Ok(Value::Object(entries));
-                }
-                Some(ch) => {
-                    let (line, col) = self.current_line_col();
-                    return Err(RonError::Expected { expected: "',' or '}'", found: ch.to_string(), line, col });
-                }
-                None => return Err(RonError::UnexpectedEof),
+            if self.peek() == Some(',') {
+                self.cursor += 1;
             }
         }
     }
 
-    fn parse_ident_or_struct(&mut self) -> Result<Value, RonError> {
-        let ident = self.parse_ident_name()?;
+    fn parse_elided_map(&mut self) -> Result<Value, RonError> {
+        let mut entries = Vec::new();
 
-        // Check special identifier values
-        match ident.as_str() {
-            "true" => return Ok(Value::Bool(true)),
-            "false" => return Ok(Value::Bool(false)),
-            "None" => return Ok(Value::Null),
-            "inf" => return Ok(Value::Float(core::f64::INFINITY)),
-            "NaN" => return Ok(Value::Float(core::f64::NAN)),
-            _ => {}
+        while self.cursor < self.chars.len() {
+            self.skip_whitespace_and_comments()?;
+            if self.cursor >= self.chars.len() {
+                break;
+            }
+
+            if let Some(c) = self.peek() {
+                if c == '{' || c == '}' || c == '[' || c == ']' {
+                    let (line, col) = self.current_line_col();
+                    return Err(RonError::UnexpectedChar { ch: c, line, col });
+                }
+            }
+
+            let key = self.parse_key_string()?;
+
+            self.skip_whitespace_and_comments()?;
+            if self.peek() == Some(':') {
+                self.cursor += 1;
+            }
+
+            self.skip_whitespace_and_comments()?;
+            if self.cursor >= self.chars.len() {
+                return Err(RonError::UnexpectedEof);
+            }
+
+            let value = self.parse_value()?;
+            entries.push((key, value));
+
+            self.skip_whitespace_and_comments()?;
+            if self.peek() == Some(',') {
+                self.cursor += 1;
+            }
         }
 
-        self.skip_whitespace_and_comments()?;
+        if entries.is_empty() {
+            Err(RonError::UnexpectedEof)
+        } else {
+            Ok(Value::Object(entries))
+        }
+    }
 
-        // Named struct or enum tuple: `Ident(...)`
+    fn parse_key_string(&mut self) -> Result<String, RonError> {
+        self.skip_whitespace_and_comments()?;
+        let (line, col) = self.current_line_col();
+
+        match self.peek() {
+            Some('"') | Some('\'') => self.parse_quoted_string(),
+            Some(',') => self.parse_comma_prefixed_token(),
+            Some('{') | Some('}') | Some('[') | Some(']') => {
+                Err(RonError::UnexpectedChar { ch: self.peek().unwrap(), line, col })
+            }
+            Some(_) => {
+                let atom = self.scan_bare_atom()?;
+                decode_escapes(&atom, line, col)
+            }
+            None => Err(RonError::UnexpectedEof),
+        }
+    }
+
+    fn scan_bare_atom(&mut self) -> Result<String, RonError> {
+        let mut atom = String::new();
+        let (line, col) = self.current_line_col();
+
+        while let Some(ch) = self.peek() {
+            if ch == '\\' {
+                atom.push(self.next_char().unwrap());
+                if let Some(esc) = self.peek() {
+                    if esc == 'u' {
+                        atom.push(self.next_char().unwrap());
+                        if self.peek() == Some('{') {
+                            atom.push(self.next_char().unwrap());
+                            while let Some(h) = self.peek() {
+                                atom.push(self.next_char().unwrap());
+                                if h == '}' {
+                                    break;
+                                }
+                            }
+                        } else {
+                            for _ in 0..4 {
+                                if let Some(h) = self.next_char() {
+                                    atom.push(h);
+                                } else {
+                                    return Err(RonError::UnexpectedEof);
+                                }
+                            }
+                        }
+                    } else if esc == 'x' {
+                        atom.push(self.next_char().unwrap());
+                        for _ in 0..2 {
+                            if let Some(h) = self.next_char() {
+                                atom.push(h);
+                            } else {
+                                return Err(RonError::UnexpectedEof);
+                            }
+                        }
+                    } else {
+                        atom.push(self.next_char().unwrap());
+                    }
+                } else {
+                    return Err(RonError::UnexpectedEof);
+                }
+            } else if ch == ':' {
+                if self.peek_next() == Some(':') {
+                    atom.push(self.next_char().unwrap());
+                    atom.push(self.next_char().unwrap());
+                } else {
+                    break;
+                }
+            } else if ch.is_whitespace() || is_structural_delimiter(ch) {
+                break;
+            } else if (ch as u32) < 0x20 {
+                return Err(RonError::UnexpectedChar { ch, line, col });
+            } else {
+                atom.push(self.next_char().unwrap());
+            }
+        }
+
+        if atom.is_empty() {
+            Err(RonError::Expected { expected: "bare token", found: String::new(), line, col })
+        } else {
+            Ok(atom)
+        }
+    }
+
+    fn parse_bare_value(&mut self) -> Result<Value, RonError> {
+        let (line, col) = self.current_line_col();
+        let atom = self.scan_bare_atom()?;
+
+        // Check if followed by '(' -> Rust struct or Some(...)
         if self.peek() == Some('(') {
-            if ident == "Some" {
-                // `Some(inner)`
+            if atom == "Some" {
                 self.cursor += 1; // consume '('
                 let inner = self.parse_value()?;
                 self.skip_whitespace_and_comments()?;
@@ -406,20 +614,220 @@ impl<'a> RonParser<'a> {
                 }
                 self.skip_whitespace_and_comments()?;
                 if self.peek() != Some(')') {
-                    let (line, col) = self.current_line_col();
-                    return Err(RonError::Expected { expected: "')' closing Some()", found: self.peek().map(|c| c.to_string()).unwrap_or_default(), line, col });
+                    let (l, c) = self.current_line_col();
+                    return Err(RonError::Expected {
+                        expected: "')' closing Some()",
+                        found: self.peek().map(|ch| ch.to_string()).unwrap_or_default(),
+                        line: l,
+                        col: c,
+                    });
                 }
                 self.cursor += 1; // consume ')'
                 return Ok(inner);
+            } else {
+                let container = self.parse_paren_container()?;
+                return Ok(container);
             }
-
-            // Normal named struct/tuple: `Point(x: 1, y: 2)`
-            let container = self.parse_paren_container()?;
-            return Ok(container);
         }
 
-        // Just an identifier / unit variant (e.g. `Active`, `Direction::North`)
-        Ok(Value::String(ident))
+        // Exact unescaped keywords
+        if !atom.contains('\\') {
+            match atom.as_str() {
+                "true" => return Ok(Value::Bool(true)),
+                "false" => return Ok(Value::Bool(false)),
+                "null" | "None" => return Ok(Value::Null),
+                "inf" => return Ok(Value::Float(core::f64::INFINITY)),
+                "NaN" => return Ok(Value::Float(core::f64::NAN)),
+                _ => {}
+            }
+        }
+
+        let decoded = decode_escapes(&atom, line, col)?;
+        Ok(Value::String(decoded))
+    }
+
+    fn parse_comma_prefixed_token(&mut self) -> Result<String, RonError> {
+        let (line, col) = self.current_line_col();
+        let mut atom = String::new();
+        atom.push(self.next_char().unwrap()); // consume ','
+
+        while let Some(ch) = self.peek() {
+            if ch == '\\' {
+                atom.push(self.next_char().unwrap());
+                if let Some(esc) = self.peek() {
+                    if esc == 'u' {
+                        atom.push(self.next_char().unwrap());
+                        if self.peek() == Some('{') {
+                            atom.push(self.next_char().unwrap());
+                            while let Some(h) = self.peek() {
+                                atom.push(self.next_char().unwrap());
+                                if h == '}' {
+                                    break;
+                                }
+                            }
+                        } else {
+                            for _ in 0..4 {
+                                if let Some(h) = self.next_char() {
+                                    atom.push(h);
+                                } else {
+                                    return Err(RonError::UnexpectedEof);
+                                }
+                            }
+                        }
+                    } else if esc == 'x' {
+                        atom.push(self.next_char().unwrap());
+                        for _ in 0..2 {
+                            if let Some(h) = self.next_char() {
+                                atom.push(h);
+                            } else {
+                                return Err(RonError::UnexpectedEof);
+                            }
+                        }
+                    } else {
+                        atom.push(self.next_char().unwrap());
+                    }
+                } else {
+                    return Err(RonError::UnexpectedEof);
+                }
+            } else if ch == ':' {
+                if self.peek_next() == Some(':') {
+                    atom.push(self.next_char().unwrap());
+                    atom.push(self.next_char().unwrap());
+                } else {
+                    break;
+                }
+            } else if ch.is_whitespace() || is_structural_delimiter(ch) {
+                break;
+            } else if (ch as u32) < 0x20 {
+                return Err(RonError::UnexpectedChar { ch, line, col });
+            } else {
+                atom.push(self.next_char().unwrap());
+            }
+        }
+
+        decode_escapes(&atom, line, col)
+    }
+
+    fn parse_quoted_string(&mut self) -> Result<String, RonError> {
+        let (line, col) = self.current_line_col();
+        let quote = self.peek().ok_or(RonError::UnexpectedEof)?;
+        if quote != '"' && quote != '\'' {
+            return Err(RonError::UnexpectedChar { ch: quote, line, col });
+        }
+
+        // Count opening run length n
+        let mut n = 0;
+        while self.peek() == Some(quote) {
+            n += 1;
+            self.cursor += 1;
+        }
+
+        let next_is_delim = match self.peek() {
+            None => true,
+            Some(c) if c.is_whitespace() || c == ',' || c == ']' || c == '}' || c == ':' => true,
+            _ => false,
+        };
+
+        if n % 2 == 0 && next_is_delim {
+            return Ok(String::new());
+        }
+
+        if quote == '\'' && n >= 5 && (n - 2) % 3 == 0 && next_is_delim {
+            let count = (n - 2) / 3;
+            let mut res = String::new();
+            for _ in 0..count {
+                res.push('\'');
+            }
+            return Ok(res);
+        }
+
+        if quote == '\'' && n == 1 && self.peek().map_or(true, |c| c.is_whitespace()) {
+            return Ok("'".to_string());
+        }
+
+        // Content starts after opening run
+        let mut content = String::new();
+
+        while self.cursor < self.chars.len() {
+            let ch = self.chars[self.cursor].1;
+            if ch == '\\' {
+                content.push(self.next_char().unwrap());
+                if let Some(esc) = self.peek() {
+                    if esc == 'u' {
+                        content.push(self.next_char().unwrap());
+                        if self.peek() == Some('{') {
+                            content.push(self.next_char().unwrap());
+                            while let Some(h) = self.peek() {
+                                content.push(self.next_char().unwrap());
+                                if h == '}' {
+                                    break;
+                                }
+                            }
+                        } else {
+                            for _ in 0..4 {
+                                if let Some(h) = self.next_char() {
+                                    content.push(h);
+                                } else {
+                                    return Err(RonError::UnexpectedEof);
+                                }
+                            }
+                        }
+                    } else if esc == 'x' {
+                        content.push(self.next_char().unwrap());
+                        for _ in 0..2 {
+                            if let Some(h) = self.next_char() {
+                                content.push(h);
+                            } else {
+                                return Err(RonError::UnexpectedEof);
+                            }
+                        }
+                    } else {
+                        content.push(self.next_char().unwrap());
+                    }
+                } else {
+                    return Err(RonError::UnexpectedEof);
+                }
+            } else if ch == quote {
+                let mut run_len = 0;
+                let check_cursor = self.cursor;
+                while check_cursor + run_len < self.chars.len() && self.chars[check_cursor + run_len].1 == quote {
+                    run_len += 1;
+                }
+                if run_len >= n {
+                    self.cursor += n;
+                    return decode_escapes(&content, line, col);
+                } else {
+                    for _ in 0..run_len {
+                        content.push(self.next_char().unwrap());
+                    }
+                }
+            } else if (ch as u32) < 0x20 {
+                return Err(RonError::UnexpectedChar { ch, line, col });
+            } else {
+                content.push(self.next_char().unwrap());
+            }
+        }
+
+        Err(RonError::UnexpectedEof)
+    }
+
+    fn parse_number_or_bare_token(&mut self) -> Result<Value, RonError> {
+        let checkpoint = self.cursor;
+        match self.parse_number() {
+            Ok(num) => {
+                if let Some(ch) = self.peek() {
+                    if !ch.is_whitespace() && !is_structural_delimiter(ch) && ch != ':' {
+                        self.cursor = checkpoint;
+                        return self.parse_bare_value();
+                    }
+                }
+                Ok(num)
+            }
+            Err(_) => {
+                self.cursor = checkpoint;
+                self.parse_bare_value()
+            }
+        }
     }
 
     fn parse_ident_name(&mut self) -> Result<String, RonError> {
@@ -438,112 +846,11 @@ impl<'a> RonParser<'a> {
             }
         }
 
-
         if name.is_empty() {
             Err(RonError::Expected { expected: "identifier", found: String::new(), line, col })
         } else {
             Ok(name)
         }
-    }
-
-    fn parse_string(&mut self) -> Result<Value, RonError> {
-        self.cursor += 1; // consume opening '"'
-        let mut s = String::new();
-
-        while let Some(ch) = self.next_char() {
-            if ch == '"' {
-                return Ok(Value::String(s));
-            } else if ch == '\\' {
-                match self.next_char() {
-                    Some('"') => s.push('"'),
-                    Some('\\') => s.push('\\'),
-                    Some('/') => s.push('/'),
-                    Some('b') => s.push('\u{0008}'),
-                    Some('f') => s.push('\u{000C}'),
-                    Some('n') => s.push('\n'),
-                    Some('r') => s.push('\r'),
-                    Some('t') => s.push('\t'),
-                    Some('0') => s.push('\0'),
-                    Some('x') => {
-                        let h1 = self.next_char().ok_or(RonError::UnexpectedEof)?;
-                        let h2 = self.next_char().ok_or(RonError::UnexpectedEof)?;
-                        let hex_str = format!("{}{}", h1, h2);
-                        let byte = u8::from_str_radix(&hex_str, 16).map_err(|_| {
-                            let (line, col) = self.current_line_col();
-                            RonError::InvalidEscape { sequence: hex_str, line, col }
-                        })?;
-                        s.push(byte as char);
-                    }
-                    Some('u') => {
-                        if self.peek() == Some('{') {
-                            self.next_char(); // consume '{'
-                            let mut hex = String::new();
-                            while let Some(c) = self.next_char() {
-                                if c == '}' {
-                                    break;
-                                }
-                                hex.push(c);
-                            }
-                            let code = u32::from_str_radix(&hex, 16).map_err(|_| {
-                                let (line, col) = self.current_line_col();
-                                RonError::InvalidEscape { sequence: hex.clone(), line, col }
-                            })?;
-                            let decoded = char::from_u32(code).ok_or_else(|| {
-                                let (line, col) = self.current_line_col();
-                                RonError::InvalidEscape { sequence: hex, line, col }
-                            })?;
-                            s.push(decoded);
-                        } else {
-                            let mut hex = String::new();
-                            for _ in 0..4 {
-                                hex.push(self.next_char().ok_or(RonError::UnexpectedEof)?);
-                            }
-                            let code = u32::from_str_radix(&hex, 16).map_err(|_| {
-                                let (line, col) = self.current_line_col();
-                                RonError::InvalidEscape { sequence: hex.clone(), line, col }
-                            })?;
-                            let decoded = char::from_u32(code).ok_or_else(|| {
-                                let (line, col) = self.current_line_col();
-                                RonError::InvalidEscape { sequence: hex, line, col }
-                            })?;
-                            s.push(decoded);
-                        }
-                    }
-                    Some(other) => s.push(other),
-                    None => return Err(RonError::UnexpectedEof),
-                }
-            } else {
-                s.push(ch);
-            }
-        }
-
-        Err(RonError::UnexpectedEof)
-    }
-
-    fn parse_char(&mut self) -> Result<Value, RonError> {
-        self.cursor += 1; // consume opening '\''
-        let ch = self.next_char().ok_or(RonError::UnexpectedEof)?;
-        let val = if ch == '\\' {
-            match self.next_char() {
-                Some('n') => '\n',
-                Some('r') => '\r',
-                Some('t') => '\t',
-                Some('\\') => '\\',
-                Some('\'') => '\'',
-                Some('0') => '\0',
-                Some(other) => other,
-                None => return Err(RonError::UnexpectedEof),
-            }
-        } else {
-            ch
-        };
-
-        if self.next_char() != Some('\'') {
-            let (line, col) = self.current_line_col();
-            return Err(RonError::Expected { expected: "closing '\''", found: String::new(), line, col });
-        }
-
-        Ok(Value::String(val.to_string()))
     }
 
     fn parse_raw_string(&mut self) -> Result<Value, RonError> {
@@ -556,14 +863,18 @@ impl<'a> RonParser<'a> {
 
         if self.peek() != Some('"') {
             let (line, col) = self.current_line_col();
-            return Err(RonError::Expected { expected: "'\"' starting raw string", found: self.peek().map(|c| c.to_string()).unwrap_or_default(), line, col });
+            return Err(RonError::Expected {
+                expected: "'\"' starting raw string",
+                found: self.peek().map(|c| c.to_string()).unwrap_or_default(),
+                line,
+                col,
+            });
         }
         self.cursor += 1; // consume '"'
 
         let mut content = String::new();
         while let Some(ch) = self.next_char() {
             if ch == '"' {
-                // Check if followed by hash_count '#'
                 let mut matched_hashes = 0;
                 while matched_hashes < hash_count && self.peek() == Some('#') {
                     matched_hashes += 1;
@@ -588,19 +899,14 @@ impl<'a> RonParser<'a> {
     fn parse_byte_literal(&mut self) -> Result<Value, RonError> {
         self.cursor += 1; // consume 'b'
         if self.peek() == Some('r') {
-            // raw byte string: br"..."
             let str_val = self.parse_raw_string()?;
             if let Value::String(s) = str_val {
                 return Ok(Value::Bytes(s.into_bytes()));
             }
         } else if self.peek() == Some('"') {
-            // normal byte string: b"..."
-            let str_val = self.parse_string()?;
-            if let Value::String(s) = str_val {
-                return Ok(Value::Bytes(s.into_bytes()));
-            }
+            let s = self.parse_quoted_string()?;
+            return Ok(Value::Bytes(s.into_bytes()));
         } else if self.peek() == Some('\'') {
-            // byte char: b'x'
             self.cursor += 1; // consume '\''
             let b = self.next_char().ok_or(RonError::UnexpectedEof)?;
             if self.next_char() != Some('\'') {
@@ -611,14 +917,18 @@ impl<'a> RonParser<'a> {
         }
 
         let (line, col) = self.current_line_col();
-        Err(RonError::Expected { expected: "byte literal (b\"...\" or b'...)", found: self.peek().map(|c| c.to_string()).unwrap_or_default(), line, col })
+        Err(RonError::Expected {
+            expected: "byte literal (b\"...\" or b'...)",
+            found: self.peek().map(|c| c.to_string()).unwrap_or_default(),
+            line,
+            col,
+        })
     }
 
     fn parse_number(&mut self) -> Result<Value, RonError> {
         let (line, col) = self.current_line_col();
         let mut token = String::new();
 
-        // Optional sign
         if let Some(c) = self.peek() {
             if c == '+' || c == '-' {
                 token.push(c);
@@ -626,7 +936,6 @@ impl<'a> RonParser<'a> {
             }
         }
 
-        // Check for special float literals inf, NaN
         if self.consume_str("inf") {
             let is_neg = token.starts_with('-');
             let f = if is_neg { -core::f64::INFINITY } else { core::f64::INFINITY };
@@ -636,7 +945,6 @@ impl<'a> RonParser<'a> {
             return Ok(Value::Float(core::f64::NAN));
         }
 
-        // Check for radices: 0x (hex), 0b (bin), 0o (oct)
         if self.peek() == Some('0') {
             if let Some(radix_char) = self.peek_next() {
                 match radix_char {
@@ -648,7 +956,7 @@ impl<'a> RonParser<'a> {
                                 digits.push(c);
                                 self.cursor += 1;
                             } else if c == '_' {
-                                self.cursor += 1; // skip underscore
+                                self.cursor += 1;
                             } else {
                                 break;
                             }
@@ -711,22 +1019,15 @@ impl<'a> RonParser<'a> {
             }
         }
 
-        // Standard decimal / float
         let mut has_dot = false;
         let mut has_exp = false;
 
         while let Some(ch) = self.peek() {
             match ch {
                 '_' => {
-                    self.cursor += 1; // skip underscore separator
+                    self.cursor += 1;
                 }
                 '.' => {
-                    // Check if it's a field access or tuple dot, like in `0.field`
-                    if let Some(next) = self.peek_next() {
-                        if !next.is_ascii_digit() && next != 'e' && next != 'E' {
-                            // Trailing dot like `5.` is allowed in RON
-                        }
-                    }
                     if has_dot || has_exp {
                         break;
                     }
@@ -784,6 +1085,168 @@ impl<'a> RonParser<'a> {
         }
         false
     }
+}
+
+fn decode_escapes(raw: &str, start_line: usize, start_col: usize) -> Result<String, RonError> {
+    let mut result = String::with_capacity(raw.len());
+    let chars: Vec<char> = raw.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        let ch = chars[i];
+        if ch == '\\' {
+            i += 1;
+            if i >= chars.len() {
+                return Err(RonError::UnexpectedEof);
+            }
+            match chars[i] {
+                '"' => {
+                    result.push('"');
+                    i += 1;
+                }
+                '\\' => {
+                    result.push('\\');
+                    i += 1;
+                }
+                '/' => {
+                    result.push('/');
+                    i += 1;
+                }
+                'b' => {
+                    result.push('\u{0008}');
+                    i += 1;
+                }
+                'f' => {
+                    result.push('\u{000C}');
+                    i += 1;
+                }
+                'n' => {
+                    result.push('\n');
+                    i += 1;
+                }
+                'r' => {
+                    result.push('\r');
+                    i += 1;
+                }
+                't' => {
+                    result.push('\t');
+                    i += 1;
+                }
+                '\'' => {
+                    result.push('\'');
+                    i += 1;
+                }
+                '0' => {
+                    result.push('\0');
+                    i += 1;
+                }
+                'u' => {
+                    i += 1;
+                    if i < chars.len() && chars[i] == '{' {
+                        i += 1;
+                        let mut hex = String::new();
+                        while i < chars.len() && chars[i] != '}' {
+                            hex.push(chars[i]);
+                            i += 1;
+                        }
+                        if i >= chars.len() || chars[i] != '}' {
+                            return Err(RonError::UnexpectedEof);
+                        }
+                        i += 1; // consume '}'
+                        let code = u32::from_str_radix(&hex, 16).map_err(|_| {
+                            RonError::InvalidEscape { sequence: hex.clone(), line: start_line, col: start_col }
+                        })?;
+                        let decoded = char::from_u32(code).ok_or_else(|| {
+                            RonError::InvalidEscape { sequence: hex, line: start_line, col: start_col }
+                        })?;
+                        result.push(decoded);
+                    } else {
+                        if i + 4 > chars.len() {
+                            return Err(RonError::InvalidEscape {
+                                sequence: chars[i..].iter().collect(),
+                                line: start_line,
+                                col: start_col,
+                            });
+                        }
+                        let hex_str: String = chars[i..i + 4].iter().collect();
+                        if !hex_str.chars().all(|c| c.is_ascii_hexdigit()) {
+                            return Err(RonError::InvalidEscape {
+                                sequence: hex_str,
+                                line: start_line,
+                                col: start_col,
+                            });
+                        }
+                        i += 4;
+                        let code = u32::from_str_radix(&hex_str, 16).map_err(|_| {
+                            RonError::InvalidEscape { sequence: hex_str.clone(), line: start_line, col: start_col }
+                        })?;
+
+                        if (0xD800..=0xDBFF).contains(&code) {
+                            if i + 6 <= chars.len() && chars[i] == '\\' && chars[i + 1] == 'u' {
+                                let low_hex: String = chars[i + 2..i + 6].iter().collect();
+                                if low_hex.chars().all(|c| c.is_ascii_hexdigit()) {
+                                    let low_code = u32::from_str_radix(&low_hex, 16).unwrap_or(0);
+                                    if (0xDC00..=0xDFFF).contains(&low_code) {
+                                        i += 6;
+                                        let combined = 0x10000 + (((code - 0xD800) << 10) | (low_code - 0xDC00));
+                                        if let Some(c) = char::from_u32(combined) {
+                                            result.push(c);
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
+                            return Err(RonError::InvalidEscape {
+                                sequence: hex_str,
+                                line: start_line,
+                                col: start_col,
+                            });
+                        } else if (0xDC00..=0xDFFF).contains(&code) {
+                            return Err(RonError::InvalidEscape {
+                                sequence: hex_str,
+                                line: start_line,
+                                col: start_col,
+                            });
+                        } else {
+                            let decoded = char::from_u32(code).ok_or_else(|| {
+                                RonError::InvalidEscape { sequence: hex_str.clone(), line: start_line, col: start_col }
+                            })?;
+                            result.push(decoded);
+                        }
+                    }
+                }
+                'x' => {
+                    i += 1;
+                    if i + 2 > chars.len() {
+                        return Err(RonError::UnexpectedEof);
+                    }
+                    let hex_str: String = chars[i..i + 2].iter().collect();
+                    i += 2;
+                    let byte = u8::from_str_radix(&hex_str, 16).map_err(|_| {
+                        RonError::InvalidEscape { sequence: hex_str.clone(), line: start_line, col: start_col }
+                    })?;
+                    result.push(byte as char);
+                }
+                other => {
+                    return Err(RonError::InvalidEscape {
+                        sequence: other.to_string(),
+                        line: start_line,
+                        col: start_col,
+                    });
+                }
+            }
+        } else if (ch as u32) < 0x20 {
+            return Err(RonError::UnexpectedChar { ch, line: start_line, col: start_col });
+        } else {
+            result.push(ch);
+            i += 1;
+        }
+    }
+    Ok(result)
+}
+
+#[inline]
+fn is_structural_delimiter(ch: char) -> bool {
+    matches!(ch, '{' | '}' | '[' | ']' | '"' | '\'' | ',' | '(' | ')')
 }
 
 #[inline]
