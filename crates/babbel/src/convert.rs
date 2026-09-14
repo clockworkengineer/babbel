@@ -23,6 +23,8 @@ use babbel_bson::BsonEngine;
 use babbel_ron::RonEngine;
 #[cfg(feature = "kdl")]
 use babbel_kdl::KdlEngine;
+#[cfg(feature = "parquet")]
+use babbel_parquet::ParquetEngine;
 
 use babbel_core::{
     csv::emit_csv_to, ini::emit_ini_to, parse_csv, parse_ini, BabbelError, Buffer, BufferDestination,
@@ -43,6 +45,7 @@ pub enum Format {
     Bson,
     Ron,
     Kdl,
+    Parquet,
     Json5,
     Csv,
     Tsv,
@@ -421,6 +424,34 @@ pub struct KdlEmitter;
 impl FormatEmitter for KdlEmitter {
     fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
         KdlEngine.serialize(value, destination, &FormatOptions::compact())
+    }
+}
+
+/// Parquet parser implementing `FormatParser`.
+#[cfg(feature = "parquet")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct ParquetParser;
+
+#[cfg(feature = "parquet")]
+impl FormatParser for ParquetParser {
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        ParquetEngine.parse_bytes(input.as_bytes())
+    }
+
+    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
+        ParquetEngine.parse_bytes(input)
+    }
+}
+
+/// Parquet emitter implementing `FormatEmitter`.
+#[cfg(feature = "parquet")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct ParquetEmitter;
+
+#[cfg(feature = "parquet")]
+impl FormatEmitter for ParquetEmitter {
+    fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
+        ParquetEngine.serialize(value, destination, &FormatOptions::compact())
     }
 }
 
@@ -1539,6 +1570,94 @@ pub fn kdl_to_json5(kdl: &str) -> Result<String, BabbelError> {
 #[cfg(all(feature = "json", feature = "kdl"))]
 pub fn json5_to_kdl(json5: &str) -> Result<String, BabbelError> {
     convert_format(json5, &Json5Engine, &KdlEngine, &ConversionOptions::default())
+}
+
+// =========================================================================
+// Apache Parquet Cross-Format Conversions
+// =========================================================================
+
+/// Convert Parquet byte payload to JSON string.
+#[cfg(all(feature = "parquet", feature = "json"))]
+pub fn parquet_to_json(parquet: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(parquet, &ParquetEngine, &JsonEngine, &ConversionOptions::default())
+}
+
+/// Convert JSON string (array of row objects) to Parquet byte vector.
+#[cfg(all(feature = "json", feature = "parquet"))]
+pub fn json_to_parquet(json: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(json.as_bytes(), &JsonEngine, &ParquetEngine, &ConversionOptions::default())
+}
+
+/// Convert Parquet byte payload to CSV string.
+#[cfg(feature = "parquet")]
+pub fn parquet_to_csv(parquet: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(parquet, &ParquetEngine, &CsvEngine, &ConversionOptions::default())
+}
+
+/// Convert CSV string to Parquet byte vector.
+#[cfg(feature = "parquet")]
+pub fn csv_to_parquet(csv: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(csv.as_bytes(), &CsvEngine, &ParquetEngine, &ConversionOptions::default())
+}
+
+/// Convert Parquet byte payload to YAML string.
+#[cfg(all(feature = "parquet", feature = "yaml"))]
+pub fn parquet_to_yaml(parquet: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(parquet, &ParquetEngine, &YamlEngine, &ConversionOptions::default())
+}
+
+/// Convert YAML string to Parquet byte vector.
+#[cfg(all(feature = "yaml", feature = "parquet"))]
+pub fn yaml_to_parquet(yaml: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(yaml.as_bytes(), &YamlEngine, &ParquetEngine, &ConversionOptions::default())
+}
+
+/// Convert Parquet byte payload to TOML string.
+#[cfg(all(feature = "parquet", feature = "toml"))]
+pub fn parquet_to_toml(parquet: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(parquet, &ParquetEngine, &TomlEngine, &ConversionOptions::default())
+}
+
+/// Convert TOML string to Parquet byte vector.
+#[cfg(all(feature = "toml", feature = "parquet"))]
+pub fn toml_to_parquet(toml: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(toml.as_bytes(), &TomlEngine, &ParquetEngine, &ConversionOptions::default())
+}
+
+/// Convert Parquet byte payload to MessagePack byte vector.
+#[cfg(all(feature = "parquet", feature = "msgpack"))]
+pub fn parquet_to_msgpack(parquet: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(parquet, &ParquetEngine, &MsgPackEngine, &ConversionOptions::default())
+}
+
+/// Convert MessagePack byte payload to Parquet byte vector.
+#[cfg(all(feature = "msgpack", feature = "parquet"))]
+pub fn msgpack_to_parquet(msgpack: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(msgpack, &MsgPackEngine, &ParquetEngine, &ConversionOptions::default())
+}
+
+/// Convert Parquet byte payload to CBOR byte vector.
+#[cfg(all(feature = "parquet", feature = "cbor"))]
+pub fn parquet_to_cbor(parquet: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(parquet, &ParquetEngine, &CborEngine, &ConversionOptions::default())
+}
+
+/// Convert CBOR byte payload to Parquet byte vector.
+#[cfg(all(feature = "cbor", feature = "parquet"))]
+pub fn cbor_to_parquet(cbor: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(cbor, &CborEngine, &ParquetEngine, &ConversionOptions::default())
+}
+
+/// Convert Parquet byte payload to BSON byte vector.
+#[cfg(all(feature = "parquet", feature = "bson"))]
+pub fn parquet_to_bson(parquet: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(parquet, &ParquetEngine, &BsonEngine, &ConversionOptions::default())
+}
+
+/// Convert BSON byte payload to Parquet byte vector.
+#[cfg(all(feature = "bson", feature = "parquet"))]
+pub fn bson_to_parquet(bson: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(bson, &BsonEngine, &ParquetEngine, &ConversionOptions::default())
 }
 
 

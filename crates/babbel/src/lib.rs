@@ -18,6 +18,7 @@
 //! - **`bson`**: High-performance Binary JSON (BSON v1.1) specification encoder/decoder.
 //! - **`ron`**: Rusty Object Notation (RON) parser and serializer for Rust configurations and games.
 //! - **`kdl`**: KDL Document Language (KDL) parser and serializer for modern CLI and document configs.
+//! - **`parquet`**: Apache Parquet columnar storage reader, writer, and FormatEngine for analytical data.
 //! - **`convert`**: Universal $O(N)$ cross-format conversion matrix.
 //!
 //! ## Quickstart
@@ -80,6 +81,9 @@ pub use babbel_ron as ron;
 
 #[cfg(feature = "kdl")]
 pub use babbel_kdl as kdl;
+
+#[cfg(feature = "parquet")]
+pub use babbel_parquet as parquet;
 
 // Backwards-compatible aliases (prefer babbel::json, babbel::yaml, babbel::xml, babbel::bencode, babbel::toml)
 #[cfg(feature = "json")]
@@ -145,6 +149,8 @@ pub use babbel_bson::BsonEngine;
 pub use babbel_ron::RonEngine;
 #[cfg(feature = "kdl")]
 pub use babbel_kdl::KdlEngine;
+#[cfg(feature = "parquet")]
+pub use babbel_parquet::ParquetEngine;
 
 pub use babbel_core::{
     find_engine, find_engine_by_extension, find_engine_by_mime, CsvEngine, FormatCodec,
@@ -183,6 +189,8 @@ pub fn default_registry() -> babbel_core::FormatRegistry {
     registry.register(alloc::sync::Arc::new(babbel_ron::RonEngine));
     #[cfg(feature = "kdl")]
     registry.register(alloc::sync::Arc::new(babbel_kdl::KdlEngine));
+    #[cfg(feature = "parquet")]
+    registry.register(alloc::sync::Arc::new(babbel_parquet::ParquetEngine));
 
     registry.register(alloc::sync::Arc::new(babbel_core::CsvEngine));
     registry.register(alloc::sync::Arc::new(babbel_core::TsvEngine));

@@ -46,6 +46,7 @@ dependencies = [
  "babbel_json",
  "babbel_kdl",
  "babbel_msgpack",
+ "babbel_parquet",
  "babbel_ron",
  "babbel_toml",
  "babbel_xml",
@@ -104,6 +105,13 @@ dependencies = [
 
 [[package]]
 name = "babbel_msgpack"
+version = "0.2.1"
+dependencies = [
+ "babbel_core",
+]
+
+[[package]]
+name = "babbel_parquet"
 version = "0.2.1"
 dependencies = [
  "babbel_core",

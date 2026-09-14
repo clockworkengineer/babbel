@@ -90,7 +90,7 @@ These formats share a 1:1 conceptual mapping with Babbel's universal `Value` AST
 - **Adoption**: DuckDB, Polars, Apache Spark, Snowflake, Amazon Athena, analytical data lakes.
 - **Value Proposition**:
   - Columnar storage with dictionary encoding and Snappy/ZSTD compression.
-- **Trade-off**: Binary columnar layout designed for analytical batch processing rather than single-document conversion pipelines.
+- **Implementation**: Pure-Rust zero-dependency crate `babbel_parquet::ParquetEngine` implementing `FormatEngine`, self-contained Apache Thrift Compact Protocol codec, valid `PAR1` columnar reading and writing, data page headers, PLAIN encoding, RLE definition levels for nullable columns, types `INT32`, `INT64`, `FLOAT`, `DOUBLE`, `BYTE_ARRAY`, `BOOLEAN`, and cross-format conversion matrix integration.
 
 ### 4.2 Apache Avro (`.avro`)
 - **Adoption**: Apache Kafka, event streaming pipelines, Hadoop ecosystem.
@@ -110,7 +110,7 @@ These formats share a 1:1 conceptual mapping with Babbel's universal `Value` AST
 | **RON** (`.ron`) | Rust Configuration | Medium | 90% (Rust literal mapping) | **IMPLEMENTED (`babbel_ron`)** |
 | **KDL** (`.kdl`) | Modern CLI Config | Medium | 85% (Node/attribute mapping) | **IMPLEMENTED (`babbel_kdl`)** |
 | **BSON** (`.bson`) | Database Storage | Medium | 90% (JSON-extended mapping) | **IMPLEMENTED (`babbel_bson`)** |
-| **Apache Parquet** (`.parquet`)| Columnar Big Data | High (Data Science) | 70% (Batch tabular only) | Future / Specialized |
+| **Apache Parquet** (`.parquet`)| Columnar Big Data | High (Data Science) | 70% (Batch tabular only) | **IMPLEMENTED (`babbel_parquet`)** |
 | **Apache Avro** (`.avro`) | Event Streaming | High (Kafka) | 75% (Schema-bound) | Future / Specialized |
 
 
