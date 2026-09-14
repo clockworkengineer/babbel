@@ -14,6 +14,9 @@
 //! - **`csv`**: RFC 4180 CSV and TSV parsing/emission with delimiter sniffing and type inference.
 //! - **`ini`**: Section-based INI, Java `.properties`, and `.env` parsing/emission.
 //! - **`text`**: Document frontmatter extraction (`split_frontmatter`) and line indentation utilities.
+//! - **`cbor`**: RFC 8949 Concise Binary Object Representation (CBOR) encoder/decoder.
+//! - **`bson`**: High-performance Binary JSON (BSON v1.1) specification encoder/decoder.
+//! - **`ron`**: Rusty Object Notation (RON) parser and serializer for Rust configurations and games.
 //! - **`convert`**: Universal $O(N)$ cross-format conversion matrix.
 //!
 //! ## Quickstart
@@ -70,6 +73,9 @@ pub use babbel_cbor as cbor;
 
 #[cfg(feature = "bson")]
 pub use babbel_bson as bson;
+
+#[cfg(feature = "ron")]
+pub use babbel_ron as ron;
 
 // Backwards-compatible aliases (prefer babbel::json, babbel::yaml, babbel::xml, babbel::bencode, babbel::toml)
 #[cfg(feature = "json")]
@@ -131,6 +137,8 @@ pub use babbel_msgpack::MsgPackEngine;
 pub use babbel_cbor::CborEngine;
 #[cfg(feature = "bson")]
 pub use babbel_bson::BsonEngine;
+#[cfg(feature = "ron")]
+pub use babbel_ron::RonEngine;
 
 pub use babbel_core::{
     find_engine, find_engine_by_extension, find_engine_by_mime, CsvEngine, FormatCodec,
@@ -165,6 +173,8 @@ pub fn default_registry() -> babbel_core::FormatRegistry {
     registry.register(alloc::sync::Arc::new(babbel_cbor::CborEngine));
     #[cfg(feature = "bson")]
     registry.register(alloc::sync::Arc::new(babbel_bson::BsonEngine));
+    #[cfg(feature = "ron")]
+    registry.register(alloc::sync::Arc::new(babbel_ron::RonEngine));
 
     registry.register(alloc::sync::Arc::new(babbel_core::CsvEngine));
     registry.register(alloc::sync::Arc::new(babbel_core::TsvEngine));

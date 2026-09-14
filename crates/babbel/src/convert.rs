@@ -19,6 +19,8 @@ use babbel_msgpack::MsgPackEngine;
 use babbel_cbor::CborEngine;
 #[cfg(feature = "bson")]
 use babbel_bson::BsonEngine;
+#[cfg(feature = "ron")]
+use babbel_ron::RonEngine;
 
 use babbel_core::{
     csv::emit_csv_to, ini::emit_ini_to, parse_csv, parse_ini, BabbelError, Buffer, BufferDestination,
@@ -37,6 +39,7 @@ pub enum Format {
     MsgPack,
     Cbor,
     Bson,
+    Ron,
     Json5,
     Csv,
     Tsv,
@@ -359,6 +362,34 @@ pub struct BsonEmitter;
 impl FormatEmitter for BsonEmitter {
     fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
         BsonEngine.serialize(value, destination, &FormatOptions::compact())
+    }
+}
+
+/// RON parser implementing `FormatParser`.
+#[cfg(feature = "ron")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct RonParser;
+
+#[cfg(feature = "ron")]
+impl FormatParser for RonParser {
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        RonEngine.parse_str(input)
+    }
+
+    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
+        RonEngine.parse_bytes(input)
+    }
+}
+
+/// RON emitter implementing `FormatEmitter`.
+#[cfg(feature = "ron")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct RonEmitter;
+
+#[cfg(feature = "ron")]
+impl FormatEmitter for RonEmitter {
+    fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
+        RonEngine.serialize(value, destination, &FormatOptions::compact())
     }
 }
 
@@ -1265,6 +1296,106 @@ pub fn json5_to_bson(json5: &str) -> Result<Vec<u8>, BabbelError> {
 #[cfg(all(feature = "bson", feature = "json"))]
 pub fn bson_to_json5(bson: &[u8]) -> Result<String, BabbelError> {
     convert_format_bytes_to_str(bson, &BsonEngine, &Json5Engine, &ConversionOptions::default())
+}
+
+// =========================================================================
+// RON Cross-Format Conversions
+// =========================================================================
+
+/// Convert RON string to JSON string.
+#[cfg(all(feature = "ron", feature = "json"))]
+pub fn ron_to_json(ron: &str) -> Result<String, BabbelError> {
+    convert_format(ron, &RonEngine, &JsonEngine, &ConversionOptions::default())
+}
+
+/// Convert JSON string to RON string.
+#[cfg(all(feature = "json", feature = "ron"))]
+pub fn json_to_ron(json: &str) -> Result<String, BabbelError> {
+    convert_format(json, &JsonEngine, &RonEngine, &ConversionOptions::default())
+}
+
+/// Convert RON string to YAML string.
+#[cfg(all(feature = "ron", feature = "yaml"))]
+pub fn ron_to_yaml(ron: &str) -> Result<String, BabbelError> {
+    convert_format(ron, &RonEngine, &YamlEngine, &ConversionOptions::default())
+}
+
+/// Convert YAML string to RON string.
+#[cfg(all(feature = "yaml", feature = "ron"))]
+pub fn yaml_to_ron(yaml: &str) -> Result<String, BabbelError> {
+    convert_format(yaml, &YamlEngine, &RonEngine, &ConversionOptions::default())
+}
+
+/// Convert RON string to TOML string.
+#[cfg(all(feature = "ron", feature = "toml"))]
+pub fn ron_to_toml(ron: &str) -> Result<String, BabbelError> {
+    convert_format(ron, &RonEngine, &TomlEngine, &ConversionOptions::default())
+}
+
+/// Convert TOML string to RON string.
+#[cfg(all(feature = "toml", feature = "ron"))]
+pub fn toml_to_ron(toml: &str) -> Result<String, BabbelError> {
+    convert_format(toml, &TomlEngine, &RonEngine, &ConversionOptions::default())
+}
+
+/// Convert RON string to XML string.
+#[cfg(all(feature = "ron", feature = "xml"))]
+pub fn ron_to_xml(ron: &str) -> Result<String, BabbelError> {
+    convert_format(ron, &RonEngine, &XmlEngine, &ConversionOptions::default())
+}
+
+/// Convert XML string to RON string.
+#[cfg(all(feature = "xml", feature = "ron"))]
+pub fn xml_to_ron(xml: &str) -> Result<String, BabbelError> {
+    convert_format(xml, &XmlEngine, &RonEngine, &ConversionOptions::default())
+}
+
+/// Convert RON string to MessagePack byte vector.
+#[cfg(all(feature = "ron", feature = "msgpack"))]
+pub fn ron_to_msgpack(ron: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(ron.as_bytes(), &RonEngine, &MsgPackEngine, &ConversionOptions::default())
+}
+
+/// Convert MessagePack byte payload to RON string.
+#[cfg(all(feature = "msgpack", feature = "ron"))]
+pub fn msgpack_to_ron(msgpack: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &RonEngine, &ConversionOptions::default())
+}
+
+/// Convert RON string to CBOR byte vector.
+#[cfg(all(feature = "ron", feature = "cbor"))]
+pub fn ron_to_cbor(ron: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(ron.as_bytes(), &RonEngine, &CborEngine, &ConversionOptions::default())
+}
+
+/// Convert CBOR byte payload to RON string.
+#[cfg(all(feature = "cbor", feature = "ron"))]
+pub fn cbor_to_ron(cbor: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(cbor, &CborEngine, &RonEngine, &ConversionOptions::default())
+}
+
+/// Convert RON string to BSON byte vector.
+#[cfg(all(feature = "ron", feature = "bson"))]
+pub fn ron_to_bson(ron: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(ron.as_bytes(), &RonEngine, &BsonEngine, &ConversionOptions::default())
+}
+
+/// Convert BSON byte payload to RON string.
+#[cfg(all(feature = "bson", feature = "ron"))]
+pub fn bson_to_ron(bson: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bson, &BsonEngine, &RonEngine, &ConversionOptions::default())
+}
+
+/// Convert RON string to JSON5 string.
+#[cfg(all(feature = "ron", feature = "json"))]
+pub fn ron_to_json5(ron: &str) -> Result<String, BabbelError> {
+    convert_format(ron, &RonEngine, &Json5Engine, &ConversionOptions::default())
+}
+
+/// Convert JSON5 string to RON string.
+#[cfg(all(feature = "json", feature = "ron"))]
+pub fn json5_to_ron(json5: &str) -> Result<String, BabbelError> {
+    convert_format(json5, &Json5Engine, &RonEngine, &ConversionOptions::default())
 }
 
 

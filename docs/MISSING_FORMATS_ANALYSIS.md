@@ -69,7 +69,7 @@ These formats share a 1:1 conceptual mapping with Babbel's universal `Value` AST
 - **Value Proposition**:
   - Native syntax matching Rust literals (`Struct(field: "value")`, `Enum::Variant`).
   - Supports trailing commas, comments, and named or tuple variants.
-- **Implementation Complexity**: Medium. Matches Rust data models naturally.
+- **Implementation**: Pure-Rust zero-dependency crate `babbel_ron::RonEngine` implementing `FormatEngine`, recursive-descent parser, nested block comments (`/* /* */ */`), raw strings (`r#"..."#`), byte strings (`b"..."`), hex/octal/binary numeric literals, struct/map/tuple/unit/option value syntax, compact & pretty-printed serializers, and full cross-format conversion matrix integration.
 
 ### 3.3 KDL Document Language (`.kdl`)
 - **Adoption**: Terminal multiplexers (Zellij), CLI configuration, modern system tooling.
@@ -107,7 +107,7 @@ These formats share a 1:1 conceptual mapping with Babbel's universal `Value` AST
 | **MessagePack** (`.msgpack`) | Binary Interchange | Very High | 100% (Direct `Value` mapping) | **IMPLEMENTED (`babbel_msgpack`)** |
 | **CBOR** (`.cbor`) | Binary Interchange / IoT | High | 95% (Direct + Tag mapping) | **IMPLEMENTED (`babbel_cbor`)** |
 | **JSON5 / JSONC** (`.json5`) | Human Configuration | High | 100% (Maps directly to JSON) | **IMPLEMENTED (`babbel_json::Json5Engine`)** |
-| **RON** (`.ron`) | Rust Configuration | Medium | 90% (Rust literal mapping) | **Priority 2** |
+| **RON** (`.ron`) | Rust Configuration | Medium | 90% (Rust literal mapping) | **IMPLEMENTED (`babbel_ron`)** |
 | **KDL** (`.kdl`) | Modern CLI Config | Medium | 85% (Node/attribute mapping) | Priority 3 |
 | **BSON** (`.bson`) | Database Storage | Medium | 90% (JSON-extended mapping) | **IMPLEMENTED (`babbel_bson`)** |
 | **Apache Parquet** (`.parquet`)| Columnar Big Data | High (Data Science) | 70% (Batch tabular only) | Future / Specialized |
