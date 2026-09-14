@@ -25,5 +25,7 @@ target
 **/bsonfy/
 **/ron-upstream/
 **/kdl-test/
+**/parquet-testing/
+**/parquet-format/
 *.zip
 notes/

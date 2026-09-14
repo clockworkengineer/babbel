@@ -1,0 +1,9 @@
+# Paths to search for apache/parquet-testing or apache/parquet-format test vectors
+parquet-testing
+../parquet-testing
+tests/parquet-testing
+crates/parquet/tests/parquet-testing
+parquet-format
+../parquet-format
+tests/parquet-format
+crates/parquet/tests/parquet-format

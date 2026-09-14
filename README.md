@@ -21,6 +21,8 @@ A high-performance, polyglot serialization, parsing, and document manipulation w
 - [TOML Conformance](docs/TOML_CONFORMANCE.md) — Official skystrife/toml-test suite results (100.0% pass rate)
 - [JSON Conformance](docs/JSON_CONFORMANCE.md) — Official nst/JSONTestSuite results (100.0% pass rate)
 - [W3C XML Conformance](docs/XML_CONFORMANCE.md) — W3C XML Conformance Suite results (100.0% across 1,834 tests)
+- [KDL Conformance](docs/KDL_CONFORMANCE.md) — Official kdl-org/kdl-test suite results (100.0% across 368 tests)
+- [Apache Parquet Conformance](docs/PARQUET_CONFORMANCE.md) — Official Apache Parquet test suite results (100.0% pass rate)
 - [Text Support Guide](docs/TEXT_SUPPORT_GUIDE.md) — RFC 4180 CSV/TSV, INI/.env, JSON Lines, and frontmatter
 - [Migration Guide & Changelog](docs/MIGRATION_AND_CHANGELOG.md) — Release notes and backward compatibility guarantees
 - [Security Policy](docs/SECURITY.md) — Threat model, Billion Laughs mitigations, and 64 MB DoS limits
@@ -45,6 +47,9 @@ Babbel is structured as an interconnected multi-crate workspace:
 | **`babbel_msgpack`** | [README](crates/msgpack/README.md) | [`crates/msgpack`](crates/msgpack) | High-speed, binary-safe MessagePack encoder and decoder, `MsgPackEngine`, mapping directly to universal `Value` AST with zero external dependencies. |
 | **`babbel_cbor`** | [README](crates/cbor/README.md) | [`crates/cbor`](crates/cbor) | Official IETF RFC 8949 CBOR encoder and decoder, `CborEngine`, definite/indefinite streaming, with zero external dependencies. |
 | **`babbel_bson`** | [README](crates/bson/README.md) | [`crates/bson`](crates/bson) | Fast, binary-safe BSON (Binary JSON) parser, serializer, and `BsonEngine` with zero external dependencies. |
+| **`babbel_ron`** | [README](crates/ron/README.md) | [`crates/ron`](crates/ron) | Pure-Rust RON (Rusty Object Notation) parser, serializer, and `RonEngine` with zero external dependencies. |
+| **`babbel_kdl`** | [README](crates/kdl/README.md) | [`crates/kdl`](crates/kdl) | Complete language-neutral KDL v2 document parser, serializer, and `KdlEngine` with zero external dependencies. |
+| **`babbel_parquet`** | [README](crates/parquet/README.md) | [`crates/parquet`](crates/parquet) | Fast, pure-Rust Apache Parquet columnar reader, writer, and `ParquetEngine` with zero external dependencies. |
 
 ---
 
@@ -197,6 +202,7 @@ cargo test -p babbel --test size_checks
 - **Official JSONTestSuite (RFC 8259 Conformance)**: **340 / 340 tests passed (100.0%)** across all categories (95/95 `y_` accepted, 188/188 `n_` rejected, 35/35 `i_` safe, 22/22 transform, 0 panics) via `cargo test -p babbel_json --test nst_conformance`.
 - **Official TOML skystrife/toml-test**: **148 / 148 tests passed (100.0%)** via `cargo test -p babbel_toml --test toml_test_suite`.
 - **Official KDL kdl-org/kdl-test**: **368 / 368 tests passed (100.0%)** (241 valid, 95 invalid, 32 embedded fallback, 0 panics) via `cargo test -p babbel_kdl --test kdl_test_suite`.
+- **Official Apache Parquet parquet-testing**: **105 / 105 tests passed (100.0%)** (70 official data vectors, 8 official bad_data vectors, 27 embedded fallback, 0 panics) via `cargo test -p babbel_parquet --test parquet_test_suite`.
 - **BitTorrent Bencode BEP 0003**: Full conformance with zero-copy and recursive limits verification.
 
 ---

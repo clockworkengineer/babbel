@@ -44,7 +44,7 @@ pub fn read_parquet(bytes: &[u8]) -> Result<Value, ParquetError> {
     let file_meta = FileMetaData::decode(&mut meta_reader)?;
 
     if file_meta.schema.is_empty() {
-        return Ok(Value::Array(Vec::new()));
+        return Err(ParquetError::CorruptedPage("Parquet schema is missing".into()));
     }
 
     // Map schema elements: element 0 is root, elements 1.. are columns
@@ -64,6 +64,15 @@ pub fn read_parquet(bytes: &[u8]) -> Result<Value, ParquetError> {
             for chunk in &rg.columns {
                 if let Some(ref meta) = chunk.meta_data {
                     if meta.path_in_schema.contains(&col_name) {
+                        if meta.codec != CompressionCodec::Uncompressed {
+                            return Err(ParquetError::UnsupportedEncoding(alloc::format!(
+                                "Compression codec {:?} is not supported",
+                                meta.codec
+                            )));
+                        }
+                        if meta.data_page_offset < 0 {
+                            return Err(ParquetError::CorruptedPage("Negative data page offset".into()));
+                        }
                         let offset = meta.data_page_offset as usize;
                         if offset >= bytes.len() {
                             return Err(ParquetError::UnexpectedEof);
@@ -74,17 +83,22 @@ pub fn read_parquet(bytes: &[u8]) -> Result<Value, ParquetError> {
                         let page_header = PageHeader::decode(&mut page_reader)?;
                         let header_size = page_reader.pos;
 
-                        let payload_offset = offset + header_size;
+                        let payload_offset = offset.checked_add(header_size).ok_or(ParquetError::UnexpectedEof)?;
+                        if page_header.uncompressed_page_size < 0 {
+                            return Err(ParquetError::CorruptedPage("Negative uncompressed page size".into()));
+                        }
                         let payload_size = page_header.uncompressed_page_size as usize;
-                        if payload_offset + payload_size > bytes.len() {
+                        let payload_end = payload_offset.checked_add(payload_size).ok_or(ParquetError::UnexpectedEof)?;
+                        if payload_end > bytes.len() {
                             return Err(ParquetError::UnexpectedEof);
                         }
 
-                        let payload = &bytes[payload_offset..payload_offset + payload_size];
+                        let payload = &bytes[payload_offset..payload_end];
                         let num_values = page_header
                             .data_page_header
-                            .map(|d| d.num_values as usize)
-                            .unwrap_or(meta.num_values as usize);
+                            .as_ref()
+                            .map(|d| d.num_values.max(0) as usize)
+                            .unwrap_or_else(|| meta.num_values.max(0) as usize);
 
                         col_data.decode_plain(payload, num_values, is_optional)?;
                     }

@@ -181,9 +181,10 @@ impl<'a> ThriftReader<'a> {
     }
 
     pub fn read_bytes(&mut self, len: usize) -> Result<&'a [u8], ParquetError> {
-        if self.pos + len <= self.buf.len() {
-            let slice = &self.buf[self.pos..self.pos + len];
-            self.pos += len;
+        let end = self.pos.checked_add(len).ok_or(ParquetError::UnexpectedEof)?;
+        if end <= self.buf.len() {
+            let slice = &self.buf[self.pos..end];
+            self.pos = end;
             Ok(slice)
         } else {
             Err(ParquetError::UnexpectedEof)
@@ -195,7 +196,11 @@ impl<'a> ThriftReader<'a> {
     }
 
     pub fn read_struct_end(&mut self) {
-        self.last_field_id.pop();
+        if self.last_field_id.len() > 1 {
+            self.last_field_id.pop();
+        } else if let Some(last) = self.last_field_id.last_mut() {
+            *last = 0;
+        }
     }
 
     /// Read field header: returns `(field_id, field_type)`.
@@ -209,7 +214,7 @@ impl<'a> ThriftReader<'a> {
         let delta = (b >> 4) as i16;
         let field_type = b & 0x0F;
 
-        let last = *self.last_field_id.last().expect("struct stack");
+        let last = self.last_field_id.last().copied().unwrap_or(0);
         let field_id = if delta == 0 {
             self.read_i16()?
         } else {
@@ -218,6 +223,8 @@ impl<'a> ThriftReader<'a> {
 
         if let Some(l) = self.last_field_id.last_mut() {
             *l = field_id;
+        } else {
+            self.last_field_id.push(field_id);
         }
         Ok((field_id, field_type))
     }
