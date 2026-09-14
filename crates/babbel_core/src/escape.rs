@@ -57,8 +57,6 @@ pub fn escape_for_json(s: &str) -> String {
             '\n' => out.push_str(ESC_NEWLINE),
             '\r' => out.push_str(ESC_CARRIAGE_RETURN),
             '\t' => out.push_str(ESC_TAB),
-            '\x08' => out.push_str(ESC_BACKSPACE),
-            '\x0C' => out.push_str(ESC_FORMFEED),
             c if (c as u32) < 0x20 => {
                 out.push_str(&format!("\\u{:04x}", c as u32));
             }
@@ -96,7 +94,7 @@ pub fn write_json_escaped_string(s: &str, dest: &mut dyn IDestination) {
 
     while i < bytes.len() {
         let needs_escape = match bytes[i] {
-            BYTE_QUOTE | BYTE_BACKSLASH | BYTE_NEWLINE | BYTE_CARRIAGE_RETURN | BYTE_TAB | BYTE_BACKSPACE | BYTE_FORMFEED => true,
+            BYTE_QUOTE | BYTE_BACKSLASH | BYTE_NEWLINE | BYTE_CARRIAGE_RETURN | BYTE_TAB => true,
             b if b < CONTROL_CHAR_LIMIT => true,
             _ => false,
         };
@@ -112,8 +110,6 @@ pub fn write_json_escaped_string(s: &str, dest: &mut dyn IDestination) {
                 BYTE_NEWLINE => dest.add_bytes(ESC_NEWLINE),
                 BYTE_CARRIAGE_RETURN => dest.add_bytes(ESC_CARRIAGE_RETURN),
                 BYTE_TAB => dest.add_bytes(ESC_TAB),
-                BYTE_BACKSPACE => dest.add_bytes(ESC_BACKSPACE),
-                BYTE_FORMFEED => dest.add_bytes(ESC_FORMFEED),
                 b => {
                     let b = b as u32;
                     let mut buf = [b'\\', b'u', b'0', b'0', b'0', b'0'];

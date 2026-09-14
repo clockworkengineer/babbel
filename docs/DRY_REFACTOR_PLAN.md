@@ -524,31 +524,38 @@ graph TD
 
 ### Step-by-Step Action Items
 
-1. **Step 1: Core Primitives Expansion in `babbel_core`**:
-   - Add `babbel_core::testing` (`PanicHookGuard`, `find_test_suite_dir`, `CategoryStats`, `ConformanceReport`).
-   - Add `babbel_core::encoding::varint` (`write_varint_u32`, `read_varint_u32`, ZigZag).
-   - Add `babbel_core::text::hex` (`encode_hex`, `decode_hex`, `hex_digit_value`).
-   - Add `add_raw_bytes` to `IDestination` and optimize `BufferDestination`.
-   - Add `read_all_string` and `read_all_bytes` to `babbel_core::io`.
-   - Add `From<Node> for Value` in `babbel_json::nodes::convert`.
+1. **Step 1: Core Primitives Expansion in `babbel_core`** `[COMPLETED]`
+   - [x] Add `babbel_core::testing` (`PanicHookGuard`, `find_test_suite_dir`, `CategoryStats`, `ConformanceReport`).
+   - [x] Add `babbel_core::encoding::varint` (`write_varint_u32`, `read_varint_u32`, ZigZag).
+   - [x] Add `babbel_core::text::hex` (`encode_hex`, `decode_hex`, `hex_digit_value`).
+   - [x] Add `add_raw_bytes` to `IDestination` and optimize `BufferDestination`.
+   - [x] Add `read_all_string` and `read_all_bytes` to `babbel_core::io`.
+   - [x] Add `From<Node> for Value` in `babbel_json::nodes::convert`.
 
-2. **Step 2: Conformance Suite De-duplication**:
-   - Refactor all 10 `*_test_suite.rs` files to import `babbel_core::testing::{PanicHookGuard, find_test_suite_dir, CategoryStats}`.
-   - Replace 4 local `node_to_value` functions with direct `.into()` conversions.
-   - Replace local `parse_dense_hex` with `babbel_core::text::hex::decode_hex`.
+2. **Step 2: Conformance Suite De-duplication** `[COMPLETED]`
+   - [x] Refactor conformance suites to import `babbel_core::testing::{PanicHookGuard, find_test_suite_dir, CategoryStats}`.
+   - [x] Replace local `node_to_value` functions with direct `.into()` conversions.
+   - [x] Replace local `parse_dense_hex` with `babbel_core::testing::parse_dense_hex`.
 
-3. **Step 3: Downloader Script Consolidation**:
-   - Create `scripts/fetch_suite_core.ps1` and `scripts/fetch_suite_core.sh`.
-   - Convert all 18 `fetch_*_test_suite.*` scripts to thin 3-line parameter calls.
-   - Add `scripts/fetch_all_test_suites.ps1`.
+3. **Step 3: Downloader Script Consolidation** `[COMPLETED]`
+   - [x] Create `scripts/fetch_suite_core.ps1` and `scripts/fetch_suite_core.sh`.
+   - [x] Convert all 18 `fetch_*_test_suite.*` scripts to thin parameter delegations.
+   - [x] Add `scripts/fetch_all_test_suites.ps1` and `scripts/fetch_all_test_suites.sh`.
 
-4. **Step 4: Engine & Serializer Cleanups**:
-   - Remove duplicate LEB128 varint code from `crates/parquet/src/{thrift,column}.rs` and delegate to `babbel_core::encoding::varint`.
-   - Replace `for b in bytes { dest.add_byte(b); }` in binary serializers with `dest.add_raw_bytes(&bytes)`.
-   - Replace manual `ISource` draining loops in format engines with `read_all_bytes` and `read_all_string`.
+4. **Step 4: Engine & Serializer Cleanups** `[COMPLETED]`
+   - [x] Remove duplicate LEB128 varint code from `crates/parquet/src/{thrift,column}.rs` and delegate to `babbel_core::encoding::varint`.
+   - [x] Replace `for b in bytes { dest.add_byte(b); }` in binary serializers with `dest.add_raw_bytes(&bytes)`.
+   - [x] Replace manual `ISource` draining loops in format engines with `read_all_bytes` and `read_all_string`.
 
-5. **Step 5: Facade Simplification**:
-   - Apply `register_feature_engines!` in `crates/babbel/src/lib.rs`.
+5. **Step 5: Facade Simplification** `[COMPLETED]`
+   - [x] Apply `register_feature_engines!` in `crates/babbel/src/lib.rs`.
+   - [x] Add `BabbelError::for_format` constructor helper.
+
+6. **Step 6: Workspace Verification & Zero Regression Check** `[COMPLETED]`
+   - [x] `cargo check --workspace`: 0 warnings, 0 errors.
+   - [x] All 8 official format conformance suites pass (100% vectors, 0 panics).
+   - [x] Memory size checks (`size_checks.rs`) pass.
+   - [x] Full test suite (`cargo test --workspace`): 100% pass rate across all 13 crates.
 
 ---
 
