@@ -37,6 +37,7 @@ Targeted guides for performance engineering, embedded targets, and text formats.
 | **[Embedded Systems & Low-Memory Guide](EMBEDDED_GUIDE.md)** | Guide to `no_std`, stack buffers (`StackBuffer`), zero-allocation destinations, and $O(1)$ RAM pull parsers. |
 | **[Memory & Performance Architecture](BENCHMARKS_AND_MEMORY.md)** | Struct size bounds verification (`size_checks.rs`), zero-allocation formatting, and Windows lock elimination. |
 | **[Text Support Guide](TEXT_SUPPORT_GUIDE.md)** | RFC 4180 CSV/TSV, sectioned INI/.env, JSON Lines (`.jsonl`), frontmatter extraction, and line readers. |
+| **[Candidate Formats Analysis](MISSING_FORMATS_ANALYSIS.md)** | Evaluation of missing formats (MessagePack, CBOR, JSON5, RON, Parquet) and implementation roadmap. |
 
 ### 4. Governance, Releases & Development
 Contribution workflows, release history, and security policies.
@@ -64,6 +65,7 @@ Babbel is partitioned into seven decoupled, focused crates:
 | **`babbel_bencode`** | [README](../crates/bencode/README.md) | `crates/bencode` | BitTorrent Bencode parser/serializer, `BencodeEngine`, borrowed zero-copy DOM, stack-based iterative parser. |
 | **`babbel_xml`** | [README](../crates/xml/README.md) | `crates/xml` | W3C XML DOM, `XmlEngine`, validating pull parser, C14N 1.0/1.1 canonicalization, DTD, XSD, XPath 1.0. |
 | **`babbel_toml`** | [README](../crates/toml/README.md) | `crates/toml` | TOML v1.1.0 DOM engine, `TomlEngine`, streaming pull parser, AST serializer, strict validation. |
+| **`babbel_msgpack`** | [README](../crates/msgpack/README.md) | `crates/msgpack` | MessagePack DOM engine, `MsgPackEngine`, streaming decoder/encoder, 100% AST fidelity. |
 
 ---
 

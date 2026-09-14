@@ -13,6 +13,8 @@ use babbel_bencode::BencodeEngine;
 use babbel_xml::XmlEngine;
 #[cfg(feature = "toml")]
 use babbel_toml::TomlEngine;
+#[cfg(feature = "msgpack")]
+use babbel_msgpack::MsgPackEngine;
 
 use babbel_core::{
     csv::emit_csv_to, ini::emit_ini_to, parse_csv, parse_ini, BabbelError, Buffer, BufferDestination,
@@ -28,6 +30,7 @@ pub enum Format {
     Xml,
     Bencode,
     Toml,
+    MsgPack,
     Csv,
     Tsv,
     Ini,
@@ -235,6 +238,34 @@ impl FormatParser for TomlParser {
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
         TomlEngine.parse_bytes(input)
+    }
+}
+
+/// MessagePack parser implementing `FormatParser`.
+#[cfg(feature = "msgpack")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct MsgPackParser;
+
+#[cfg(feature = "msgpack")]
+impl FormatParser for MsgPackParser {
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        MsgPackEngine.parse_bytes(input.as_bytes())
+    }
+
+    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
+        MsgPackEngine.parse_bytes(input)
+    }
+}
+
+/// MessagePack emitter implementing `FormatEmitter`.
+#[cfg(feature = "msgpack")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct MsgPackEmitter;
+
+#[cfg(feature = "msgpack")]
+impl FormatEmitter for MsgPackEmitter {
+    fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
+        MsgPackEngine.serialize(value, destination, &FormatOptions::compact())
     }
 }
 
@@ -790,4 +821,81 @@ pub fn toml_to_jsonlines(toml: &str) -> Result<String, BabbelError> {
 pub fn jsonlines_to_toml(jsonl: &str) -> Result<String, BabbelError> {
     convert_text(jsonl, &JsonLinesParser, &TomlEmitter)
 }
+
+// =========================================================================
+// MessagePack Cross-Format Conversions
+// =========================================================================
+
+/// Convert JSON string to MessagePack byte vector.
+#[cfg(all(feature = "json", feature = "msgpack"))]
+pub fn json_to_msgpack(json: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(json.as_bytes(), &JsonEngine, &MsgPackEngine, &ConversionOptions::default())
+}
+
+/// Convert MessagePack byte payload to JSON string.
+#[cfg(all(feature = "msgpack", feature = "json"))]
+pub fn msgpack_to_json(msgpack: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &JsonEngine, &ConversionOptions::default())
+}
+
+/// Convert YAML string to MessagePack byte vector.
+#[cfg(all(feature = "yaml", feature = "msgpack"))]
+pub fn yaml_to_msgpack(yaml: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(yaml.as_bytes(), &YamlEngine, &MsgPackEngine, &ConversionOptions::default())
+}
+
+/// Convert MessagePack byte payload to YAML string.
+#[cfg(all(feature = "msgpack", feature = "yaml"))]
+pub fn msgpack_to_yaml(msgpack: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &YamlEngine, &ConversionOptions::default())
+}
+
+/// Convert XML string to MessagePack byte vector.
+#[cfg(all(feature = "xml", feature = "msgpack"))]
+pub fn xml_to_msgpack(xml: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(xml.as_bytes(), &XmlEngine, &MsgPackEngine, &ConversionOptions::default())
+}
+
+/// Convert MessagePack byte payload to XML string.
+#[cfg(all(feature = "msgpack", feature = "xml"))]
+pub fn msgpack_to_xml(msgpack: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &XmlEngine, &ConversionOptions::default())
+}
+
+/// Convert TOML string to MessagePack byte vector.
+#[cfg(all(feature = "toml", feature = "msgpack"))]
+pub fn toml_to_msgpack(toml: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(toml.as_bytes(), &TomlEngine, &MsgPackEngine, &ConversionOptions::default())
+}
+
+/// Convert MessagePack byte payload to TOML string.
+#[cfg(all(feature = "msgpack", feature = "toml"))]
+pub fn msgpack_to_toml(msgpack: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &TomlEngine, &ConversionOptions::default())
+}
+
+/// Convert Bencode binary payload to MessagePack byte vector.
+#[cfg(all(feature = "bencode", feature = "msgpack"))]
+pub fn bencode_to_msgpack(bencode: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(bencode, &BencodeEngine, &MsgPackEngine, &ConversionOptions::default())
+}
+
+/// Convert MessagePack byte payload to Bencode byte vector.
+#[cfg(all(feature = "msgpack", feature = "bencode"))]
+pub fn msgpack_to_bencode(msgpack: &[u8]) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(msgpack, &MsgPackEngine, &BencodeEngine, &ConversionOptions::default())
+}
+
+/// Convert CSV string to MessagePack byte vector.
+#[cfg(feature = "msgpack")]
+pub fn csv_to_msgpack(csv: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(csv.as_bytes(), &CsvEngine, &MsgPackEngine, &ConversionOptions::default())
+}
+
+/// Convert MessagePack byte payload to CSV string.
+#[cfg(feature = "msgpack")]
+pub fn msgpack_to_csv(msgpack: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &CsvEngine, &ConversionOptions::default())
+}
+
 

@@ -42,6 +42,7 @@ dependencies = [
  "babbel_bencode",
  "babbel_core",
  "babbel_json",
+ "babbel_msgpack",
  "babbel_toml",
  "babbel_xml",
  "babbel_yaml",
@@ -74,6 +75,13 @@ dependencies = [
  "dtoa",
  "itoa",
  "smallvec",
+]
+
+[[package]]
+name = "babbel_msgpack"
+version = "0.2.1"
+dependencies = [
+ "babbel_core",
 ]
 
 [[package]]
