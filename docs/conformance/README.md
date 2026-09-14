@@ -26,8 +26,19 @@ All format engines in Babbel are tested against official, industry-standard, and
 
 ## Running Conformance Suites
 
-Each crate provides a dedicated fetch script in `scripts/` and an integration test runner under `crates/<format>/tests/`:
+### 1. Download Test Suites
+You can download all official test suites with a single command, or filter by format:
+```bash
+# Windows (PowerShell)
+./scripts/fetch_all_test_suites.ps1 -Format all
 
+# Linux / macOS (Bash)
+./scripts/fetch_all_test_suites.sh all
+```
+
+Individual fetch scripts are also available under `scripts/fetch_<format>_test_suite.ps1` and `.sh`.
+
+### 2. Execute Conformance Tests
 ```bash
 # Example: Run all conformance test runners
 cargo test -p babbel_json --test nst_conformance
