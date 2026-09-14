@@ -21,5 +21,6 @@ target
 **/json-test-suite/
 **/toml-test/
 **/msgpack-test-suite/
+**/test-vectors/
 *.zip
 notes/

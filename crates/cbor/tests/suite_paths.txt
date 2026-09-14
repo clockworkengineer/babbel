@@ -1,0 +1,4 @@
+# Paths to search for cbor test-vectors repository
+test-vectors
+../test-vectors
+tests/test-vectors

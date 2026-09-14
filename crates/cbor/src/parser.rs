@@ -285,22 +285,51 @@ impl<'a> Decoder<'a> {
                 }
             }
             MAJOR_TAG => {
-                let _tag_num = self.read_length(info)?;
-                // Decode tagged inner value
-                self.decode_value_depth(depth + 1)
+                let tag_num = self.read_length(info)?;
+                let inner = self.decode_value_depth(depth + 1)?;
+                match tag_num {
+                    2 => {
+                        // Positive bignum: big-endian byte string
+                        if let Value::Bytes(ref b) = inner {
+                            if b.len() <= 16 {
+                                let mut n: i128 = 0;
+                                for &byte in b {
+                                    n = (n << 8) | (byte as i128);
+                                }
+                                return Ok(Value::Integer(n));
+                            }
+                        }
+                        Ok(inner)
+                    }
+                    3 => {
+                        // Negative bignum: -1 - n
+                        if let Value::Bytes(ref b) = inner {
+                            if b.len() <= 16 {
+                                let mut n: i128 = 0;
+                                for &byte in b {
+                                    n = (n << 8) | (byte as i128);
+                                }
+                                return Ok(Value::Integer(-1i128 - n));
+                            }
+                        }
+                        Ok(inner)
+                    }
+                    _ => Ok(inner),
+                }
             }
             MAJOR_SIMPLE => {
                 match info {
                     SIMPLE_FALSE => Ok(Value::Bool(false)),
                     SIMPLE_TRUE => Ok(Value::Bool(true)),
                     SIMPLE_NULL | SIMPLE_UNDEFINED => Ok(Value::Null),
+                    0..=19 => Ok(Value::Integer(info as i128)),
                     AI_1_BYTE => {
                         let val = self.read_byte()?;
                         match val {
                             SIMPLE_FALSE => Ok(Value::Bool(false)),
                             SIMPLE_TRUE => Ok(Value::Bool(true)),
                             SIMPLE_NULL | SIMPLE_UNDEFINED => Ok(Value::Null),
-                            _ => Err(CborError::UnsupportedSimpleValue(val)),
+                            _ => Ok(Value::Integer(val as i128)),
                         }
                     }
                     FLOAT_16 => {
