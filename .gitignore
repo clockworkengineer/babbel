@@ -20,5 +20,6 @@ target
 **/JSONTestSuite/
 **/json-test-suite/
 **/toml-test/
+**/msgpack-test-suite/
 *.zip
 notes/

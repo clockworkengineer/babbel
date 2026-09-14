@@ -1,0 +1,4 @@
+# Paths to search for msgpack-test-suite repository
+msgpack-test-suite
+../msgpack-test-suite
+tests/msgpack-test-suite
