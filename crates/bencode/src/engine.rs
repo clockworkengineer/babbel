@@ -1,10 +1,5 @@
 //! Bencode Format Engine adhering to OCP and DIP.
 
-#[cfg(feature = "std")]
-use std::vec::Vec;
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-
 use babbel_core::{
     io::{IDestination, ISource},
     BabbelError, FormatEngine, FormatOptions, Value,
@@ -28,18 +23,14 @@ impl FormatEngine for BencodeEngine {
     }
 
     fn parse(&self, source: &mut dyn ISource) -> Result<Value, BabbelError> {
-        let mut bytes = Vec::new();
-        while let Some(ch) = source.current() {
-            bytes.push(ch as u8);
-            source.next();
-        }
+        let bytes = babbel_core::io::read_all_bytes(source);
         self.parse_bytes(&bytes)
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
         let node = crate::parser::default::parse_bytes(input)
             .map_err(|err| BabbelError::syntax(err).with_format("bencode"))?;
-        Ok(Value::from(&node))
+        Ok(Value::from(node))
     }
 
     fn serialize(

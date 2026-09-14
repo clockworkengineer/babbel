@@ -1,7 +1,7 @@
 //! KDL Format Engine implementation adhering to OCP and DIP.
 
 use babbel_core::{
-    io::{IDestination, ISource},
+    io::IDestination,
     BabbelError, FormatEngine, FormatOptions, Value,
 };
 
@@ -23,17 +23,6 @@ impl FormatEngine for KdlEngine {
 
     fn file_extensions(&self) -> &'static [&'static str] {
         &["kdl"]
-    }
-
-    fn parse(&self, source: &mut dyn ISource) -> Result<Value, BabbelError> {
-        let mut text = alloc::string::String::new();
-        while source.more() {
-            if let Some(ch) = source.current() {
-                text.push(ch);
-            }
-            source.next();
-        }
-        self.parse_str(&text)
     }
 
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {

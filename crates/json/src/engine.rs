@@ -25,7 +25,7 @@ impl FormatEngine for JsonEngine {
     fn parse(&self, source: &mut dyn ISource) -> Result<Value, BabbelError> {
         let node = crate::parser::default::parse(source)
             .map_err(|err| BabbelError::syntax(err).with_format("json"))?;
-        Ok(Value::from(&node))
+        Ok(Value::from(node))
     }
 
     fn serialize(
@@ -56,21 +56,10 @@ impl FormatEngine for JsonLinesEngine {
         &["jsonl", "ndjson"]
     }
 
-    fn parse(&self, source: &mut dyn ISource) -> Result<Value, BabbelError> {
-        let mut s = alloc::string::String::new();
-        while source.more() {
-            if let Some(ch) = source.current() {
-                s.push(ch);
-            }
-            source.next();
-        }
-        self.parse_str(&s)
-    }
-
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
         let nodes = crate::lines::parse_json_lines(input)
             .map_err(|err| BabbelError::syntax(err).with_format("jsonlines"))?;
-        let values: alloc::vec::Vec<Value> = nodes.iter().map(Value::from).collect();
+        let values: alloc::vec::Vec<Value> = nodes.into_iter().map(Value::from).collect();
         Ok(Value::Array(values))
     }
 
@@ -112,21 +101,10 @@ impl FormatEngine for Json5Engine {
         &["json5", "jsonc"]
     }
 
-    fn parse(&self, source: &mut dyn ISource) -> Result<Value, BabbelError> {
-        let mut s = alloc::string::String::new();
-        while source.more() {
-            if let Some(ch) = source.current() {
-                s.push(ch);
-            }
-            source.next();
-        }
-        self.parse_str(&s)
-    }
-
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
         let node = crate::parser::json5::parse_json5(input)
             .map_err(|err| BabbelError::syntax(err).with_format("json5"))?;
-        Ok(Value::from(&node))
+        Ok(Value::from(node))
     }
 
     fn serialize(

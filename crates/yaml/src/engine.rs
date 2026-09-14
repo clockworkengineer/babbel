@@ -1,7 +1,7 @@
 //! YAML Format Engine adhering to OCP and DIP.
 
 use babbel_core::{
-    io::{IDestination, ISource},
+    io::IDestination,
     BabbelError, FormatEngine, FormatOptions, Value,
 };
 
@@ -20,15 +20,6 @@ impl FormatEngine for YamlEngine {
 
     fn file_extensions(&self) -> &'static [&'static str] {
         &["yaml", "yml"]
-    }
-
-    fn parse(&self, source: &mut dyn ISource) -> Result<Value, BabbelError> {
-        let mut buf = alloc::string::String::new();
-        while let Some(ch) = source.current() {
-            buf.push(ch);
-            source.next();
-        }
-        self.parse_str(&buf)
     }
 
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {

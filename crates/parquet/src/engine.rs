@@ -23,15 +23,7 @@ impl FormatEngine for ParquetEngine {
     }
 
     fn parse(&self, source: &mut dyn ISource) -> Result<Value, BabbelError> {
-        let mut bytes = alloc::vec::Vec::new();
-        while source.more() {
-            if let Some(ch) = source.current() {
-                let mut b = [0u8; 4];
-                let enc = ch.encode_utf8(&mut b);
-                bytes.extend_from_slice(enc.as_bytes());
-            }
-            source.next();
-        }
+        let bytes = babbel_core::io::read_all_bytes(source);
         self.parse_bytes(&bytes)
     }
 
@@ -48,9 +40,7 @@ impl FormatEngine for ParquetEngine {
     ) -> Result<(), BabbelError> {
         let bytes = crate::write_parquet(value)
             .map_err(|err| BabbelError::from(err).with_format("parquet"))?;
-        for b in bytes {
-            dest.add_byte(b);
-        }
+        dest.add_raw_bytes(&bytes);
         Ok(())
     }
 }

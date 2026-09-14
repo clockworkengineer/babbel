@@ -165,7 +165,14 @@ pub trait FormatEngine: Send + Sync {
     fn file_extensions(&self) -> &'static [&'static str];
 
     /// Parse raw stream into universal Value AST.
-    fn parse(&self, source: &mut dyn crate::io::traits::ISource) -> Result<Value, BabbelError>;
+    ///
+    /// By default for text-based formats, this drains `source` into a `String` using
+    /// [`crate::io::read_all_string`] and delegates to [`FormatEngine::parse_str`].
+    /// Binary format engines can override this to call [`FormatEngine::parse_bytes`] with [`crate::io::read_all_bytes`].
+    fn parse(&self, source: &mut dyn crate::io::traits::ISource) -> Result<Value, BabbelError> {
+        let text = crate::io::read_all_string(source);
+        self.parse_str(&text)
+    }
 
     /// Convenient parsing from UTF-8 text string.
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
@@ -213,17 +220,6 @@ pub trait FormatEngine: Send + Sync {
     }
 }
 
-fn read_source_to_string(source: &mut dyn crate::io::traits::ISource) -> alloc::string::String {
-    let mut s = alloc::string::String::new();
-    while source.more() {
-        if let Some(ch) = source.current() {
-            s.push(ch);
-        }
-        source.next();
-    }
-    s
-}
-
 /// Standard built-in CSV format engine implementing [`FormatEngine`].
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct CsvEngine;
@@ -239,11 +235,6 @@ impl FormatEngine for CsvEngine {
 
     fn file_extensions(&self) -> &'static [&'static str] {
         &["csv"]
-    }
-
-    fn parse(&self, source: &mut dyn crate::io::traits::ISource) -> Result<Value, BabbelError> {
-        let text = read_source_to_string(source);
-        self.parse_str(&text)
     }
 
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
@@ -277,11 +268,6 @@ impl FormatEngine for TsvEngine {
         &["tsv"]
     }
 
-    fn parse(&self, source: &mut dyn crate::io::traits::ISource) -> Result<Value, BabbelError> {
-        let text = read_source_to_string(source);
-        self.parse_str(&text)
-    }
-
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
         crate::csv::parse_csv(input, &crate::csv::CsvOptions::tsv())
     }
@@ -311,11 +297,6 @@ impl FormatEngine for IniEngine {
 
     fn file_extensions(&self) -> &'static [&'static str] {
         &["ini", "properties", "env", "conf"]
-    }
-
-    fn parse(&self, source: &mut dyn crate::io::traits::ISource) -> Result<Value, BabbelError> {
-        let text = read_source_to_string(source);
-        self.parse_str(&text)
     }
 
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {

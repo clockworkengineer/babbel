@@ -1,8 +1,7 @@
 //! TOML Format Engine adhering to OCP and DIP.
 
-use alloc::string::String;
 use babbel_core::{
-    io::{IDestination, ISource},
+    io::IDestination,
     BabbelError, FormatEngine, FormatOptions, Value,
 };
 
@@ -21,15 +20,6 @@ impl FormatEngine for TomlEngine {
 
     fn file_extensions(&self) -> &'static [&'static str] {
         &["toml"]
-    }
-
-    fn parse(&self, source: &mut dyn ISource) -> Result<Value, BabbelError> {
-        let mut s = String::new();
-        while let Some(ch) = source.current() {
-            s.push(ch);
-            source.next();
-        }
-        self.parse_str(&s)
     }
 
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {

@@ -1,10 +1,5 @@
 //! CBOR Format Engine adhering to OCP and DIP.
 
-#[cfg(feature = "std")]
-use std::vec::Vec;
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-
 use babbel_core::{
     io::{IDestination, ISource},
     BabbelError, FormatEngine, FormatOptions, Value,
@@ -28,13 +23,7 @@ impl FormatEngine for CborEngine {
     }
 
     fn parse(&self, source: &mut dyn ISource) -> Result<Value, BabbelError> {
-        let mut bytes = Vec::new();
-        while source.more() {
-            if let Some(ch) = source.current() {
-                bytes.push(ch as u8);
-            }
-            source.next();
-        }
+        let bytes = babbel_core::io::read_all_bytes(source);
         self.parse_bytes(&bytes)
     }
 
