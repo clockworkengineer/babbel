@@ -139,6 +139,13 @@ pub trait IDestination {
     fn add_byte(&mut self, byte: u8);
     /// Writes multiple bytes from a string slice.
     fn add_bytes(&mut self, bytes: &str);
+    /// Writes multiple raw bytes from a byte slice.
+    #[inline]
+    fn add_raw_bytes(&mut self, bytes: &[u8]) {
+        for &b in bytes {
+            self.add_byte(b);
+        }
+    }
     /// Clears all accumulated content from the destination.
     fn clear(&mut self);
     /// Returns the last written byte, if any.

@@ -1144,8 +1144,29 @@ impl<T: ILocationAware> ILocationAware for ByteSourceAdapter<T> {
     }
 }
 
-#[cfg(test)]
+/// Drains all remaining characters from an [`ISource`] into an allocated [`String`].
+pub fn read_all_string(source: &mut dyn ISource) -> String {
+    let mut s = String::new();
+    while let Some(ch) = source.current() {
+        s.push(ch);
+        source.next();
+    }
+    s
+}
 
+/// Drains all remaining raw bytes from an [`ISource`] into an allocated [`Vec<u8>`].
+pub fn read_all_bytes(source: &mut dyn ISource) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    while source.more() {
+        if let Some(ch) = source.current() {
+            bytes.push(ch as u8);
+        }
+        source.next();
+    }
+    bytes
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::io::traits::*;

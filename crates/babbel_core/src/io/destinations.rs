@@ -115,6 +115,10 @@ impl IDestination for Buffer {
     fn add_bytes(&mut self, bytes: &str) {
         self.add_bytes(bytes);
     }
+    #[inline]
+    fn add_raw_bytes(&mut self, bytes: &[u8]) {
+        self.buffer.extend_from_slice(bytes);
+    }
     fn clear(&mut self) {
         self.clear();
     }

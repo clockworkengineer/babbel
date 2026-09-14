@@ -1,4 +1,7 @@
-//! Line-oriented text processing, frontmatter extraction, and indentation manipulation.
+//! Line-oriented text processing, frontmatter extraction, hexadecimal utilities, and indentation manipulation.
+
+pub mod hex;
+pub use hex::{decode_hex, encode_hex, encode_hex_upper, hex_digit_value};
 
 use alloc::string::String;
 use alloc::vec::Vec;

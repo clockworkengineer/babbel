@@ -25,6 +25,8 @@ pub mod model;
 pub mod num;
 #[cfg(feature = "serde")]
 pub mod serde_impl;
+#[cfg(feature = "std")]
+pub mod testing;
 pub mod text;
 
 // Re-export key primitives for ergonomic downstream usage
@@ -64,8 +66,8 @@ pub use io::{FileDestination, FileSource};
 pub use model::{FormatVisitor, Value};
 pub use num::{format_float, format_integer, Numeric};
 pub use text::{
-    dedent, indent, line_count, split_frontmatter, trim_lines, DocumentWithFrontmatter,
-    FrontmatterFormat,
+    decode_hex, dedent, encode_hex, encode_hex_upper, indent, line_count, split_frontmatter,
+    trim_lines, DocumentWithFrontmatter, FrontmatterFormat,
 };
 #[cfg(feature = "serde")]
 pub use serde_impl::{from_value, to_value, SerdeError};

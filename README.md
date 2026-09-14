@@ -13,6 +13,7 @@ A high-performance, polyglot serialization, parsing, and document manipulation w
 - [SOLID Architecture Whitepaper](docs/SOLID_ARCHITECTURE_GUIDE.md) — Comprehensive guide to the 6-phase SOLID implementation
 - [Format Engine Plugin Guide](docs/FORMAT_ENGINE_PLUGIN_GUIDE.md) — Tutorial on implementing and registering custom format engines
 - [Architecture Guide](docs/ARCHITECTURE.md) — 3-tier layering model, memory bounds, and design principles
+- [DRY Refactoring Plan](docs/DRY_REFACTOR_PLAN.md) — Concrete architecture and implementation plan for complete workspace DRY consolidation
 - [Conversion Matrix](docs/CONVERSION_MATRIX.md) — Universal $O(N)$ cross-format conversion reference & options
 - [Embedded Systems Guide](docs/EMBEDDED_GUIDE.md) — `no_std`, stack buffers (`StackBuffer`), and zero-allocation pull parsers
 - [Memory & Benchmarks](docs/BENCHMARKS_AND_MEMORY.md) — Struct size bounds verification (`size_checks.rs`)

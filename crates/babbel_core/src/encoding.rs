@@ -1,4 +1,6 @@
-//! Byte Order Mark (BOM) and text encoding detection utilities.
+//! Byte Order Mark (BOM), text encoding detection, and LEB128 varint utilities.
+
+pub mod varint;
 
 #[cfg(not(feature = "std"))]
 use alloc::borrow::Cow;
