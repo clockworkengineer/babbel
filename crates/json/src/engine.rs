@@ -1,4 +1,4 @@
-//! JSON Format Engine adhering to OCP and DIP.
+//! JSON and JSON5 Format Engines adhering to OCP and DIP.
 
 use babbel_core::{
     io::{IDestination, ISource},
@@ -6,7 +6,7 @@ use babbel_core::{
 };
 
 /// JSON format engine implementing [`FormatEngine`].
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct JsonEngine;
 
 impl FormatEngine for JsonEngine {
@@ -40,7 +40,7 @@ impl FormatEngine for JsonEngine {
 }
 
 /// JSON Lines format engine implementing [`FormatEngine`].
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct JsonLinesEngine;
 
 impl FormatEngine for JsonLinesEngine {
@@ -92,3 +92,51 @@ impl FormatEngine for JsonLinesEngine {
     }
 }
 
+/// JSON5 and JSONC format engine implementing [`FormatEngine`].
+///
+/// Supports single/multi-line comments, unquoted keys, single-quoted strings,
+/// trailing commas, hexadecimal numbers, explicit signs, and `Infinity`/`NaN`.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct Json5Engine;
+
+impl FormatEngine for Json5Engine {
+    fn format_id(&self) -> &'static str {
+        "json5"
+    }
+
+    fn mime_type(&self) -> &'static str {
+        "application/json5"
+    }
+
+    fn file_extensions(&self) -> &'static [&'static str] {
+        &["json5", "jsonc"]
+    }
+
+    fn parse(&self, source: &mut dyn ISource) -> Result<Value, BabbelError> {
+        let mut s = alloc::string::String::new();
+        while source.more() {
+            if let Some(ch) = source.current() {
+                s.push(ch);
+            }
+            source.next();
+        }
+        self.parse_str(&s)
+    }
+
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        let node = crate::parser::json5::parse_json5(input)
+            .map_err(|err| BabbelError::syntax(err).with_format("json5"))?;
+        Ok(Value::from(&node))
+    }
+
+    fn serialize(
+        &self,
+        value: &Value,
+        destination: &mut dyn IDestination,
+        _options: &FormatOptions,
+    ) -> Result<(), BabbelError> {
+        value.serialize_json(destination);
+        Ok(())
+    }
+
+}

@@ -1,9 +1,10 @@
 # babbel_json
 
-**Version 0.2.0** — A lightweight, modular JSON toolkit for Rust with pluggable I/O sources/destinations, a simple in-memory Node tree, multiple serializers (JSON, YAML, XML, Bencode, TOML), and `no_std` support. Designed for small binaries, predictable behavior, and easy embedding.
+**Version 0.2.1** — A lightweight, modular JSON toolkit for Rust with pluggable I/O sources/destinations, a simple in-memory Node tree, multiple serializers (JSON, YAML, XML, Bencode, TOML), and `no_std` support. Designed for small binaries, predictable behavior, and easy embedding.
 
 - Core `Node` type representing JSON structures
 - Parser to build Node trees from streams, strings, or byte slices
+- Full JSON5 and JSONC parser (`parse_json5`, `Json5Engine`) with comments, trailing commas, single-quoted strings, unquoted keys, hex numbers
 - Zero-allocation JSON validation
 - Stringifiers to JSON, YAML, XML, Bencode, and TOML
 - Performance-optimized serialization with lazy escaping and arena allocation
@@ -12,10 +13,10 @@
 - Line-delimited JSON (JSON Lines / NDJSON / `.jsonl`) streaming reader and writer
 - JSON Pointer (RFC 6901), JSON Patch (RFC 6902), and JSON Merge Patch (RFC 7386)
 - JSON Schema validation (Draft 7 subset)
-- JSON5 comment stripping
 - `json!` macro for ergonomic Node construction
 - Unicode-aware file helpers (BOM detection/handling)
 - `no_std` compatible with the `alloc` feature
+
 
 Minimum supported Rust version: 1.88.0
 

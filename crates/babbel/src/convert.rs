@@ -4,7 +4,7 @@
 //! CSV, TSV, INI, and JSON Lines.
 
 #[cfg(feature = "json")]
-use babbel_json::{JsonEngine, JsonLinesEngine};
+use babbel_json::{JsonEngine, JsonLinesEngine, Json5Engine};
 #[cfg(feature = "yaml")]
 use babbel_yaml::YamlEngine;
 #[cfg(feature = "bencode")]
@@ -37,11 +37,13 @@ pub enum Format {
     MsgPack,
     Cbor,
     Bson,
+    Json5,
     Csv,
     Tsv,
     Ini,
     JsonLines,
 }
+
 
 /// Configuration options for cross-format conversions.
 #[derive(Debug, Clone)]
@@ -183,7 +185,36 @@ impl FormatParser for JsonParser {
     }
 }
 
+/// JSON5 parser implementing `FormatParser`.
+#[cfg(feature = "json")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct Json5Parser;
+
+#[cfg(feature = "json")]
+impl FormatParser for Json5Parser {
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        Json5Engine.parse_str(input)
+    }
+
+    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
+        Json5Engine.parse_bytes(input)
+    }
+}
+
+/// JSON5 emitter implementing `FormatEmitter`.
+#[cfg(feature = "json")]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct Json5Emitter;
+
+#[cfg(feature = "json")]
+impl FormatEmitter for Json5Emitter {
+    fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
+        Json5Engine.serialize(value, destination, &FormatOptions::compact())
+    }
+}
+
 /// YAML parser implementing `FormatParser`.
+
 #[cfg(feature = "yaml")]
 #[derive(Debug, Default, Clone, Copy)]
 pub struct YamlParser;
@@ -1147,6 +1178,95 @@ pub fn csv_to_bson(csv: &str) -> Result<Vec<u8>, BabbelError> {
 pub fn bson_to_csv(bson: &[u8]) -> Result<String, BabbelError> {
     convert_format_bytes_to_str(bson, &BsonEngine, &CsvEngine, &ConversionOptions::default())
 }
+
+// =========================================================================
+// JSON5 Cross-Format Conversions
+// =========================================================================
+
+/// Convert JSON5 string to standard JSON string.
+#[cfg(feature = "json")]
+pub fn json5_to_json(json5: &str) -> Result<String, BabbelError> {
+    convert_format(json5, &Json5Engine, &JsonEngine, &ConversionOptions::default())
+}
+
+/// Convert JSON string to JSON5 string.
+#[cfg(feature = "json")]
+pub fn json_to_json5(json: &str) -> Result<String, BabbelError> {
+    convert_format(json, &JsonEngine, &Json5Engine, &ConversionOptions::default())
+}
+
+/// Convert JSON5 string to YAML string.
+#[cfg(all(feature = "json", feature = "yaml"))]
+pub fn json5_to_yaml(json5: &str) -> Result<String, BabbelError> {
+    convert_format(json5, &Json5Engine, &YamlEngine, &ConversionOptions::default())
+}
+
+/// Convert YAML string to JSON5 string.
+#[cfg(all(feature = "yaml", feature = "json"))]
+pub fn yaml_to_json5(yaml: &str) -> Result<String, BabbelError> {
+    convert_format(yaml, &YamlEngine, &Json5Engine, &ConversionOptions::default())
+}
+
+/// Convert JSON5 string to TOML string.
+#[cfg(all(feature = "json", feature = "toml"))]
+pub fn json5_to_toml(json5: &str) -> Result<String, BabbelError> {
+    convert_format(json5, &Json5Engine, &TomlEngine, &ConversionOptions::default())
+}
+
+/// Convert TOML string to JSON5 string.
+#[cfg(all(feature = "toml", feature = "json"))]
+pub fn toml_to_json5(toml: &str) -> Result<String, BabbelError> {
+    convert_format(toml, &TomlEngine, &Json5Engine, &ConversionOptions::default())
+}
+
+/// Convert JSON5 string to XML string.
+#[cfg(all(feature = "json", feature = "xml"))]
+pub fn json5_to_xml(json5: &str) -> Result<String, BabbelError> {
+    convert_format(json5, &Json5Engine, &XmlEngine, &ConversionOptions::default())
+}
+
+/// Convert XML string to JSON5 string.
+#[cfg(all(feature = "xml", feature = "json"))]
+pub fn xml_to_json5(xml: &str) -> Result<String, BabbelError> {
+    convert_format(xml, &XmlEngine, &Json5Engine, &ConversionOptions::default())
+}
+
+/// Convert JSON5 string to MessagePack byte vector.
+#[cfg(all(feature = "json", feature = "msgpack"))]
+pub fn json5_to_msgpack(json5: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(json5.as_bytes(), &Json5Engine, &MsgPackEngine, &ConversionOptions::default())
+}
+
+/// Convert MessagePack byte payload to JSON5 string.
+#[cfg(all(feature = "msgpack", feature = "json"))]
+pub fn msgpack_to_json5(msgpack: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &Json5Engine, &ConversionOptions::default())
+}
+
+/// Convert JSON5 string to CBOR byte vector.
+#[cfg(all(feature = "json", feature = "cbor"))]
+pub fn json5_to_cbor(json5: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(json5.as_bytes(), &Json5Engine, &CborEngine, &ConversionOptions::default())
+}
+
+/// Convert CBOR byte payload to JSON5 string.
+#[cfg(all(feature = "cbor", feature = "json"))]
+pub fn cbor_to_json5(cbor: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(cbor, &CborEngine, &Json5Engine, &ConversionOptions::default())
+}
+
+/// Convert JSON5 string to BSON byte vector.
+#[cfg(all(feature = "json", feature = "bson"))]
+pub fn json5_to_bson(json5: &str) -> Result<Vec<u8>, BabbelError> {
+    convert_format_bytes(json5.as_bytes(), &Json5Engine, &BsonEngine, &ConversionOptions::default())
+}
+
+/// Convert BSON byte payload to JSON5 string.
+#[cfg(all(feature = "bson", feature = "json"))]
+pub fn bson_to_json5(bson: &[u8]) -> Result<String, BabbelError> {
+    convert_format_bytes_to_str(bson, &BsonEngine, &Json5Engine, &ConversionOptions::default())
+}
+
 
 
 

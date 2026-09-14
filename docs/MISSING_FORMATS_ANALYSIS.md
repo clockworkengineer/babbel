@@ -61,7 +61,8 @@ These formats share a 1:1 conceptual mapping with Babbel's universal `Value` AST
   - Permits single-line (`//`) and multiline (`/* */`) comments.
   - Allows trailing commas in arrays and objects.
   - Permits single-quoted strings (`'str'`) and unquoted identifier keys.
-- **Current State in Babbel**: Babbel currently offers a regex/lexer utility `strip_comments` in `babbel_json::parser::json5`, but lacks a full standalone `Json5Engine`.
+- **Implementation**: Pure-Rust full specification JSON5 and JSONC parser and `babbel_json::Json5Engine` implementing `FormatEngine`, zero runtime dependencies, full support for comments, unquoted keys, single quotes, trailing commas, hex numbers, explicit signs, and specials (`Infinity`/`NaN`).
+
 
 ### 3.2 RON (Rusty Object Notation - `.ron`)
 - **Adoption**: Rust ecosystem, game engines (Bevy, Amethyst, Veloren), Rust CLI configurations.
@@ -105,12 +106,13 @@ These formats share a 1:1 conceptual mapping with Babbel's universal `Value` AST
 | :--- | :--- | :--- | :--- | :--- |
 | **MessagePack** (`.msgpack`) | Binary Interchange | Very High | 100% (Direct `Value` mapping) | **IMPLEMENTED (`babbel_msgpack`)** |
 | **CBOR** (`.cbor`) | Binary Interchange / IoT | High | 95% (Direct + Tag mapping) | **IMPLEMENTED (`babbel_cbor`)** |
-| **JSON5 / JSONC** (`.json5`) | Human Configuration | High | 100% (Maps directly to JSON) | **Priority 1** (Next) |
+| **JSON5 / JSONC** (`.json5`) | Human Configuration | High | 100% (Maps directly to JSON) | **IMPLEMENTED (`babbel_json::Json5Engine`)** |
 | **RON** (`.ron`) | Rust Configuration | Medium | 90% (Rust literal mapping) | **Priority 2** |
 | **KDL** (`.kdl`) | Modern CLI Config | Medium | 85% (Node/attribute mapping) | Priority 3 |
 | **BSON** (`.bson`) | Database Storage | Medium | 90% (JSON-extended mapping) | **IMPLEMENTED (`babbel_bson`)** |
 | **Apache Parquet** (`.parquet`)| Columnar Big Data | High (Data Science) | 70% (Batch tabular only) | Future / Specialized |
 | **Apache Avro** (`.avro`) | Event Streaming | High (Kafka) | 75% (Schema-bound) | Future / Specialized |
+
 
 ---
 

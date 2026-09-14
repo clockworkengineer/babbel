@@ -217,11 +217,11 @@ pub use nodes::patch;
 
 /// JSON Merge Patch (RFC 7386)
 #[cfg(feature = "alloc")]
-pub use nodes::merge_patch;
-
-/// JSON5 comment stripping
+/// JSON5 and JSONC parser and comment stripping
 #[cfg(feature = "alloc")]
 pub use parser::json5;
+#[cfg(feature = "alloc")]
+pub use parser::json5::parse_json5;
 
 /// Line-delimited JSON (JSON Lines / NDJSON) streaming reader and writer
 #[cfg(feature = "alloc")]
@@ -231,4 +231,5 @@ pub use lines::{parse_json_lines, to_json_lines, to_json_lines_stream, JsonLines
 
 /// Format engine implementation adhering to OCP and DIP
 pub mod engine;
-pub use engine::{JsonEngine, JsonLinesEngine};
+pub use engine::{JsonEngine, JsonLinesEngine, Json5Engine};
+

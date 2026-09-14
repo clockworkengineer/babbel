@@ -116,7 +116,7 @@ pub use babbel_core::{
 
 // Re-export FormatEngine architecture (OCP & DIP)
 #[cfg(feature = "json")]
-pub use babbel_json::{JsonEngine, JsonLinesEngine};
+pub use babbel_json::{JsonEngine, JsonLinesEngine, Json5Engine};
 #[cfg(feature = "yaml")]
 pub use babbel_yaml::YamlEngine;
 #[cfg(feature = "xml")]
@@ -148,7 +148,9 @@ pub fn default_registry() -> babbel_core::FormatRegistry {
     {
         registry.register(alloc::sync::Arc::new(babbel_json::JsonEngine));
         registry.register(alloc::sync::Arc::new(babbel_json::JsonLinesEngine));
+        registry.register(alloc::sync::Arc::new(babbel_json::Json5Engine));
     }
+
     #[cfg(feature = "yaml")]
     registry.register(alloc::sync::Arc::new(babbel_yaml::YamlEngine));
     #[cfg(feature = "xml")]
