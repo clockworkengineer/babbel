@@ -223,9 +223,9 @@ pub fn convert(
 ) -> Result<String, BabbelError> {
     let registry = crate::default_registry();
     let from_engine = registry.get_by_id(from_format)
-        .ok_or_else(|| BabbelError::syntax(alloc::format!("unknown format '{}'", from_format)))?;
+        .ok_or_else(|| BabbelError::syntax(alloc::format!("unknown format '{from_format}'")))?;
     let to_engine = registry.get_by_id(to_format)
-        .ok_or_else(|| BabbelError::syntax(alloc::format!("unknown format '{}'", to_format)))?;
+        .ok_or_else(|| BabbelError::syntax(alloc::format!("unknown format '{to_format}'")))?;
     convert_format(input, &*from_engine, &*to_engine, options)
 }
 
@@ -239,9 +239,9 @@ pub fn convert_dynamic_bytes(
 ) -> Result<Vec<u8>, BabbelError> {
     let registry = crate::default_registry();
     let from_engine = registry.get_by_id(from_format)
-        .ok_or_else(|| BabbelError::syntax(alloc::format!("unknown format '{}'", from_format)))?;
+        .ok_or_else(|| BabbelError::syntax(alloc::format!("unknown format '{from_format}'")))?;
     let to_engine = registry.get_by_id(to_format)
-        .ok_or_else(|| BabbelError::syntax(alloc::format!("unknown format '{}'", to_format)))?;
+        .ok_or_else(|| BabbelError::syntax(alloc::format!("unknown format '{to_format}'")))?;
     convert_format_bytes(input, &*from_engine, &*to_engine, options)
 }
 

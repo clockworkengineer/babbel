@@ -2,6 +2,7 @@ use babbel_core::Value;
 use babbel_ron::{from_str, to_string, to_string_pretty};
 
 #[test]
+#[allow(clippy::approx_constant)]
 fn test_ron_primitives() {
     assert_eq!(from_str("()").unwrap(), Value::Null);
     assert_eq!(from_str("None").unwrap(), Value::Null);
