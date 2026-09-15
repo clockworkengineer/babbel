@@ -102,14 +102,23 @@ pub trait FormatEngine: Send + Sync {
     /// Associated file extensions without leading dots (e.g., &["json", "jsonl"]).
     fn file_extensions(&self) -> &'static [&'static str];
 
+    /// Whether this format is binary-encoded rather than UTF-8 text (default: false).
+    fn is_binary(&self) -> bool {
+        false
+    }
+
     /// Parse raw stream into universal Value AST.
     ///
-    /// By default for text-based formats, this drains `source` into a `String` using
-    /// [`crate::io::read_all_string`] and delegates to [`FormatEngine::parse_str`].
-    /// Binary format engines can override this to call [`FormatEngine::parse_bytes`] with [`crate::io::read_all_bytes`].
+    /// Drains raw bytes using [`crate::io::read_all_bytes`] for binary formats,
+    /// or UTF-8 text using [`crate::io::read_all_string`] for text formats.
     fn parse(&self, source: &mut dyn crate::io::traits::ISource) -> Result<Value, BabbelError> {
-        let text = crate::io::read_all_string(source);
-        self.parse_str(&text)
+        if self.is_binary() {
+            let bytes = crate::io::read_all_bytes(source);
+            self.parse_bytes(&bytes)
+        } else {
+            let text = crate::io::read_all_string(source);
+            self.parse_str(&text)
+        }
     }
 
     /// Convenient parsing from UTF-8 text string.
@@ -155,6 +164,43 @@ pub trait FormatEngine: Send + Sync {
         let mut dest = crate::io::destinations::BufferDestination::new();
         self.serialize(value, &mut dest, options)?;
         Ok(dest.into_vec())
+    }
+}
+
+// Blanket trait implementations adhering to DIP and ISP
+impl<T: FormatEngine + ?Sized> FormatParser for T {
+    #[inline]
+    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+        FormatEngine::parse_str(self, input)
+    }
+
+    #[inline]
+    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
+        FormatEngine::parse_bytes(self, input)
+    }
+}
+
+impl<T: FormatEngine + ?Sized> FormatEmitter for T {
+    #[inline]
+    fn emit(&self, value: &Value, dest: &mut dyn IDestination) -> Result<(), BabbelError> {
+        self.serialize(value, dest, &FormatOptions::compact())
+    }
+
+    #[inline]
+    fn emit_pretty(
+        &self,
+        value: &Value,
+        dest: &mut dyn IDestination,
+        indent: usize,
+    ) -> Result<(), BabbelError> {
+        self.serialize(value, dest, &FormatOptions::pretty().with_indent(indent))
+    }
+}
+
+impl<T: FormatEngine + ?Sized> FormatCodec for T {
+    #[inline]
+    fn format_name(&self) -> &'static str {
+        self.format_id()
     }
 }
 
@@ -318,6 +364,78 @@ impl FormatRegistry {
     /// Returns a list of all registered format identifiers.
     pub fn available_formats(&self) -> alloc::vec::Vec<&'static str> {
         self.engines.iter().map(|e| e.format_id()).collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::io::destinations::BufferDestination;
+
+    // A minimal forward-only destination to test ISP compliance of IDestination defaults
+    struct ForwardOnlySink {
+        data: alloc::vec::Vec<u8>,
+    }
+
+    impl IDestination for ForwardOnlySink {
+        fn add_byte(&mut self, byte: u8) {
+            self.data.push(byte);
+        }
+        fn add_bytes(&mut self, bytes: &str) {
+            self.data.extend_from_slice(bytes.as_bytes());
+        }
+        // clear() and last() use trait default implementations
+    }
+
+    #[test]
+    fn test_idestination_default_methods() {
+        let mut sink = ForwardOnlySink {
+            data: alloc::vec::Vec::new(),
+        };
+        sink.add_bytes("hello");
+        sink.add_byte(b'!');
+        assert_eq!(sink.data, b"hello!");
+        // Verify default clear() is a safe no-op
+        sink.clear();
+        assert_eq!(sink.data, b"hello!");
+        // Verify default last() returns None
+        assert_eq!(sink.last(), None);
+    }
+
+    #[test]
+    fn test_format_engine_blanket_format_parser() {
+        let engine = CsvEngine;
+        let val = FormatParser::parse_str(&engine, "name,age\nAlice,30\n").unwrap();
+        assert!(matches!(val, Value::Array(_)));
+
+        let val_bytes = FormatParser::parse_bytes(&engine, b"name,age\nBob,25\n").unwrap();
+        assert!(matches!(val_bytes, Value::Array(_)));
+    }
+
+    #[test]
+    fn test_format_engine_blanket_format_emitter() {
+        let engine = CsvEngine;
+        let mut dest = BufferDestination::new();
+        let val = Value::Array(alloc::vec![Value::Object(alloc::vec![
+            ("a".into(), Value::Integer(1)),
+            ("b".into(), Value::Integer(2)),
+        ])]);
+        FormatEmitter::emit(&engine, &val, &mut dest).unwrap();
+        assert!(!dest.to_string().is_empty());
+
+        let mut dest_pretty = BufferDestination::new();
+        FormatEmitter::emit_pretty(&engine, &val, &mut dest_pretty, 4).unwrap();
+        assert!(!dest_pretty.to_string().is_empty());
+    }
+
+    #[test]
+    fn test_format_engine_blanket_format_codec() {
+        let engine = CsvEngine;
+        assert_eq!(FormatCodec::format_name(&engine), "csv");
+        let ini = IniEngine;
+        assert_eq!(FormatCodec::format_name(&ini), "ini");
+        let tsv = TsvEngine;
+        assert_eq!(FormatCodec::format_name(&tsv), "tsv");
     }
 }
 

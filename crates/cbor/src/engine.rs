@@ -22,6 +22,10 @@ impl FormatEngine for CborEngine {
         &["cbor"]
     }
 
+    fn is_binary(&self) -> bool {
+        true
+    }
+
     fn parse(&self, source: &mut dyn ISource) -> Result<Value, BabbelError> {
         let bytes = babbel_core::io::read_all_bytes(source);
         self.parse_bytes(&bytes)

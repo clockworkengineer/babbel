@@ -99,7 +99,7 @@ graph LR
 
 ---
 
-### Phase 1: SRP — AST Model & Serializer Segregation (`babbel_core`) `[COMPLETED]`
+### Phase 1: SRP — AST Model & Serializer Segregation (`babbel_core`) [COMPLETED]
 
 #### 1. Problem Analysis
 In `crates/babbel_core/src/model.rs` (lines 253–663), `Value` contains:
@@ -156,7 +156,7 @@ This directly violates **SRP**: `Value` represents the intermediate tree structu
 
 ---
 
-### Phase 2: SRP & DIP — Bespoke Foreign Serializer Elimination
+### Phase 2: SRP & DIP — Bespoke Foreign Serializer Elimination [COMPLETED]
 
 #### 1. Problem Analysis
 The codebase contains ~150 KB of hand-coded point-to-point serializers:
@@ -188,7 +188,7 @@ This violates:
 
 ---
 
-### Phase 3: ISP & DIP — Trait Segregation & Blanket Engine Implementations
+### Phase 3: ISP & DIP — Trait Segregation & Blanket Engine Implementations [COMPLETED]
 
 #### 1. Problem Analysis
 1. `IDestination` combines 3 distinct responsibilities into a single fat trait:
@@ -271,7 +271,7 @@ This violates:
 
 ---
 
-### Phase 4: LSP — Uniform Streaming Contracts & Infallible Invariants
+### Phase 4: LSP — Uniform Streaming Contracts & Infallible Invariants [COMPLETED]
 
 #### 1. Problem Analysis
 1. `ISource::reset(&mut self)` is mandatory, but non-rewindable streams cannot rewind.

@@ -67,8 +67,14 @@ pub trait ISource {
     fn current(&mut self) -> Option<char>;
     /// Checks if more characters are available.
     fn more(&mut self) -> bool;
-    /// Resets reading position to the beginning.
-    fn reset(&mut self);
+    /// Resets reading position to the beginning (default: no-op for forward-only streams).
+    #[inline]
+    fn reset(&mut self) {}
+    /// Whether this source supports rewinding to the beginning.
+    #[inline]
+    fn can_rewind(&self) -> bool {
+        false
+    }
 }
 
 
@@ -146,10 +152,14 @@ pub trait IDestination {
             self.add_byte(b);
         }
     }
-    /// Clears all accumulated content from the destination.
-    fn clear(&mut self);
-    /// Returns the last written byte, if any.
-    fn last(&self) -> Option<u8>;
+    /// Clears all accumulated content from the destination (default: no-op for forward-only streaming destinations).
+    #[inline]
+    fn clear(&mut self) {}
+    /// Returns the last written byte, if tracked (default: None).
+    #[inline]
+    fn last(&self) -> Option<u8> {
+        None
+    }
 }
 
 /// Indentation tracking trait for whitespace-sensitive formats (YAML, pretty-printers).

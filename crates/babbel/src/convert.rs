@@ -186,11 +186,11 @@ pub struct JsonParser;
 #[cfg(feature = "json")]
 impl FormatParser for JsonParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        JsonEngine.parse_str(input)
+        FormatEngine::parse_str(&JsonEngine, input)
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        JsonEngine.parse_bytes(input)
+        FormatEngine::parse_bytes(&JsonEngine, input)
     }
 }
 
@@ -202,11 +202,11 @@ pub struct Json5Parser;
 #[cfg(feature = "json")]
 impl FormatParser for Json5Parser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        Json5Engine.parse_str(input)
+        FormatEngine::parse_str(&Json5Engine, input)
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        Json5Engine.parse_bytes(input)
+        FormatEngine::parse_bytes(&Json5Engine, input)
     }
 }
 
@@ -231,11 +231,11 @@ pub struct YamlParser;
 #[cfg(feature = "yaml")]
 impl FormatParser for YamlParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        YamlEngine.parse_str(input)
+        FormatEngine::parse_str(&YamlEngine, input)
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        YamlEngine.parse_bytes(input)
+        FormatEngine::parse_bytes(&YamlEngine, input)
     }
 }
 
@@ -247,11 +247,11 @@ pub struct BencodeParser;
 #[cfg(feature = "bencode")]
 impl FormatParser for BencodeParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        BencodeEngine.parse_str(input)
+        FormatEngine::parse_str(&BencodeEngine, input)
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        BencodeEngine.parse_bytes(input)
+        FormatEngine::parse_bytes(&BencodeEngine, input)
     }
 }
 
@@ -263,11 +263,11 @@ pub struct XmlParser;
 #[cfg(feature = "xml")]
 impl FormatParser for XmlParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        XmlEngine.parse_str(input)
+        FormatEngine::parse_str(&XmlEngine, input)
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        XmlEngine.parse_bytes(input)
+        FormatEngine::parse_bytes(&XmlEngine, input)
     }
 }
 
@@ -279,11 +279,11 @@ pub struct TomlParser;
 #[cfg(feature = "toml")]
 impl FormatParser for TomlParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        TomlEngine.parse_str(input)
+        FormatEngine::parse_str(&TomlEngine, input)
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        TomlEngine.parse_bytes(input)
+        FormatEngine::parse_bytes(&TomlEngine, input)
     }
 }
 
@@ -295,11 +295,11 @@ pub struct MsgPackParser;
 #[cfg(feature = "msgpack")]
 impl FormatParser for MsgPackParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        MsgPackEngine.parse_bytes(input.as_bytes())
+        FormatEngine::parse_bytes(&MsgPackEngine, input.as_bytes())
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        MsgPackEngine.parse_bytes(input)
+        FormatEngine::parse_bytes(&MsgPackEngine, input)
     }
 }
 
@@ -323,11 +323,11 @@ pub struct CborParser;
 #[cfg(feature = "cbor")]
 impl FormatParser for CborParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        CborEngine.parse_bytes(input.as_bytes())
+        FormatEngine::parse_bytes(&CborEngine, input.as_bytes())
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        CborEngine.parse_bytes(input)
+        FormatEngine::parse_bytes(&CborEngine, input)
     }
 }
 
@@ -351,11 +351,11 @@ pub struct BsonParser;
 #[cfg(feature = "bson")]
 impl FormatParser for BsonParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        BsonEngine.parse_bytes(input.as_bytes())
+        FormatEngine::parse_bytes(&BsonEngine, input.as_bytes())
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        BsonEngine.parse_bytes(input)
+        FormatEngine::parse_bytes(&BsonEngine, input)
     }
 }
 
@@ -379,11 +379,11 @@ pub struct RonParser;
 #[cfg(feature = "ron")]
 impl FormatParser for RonParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        RonEngine.parse_str(input)
+        FormatEngine::parse_str(&RonEngine, input)
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        RonEngine.parse_bytes(input)
+        FormatEngine::parse_bytes(&RonEngine, input)
     }
 }
 
@@ -407,11 +407,11 @@ pub struct KdlParser;
 #[cfg(feature = "kdl")]
 impl FormatParser for KdlParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        KdlEngine.parse_str(input)
+        FormatEngine::parse_str(&KdlEngine, input)
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        KdlEngine.parse_bytes(input)
+        FormatEngine::parse_bytes(&KdlEngine, input)
     }
 }
 
@@ -435,11 +435,11 @@ pub struct ParquetParser;
 #[cfg(feature = "parquet")]
 impl FormatParser for ParquetParser {
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        ParquetEngine.parse_bytes(input.as_bytes())
+        FormatEngine::parse_bytes(&ParquetEngine, input.as_bytes())
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        ParquetEngine.parse_bytes(input)
+        FormatEngine::parse_bytes(&ParquetEngine, input)
     }
 }
 

@@ -160,6 +160,9 @@ impl<'a> ISource for SliceSource<'a> {
     fn reset(&mut self) {
         self.reset();
     }
+    fn can_rewind(&self) -> bool {
+        true
+    }
 }
 
 impl<'a> ICharStream for SliceSource<'a> {
@@ -335,6 +338,9 @@ impl ISource for StringSource {
     fn reset(&mut self) {
         self.reset();
     }
+    fn can_rewind(&self) -> bool {
+        true
+    }
 }
 
 impl ICharStream for StringSource {
@@ -464,6 +470,10 @@ impl<'a> ISource for ByteSliceSource<'a> {
 
     fn reset(&mut self) {
         self.pos = 0;
+    }
+
+    fn can_rewind(&self) -> bool {
+        true
     }
 }
 
@@ -661,6 +671,9 @@ impl ISource for BufferSource {
     }
     fn reset(&mut self) {
         self.reset();
+    }
+    fn can_rewind(&self) -> bool {
+        true
     }
 }
 
@@ -1290,5 +1303,51 @@ mod tests {
         src.reset();
         assert_eq!(src.current(), Some('a'));
     }
+
+    // Minimal forward-only source relying on default reset() and can_rewind()
+    struct ForwardOnlyCharStream<'a> {
+        chars: core::str::Chars<'a>,
+        current: Option<char>,
+    }
+
+    impl<'a> ForwardOnlyCharStream<'a> {
+        fn new(s: &'a str) -> Self {
+            let mut it = s.chars();
+            let cur = it.next();
+            Self {
+                chars: it,
+                current: cur,
+            }
+        }
+    }
+
+    impl<'a> ISource for ForwardOnlyCharStream<'a> {
+        fn next(&mut self) {
+            self.current = self.chars.next();
+        }
+        fn current(&mut self) -> Option<char> {
+            self.current
+        }
+        fn more(&mut self) -> bool {
+            self.current.is_some()
+        }
+    }
+
+    #[test]
+    fn test_isource_default_reset_and_can_rewind() {
+        let mut fwd = ForwardOnlyCharStream::new("xyz");
+        assert!(!fwd.can_rewind());
+        assert_eq!(fwd.current(), Some('x'));
+        fwd.next();
+        assert_eq!(fwd.current(), Some('y'));
+        // default reset is safe no-op
+        fwd.reset();
+        assert_eq!(fwd.current(), Some('y'));
+
+        // BufferSource supports rewinding
+        let buf = BufferSource::new(b"abc");
+        assert!(buf.can_rewind());
+    }
 }
+
 
