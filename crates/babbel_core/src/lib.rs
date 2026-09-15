@@ -14,6 +14,7 @@ pub mod chars;
 pub mod codec;
 pub mod csv;
 pub mod embedded;
+pub mod emitters;
 pub mod encoding;
 pub mod error;
 pub mod escape;

@@ -250,414 +250,61 @@ impl Value {
         emitter.emit_pretty(self, dest, indent)
     }
 
-    /// Serializes value to JSON representation into `dest`.
+    /// Accepts a visitor for streaming traversal across the universal AST (ISP / Visitor Pattern).
+    pub fn accept<V: FormatVisitor>(&self, visitor: &mut V) -> Result<(), V::Error> {
+        match self {
+            Value::Null => visitor.visit_null(),
+            Value::Bool(b) => visitor.visit_bool(*b),
+            Value::Integer(i) => visitor.visit_integer(*i),
+            Value::Float(f) => visitor.visit_float(*f),
+            Value::String(s) => visitor.visit_str(s),
+            Value::Bytes(b) => visitor.visit_bytes(b),
+            Value::Array(items) => {
+                visitor.visit_array_start()?;
+                for item in items {
+                    item.accept(visitor)?;
+                }
+                visitor.visit_array_end()
+            }
+            Value::Object(entries) => {
+                visitor.visit_object_start()?;
+                for (k, v) in entries {
+                    visitor.visit_key(k)?;
+                    v.accept(visitor)?;
+                }
+                visitor.visit_object_end()
+            }
+        }
+    }
+
+    /// Serializes value to JSON representation into `dest` (delegates to [`crate::emitters::JsonEmitter`]).
+    #[inline]
     pub fn serialize_json(&self, dest: &mut dyn crate::io::IDestination) {
-        match self {
-            Value::Null => dest.add_bytes("null"),
-            Value::Bool(b) => dest.add_bytes(if *b { "true" } else { "false" }),
-            Value::Integer(i) => {
-                let mut buf = itoa::Buffer::new();
-                dest.add_bytes(buf.format(*i));
-            }
-            Value::Float(f) => {
-                let mut buf = dtoa::Buffer::new();
-                dest.add_bytes(buf.format(*f));
-            }
-            Value::String(s) => {
-                crate::escape::write_json_escaped_string(s, dest);
-            }
-            Value::Bytes(bytes) => {
-                crate::escape::write_json_escaped_string(&alloc::string::String::from_utf8_lossy(bytes), dest);
-            }
-            Value::Array(items) => {
-                dest.add_bytes("[");
-                for (idx, item) in items.iter().enumerate() {
-                    if idx > 0 {
-                        dest.add_bytes(",");
-                    }
-                    item.serialize_json(dest);
-                }
-                dest.add_bytes("]");
-            }
-            Value::Object(entries) => {
-                dest.add_bytes("{");
-                for (idx, (k, v)) in entries.iter().enumerate() {
-                    if idx > 0 {
-                        dest.add_bytes(",");
-                    }
-                    crate::escape::write_json_escaped_string(k, dest);
-                    dest.add_bytes(":");
-                    v.serialize_json(dest);
-                }
-                dest.add_bytes("}");
-            }
-        }
+        crate::emitters::JsonEmitter.emit_to_dest(self, dest);
     }
 
-    /// Serializes value to YAML representation into `dest` with indentation.
+    /// Serializes value to YAML representation into `dest` with indentation (delegates to [`crate::emitters::YamlEmitter`]).
+    #[inline]
     pub fn serialize_yaml(&self, dest: &mut dyn crate::io::IDestination, indent: usize) {
-        match self {
-            Value::Null => dest.add_bytes("null"),
-            Value::Bool(b) => dest.add_bytes(if *b { "true" } else { "false" }),
-            Value::Integer(i) => {
-                let mut buf = itoa::Buffer::new();
-                dest.add_bytes(buf.format(*i));
-            }
-            Value::Float(f) => {
-                let mut buf = dtoa::Buffer::new();
-                dest.add_bytes(buf.format(*f));
-            }
-            Value::String(s) => {
-                if s.contains('\n') || s.contains('"') {
-                    dest.add_bytes("|\n");
-                    for line in s.lines() {
-                        for _ in 0..(indent + 2) {
-                            dest.add_byte(b' ');
-                        }
-                        dest.add_bytes(line);
-                        dest.add_bytes("\n");
-                    }
-                } else {
-                    dest.add_bytes(s);
-                }
-            }
-            Value::Bytes(b) => {
-                dest.add_bytes(&alloc::string::String::from_utf8_lossy(b));
-            }
-            Value::Array(items) => {
-                if items.is_empty() {
-                    dest.add_bytes("[]");
-                    return;
-                }
-                dest.add_bytes("\n");
-                for item in items {
-                    for _ in 0..indent {
-                        dest.add_byte(b' ');
-                    }
-                    dest.add_bytes("- ");
-                    item.serialize_yaml(dest, indent + 2);
-                    dest.add_bytes("\n");
-                }
-            }
-            Value::Object(entries) => {
-                if entries.is_empty() {
-                    dest.add_bytes("{}");
-                    return;
-                }
-                dest.add_bytes("\n");
-                for (k, v) in entries {
-                    for _ in 0..indent {
-                        dest.add_byte(b' ');
-                    }
-                    dest.add_bytes(k);
-                    dest.add_bytes(": ");
-                    v.serialize_yaml(dest, indent + 2);
-                    dest.add_bytes("\n");
-                }
-            }
-        }
+        crate::emitters::YamlEmitter.emit_with_indent(self, dest, indent);
     }
 
-    /// Serializes value to Bencode representation into `dest`.
+    /// Serializes value to Bencode representation into `dest` (delegates to [`crate::emitters::BencodeEmitter`]).
+    #[inline]
     pub fn serialize_bencode(&self, dest: &mut dyn crate::io::IDestination) {
-        match self {
-            Value::Null => {}
-            Value::Bool(b) => {
-                dest.add_bytes(if *b { "i1e" } else { "i0e" });
-            }
-            Value::Integer(i) => {
-                dest.add_bytes("i");
-                let mut buf = itoa::Buffer::new();
-                dest.add_bytes(buf.format(*i));
-                dest.add_bytes("e");
-            }
-            Value::Float(f) => {
-                let mut buf = itoa::Buffer::new();
-                dest.add_bytes("i");
-                let rounded = if *f >= 0.0 { (*f + 0.5) as i64 } else { (*f - 0.5) as i64 };
-                dest.add_bytes(buf.format(rounded));
-                dest.add_bytes("e");
-            }
-            Value::String(s) => {
-                let mut buf = itoa::Buffer::new();
-                dest.add_bytes(buf.format(s.len()));
-                dest.add_bytes(":");
-                dest.add_bytes(s);
-            }
-            Value::Bytes(b) => {
-                let mut buf = itoa::Buffer::new();
-                dest.add_bytes(buf.format(b.len()));
-                dest.add_bytes(":");
-                if let Ok(s) = core::str::from_utf8(b) {
-                    dest.add_bytes(s);
-                } else {
-                    for &byte in b {
-                        dest.add_byte(byte);
-                    }
-                }
-            }
-            Value::Array(items) => {
-                dest.add_bytes("l");
-                for item in items {
-                    item.serialize_bencode(dest);
-                }
-                dest.add_bytes("e");
-            }
-            Value::Object(entries) => {
-                dest.add_bytes("d");
-                for (k, v) in entries {
-                    let mut buf = itoa::Buffer::new();
-                    dest.add_bytes(buf.format(k.len()));
-                    dest.add_bytes(":");
-                    dest.add_bytes(k);
-                    v.serialize_bencode(dest);
-                }
-                dest.add_bytes("e");
-            }
-        }
+        crate::emitters::BencodeEmitter.emit_to_dest(self, dest);
     }
 
-    /// Serializes value to XML representation into `dest`.
+    /// Serializes value to XML representation into `dest` (delegates to [`crate::emitters::XmlEmitter`]).
+    #[inline]
     pub fn serialize_xml(&self, dest: &mut dyn crate::io::IDestination, root_tag: Option<&str>) {
-        let tag = root_tag.unwrap_or("root");
-        match self {
-            Value::Null => {
-                dest.add_bytes("<");
-                dest.add_bytes(tag);
-                dest.add_bytes("/>");
-            }
-            Value::Bool(b) => {
-                dest.add_bytes("<");
-                dest.add_bytes(tag);
-                dest.add_bytes(">");
-                dest.add_bytes(if *b { "true" } else { "false" });
-                dest.add_bytes("</");
-                dest.add_bytes(tag);
-                dest.add_bytes(">");
-            }
-            Value::Integer(i) => {
-                dest.add_bytes("<");
-                dest.add_bytes(tag);
-                dest.add_bytes(">");
-                let mut buf = itoa::Buffer::new();
-                dest.add_bytes(buf.format(*i));
-                dest.add_bytes("</");
-                dest.add_bytes(tag);
-                dest.add_bytes(">");
-            }
-            Value::Float(f) => {
-                dest.add_bytes("<");
-                dest.add_bytes(tag);
-                dest.add_bytes(">");
-                let mut buf = dtoa::Buffer::new();
-                dest.add_bytes(buf.format(*f));
-                dest.add_bytes("</");
-                dest.add_bytes(tag);
-                dest.add_bytes(">");
-            }
-            Value::String(s) => {
-                dest.add_bytes("<");
-                dest.add_bytes(tag);
-                dest.add_bytes(">");
-                crate::escape::write_xml_escaped_string(s, dest);
-                dest.add_bytes("</");
-                dest.add_bytes(tag);
-                dest.add_bytes(">");
-            }
-            Value::Bytes(b) => {
-                dest.add_bytes("<");
-                dest.add_bytes(tag);
-                dest.add_bytes(">");
-                crate::escape::write_xml_escaped_string(&alloc::string::String::from_utf8_lossy(b), dest);
-                dest.add_bytes("</");
-                dest.add_bytes(tag);
-                dest.add_bytes(">");
-            }
-            Value::Array(items) => {
-                dest.add_bytes("<");
-                dest.add_bytes(tag);
-                dest.add_bytes(">");
-                for item in items {
-                    item.serialize_xml(dest, Some("item"));
-                }
-                dest.add_bytes("</");
-                dest.add_bytes(tag);
-                dest.add_bytes(">");
-            }
-            Value::Object(entries) => {
-                dest.add_bytes("<");
-                dest.add_bytes(tag);
-                dest.add_bytes(">");
-                for (k, v) in entries {
-                    v.serialize_xml(dest, Some(k));
-                }
-                dest.add_bytes("</");
-                dest.add_bytes(tag);
-                dest.add_bytes(">");
-            }
-        }
+        crate::emitters::XmlEmitter.emit_with_tag(self, dest, root_tag);
     }
 
-    /// Serializes value to TOML representation into `dest`.
+    /// Serializes value to TOML representation into `dest` (delegates to [`crate::emitters::TomlEmitter`]).
+    #[inline]
     pub fn serialize_toml(&self, dest: &mut dyn crate::io::IDestination) {
-        match self {
-            Value::Object(entries) => {
-                serialize_toml_table(entries, "", dest);
-            }
-            Value::Array(items) if !items.is_empty() && items.iter().all(|x| matches!(x, Value::Object(_))) => {
-                for item in items {
-                    dest.add_bytes("[[item]]\n");
-                    if let Value::Object(entries) = item {
-                        serialize_toml_table(entries, "item", dest);
-                    }
-                }
-            }
-            single => {
-                dest.add_bytes("value = ");
-                serialize_toml_value(single, dest);
-                dest.add_bytes("\n");
-            }
-        }
-    }
-}
-
-fn format_toml_key(key: &str, dest: &mut dyn crate::io::IDestination) {
-    if crate::escape::is_valid_toml_bare_key(key) {
-        dest.add_bytes(key);
-    } else {
-        crate::escape::write_toml_escaped_string(key, dest);
-    }
-}
-
-fn format_toml_table_path(full_path: &str, dest: &mut dyn crate::io::IDestination) {
-    let mut first = true;
-    for part in full_path.split('.') {
-        if !first {
-            dest.add_byte(b'.');
-        }
-        first = false;
-        format_toml_key(part, dest);
-    }
-}
-
-fn is_array_of_objects(val: &Value) -> bool {
-    match val {
-        Value::Array(arr) => !arr.is_empty() && arr.iter().all(|it| matches!(it, Value::Object(_))),
-        _ => false,
-    }
-}
-
-fn serialize_toml_table(
-    entries: &[(alloc::string::String, Value)],
-    prefix: &str,
-    dest: &mut dyn crate::io::IDestination,
-) {
-    let mut has_written_direct = false;
-    // 1. Emit direct scalar/inline properties
-    for (k, v) in entries {
-        if matches!(v, Value::Object(_)) || is_array_of_objects(v) {
-            continue;
-        }
-        if !prefix.is_empty() && !has_written_direct {
-            dest.add_bytes("[");
-            format_toml_table_path(prefix, dest);
-            dest.add_bytes("]\n");
-        }
-        format_toml_key(k, dest);
-        dest.add_bytes(" = ");
-        serialize_toml_value(v, dest);
-        dest.add_byte(b'\n');
-        has_written_direct = true;
-    }
-
-    // 2. Emit sub-tables
-    for (k, v) in entries {
-        if let Value::Object(sub_entries) = v {
-            let full_key = if prefix.is_empty() {
-                k.clone()
-            } else {
-                alloc::format!("{}.{}", prefix, k)
-            };
-            if sub_entries.is_empty() {
-                dest.add_bytes("[");
-                format_toml_table_path(&full_key, dest);
-                dest.add_bytes("]\n");
-            } else {
-                serialize_toml_table(sub_entries, &full_key, dest);
-            }
-        }
-    }
-
-    // 3. Emit array of tables
-    for (k, v) in entries {
-        if is_array_of_objects(v) {
-            if let Value::Array(items) = v {
-                let full_key = if prefix.is_empty() {
-                    k.clone()
-                } else {
-                    alloc::format!("{}.{}", prefix, k)
-                };
-                for item in items {
-                    dest.add_bytes("[[");
-                    format_toml_table_path(&full_key, dest);
-                    dest.add_bytes("]]\n");
-                    if let Value::Object(sub_entries) = item {
-                        serialize_toml_table(sub_entries, &full_key, dest);
-                    }
-                }
-            }
-        }
-    }
-}
-
-fn serialize_toml_value(val: &Value, dest: &mut dyn crate::io::IDestination) {
-    match val {
-        Value::Null => dest.add_bytes("\"\""),
-        Value::Bool(b) => dest.add_bytes(if *b { "true" } else { "false" }),
-        Value::Integer(i) => {
-            let mut buf = itoa::Buffer::new();
-            dest.add_bytes(buf.format(*i));
-        }
-        Value::Float(f) => {
-            if f.is_nan() {
-                dest.add_bytes("nan");
-            } else if f.is_infinite() {
-                dest.add_bytes(if *f < 0.0 { "-inf" } else { "inf" });
-            } else {
-                let mut buf = dtoa::Buffer::new();
-                let s = buf.format(*f);
-                dest.add_bytes(s);
-                if !s.contains('.') && !s.contains('e') && !s.contains('E') {
-                    dest.add_bytes(".0");
-                }
-            }
-        }
-        Value::String(s) => crate::escape::write_toml_escaped_string(s, dest),
-        Value::Bytes(b) => {
-            crate::escape::write_toml_escaped_string(&alloc::string::String::from_utf8_lossy(b), dest);
-        }
-        Value::Array(items) => {
-            dest.add_byte(b'[');
-            for (idx, item) in items.iter().enumerate() {
-                if idx > 0 {
-                    dest.add_bytes(", ");
-                }
-                serialize_toml_value(item, dest);
-            }
-            dest.add_byte(b']');
-        }
-        Value::Object(entries) => {
-            dest.add_bytes("{ ");
-            for (idx, (k, v)) in entries.iter().enumerate() {
-                if idx > 0 {
-                    dest.add_bytes(", ");
-                }
-                format_toml_key(k, dest);
-                dest.add_bytes(" = ");
-                serialize_toml_value(v, dest);
-            }
-            dest.add_bytes(" }");
-        }
+        crate::emitters::TomlEmitter.emit_to_dest(self, dest);
     }
 }
 
@@ -941,6 +588,47 @@ mod tests {
         assert_eq!(Value::from("hello"), Value::String("hello".to_string()));
         assert_eq!(Value::from(true), Value::Bool(true));
     }
+
+    #[test]
+    fn test_value_accept_visitor() {
+        let val = Value::Object(vec![
+            ("key1".to_string(), Value::String("val1".to_string())),
+            ("key2".to_string(), Value::Integer(100)),
+        ]);
+
+        let mut collector = KeyCollector { keys: Vec::new() };
+        assert!(val.accept(&mut collector).is_ok());
+        assert_eq!(collector.keys, vec!["key1", "key2"]);
+    }
+
+    #[test]
+    fn test_segregated_emitters() {
+        let val = Value::Object(vec![
+            ("name".to_string(), Value::String("test".to_string())),
+            ("count".to_string(), Value::Integer(1)),
+        ]);
+
+        let mut json_buf = crate::io::Buffer::new();
+        val.serialize_json(&mut json_buf);
+        assert!(json_buf.to_string().contains("\"name\":\"test\""));
+
+        let mut yaml_buf = crate::io::Buffer::new();
+        val.serialize_yaml(&mut yaml_buf, 0);
+        assert!(yaml_buf.to_string().contains("name: test"));
+
+        let mut toml_buf = crate::io::Buffer::new();
+        val.serialize_toml(&mut toml_buf);
+        assert!(toml_buf.to_string().contains("name = \"test\""));
+
+        let mut bencode_buf = crate::io::Buffer::new();
+        val.serialize_bencode(&mut bencode_buf);
+        assert!(bencode_buf.to_string().starts_with('d'));
+
+        let mut xml_buf = crate::io::Buffer::new();
+        val.serialize_xml(&mut xml_buf, Some("root"));
+        assert!(xml_buf.to_string().starts_with("<root>"));
+    }
 }
+
 
 

@@ -42,70 +42,8 @@ pub trait FormatCodec: FormatParser + FormatEmitter {
     fn format_name(&self) -> &'static str;
 }
 
-/// Standard built-in JSON format emitter delegating to universal Value serialization.
-#[derive(Debug, Default, Clone, Copy)]
-pub struct JsonEmitter;
+pub use crate::emitters::{BencodeEmitter, JsonEmitter, TomlEmitter, XmlEmitter, YamlEmitter};
 
-impl FormatEmitter for JsonEmitter {
-    fn emit(&self, value: &Value, dest: &mut dyn IDestination) -> Result<(), BabbelError> {
-        value.serialize_json(dest);
-        Ok(())
-    }
-}
-
-/// Standard built-in YAML format emitter delegating to universal Value serialization.
-#[derive(Debug, Default, Clone, Copy)]
-pub struct YamlEmitter;
-
-impl FormatEmitter for YamlEmitter {
-    fn emit(&self, value: &Value, dest: &mut dyn IDestination) -> Result<(), BabbelError> {
-        value.serialize_yaml(dest, 0);
-        Ok(())
-    }
-
-    fn emit_pretty(
-        &self,
-        value: &Value,
-        dest: &mut dyn IDestination,
-        indent: usize,
-    ) -> Result<(), BabbelError> {
-        value.serialize_yaml(dest, indent);
-        Ok(())
-    }
-}
-
-/// Standard built-in XML format emitter delegating to universal Value serialization.
-#[derive(Debug, Default, Clone, Copy)]
-pub struct XmlEmitter;
-
-impl FormatEmitter for XmlEmitter {
-    fn emit(&self, value: &Value, dest: &mut dyn IDestination) -> Result<(), BabbelError> {
-        value.serialize_xml(dest, None);
-        Ok(())
-    }
-}
-
-/// Standard built-in Bencode format emitter delegating to universal Value serialization.
-#[derive(Debug, Default, Clone, Copy)]
-pub struct BencodeEmitter;
-
-impl FormatEmitter for BencodeEmitter {
-    fn emit(&self, value: &Value, dest: &mut dyn IDestination) -> Result<(), BabbelError> {
-        value.serialize_bencode(dest);
-        Ok(())
-    }
-}
-
-/// Standard built-in TOML format emitter delegating to universal Value serialization.
-#[derive(Debug, Default, Clone, Copy)]
-pub struct TomlEmitter;
-
-impl FormatEmitter for TomlEmitter {
-    fn emit(&self, value: &Value, dest: &mut dyn IDestination) -> Result<(), BabbelError> {
-        value.serialize_toml(dest);
-        Ok(())
-    }
-}
 
 /// Universal format serialization options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
