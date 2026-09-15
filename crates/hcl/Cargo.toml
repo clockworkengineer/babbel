@@ -17,3 +17,6 @@ alloc = ["babbel_core/alloc"]
 
 [dependencies]
 babbel_core = { path = "../babbel_core", version = "0.2.1", default-features = false }
+
+[dev-dependencies]
+babbel_json = { path = "../json", version = "0.2.1" }

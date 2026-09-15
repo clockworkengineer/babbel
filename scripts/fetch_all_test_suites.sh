@@ -32,5 +32,6 @@ run_suite "msgpack" "fetch_msgpack_test_suite.sh"
 run_suite "ron" "fetch_ron_test_suite.sh"
 run_suite "kdl" "fetch_kdl_test_suite.sh"
 run_suite "parquet" "fetch_parquet_test_suite.sh"
+run_suite "hcl" "fetch_hcl_test_suite.sh"
 
 echo "All requested conformance test suites checked/downloaded."

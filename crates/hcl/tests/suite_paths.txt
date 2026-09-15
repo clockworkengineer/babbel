@@ -1,0 +1,6 @@
+# Paths to search for hcl-test-suite repository
+hcl-test-suite
+tests/hcl-test-suite
+crates/hcl/tests/hcl-test-suite
+../hcl-test-suite
+../../hcl-test-suite

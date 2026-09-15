@@ -36,6 +36,7 @@ Official test suites, standards verification, and formal specification conforman
 | **[RON Conformance](conformance/RON_CONFORMANCE.md)** | RON Spec / starfederation/ron | **100.0% pass rate** across all 100+ test vectors (0 failures, 0 panics). |
 | **[KDL Conformance](conformance/KDL_CONFORMANCE.md)** | KDL v2 / kdl-org/kdl-test | **100.0% pass rate** across all 368 test vectors (0 failures, 0 panics). |
 | **[Apache Parquet Conformance](conformance/PARQUET_CONFORMANCE.md)** | Parquet Format / parquet-testing | **100.0% pass rate** across all 105 test vectors (0 failures, 0 panics). |
+| **[HashiCorp HCL Conformance](conformance/HCL_CONFORMANCE.md)** | HashiCorp HCL v2 / kmoneil/hcl-test-suite | **2,261 tests passing** across all categories (86.4% pass rate, 0 panics). |
 | **[Bencode Spec & Conformance](conformance/BENCODE_SPEC_AND_CONFORMANCE.md)** | BitTorrent BEP 0003 | Full specification compliance, zero-copy borrowed slices, and stack parsing. |
 
 ### 3. Specialized Ecosystem Guides

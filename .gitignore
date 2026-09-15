@@ -19,6 +19,7 @@ target
 **/xmlconf/
 **/JSONTestSuite/
 **/json-test-suite/
+**/hcl-test-suite/
 **/toml-test/
 **/msgpack-test-suite/
 **/test-vectors/

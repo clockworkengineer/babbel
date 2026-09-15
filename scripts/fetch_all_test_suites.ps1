@@ -41,6 +41,10 @@ $suites = @(
     @{
         Format = "parquet"
         Script = "fetch_parquet_test_suite.ps1"
+    },
+    @{
+        Format = "hcl"
+        Script = "fetch_hcl_test_suite.ps1"
     }
 )
 
@@ -52,7 +56,7 @@ Write-Host "==========================================================" -Foregro
 $selected = $suites | Where-Object { $Format -eq "all" -or $_.Format -eq $Format }
 
 if ($selected.Count -eq 0) {
-    Write-Host "No test suites match format '$Format'. Available: json, toml, xml, cbor, bson, msgpack, ron, kdl, parquet, all" -ForegroundColor Red
+    Write-Host "No test suites match format '$Format'. Available: json, toml, xml, cbor, bson, msgpack, ron, kdl, parquet, hcl, all" -ForegroundColor Red
     exit 1
 }
 
