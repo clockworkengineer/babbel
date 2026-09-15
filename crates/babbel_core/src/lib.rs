@@ -13,6 +13,7 @@ extern crate alloc;
 pub mod chars;
 pub mod codec;
 pub mod csv;
+pub mod diff;
 pub mod embedded;
 pub mod emitters;
 pub mod encoding;
@@ -24,6 +25,9 @@ pub mod ini;
 pub mod io;
 pub mod model;
 pub mod num;
+pub mod patch;
+pub mod query;
+pub mod schema;
 #[cfg(feature = "serde")]
 pub mod serde_impl;
 #[cfg(feature = "std")]
@@ -32,6 +36,10 @@ pub mod text;
 
 // Re-export key primitives for ergonomic downstream usage
 pub use chars::{is_digit, is_hex_digit, is_newline, is_whitespace};
+pub use diff::{diff, diff_merge_patch};
+pub use patch::{apply_merge_patch, Patch, PatchOp};
+pub use query::{query as jsonpath_query, query_mut as jsonpath_query_mut, JsonPath};
+pub use schema::{validate as validate_schema, CompiledSchema, SchemaValidationError};
 pub use codec::{
     find_engine, find_engine_by_extension, find_engine_by_mime, BencodeEmitter, CsvEngine,
     FormatCodec, FormatEmitter, FormatEngine, FormatOptions, FormatParser, IniEngine, JsonEmitter,

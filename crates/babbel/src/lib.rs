@@ -85,6 +85,12 @@ pub use babbel_kdl as kdl;
 #[cfg(feature = "parquet")]
 pub use babbel_parquet as parquet;
 
+#[cfg(feature = "hcl")]
+pub use babbel_hcl as hcl;
+
+#[cfg(feature = "avro")]
+pub use babbel_avro as avro;
+
 // Backwards-compatible aliases (prefer babbel::json, babbel::yaml, babbel::xml, babbel::bencode, babbel::toml)
 #[cfg(feature = "json")]
 #[deprecated(since = "0.2.0", note = "Use `babbel::json` instead")]
@@ -118,6 +124,12 @@ pub mod embedded {
     pub use babbel_xml::parser::{XmlPullAttribute, XmlPullEvent, XmlPullParser};
     #[cfg(feature = "toml")]
     pub use babbel_toml::parser::{TomlPullEvent, TomlPullParser};
+    #[cfg(feature = "cbor")]
+    pub use babbel_cbor::pull::{CborPullEvent, CborPullParser};
+    #[cfg(feature = "msgpack")]
+    pub use babbel_msgpack::pull::{MsgPackPullEvent, MsgPackPullParser};
+    #[cfg(feature = "bson")]
+    pub use babbel_bson::pull::{BsonPullEvent, BsonPullParser};
 }
 
 // Re-export text, CSV, and INI processing from core
@@ -151,11 +163,29 @@ pub use babbel_ron::RonEngine;
 pub use babbel_kdl::KdlEngine;
 #[cfg(feature = "parquet")]
 pub use babbel_parquet::ParquetEngine;
+#[cfg(feature = "hcl")]
+pub use babbel_hcl::HclEngine;
+#[cfg(feature = "avro")]
+pub use babbel_avro::AvroEngine;
 
 pub use babbel_core::{
-    find_engine, find_engine_by_extension, find_engine_by_mime, CsvEngine, FormatCodec,
-    FormatEmitter, FormatEngine, FormatOptions, FormatParser, IniEngine, TsvEngine,
+    apply_merge_patch, diff_merge_patch, find_engine, find_engine_by_extension,
+    find_engine_by_mime, CompiledSchema, CsvEngine, FormatCodec, FormatEmitter, FormatEngine,
+    FormatOptions, FormatParser, IniEngine, JsonPath, Patch, PatchOp, SchemaValidationError,
+    TsvEngine, jsonpath_query, jsonpath_query_mut, validate_schema,
 };
+pub mod diff {
+    pub use babbel_core::diff::*;
+}
+pub mod patch {
+    pub use babbel_core::patch::*;
+}
+pub mod query {
+    pub use babbel_core::query::*;
+}
+pub mod schema {
+    pub use babbel_core::schema::*;
+}
 #[cfg(feature = "alloc")]
 pub use babbel_core::FormatRegistry;
 
@@ -187,6 +217,8 @@ pub fn default_registry() -> babbel_core::FormatRegistry {
         ("ron", babbel_ron::RonEngine),
         ("kdl", babbel_kdl::KdlEngine),
         ("parquet", babbel_parquet::ParquetEngine),
+        ("hcl", babbel_hcl::HclEngine),
+        ("avro", babbel_avro::AvroEngine),
     );
 
     registry.register(alloc::sync::Arc::new(babbel_core::CsvEngine));
@@ -199,15 +231,18 @@ pub fn default_registry() -> babbel_core::FormatRegistry {
 pub mod macros;
 
 #[cfg(feature = "serde")]
+pub mod serde;
+#[cfg(feature = "serde")]
 pub use babbel_core::{from_value, to_value, SerdeError};
 
 /// Convenient prelude re-exporting key format engines, universal Value AST, I/O traits,
 /// the declarative `value!` macro, and conversion routines.
 pub mod prelude {
     pub use babbel_core::{
-        find_engine, find_engine_by_extension, find_engine_by_mime, BabbelError, ErrorCode,
-        FormatCodec, FormatEmitter, FormatEngine, FormatOptions, FormatParser, Location, Span,
-        Value,
+        apply_merge_patch, diff, diff_merge_patch, find_engine, find_engine_by_extension,
+        find_engine_by_mime, BabbelError, CompiledSchema, ErrorCode, FormatCodec, FormatEmitter,
+        FormatEngine, FormatOptions, FormatParser, JsonPath, Location, Patch, PatchOp,
+        SchemaValidationError, Span, Value, jsonpath_query, jsonpath_query_mut, validate_schema,
     };
     pub use babbel_core::io::{
         Buffer, BufferDestination, BufferSource, IDestination, ISource,

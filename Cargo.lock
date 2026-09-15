@@ -39,10 +39,12 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 name = "babbel"
 version = "0.2.1"
 dependencies = [
+ "babbel_avro",
  "babbel_bencode",
  "babbel_bson",
  "babbel_cbor",
  "babbel_core",
+ "babbel_hcl",
  "babbel_json",
  "babbel_kdl",
  "babbel_msgpack",
@@ -51,6 +53,22 @@ dependencies = [
  "babbel_toml",
  "babbel_xml",
  "babbel_yaml",
+ "serde",
+]
+
+[[package]]
+name = "babbel-cli"
+version = "0.2.1"
+dependencies = [
+ "babbel",
+ "babbel_core",
+]
+
+[[package]]
+name = "babbel_avro"
+version = "0.2.1"
+dependencies = [
+ "babbel_core",
 ]
 
 [[package]]
@@ -84,6 +102,13 @@ dependencies = [
  "itoa",
  "serde",
  "smallvec",
+]
+
+[[package]]
+name = "babbel_hcl"
+version = "0.2.1"
+dependencies = [
+ "babbel_core",
 ]
 
 [[package]]

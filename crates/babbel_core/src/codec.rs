@@ -348,6 +348,11 @@ impl FormatRegistry {
         self.engines.iter().find(|e| e.format_id().eq_ignore_ascii_case(id)).cloned()
     }
 
+    /// Finds a format engine by identifier or file extension.
+    pub fn get(&self, id_or_ext: &str) -> Option<alloc::sync::Arc<dyn FormatEngine>> {
+        self.get_by_id(id_or_ext).or_else(|| self.get_by_extension(id_or_ext))
+    }
+
     /// Finds a format engine by MIME type (e.g. "application/json").
     pub fn get_by_mime(&self, mime: &str) -> Option<alloc::sync::Arc<dyn FormatEngine>> {
         self.engines.iter().find(|e| e.mime_type().eq_ignore_ascii_case(mime)).cloned()

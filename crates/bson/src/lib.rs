@@ -39,10 +39,14 @@ pub mod error;
 pub mod parser;
 pub mod serializer;
 pub mod engine;
+pub mod pull;
+pub mod ejson;
 
 pub use constants::*;
 pub use error::BsonError;
 pub use parser::{from_bytes, Decoder, DecoderConfig};
 pub use serializer::{serialize_to_dest, to_vec};
 pub use engine::BsonEngine;
+pub use pull::{BsonPullEvent, BsonPullParser};
+pub use ejson::{from_extended_json, to_extended_json, EJsonMode};
 pub use babbel_core::Value;

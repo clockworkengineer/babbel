@@ -264,3 +264,45 @@ fn test_format_engine_integration() {
     let parsed = engine.parse_bytes(&bytes).unwrap();
     assert_eq!(val, parsed);
 }
+
+#[test]
+fn test_cbor_pull_parser() {
+    use babbel_cbor::{CborPullEvent, CborPullParser};
+
+    // [1, "hello", true]
+    let bytes = to_vec(&Value::Array(vec![
+        Value::Integer(1),
+        Value::String("hello".into()),
+        Value::Bool(true),
+    ])).unwrap();
+
+    let mut parser = CborPullParser::new(&bytes);
+    assert_eq!(parser.next_event().unwrap(), CborPullEvent::ArrayStart(Some(3)));
+    assert_eq!(parser.next_event().unwrap(), CborPullEvent::Unsigned(1));
+    assert_eq!(parser.next_event().unwrap(), CborPullEvent::TextString { len: Some(5), text: "hello" });
+    assert_eq!(parser.next_event().unwrap(), CborPullEvent::Simple(21));
+    assert_eq!(parser.next_event().unwrap(), CborPullEvent::End);
+}
+
+#[test]
+fn test_cbor_edn() {
+    use babbel_cbor::{from_edn, to_edn};
+
+    let val = Value::Object(vec![
+        ("a".into(), Value::Integer(42)),
+        ("b".into(), Value::Bytes(vec![0x01, 0x02, 0x03])),
+        ("c".into(), Value::Bool(true)),
+    ]);
+
+    let edn = to_edn(&val);
+    assert!(edn.contains("42"));
+    assert!(edn.contains("h'010203'"));
+    assert!(edn.contains("true"));
+
+    let parsed_bytes = from_edn("h'010203'").unwrap();
+    assert_eq!(parsed_bytes, Value::Bytes(vec![0x01, 0x02, 0x03]));
+
+    let parsed_int = from_edn("100").unwrap();
+    assert_eq!(parsed_int, Value::Integer(100));
+}
+

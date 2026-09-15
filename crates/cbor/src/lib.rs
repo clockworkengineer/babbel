@@ -36,14 +36,18 @@
 extern crate alloc;
 
 pub mod constants;
+pub mod edn;
+pub mod engine;
 pub mod error;
 pub mod parser;
+pub mod pull;
 pub mod serializer;
-pub mod engine;
 
 pub use constants::*;
+pub use edn::{from_edn, to_edn};
+pub use engine::CborEngine;
 pub use error::CborError;
 pub use parser::{from_bytes, Decoder, DecoderConfig};
+pub use pull::{CborPullEvent, CborPullParser};
 pub use serializer::{serialize_to_dest, to_vec};
-pub use engine::CborEngine;
 pub use babbel_core::Value;

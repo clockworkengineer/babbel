@@ -14,6 +14,9 @@ members = [
     "crates/ron",
     "crates/kdl",
     "crates/parquet",
+    "crates/hcl",
+    "crates/avro",
+    "crates/cli",
 ]
 
 [workspace.dependencies]
@@ -29,6 +32,8 @@ babbel_bson = { path = "crates/bson", version = "0.2.1" }
 babbel_ron = { path = "crates/ron", version = "0.2.1" }
 babbel_kdl = { path = "crates/kdl", version = "0.2.1" }
 babbel_parquet = { path = "crates/parquet", version = "0.2.1" }
+babbel_hcl = { path = "crates/hcl", version = "0.2.1" }
+babbel_avro = { path = "crates/avro", version = "0.2.1" }
 
 
 

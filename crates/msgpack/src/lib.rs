@@ -39,10 +39,12 @@ pub mod error;
 pub mod parser;
 pub mod serializer;
 pub mod engine;
+pub mod pull;
 
 pub use constants::*;
 pub use error::MsgPackError;
 pub use parser::{from_bytes, Decoder, DecoderConfig};
 pub use serializer::{serialize_to_dest, to_vec};
 pub use engine::MsgPackEngine;
+pub use pull::{MsgPackPullEvent, MsgPackPullParser};
 pub use babbel_core::Value;

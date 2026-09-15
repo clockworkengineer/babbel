@@ -1,0 +1,17 @@
+[package]
+name = "babbel-cli"
+version = "0.2.1"
+edition = "2024"
+description = "Universal CLI utility for Babbel polyglot serialization, querying, diffing, patching, and formatting"
+license = "MIT"
+authors = ["ClockworkEngineer", "Babbel Contributors"]
+repository = "https://github.com/clockworkengineer/babbel"
+homepage = "https://github.com/clockworkengineer/babbel"
+
+[[bin]]
+name = "babbel"
+path = "src/main.rs"
+
+[dependencies]
+babbel = { path = "../babbel", version = "0.2.1" }
+babbel_core = { path = "../babbel_core", version = "0.2.1" }

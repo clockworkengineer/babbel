@@ -230,6 +230,31 @@ impl Value {
         Some(current)
     }
 
+    /// Evaluates an RFC 9535 JSONPath expression on this value, returning all matching node references.
+    pub fn jsonpath<'a>(&'a self, expr: &str) -> Result<alloc::vec::Vec<&'a Value>, crate::error::BabbelError> {
+        crate::query::query(self, expr)
+    }
+
+    /// Evaluates an RFC 9535 JSONPath expression on this value, returning all matching mutable references.
+    pub fn jsonpath_mut<'a>(&'a mut self, expr: &str) -> Result<alloc::vec::Vec<&'a mut Value>, crate::error::BabbelError> {
+        crate::query::query_mut(self, expr)
+    }
+
+    /// Applies an RFC 6902 JSON Patch to this value, returning a new transformed `Value`.
+    pub fn patch(&self, patch: &crate::patch::Patch) -> Result<Value, crate::error::BabbelError> {
+        patch.apply(self)
+    }
+
+    /// Applies an RFC 6902 JSON Patch in-place to this value.
+    pub fn patch_inplace(&mut self, patch: &crate::patch::Patch) -> Result<(), crate::error::BabbelError> {
+        patch.apply_inplace(self)
+    }
+
+    /// Applies an RFC 7396 JSON Merge Patch in-place to this value.
+    pub fn merge_patch(&mut self, patch: &Value) {
+        crate::patch::apply_merge_patch(self, patch);
+    }
+
 
     /// Emits this value using a pluggable format emitter adhering to OCP.
     pub fn emit<E: crate::codec::FormatEmitter + ?Sized>(
