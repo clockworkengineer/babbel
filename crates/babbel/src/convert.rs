@@ -1,10 +1,13 @@
 //! Cross-format conversion matrix for the Babbel ecosystem.
 //!
 //! Provides effortless conversion pipelines between JSON, YAML, XML, Bencode,
-//! CSV, TSV, INI, and JSON Lines.
+//! CSV, TSV, INI, JSON Lines, TOML, MsgPack, CBOR, BSON, RON, KDL, and Parquet.
+
+#[cfg(feature = "alloc")]
+use alloc::{string::String, vec::Vec};
 
 #[cfg(feature = "json")]
-use babbel_json::{JsonEngine, JsonLinesEngine, Json5Engine};
+use babbel_json::{Json5Engine, JsonEngine, JsonLinesEngine};
 #[cfg(feature = "yaml")]
 use babbel_yaml::YamlEngine;
 #[cfg(feature = "bencode")]
@@ -29,8 +32,9 @@ use babbel_parquet::ParquetEngine;
 use babbel_core::{
     csv::emit_csv_to, ini::emit_ini_to, parse_csv, parse_ini, BabbelError, Buffer, BufferDestination,
     CsvEngine, CsvOptions, FormatEmitter, FormatEngine, FormatOptions, FormatParser, IniEngine,
-    IniOptions, JsonEmitter, TomlEmitter, TsvEngine, Value,
+    IniOptions, JsonEmitter, TsvEngine, Value,
 };
+pub use babbel_core::TomlEmitter;
 
 /// Supported serialization format identifiers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -53,6 +57,29 @@ pub enum Format {
     JsonLines,
 }
 
+impl Format {
+    /// Returns the canonical format string identifier.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Json => "json",
+            Self::Yaml => "yaml",
+            Self::Xml => "xml",
+            Self::Bencode => "bencode",
+            Self::Toml => "toml",
+            Self::MsgPack => "msgpack",
+            Self::Cbor => "cbor",
+            Self::Bson => "bson",
+            Self::Ron => "ron",
+            Self::Kdl => "kdl",
+            Self::Parquet => "parquet",
+            Self::Json5 => "json5",
+            Self::Csv => "csv",
+            Self::Tsv => "tsv",
+            Self::Ini => "ini",
+            Self::JsonLines => "jsonlines",
+        }
+    }
+}
 
 /// Configuration options for cross-format conversions.
 #[derive(Debug, Clone)]
@@ -87,6 +114,10 @@ impl ConversionOptions {
         self
     }
 }
+
+// =========================================================================
+// Universal Open Engine Pipelines (OCP & DIP)
+// =========================================================================
 
 /// Universal cross-format text conversion pipeline adhering to OCP and DIP.
 ///
@@ -178,282 +209,376 @@ pub fn convert_bytes<P: FormatParser, E: FormatEmitter>(
     Ok(dest.into_vec())
 }
 
-/// JSON parser implementing `FormatParser`.
+// =========================================================================
+// Dynamic Format Registry Conversion Pipeline (OCP)
+// =========================================================================
+
+/// Dynamically convert text input between formats looked up in the default registry.
+#[cfg(feature = "alloc")]
+pub fn convert(
+    input: &str,
+    from_format: &str,
+    to_format: &str,
+    options: &ConversionOptions,
+) -> Result<String, BabbelError> {
+    let registry = crate::default_registry();
+    let from_engine = registry.get_by_id(from_format)
+        .ok_or_else(|| BabbelError::syntax(alloc::format!("unknown format '{}'", from_format)))?;
+    let to_engine = registry.get_by_id(to_format)
+        .ok_or_else(|| BabbelError::syntax(alloc::format!("unknown format '{}'", to_format)))?;
+    convert_format(input, &*from_engine, &*to_engine, options)
+}
+
+/// Dynamically convert binary or text input bytes between formats looked up in the default registry.
+#[cfg(feature = "alloc")]
+pub fn convert_dynamic_bytes(
+    input: &[u8],
+    from_format: &str,
+    to_format: &str,
+    options: &ConversionOptions,
+) -> Result<Vec<u8>, BabbelError> {
+    let registry = crate::default_registry();
+    let from_engine = registry.get_by_id(from_format)
+        .ok_or_else(|| BabbelError::syntax(alloc::format!("unknown format '{}'", from_format)))?;
+    let to_engine = registry.get_by_id(to_format)
+        .ok_or_else(|| BabbelError::syntax(alloc::format!("unknown format '{}'", to_format)))?;
+    convert_format_bytes(input, &*from_engine, &*to_engine, options)
+}
+
+/// Dynamically convert text input between two `Format` enum values.
+#[cfg(feature = "alloc")]
+pub fn convert_between(
+    input: &str,
+    from: Format,
+    to: Format,
+    options: &ConversionOptions,
+) -> Result<String, BabbelError> {
+    convert(input, from.as_str(), to.as_str(), options)
+}
+
+// =========================================================================
+// Declarative Pairwise Conversion Macros
+// =========================================================================
+
+macro_rules! text_to_text {
+    ($fn_name:ident, ($($cfg:tt)*), $from:expr, $to:expr, $doc:expr) => {
+        #[doc = $doc]
+        #[cfg($($cfg)*)]
+        pub fn $fn_name(input: &str) -> Result<String, BabbelError> {
+            convert_format(input, &$from, &$to, &ConversionOptions::default())
+        }
+    };
+}
+
+macro_rules! text_to_bytes {
+    ($fn_name:ident, ($($cfg:tt)*), $from:expr, $to:expr, $doc:expr) => {
+        #[doc = $doc]
+        #[cfg($($cfg)*)]
+        pub fn $fn_name(input: &str) -> Result<Vec<u8>, BabbelError> {
+            convert_format_bytes(input.as_bytes(), &$from, &$to, &ConversionOptions::default())
+        }
+    };
+}
+
+macro_rules! bytes_to_text {
+    ($fn_name:ident, ($($cfg:tt)*), $from:expr, $to:expr, $doc:expr) => {
+        #[doc = $doc]
+        #[cfg($($cfg)*)]
+        pub fn $fn_name(input: &[u8]) -> Result<String, BabbelError> {
+            convert_format_bytes_to_str(input, &$from, &$to, &ConversionOptions::default())
+        }
+    };
+}
+
+macro_rules! bytes_to_bytes {
+    ($fn_name:ident, ($($cfg:tt)*), $from:expr, $to:expr, $doc:expr) => {
+        #[doc = $doc]
+        #[cfg($($cfg)*)]
+        pub fn $fn_name(input: &[u8]) -> Result<Vec<u8>, BabbelError> {
+            convert_format_bytes(input, &$from, &$to, &ConversionOptions::default())
+        }
+    };
+}
+
+// =========================================================================
+// Convenience Cross-Format Conversions (Generated via Macros)
+// =========================================================================
+
+// JSON, YAML, XML, Bencode
+text_to_text!(json_to_yaml, (all(feature = "json", feature = "yaml")), JsonEngine, YamlEngine, "Convert JSON string to YAML string.");
+text_to_text!(json_to_xml, (all(feature = "json", feature = "xml")), JsonEngine, XmlEngine, "Convert JSON string to XML string.");
+text_to_bytes!(json_to_bencode, (all(feature = "json", feature = "bencode")), JsonEngine, BencodeEngine, "Convert JSON string to Bencode byte vector.");
+text_to_text!(yaml_to_json, (all(feature = "yaml", feature = "json")), YamlEngine, JsonEngine, "Convert YAML string to JSON string.");
+text_to_text!(yaml_to_xml, (all(feature = "yaml", feature = "xml")), YamlEngine, XmlEngine, "Convert YAML string to XML string.");
+bytes_to_text!(bencode_to_json, (all(feature = "bencode", feature = "json")), BencodeEngine, JsonEngine, "Convert Bencode binary payload to JSON string.");
+bytes_to_text!(bencode_to_yaml, (all(feature = "bencode", feature = "yaml")), BencodeEngine, YamlEngine, "Convert Bencode binary payload to YAML string.");
+bytes_to_text!(bencode_to_xml, (all(feature = "bencode", feature = "xml")), BencodeEngine, XmlEngine, "Convert Bencode binary payload to XML string.");
+text_to_text!(xml_to_json, (all(feature = "xml", feature = "json")), XmlEngine, JsonEngine, "Convert XML string to JSON string.");
+text_to_text!(xml_to_yaml, (all(feature = "xml", feature = "yaml")), XmlEngine, YamlEngine, "Convert XML string to YAML string.");
+text_to_bytes!(xml_to_bencode, (all(feature = "xml", feature = "bencode")), XmlEngine, BencodeEngine, "Convert XML string to Bencode byte vector.");
+text_to_bytes!(yaml_to_bencode, (all(feature = "yaml", feature = "bencode")), YamlEngine, BencodeEngine, "Convert YAML string to Bencode byte vector.");
+
+// Text formats (CSV, TSV, INI, JSON Lines)
+text_to_text!(csv_to_json, (feature = "json"), CsvEngine, JsonEngine, "Convert CSV string to JSON string.");
+text_to_text!(json_to_csv, (feature = "json"), JsonEngine, CsvEngine, "Convert JSON string to CSV string.");
+text_to_text!(tsv_to_json, (feature = "json"), TsvEngine, JsonEngine, "Convert TSV string to JSON string.");
+text_to_text!(json_to_tsv, (feature = "json"), JsonEngine, TsvEngine, "Convert JSON string to TSV string.");
+text_to_text!(csv_to_yaml, (feature = "yaml"), CsvEngine, YamlEngine, "Convert CSV string to YAML string.");
+text_to_text!(yaml_to_csv, (feature = "yaml"), YamlEngine, CsvEngine, "Convert YAML string to CSV string.");
+text_to_text!(csv_to_xml, (feature = "xml"), CsvEngine, XmlEngine, "Convert CSV string to XML string.");
+text_to_text!(xml_to_csv, (feature = "xml"), XmlEngine, CsvEngine, "Convert XML string to CSV string.");
+text_to_bytes!(csv_to_bencode, (feature = "bencode"), CsvEngine, BencodeEngine, "Convert CSV string to Bencode byte vector.");
+bytes_to_text!(bencode_to_csv, (feature = "bencode"), BencodeEngine, CsvEngine, "Convert Bencode binary payload to CSV string.");
+text_to_text!(csv_to_ini, (all()), CsvEngine, IniEngine, "Convert CSV string to INI string.");
+text_to_text!(ini_to_csv, (all()), IniEngine, CsvEngine, "Convert INI string to CSV string.");
+text_to_text!(tsv_to_yaml, (feature = "yaml"), TsvEngine, YamlEngine, "Convert TSV string to YAML string.");
+text_to_text!(yaml_to_tsv, (feature = "yaml"), YamlEngine, TsvEngine, "Convert YAML string to TSV string.");
+text_to_text!(tsv_to_xml, (feature = "xml"), TsvEngine, XmlEngine, "Convert TSV string to XML string.");
+text_to_text!(xml_to_tsv, (feature = "xml"), XmlEngine, TsvEngine, "Convert XML string to TSV string.");
+text_to_text!(tsv_to_toml, (feature = "toml"), TsvEngine, TomlEngine, "Convert TSV string to TOML string.");
+text_to_text!(toml_to_tsv, (feature = "toml"), TomlEngine, TsvEngine, "Convert TOML string to TSV string.");
+text_to_bytes!(tsv_to_bencode, (feature = "bencode"), TsvEngine, BencodeEngine, "Convert TSV string to Bencode byte vector.");
+bytes_to_text!(bencode_to_tsv, (feature = "bencode"), BencodeEngine, TsvEngine, "Convert Bencode binary payload to TSV string.");
+text_to_text!(tsv_to_ini, (all()), TsvEngine, IniEngine, "Convert TSV string to INI string.");
+text_to_text!(ini_to_tsv, (all()), IniEngine, TsvEngine, "Convert INI string to TSV string.");
+text_to_text!(tsv_to_jsonlines, (feature = "json"), TsvEngine, JsonLinesEngine, "Convert TSV string to JSON Lines string.");
+text_to_text!(jsonlines_to_tsv, (feature = "json"), JsonLinesEngine, TsvEngine, "Convert JSON Lines string to TSV string.");
+text_to_text!(ini_to_json, (feature = "json"), IniEngine, JsonEngine, "Convert INI string to JSON string.");
+text_to_text!(json_to_ini, (feature = "json"), JsonEngine, IniEngine, "Convert JSON string to INI string.");
+text_to_text!(ini_to_yaml, (feature = "yaml"), IniEngine, YamlEngine, "Convert INI string to YAML string.");
+text_to_text!(yaml_to_ini, (feature = "yaml"), YamlEngine, IniEngine, "Convert YAML string to INI string.");
+text_to_text!(ini_to_xml, (feature = "xml"), IniEngine, XmlEngine, "Convert INI string to XML string.");
+text_to_text!(xml_to_ini, (feature = "xml"), XmlEngine, IniEngine, "Convert XML string to INI string.");
+text_to_bytes!(ini_to_bencode, (feature = "bencode"), IniEngine, BencodeEngine, "Convert INI string to Bencode byte vector.");
+bytes_to_text!(bencode_to_ini, (feature = "bencode"), BencodeEngine, IniEngine, "Convert Bencode binary payload to INI string.");
+text_to_text!(ini_to_jsonlines, (feature = "json"), IniEngine, JsonLinesEngine, "Convert INI string to JSON Lines string.");
+text_to_text!(jsonlines_to_ini, (feature = "json"), JsonLinesEngine, IniEngine, "Convert JSON Lines string to INI string.");
+text_to_text!(jsonlines_to_json, (feature = "json"), JsonLinesEngine, JsonEngine, "Convert JSON Lines string to JSON string.");
+text_to_text!(json_to_jsonlines, (feature = "json"), JsonEngine, JsonLinesEngine, "Convert JSON string to JSON Lines string.");
+text_to_text!(jsonlines_to_csv, (feature = "json"), JsonLinesEngine, CsvEngine, "Convert JSON Lines string to CSV string.");
+text_to_text!(csv_to_jsonlines, (feature = "json"), CsvEngine, JsonLinesEngine, "Convert CSV string to JSON Lines string.");
+text_to_text!(jsonlines_to_yaml, (all(feature = "json", feature = "yaml")), JsonLinesEngine, YamlEngine, "Convert JSON Lines string to YAML string.");
+text_to_text!(yaml_to_jsonlines, (all(feature = "yaml", feature = "json")), YamlEngine, JsonLinesEngine, "Convert YAML string to JSON Lines string.");
+text_to_text!(jsonlines_to_xml, (all(feature = "json", feature = "xml")), JsonLinesEngine, XmlEngine, "Convert JSON Lines string to XML string.");
+text_to_text!(xml_to_jsonlines, (all(feature = "xml", feature = "json")), XmlEngine, JsonLinesEngine, "Convert XML string to JSON Lines string.");
+text_to_bytes!(jsonlines_to_bencode, (all(feature = "json", feature = "bencode")), JsonLinesEngine, BencodeEngine, "Convert JSON Lines string to Bencode byte vector.");
+bytes_to_text!(bencode_to_jsonlines, (all(feature = "bencode", feature = "json")), BencodeEngine, JsonLinesEngine, "Convert Bencode binary payload to JSON Lines string.");
+
+// TOML
+text_to_text!(toml_to_json, (all(feature = "toml", feature = "json")), TomlEngine, JsonEngine, "Convert TOML string to JSON string.");
+text_to_text!(json_to_toml, (all(feature = "json", feature = "toml")), JsonEngine, TomlEngine, "Convert JSON string to TOML string.");
+text_to_text!(toml_to_yaml, (all(feature = "toml", feature = "yaml")), TomlEngine, YamlEngine, "Convert TOML string to YAML string.");
+text_to_text!(yaml_to_toml, (all(feature = "yaml", feature = "toml")), YamlEngine, TomlEngine, "Convert YAML string to TOML string.");
+text_to_text!(toml_to_xml, (all(feature = "toml", feature = "xml")), TomlEngine, XmlEngine, "Convert TOML string to XML string.");
+text_to_text!(xml_to_toml, (all(feature = "xml", feature = "toml")), XmlEngine, TomlEngine, "Convert XML string to TOML string.");
+text_to_bytes!(toml_to_bencode, (all(feature = "toml", feature = "bencode")), TomlEngine, BencodeEngine, "Convert TOML string to Bencode byte vector.");
+bytes_to_text!(bencode_to_toml, (all(feature = "bencode", feature = "toml")), BencodeEngine, TomlEngine, "Convert Bencode binary payload to TOML string.");
+text_to_text!(toml_to_csv, (feature = "toml"), TomlEngine, CsvEngine, "Convert TOML string to CSV string.");
+text_to_text!(csv_to_toml, (feature = "toml"), CsvEngine, TomlEngine, "Convert CSV string to TOML string.");
+text_to_text!(toml_to_ini, (feature = "toml"), TomlEngine, IniEngine, "Convert TOML string to INI string.");
+text_to_text!(ini_to_toml, (feature = "toml"), IniEngine, TomlEngine, "Convert INI string to TOML string.");
+text_to_text!(toml_to_jsonlines, (all(feature = "toml", feature = "json")), TomlEngine, JsonLinesEngine, "Convert TOML string to JSON Lines string.");
+text_to_text!(jsonlines_to_toml, (all(feature = "json", feature = "toml")), JsonLinesEngine, TomlEngine, "Convert JSON Lines string to TOML string.");
+
+// MsgPack
+text_to_bytes!(json_to_msgpack, (all(feature = "json", feature = "msgpack")), JsonEngine, MsgPackEngine, "Convert JSON string to MsgPack byte vector.");
+bytes_to_text!(msgpack_to_json, (all(feature = "msgpack", feature = "json")), MsgPackEngine, JsonEngine, "Convert MsgPack binary payload to JSON string.");
+text_to_bytes!(yaml_to_msgpack, (all(feature = "yaml", feature = "msgpack")), YamlEngine, MsgPackEngine, "Convert YAML string to MsgPack byte vector.");
+bytes_to_text!(msgpack_to_yaml, (all(feature = "msgpack", feature = "yaml")), MsgPackEngine, YamlEngine, "Convert MsgPack binary payload to YAML string.");
+text_to_bytes!(xml_to_msgpack, (all(feature = "xml", feature = "msgpack")), XmlEngine, MsgPackEngine, "Convert XML string to MsgPack byte vector.");
+bytes_to_text!(msgpack_to_xml, (all(feature = "msgpack", feature = "xml")), MsgPackEngine, XmlEngine, "Convert MsgPack binary payload to XML string.");
+text_to_bytes!(toml_to_msgpack, (all(feature = "toml", feature = "msgpack")), TomlEngine, MsgPackEngine, "Convert TOML string to MsgPack byte vector.");
+bytes_to_text!(msgpack_to_toml, (all(feature = "msgpack", feature = "toml")), MsgPackEngine, TomlEngine, "Convert MsgPack binary payload to TOML string.");
+bytes_to_bytes!(bencode_to_msgpack, (all(feature = "bencode", feature = "msgpack")), BencodeEngine, MsgPackEngine, "Convert Bencode binary payload to MsgPack byte vector.");
+bytes_to_bytes!(msgpack_to_bencode, (all(feature = "msgpack", feature = "bencode")), MsgPackEngine, BencodeEngine, "Convert MsgPack binary payload to Bencode byte vector.");
+text_to_bytes!(csv_to_msgpack, (feature = "msgpack"), CsvEngine, MsgPackEngine, "Convert CSV string to MsgPack byte vector.");
+bytes_to_text!(msgpack_to_csv, (feature = "msgpack"), MsgPackEngine, CsvEngine, "Convert MsgPack binary payload to CSV string.");
+
+// CBOR
+text_to_bytes!(json_to_cbor, (all(feature = "json", feature = "cbor")), JsonEngine, CborEngine, "Convert JSON string to CBOR byte vector.");
+bytes_to_text!(cbor_to_json, (all(feature = "cbor", feature = "json")), CborEngine, JsonEngine, "Convert CBOR binary payload to JSON string.");
+text_to_bytes!(yaml_to_cbor, (all(feature = "yaml", feature = "cbor")), YamlEngine, CborEngine, "Convert YAML string to CBOR byte vector.");
+bytes_to_text!(cbor_to_yaml, (all(feature = "cbor", feature = "yaml")), CborEngine, YamlEngine, "Convert CBOR binary payload to YAML string.");
+text_to_bytes!(xml_to_cbor, (all(feature = "xml", feature = "cbor")), XmlEngine, CborEngine, "Convert XML string to CBOR byte vector.");
+bytes_to_text!(cbor_to_xml, (all(feature = "cbor", feature = "xml")), CborEngine, XmlEngine, "Convert CBOR binary payload to XML string.");
+text_to_bytes!(toml_to_cbor, (all(feature = "toml", feature = "cbor")), TomlEngine, CborEngine, "Convert TOML string to CBOR byte vector.");
+bytes_to_text!(cbor_to_toml, (all(feature = "cbor", feature = "toml")), CborEngine, TomlEngine, "Convert CBOR binary payload to TOML string.");
+bytes_to_bytes!(msgpack_to_cbor, (all(feature = "msgpack", feature = "cbor")), MsgPackEngine, CborEngine, "Convert MsgPack binary payload to CBOR byte vector.");
+bytes_to_bytes!(cbor_to_msgpack, (all(feature = "cbor", feature = "msgpack")), CborEngine, MsgPackEngine, "Convert CBOR binary payload to MsgPack byte vector.");
+bytes_to_bytes!(bencode_to_cbor, (all(feature = "bencode", feature = "cbor")), BencodeEngine, CborEngine, "Convert Bencode binary payload to CBOR byte vector.");
+bytes_to_bytes!(cbor_to_bencode, (all(feature = "cbor", feature = "bencode")), CborEngine, BencodeEngine, "Convert CBOR binary payload to Bencode byte vector.");
+text_to_bytes!(csv_to_cbor, (feature = "cbor"), CsvEngine, CborEngine, "Convert CSV string to CBOR byte vector.");
+bytes_to_text!(cbor_to_csv, (feature = "cbor"), CborEngine, CsvEngine, "Convert CBOR binary payload to CSV string.");
+
+// BSON
+text_to_bytes!(json_to_bson, (all(feature = "json", feature = "bson")), JsonEngine, BsonEngine, "Convert JSON string to BSON byte vector.");
+bytes_to_text!(bson_to_json, (all(feature = "bson", feature = "json")), BsonEngine, JsonEngine, "Convert BSON binary payload to JSON string.");
+text_to_bytes!(yaml_to_bson, (all(feature = "yaml", feature = "bson")), YamlEngine, BsonEngine, "Convert YAML string to BSON byte vector.");
+bytes_to_text!(bson_to_yaml, (all(feature = "bson", feature = "yaml")), BsonEngine, YamlEngine, "Convert BSON binary payload to YAML string.");
+text_to_bytes!(xml_to_bson, (all(feature = "xml", feature = "bson")), XmlEngine, BsonEngine, "Convert XML string to BSON byte vector.");
+bytes_to_text!(bson_to_xml, (all(feature = "bson", feature = "xml")), BsonEngine, XmlEngine, "Convert BSON binary payload to XML string.");
+text_to_bytes!(toml_to_bson, (all(feature = "toml", feature = "bson")), TomlEngine, BsonEngine, "Convert TOML string to BSON byte vector.");
+bytes_to_text!(bson_to_toml, (all(feature = "bson", feature = "toml")), BsonEngine, TomlEngine, "Convert BSON binary payload to TOML string.");
+bytes_to_bytes!(msgpack_to_bson, (all(feature = "msgpack", feature = "bson")), MsgPackEngine, BsonEngine, "Convert MsgPack binary payload to BSON byte vector.");
+bytes_to_bytes!(bson_to_msgpack, (all(feature = "bson", feature = "msgpack")), BsonEngine, MsgPackEngine, "Convert BSON binary payload to MsgPack byte vector.");
+bytes_to_bytes!(cbor_to_bson, (all(feature = "cbor", feature = "bson")), CborEngine, BsonEngine, "Convert CBOR binary payload to BSON byte vector.");
+bytes_to_bytes!(bson_to_cbor, (all(feature = "bson", feature = "cbor")), BsonEngine, CborEngine, "Convert BSON binary payload to CBOR byte vector.");
+bytes_to_bytes!(bencode_to_bson, (all(feature = "bencode", feature = "bson")), BencodeEngine, BsonEngine, "Convert Bencode binary payload to BSON byte vector.");
+bytes_to_bytes!(bson_to_bencode, (all(feature = "bson", feature = "bencode")), BsonEngine, BencodeEngine, "Convert BSON binary payload to Bencode byte vector.");
+text_to_bytes!(csv_to_bson, (feature = "bson"), CsvEngine, BsonEngine, "Convert CSV string to BSON byte vector.");
+bytes_to_text!(bson_to_csv, (feature = "bson"), BsonEngine, CsvEngine, "Convert BSON binary payload to CSV string.");
+
+// JSON5
+text_to_text!(json5_to_json, (feature = "json"), Json5Engine, JsonEngine, "Convert JSON5 string to JSON string.");
+text_to_text!(json_to_json5, (feature = "json"), JsonEngine, Json5Engine, "Convert JSON string to JSON5 string.");
+text_to_text!(json5_to_yaml, (all(feature = "json", feature = "yaml")), Json5Engine, YamlEngine, "Convert JSON5 string to YAML string.");
+text_to_text!(yaml_to_json5, (all(feature = "yaml", feature = "json")), YamlEngine, Json5Engine, "Convert YAML string to JSON5 string.");
+text_to_text!(json5_to_toml, (all(feature = "json", feature = "toml")), Json5Engine, TomlEngine, "Convert JSON5 string to TOML string.");
+text_to_text!(toml_to_json5, (all(feature = "toml", feature = "json")), TomlEngine, Json5Engine, "Convert TOML string to JSON5 string.");
+text_to_text!(json5_to_xml, (all(feature = "json", feature = "xml")), Json5Engine, XmlEngine, "Convert JSON5 string to XML string.");
+text_to_text!(xml_to_json5, (all(feature = "xml", feature = "json")), XmlEngine, Json5Engine, "Convert XML string to JSON5 string.");
+text_to_bytes!(json5_to_msgpack, (all(feature = "json", feature = "msgpack")), Json5Engine, MsgPackEngine, "Convert JSON5 string to MsgPack byte vector.");
+bytes_to_text!(msgpack_to_json5, (all(feature = "msgpack", feature = "json")), MsgPackEngine, Json5Engine, "Convert MsgPack binary payload to JSON5 string.");
+text_to_bytes!(json5_to_cbor, (all(feature = "json", feature = "cbor")), Json5Engine, CborEngine, "Convert JSON5 string to CBOR byte vector.");
+bytes_to_text!(cbor_to_json5, (all(feature = "cbor", feature = "json")), CborEngine, Json5Engine, "Convert CBOR binary payload to JSON5 string.");
+text_to_bytes!(json5_to_bson, (all(feature = "json", feature = "bson")), Json5Engine, BsonEngine, "Convert JSON5 string to BSON byte vector.");
+bytes_to_text!(bson_to_json5, (all(feature = "bson", feature = "json")), BsonEngine, Json5Engine, "Convert BSON binary payload to JSON5 string.");
+
+// RON
+text_to_text!(ron_to_json, (all(feature = "ron", feature = "json")), RonEngine, JsonEngine, "Convert RON string to JSON string.");
+text_to_text!(json_to_ron, (all(feature = "json", feature = "ron")), JsonEngine, RonEngine, "Convert JSON string to RON string.");
+text_to_text!(ron_to_yaml, (all(feature = "ron", feature = "yaml")), RonEngine, YamlEngine, "Convert RON string to YAML string.");
+text_to_text!(yaml_to_ron, (all(feature = "yaml", feature = "ron")), YamlEngine, RonEngine, "Convert YAML string to RON string.");
+text_to_text!(ron_to_toml, (all(feature = "ron", feature = "toml")), RonEngine, TomlEngine, "Convert RON string to TOML string.");
+text_to_text!(toml_to_ron, (all(feature = "toml", feature = "ron")), TomlEngine, RonEngine, "Convert TOML string to RON string.");
+text_to_text!(ron_to_xml, (all(feature = "ron", feature = "xml")), RonEngine, XmlEngine, "Convert RON string to XML string.");
+text_to_text!(xml_to_ron, (all(feature = "xml", feature = "ron")), XmlEngine, RonEngine, "Convert XML string to RON string.");
+text_to_bytes!(ron_to_msgpack, (all(feature = "ron", feature = "msgpack")), RonEngine, MsgPackEngine, "Convert RON string to MsgPack byte vector.");
+bytes_to_text!(msgpack_to_ron, (all(feature = "msgpack", feature = "ron")), MsgPackEngine, RonEngine, "Convert MsgPack binary payload to RON string.");
+text_to_bytes!(ron_to_cbor, (all(feature = "ron", feature = "cbor")), RonEngine, CborEngine, "Convert RON string to CBOR byte vector.");
+bytes_to_text!(cbor_to_ron, (all(feature = "cbor", feature = "ron")), CborEngine, RonEngine, "Convert CBOR binary payload to RON string.");
+text_to_bytes!(ron_to_bson, (all(feature = "ron", feature = "bson")), RonEngine, BsonEngine, "Convert RON string to BSON byte vector.");
+bytes_to_text!(bson_to_ron, (all(feature = "bson", feature = "ron")), BsonEngine, RonEngine, "Convert BSON binary payload to RON string.");
+text_to_text!(ron_to_json5, (all(feature = "ron", feature = "json")), RonEngine, Json5Engine, "Convert RON string to JSON5 string.");
+text_to_text!(json5_to_ron, (all(feature = "json", feature = "ron")), Json5Engine, RonEngine, "Convert JSON5 string to RON string.");
+
+// KDL
+text_to_text!(kdl_to_json, (all(feature = "kdl", feature = "json")), KdlEngine, JsonEngine, "Convert KDL string to JSON string.");
+text_to_text!(json_to_kdl, (all(feature = "json", feature = "kdl")), JsonEngine, KdlEngine, "Convert JSON string to KDL string.");
+text_to_text!(kdl_to_yaml, (all(feature = "kdl", feature = "yaml")), KdlEngine, YamlEngine, "Convert KDL string to YAML string.");
+text_to_text!(yaml_to_kdl, (all(feature = "yaml", feature = "kdl")), YamlEngine, KdlEngine, "Convert YAML string to KDL string.");
+text_to_text!(kdl_to_toml, (all(feature = "kdl", feature = "toml")), KdlEngine, TomlEngine, "Convert KDL string to TOML string.");
+text_to_text!(toml_to_kdl, (all(feature = "toml", feature = "kdl")), TomlEngine, KdlEngine, "Convert TOML string to KDL string.");
+text_to_text!(kdl_to_xml, (all(feature = "kdl", feature = "xml")), KdlEngine, XmlEngine, "Convert KDL string to XML string.");
+text_to_text!(xml_to_kdl, (all(feature = "xml", feature = "kdl")), XmlEngine, KdlEngine, "Convert XML string to KDL string.");
+text_to_bytes!(kdl_to_msgpack, (all(feature = "kdl", feature = "msgpack")), KdlEngine, MsgPackEngine, "Convert KDL string to MsgPack byte vector.");
+bytes_to_text!(msgpack_to_kdl, (all(feature = "msgpack", feature = "kdl")), MsgPackEngine, KdlEngine, "Convert MsgPack binary payload to KDL string.");
+text_to_bytes!(kdl_to_cbor, (all(feature = "kdl", feature = "cbor")), KdlEngine, CborEngine, "Convert KDL string to CBOR byte vector.");
+bytes_to_text!(cbor_to_kdl, (all(feature = "cbor", feature = "kdl")), CborEngine, KdlEngine, "Convert CBOR binary payload to KDL string.");
+text_to_bytes!(kdl_to_bson, (all(feature = "kdl", feature = "bson")), KdlEngine, BsonEngine, "Convert KDL string to BSON byte vector.");
+bytes_to_text!(bson_to_kdl, (all(feature = "bson", feature = "kdl")), BsonEngine, KdlEngine, "Convert BSON binary payload to KDL string.");
+text_to_text!(kdl_to_ron, (all(feature = "kdl", feature = "ron")), KdlEngine, RonEngine, "Convert KDL string to RON string.");
+text_to_text!(ron_to_kdl, (all(feature = "ron", feature = "kdl")), RonEngine, KdlEngine, "Convert RON string to KDL string.");
+text_to_text!(kdl_to_json5, (all(feature = "kdl", feature = "json")), KdlEngine, Json5Engine, "Convert KDL string to JSON5 string.");
+text_to_text!(json5_to_kdl, (all(feature = "json", feature = "kdl")), Json5Engine, KdlEngine, "Convert JSON5 string to KDL string.");
+
+// Parquet
+bytes_to_text!(parquet_to_json, (all(feature = "parquet", feature = "json")), ParquetEngine, JsonEngine, "Convert Parquet binary payload to JSON string.");
+text_to_bytes!(json_to_parquet, (all(feature = "json", feature = "parquet")), JsonEngine, ParquetEngine, "Convert JSON string to Parquet byte vector.");
+bytes_to_text!(parquet_to_csv, (feature = "parquet"), ParquetEngine, CsvEngine, "Convert Parquet binary payload to CSV string.");
+text_to_bytes!(csv_to_parquet, (feature = "parquet"), CsvEngine, ParquetEngine, "Convert CSV string to Parquet byte vector.");
+bytes_to_text!(parquet_to_yaml, (all(feature = "parquet", feature = "yaml")), ParquetEngine, YamlEngine, "Convert Parquet binary payload to YAML string.");
+text_to_bytes!(yaml_to_parquet, (all(feature = "yaml", feature = "parquet")), YamlEngine, ParquetEngine, "Convert YAML string to Parquet byte vector.");
+bytes_to_text!(parquet_to_toml, (all(feature = "parquet", feature = "toml")), ParquetEngine, TomlEngine, "Convert Parquet binary payload to TOML string.");
+text_to_bytes!(toml_to_parquet, (all(feature = "toml", feature = "parquet")), TomlEngine, ParquetEngine, "Convert TOML string to Parquet byte vector.");
+bytes_to_bytes!(parquet_to_msgpack, (all(feature = "parquet", feature = "msgpack")), ParquetEngine, MsgPackEngine, "Convert Parquet binary payload to MsgPack byte vector.");
+bytes_to_bytes!(msgpack_to_parquet, (all(feature = "msgpack", feature = "parquet")), MsgPackEngine, ParquetEngine, "Convert MsgPack binary payload to Parquet byte vector.");
+bytes_to_bytes!(parquet_to_cbor, (all(feature = "parquet", feature = "cbor")), ParquetEngine, CborEngine, "Convert Parquet binary payload to CBOR byte vector.");
+bytes_to_bytes!(cbor_to_parquet, (all(feature = "cbor", feature = "parquet")), CborEngine, ParquetEngine, "Convert CBOR binary payload to Parquet byte vector.");
+bytes_to_bytes!(parquet_to_bson, (all(feature = "parquet", feature = "bson")), ParquetEngine, BsonEngine, "Convert Parquet binary payload to BSON byte vector.");
+bytes_to_bytes!(bson_to_parquet, (all(feature = "bson", feature = "parquet")), BsonEngine, ParquetEngine, "Convert BSON binary payload to Parquet byte vector.");
+
+// =========================================================================
+// Backward Compatibility Format Adapters
+// =========================================================================
+
+macro_rules! define_format_adapters {
+    ($parser:ident, $emitter:ident, $engine:expr, ($($cfg:tt)*)) => {
+        #[cfg($($cfg)*)]
+        #[derive(Debug, Default, Clone, Copy)]
+        pub struct $parser;
+
+        #[cfg($($cfg)*)]
+        impl FormatParser for $parser {
+            #[inline]
+            fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
+                FormatEngine::parse_str(&$engine, input)
+            }
+            #[inline]
+            fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
+                FormatEngine::parse_bytes(&$engine, input)
+            }
+        }
+
+        #[cfg($($cfg)*)]
+        #[derive(Debug, Default, Clone, Copy)]
+        pub struct $emitter;
+
+        #[cfg($($cfg)*)]
+        impl FormatEmitter for $emitter {
+            #[inline]
+            fn emit(&self, value: &Value, dest: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
+                FormatEmitter::emit(&$engine, value, dest)
+            }
+            #[inline]
+            fn emit_pretty(&self, value: &Value, dest: &mut dyn babbel_core::IDestination, indent: usize) -> Result<(), BabbelError> {
+                FormatEmitter::emit_pretty(&$engine, value, dest, indent)
+            }
+        }
+    };
+}
+
 #[cfg(feature = "json")]
 #[derive(Debug, Default, Clone, Copy)]
 pub struct JsonParser;
 
 #[cfg(feature = "json")]
 impl FormatParser for JsonParser {
+    #[inline]
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
         FormatEngine::parse_str(&JsonEngine, input)
     }
-
+    #[inline]
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
         FormatEngine::parse_bytes(&JsonEngine, input)
     }
 }
 
-/// JSON5 parser implementing `FormatParser`.
-#[cfg(feature = "json")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct Json5Parser;
-
-#[cfg(feature = "json")]
-impl FormatParser for Json5Parser {
-    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        FormatEngine::parse_str(&Json5Engine, input)
-    }
-
-    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        FormatEngine::parse_bytes(&Json5Engine, input)
-    }
-}
-
-/// JSON5 emitter implementing `FormatEmitter`.
-#[cfg(feature = "json")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct Json5Emitter;
-
-#[cfg(feature = "json")]
-impl FormatEmitter for Json5Emitter {
-    fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
-        Json5Engine.serialize(value, destination, &FormatOptions::compact())
-    }
-}
-
-/// YAML parser implementing `FormatParser`.
-
-#[cfg(feature = "yaml")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct YamlParser;
-
-#[cfg(feature = "yaml")]
-impl FormatParser for YamlParser {
-    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        FormatEngine::parse_str(&YamlEngine, input)
-    }
-
-    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        FormatEngine::parse_bytes(&YamlEngine, input)
-    }
-}
-
-/// Bencode parser implementing `FormatParser`.
-#[cfg(feature = "bencode")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct BencodeParser;
-
-#[cfg(feature = "bencode")]
-impl FormatParser for BencodeParser {
-    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        FormatEngine::parse_str(&BencodeEngine, input)
-    }
-
-    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        FormatEngine::parse_bytes(&BencodeEngine, input)
-    }
-}
-
-/// XML parser implementing `FormatParser`.
-#[cfg(feature = "xml")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct XmlParser;
-
-#[cfg(feature = "xml")]
-impl FormatParser for XmlParser {
-    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        FormatEngine::parse_str(&XmlEngine, input)
-    }
-
-    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        FormatEngine::parse_bytes(&XmlEngine, input)
-    }
-}
-
-/// TOML parser implementing `FormatParser`.
+define_format_adapters!(Json5Parser, Json5Emitter, Json5Engine, (feature = "json"));
+define_format_adapters!(YamlParser, YamlEmitter, YamlEngine, (feature = "yaml"));
+define_format_adapters!(XmlParser, XmlEmitter, XmlEngine, (feature = "xml"));
+define_format_adapters!(BencodeParser, BencodeEmitter, BencodeEngine, (feature = "bencode"));
 #[cfg(feature = "toml")]
 #[derive(Debug, Default, Clone, Copy)]
 pub struct TomlParser;
 
 #[cfg(feature = "toml")]
 impl FormatParser for TomlParser {
+    #[inline]
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
         FormatEngine::parse_str(&TomlEngine, input)
     }
-
+    #[inline]
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
         FormatEngine::parse_bytes(&TomlEngine, input)
     }
 }
-
-/// MessagePack parser implementing `FormatParser`.
-#[cfg(feature = "msgpack")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct MsgPackParser;
-
-#[cfg(feature = "msgpack")]
-impl FormatParser for MsgPackParser {
-    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        FormatEngine::parse_bytes(&MsgPackEngine, input.as_bytes())
-    }
-
-    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        FormatEngine::parse_bytes(&MsgPackEngine, input)
-    }
-}
-
-/// MessagePack emitter implementing `FormatEmitter`.
-#[cfg(feature = "msgpack")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct MsgPackEmitter;
-
-#[cfg(feature = "msgpack")]
-impl FormatEmitter for MsgPackEmitter {
-    fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
-        MsgPackEngine.serialize(value, destination, &FormatOptions::compact())
-    }
-}
-
-/// CBOR parser implementing `FormatParser`.
-#[cfg(feature = "cbor")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct CborParser;
-
-#[cfg(feature = "cbor")]
-impl FormatParser for CborParser {
-    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        FormatEngine::parse_bytes(&CborEngine, input.as_bytes())
-    }
-
-    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        FormatEngine::parse_bytes(&CborEngine, input)
-    }
-}
-
-/// CBOR emitter implementing `FormatEmitter`.
-#[cfg(feature = "cbor")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct CborEmitter;
-
-#[cfg(feature = "cbor")]
-impl FormatEmitter for CborEmitter {
-    fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
-        CborEngine.serialize(value, destination, &FormatOptions::compact())
-    }
-}
-
-/// BSON parser implementing `FormatParser`.
-#[cfg(feature = "bson")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct BsonParser;
-
-#[cfg(feature = "bson")]
-impl FormatParser for BsonParser {
-    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        FormatEngine::parse_bytes(&BsonEngine, input.as_bytes())
-    }
-
-    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        FormatEngine::parse_bytes(&BsonEngine, input)
-    }
-}
-
-/// BSON emitter implementing `FormatEmitter`.
-#[cfg(feature = "bson")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct BsonEmitter;
-
-#[cfg(feature = "bson")]
-impl FormatEmitter for BsonEmitter {
-    fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
-        BsonEngine.serialize(value, destination, &FormatOptions::compact())
-    }
-}
-
-/// RON parser implementing `FormatParser`.
-#[cfg(feature = "ron")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct RonParser;
-
-#[cfg(feature = "ron")]
-impl FormatParser for RonParser {
-    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        FormatEngine::parse_str(&RonEngine, input)
-    }
-
-    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        FormatEngine::parse_bytes(&RonEngine, input)
-    }
-}
-
-/// RON emitter implementing `FormatEmitter`.
-#[cfg(feature = "ron")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct RonEmitter;
-
-#[cfg(feature = "ron")]
-impl FormatEmitter for RonEmitter {
-    fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
-        RonEngine.serialize(value, destination, &FormatOptions::compact())
-    }
-}
-
-/// KDL parser implementing `FormatParser`.
-#[cfg(feature = "kdl")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct KdlParser;
-
-#[cfg(feature = "kdl")]
-impl FormatParser for KdlParser {
-    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        FormatEngine::parse_str(&KdlEngine, input)
-    }
-
-    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        FormatEngine::parse_bytes(&KdlEngine, input)
-    }
-}
-
-/// KDL emitter implementing `FormatEmitter`.
-#[cfg(feature = "kdl")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct KdlEmitter;
-
-#[cfg(feature = "kdl")]
-impl FormatEmitter for KdlEmitter {
-    fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
-        KdlEngine.serialize(value, destination, &FormatOptions::compact())
-    }
-}
-
-/// Parquet parser implementing `FormatParser`.
-#[cfg(feature = "parquet")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct ParquetParser;
-
-#[cfg(feature = "parquet")]
-impl FormatParser for ParquetParser {
-    fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        FormatEngine::parse_bytes(&ParquetEngine, input.as_bytes())
-    }
-
-    fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        FormatEngine::parse_bytes(&ParquetEngine, input)
-    }
-}
-
-/// Parquet emitter implementing `FormatEmitter`.
-#[cfg(feature = "parquet")]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct ParquetEmitter;
-
-#[cfg(feature = "parquet")]
-impl FormatEmitter for ParquetEmitter {
-    fn emit(&self, value: &Value, destination: &mut dyn babbel_core::IDestination) -> Result<(), BabbelError> {
-        ParquetEngine.serialize(value, destination, &FormatOptions::compact())
-    }
-}
+define_format_adapters!(MsgPackParser, MsgPackEmitter, MsgPackEngine, (feature = "msgpack"));
+define_format_adapters!(CborParser, CborEmitter, CborEngine, (feature = "cbor"));
+define_format_adapters!(BsonParser, BsonEmitter, BsonEngine, (feature = "bson"));
+define_format_adapters!(RonParser, RonEmitter, RonEngine, (feature = "ron"));
+define_format_adapters!(KdlParser, KdlEmitter, KdlEngine, (feature = "kdl"));
+define_format_adapters!(ParquetParser, ParquetEmitter, ParquetEngine, (feature = "parquet"));
 
 /// CSV parser implementing `FormatParser`.
 #[derive(Debug, Default, Clone)]
@@ -578,1089 +703,3 @@ impl FormatEmitter for JsonLinesEmitter {
         Ok(())
     }
 }
-
-// =========================================================================
-// Convenience Cross-Format Conversion Functions
-// =========================================================================
-
-/// Convert JSON string to YAML string.
-#[cfg(all(feature = "json", feature = "yaml"))]
-pub fn json_to_yaml(json: &str) -> Result<String, BabbelError> {
-    convert_format(json, &JsonEngine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON string to XML string.
-#[cfg(all(feature = "json", feature = "xml"))]
-pub fn json_to_xml(json: &str) -> Result<String, BabbelError> {
-    convert_format(json, &JsonEngine, &XmlEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON string to Bencode byte vector.
-#[cfg(all(feature = "json", feature = "bencode"))]
-pub fn json_to_bencode(json: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(json.as_bytes(), &JsonEngine, &BencodeEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML string to JSON string.
-#[cfg(all(feature = "yaml", feature = "json"))]
-pub fn yaml_to_json(yaml: &str) -> Result<String, BabbelError> {
-    convert_format(yaml, &YamlEngine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML string to XML string.
-#[cfg(all(feature = "yaml", feature = "xml"))]
-pub fn yaml_to_xml(yaml: &str) -> Result<String, BabbelError> {
-    convert_format(yaml, &YamlEngine, &XmlEngine, &ConversionOptions::default())
-}
-
-/// Convert Bencode binary payload to JSON string.
-#[cfg(all(feature = "bencode", feature = "json"))]
-pub fn bencode_to_json(bencode: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bencode, &BencodeEngine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert Bencode binary payload to YAML string.
-#[cfg(all(feature = "bencode", feature = "yaml"))]
-pub fn bencode_to_yaml(bencode: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bencode, &BencodeEngine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert Bencode binary payload to XML string.
-#[cfg(all(feature = "bencode", feature = "xml"))]
-pub fn bencode_to_xml(bencode: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bencode, &BencodeEngine, &XmlEngine, &ConversionOptions::default())
-}
-
-/// Convert XML string to JSON string.
-#[cfg(all(feature = "xml", feature = "json"))]
-pub fn xml_to_json(xml: &str) -> Result<String, BabbelError> {
-    convert_format(xml, &XmlEngine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert XML string to YAML string.
-#[cfg(all(feature = "xml", feature = "yaml"))]
-pub fn xml_to_yaml(xml: &str) -> Result<String, BabbelError> {
-    convert_format(xml, &XmlEngine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert XML string to Bencode byte vector.
-#[cfg(all(feature = "xml", feature = "bencode"))]
-pub fn xml_to_bencode(xml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(xml.as_bytes(), &XmlEngine, &BencodeEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML string to Bencode byte vector.
-#[cfg(all(feature = "yaml", feature = "bencode"))]
-pub fn yaml_to_bencode(yaml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(yaml.as_bytes(), &YamlEngine, &BencodeEngine, &ConversionOptions::default())
-}
-
-
-// =========================================================================
-// Text Format Conversions (CSV, TSV, INI, JSON Lines)
-// =========================================================================
-
-/// Convert CSV string to JSON array string.
-#[cfg(feature = "json")]
-pub fn csv_to_json(csv: &str) -> Result<String, BabbelError> {
-    convert_format(csv, &CsvEngine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON string (array of objects or rows) to CSV string.
-#[cfg(feature = "json")]
-pub fn json_to_csv(json: &str) -> Result<String, BabbelError> {
-    convert_format(json, &JsonEngine, &CsvEngine, &ConversionOptions::default())
-}
-
-/// Convert TSV string to JSON array string.
-#[cfg(feature = "json")]
-pub fn tsv_to_json(tsv: &str) -> Result<String, BabbelError> {
-    convert_format(tsv, &TsvEngine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON string (array of objects or rows) to TSV string.
-#[cfg(feature = "json")]
-pub fn json_to_tsv(json: &str) -> Result<String, BabbelError> {
-    convert_format(json, &JsonEngine, &TsvEngine, &ConversionOptions::default())
-}
-
-/// Convert CSV string to YAML string.
-#[cfg(feature = "yaml")]
-pub fn csv_to_yaml(csv: &str) -> Result<String, BabbelError> {
-    convert_format(csv, &CsvEngine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML string to CSV string.
-#[cfg(feature = "yaml")]
-pub fn yaml_to_csv(yaml: &str) -> Result<String, BabbelError> {
-    convert_format(yaml, &YamlEngine, &CsvEngine, &ConversionOptions::default())
-}
-
-/// Convert CSV string to XML string.
-#[cfg(feature = "xml")]
-pub fn csv_to_xml(csv: &str) -> Result<String, BabbelError> {
-    convert_format(csv, &CsvEngine, &XmlEngine, &ConversionOptions::default())
-}
-
-/// Convert XML string to CSV string.
-#[cfg(feature = "xml")]
-pub fn xml_to_csv(xml: &str) -> Result<String, BabbelError> {
-    convert_format(xml, &XmlEngine, &CsvEngine, &ConversionOptions::default())
-}
-
-/// Convert CSV string to Bencode byte vector.
-#[cfg(feature = "bencode")]
-pub fn csv_to_bencode(csv: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(csv.as_bytes(), &CsvEngine, &BencodeEngine, &ConversionOptions::default())
-}
-
-/// Convert Bencode binary payload to CSV string.
-#[cfg(feature = "bencode")]
-pub fn bencode_to_csv(bencode: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bencode, &BencodeEngine, &CsvEngine, &ConversionOptions::default())
-}
-
-/// Convert CSV string to INI configuration string.
-pub fn csv_to_ini(csv: &str) -> Result<String, BabbelError> {
-    convert_format(csv, &CsvEngine, &IniEngine, &ConversionOptions::default())
-}
-
-/// Convert INI configuration string to CSV string.
-pub fn ini_to_csv(ini: &str) -> Result<String, BabbelError> {
-    convert_format(ini, &IniEngine, &CsvEngine, &ConversionOptions::default())
-}
-
-/// Convert TSV string to YAML string.
-#[cfg(feature = "yaml")]
-pub fn tsv_to_yaml(tsv: &str) -> Result<String, BabbelError> {
-    convert_format(tsv, &TsvEngine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML string to TSV string.
-#[cfg(feature = "yaml")]
-pub fn yaml_to_tsv(yaml: &str) -> Result<String, BabbelError> {
-    convert_format(yaml, &YamlEngine, &TsvEngine, &ConversionOptions::default())
-}
-
-/// Convert TSV string to XML string.
-#[cfg(feature = "xml")]
-pub fn tsv_to_xml(tsv: &str) -> Result<String, BabbelError> {
-    convert_format(tsv, &TsvEngine, &XmlEngine, &ConversionOptions::default())
-}
-
-/// Convert XML string to TSV string.
-#[cfg(feature = "xml")]
-pub fn xml_to_tsv(xml: &str) -> Result<String, BabbelError> {
-    convert_format(xml, &XmlEngine, &TsvEngine, &ConversionOptions::default())
-}
-
-/// Convert TSV string to TOML string.
-#[cfg(feature = "toml")]
-pub fn tsv_to_toml(tsv: &str) -> Result<String, BabbelError> {
-    convert_format(tsv, &TsvEngine, &TomlEngine, &ConversionOptions::default())
-}
-
-/// Convert TOML string to TSV string.
-#[cfg(feature = "toml")]
-pub fn toml_to_tsv(toml: &str) -> Result<String, BabbelError> {
-    convert_format(toml, &TomlEngine, &TsvEngine, &ConversionOptions::default())
-}
-
-/// Convert TSV string to Bencode byte vector.
-#[cfg(feature = "bencode")]
-pub fn tsv_to_bencode(tsv: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(tsv.as_bytes(), &TsvEngine, &BencodeEngine, &ConversionOptions::default())
-}
-
-/// Convert Bencode binary payload to TSV string.
-#[cfg(feature = "bencode")]
-pub fn bencode_to_tsv(bencode: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bencode, &BencodeEngine, &TsvEngine, &ConversionOptions::default())
-}
-
-/// Convert TSV string to INI configuration string.
-pub fn tsv_to_ini(tsv: &str) -> Result<String, BabbelError> {
-    convert_format(tsv, &TsvEngine, &IniEngine, &ConversionOptions::default())
-}
-
-/// Convert INI configuration string to TSV string.
-pub fn ini_to_tsv(ini: &str) -> Result<String, BabbelError> {
-    convert_format(ini, &IniEngine, &TsvEngine, &ConversionOptions::default())
-}
-
-/// Convert TSV string to JSON Lines string.
-#[cfg(feature = "json")]
-pub fn tsv_to_jsonlines(tsv: &str) -> Result<String, BabbelError> {
-    convert_format(tsv, &TsvEngine, &JsonLinesEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON Lines string to TSV string.
-#[cfg(feature = "json")]
-pub fn jsonlines_to_tsv(jsonl: &str) -> Result<String, BabbelError> {
-    convert_format(jsonl, &JsonLinesEngine, &TsvEngine, &ConversionOptions::default())
-}
-
-/// Convert INI string to JSON object string.
-#[cfg(feature = "json")]
-pub fn ini_to_json(ini: &str) -> Result<String, BabbelError> {
-    convert_format(ini, &IniEngine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON object string to INI configuration string.
-#[cfg(feature = "json")]
-pub fn json_to_ini(json: &str) -> Result<String, BabbelError> {
-    convert_format(json, &JsonEngine, &IniEngine, &ConversionOptions::default())
-}
-
-/// Convert INI string to YAML string.
-#[cfg(feature = "yaml")]
-pub fn ini_to_yaml(ini: &str) -> Result<String, BabbelError> {
-    convert_format(ini, &IniEngine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML object string to INI configuration string.
-#[cfg(feature = "yaml")]
-pub fn yaml_to_ini(yaml: &str) -> Result<String, BabbelError> {
-    convert_format(yaml, &YamlEngine, &IniEngine, &ConversionOptions::default())
-}
-
-/// Convert INI string to XML string.
-#[cfg(feature = "xml")]
-pub fn ini_to_xml(ini: &str) -> Result<String, BabbelError> {
-    convert_format(ini, &IniEngine, &XmlEngine, &ConversionOptions::default())
-}
-
-/// Convert XML string to INI configuration string.
-#[cfg(feature = "xml")]
-pub fn xml_to_ini(xml: &str) -> Result<String, BabbelError> {
-    convert_format(xml, &XmlEngine, &IniEngine, &ConversionOptions::default())
-}
-
-/// Convert INI string to Bencode byte vector.
-#[cfg(feature = "bencode")]
-pub fn ini_to_bencode(ini: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(ini.as_bytes(), &IniEngine, &BencodeEngine, &ConversionOptions::default())
-}
-
-/// Convert Bencode binary payload to INI string.
-#[cfg(feature = "bencode")]
-pub fn bencode_to_ini(bencode: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bencode, &BencodeEngine, &IniEngine, &ConversionOptions::default())
-}
-
-/// Convert INI string to JSON Lines string.
-#[cfg(feature = "json")]
-pub fn ini_to_jsonlines(ini: &str) -> Result<String, BabbelError> {
-    convert_format(ini, &IniEngine, &JsonLinesEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON Lines string to INI string.
-#[cfg(feature = "json")]
-pub fn jsonlines_to_ini(jsonl: &str) -> Result<String, BabbelError> {
-    convert_format(jsonl, &JsonLinesEngine, &IniEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON Lines string to JSON array string.
-#[cfg(feature = "json")]
-pub fn jsonlines_to_json(jsonl: &str) -> Result<String, BabbelError> {
-    convert_format(jsonl, &JsonLinesEngine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON string to JSON Lines string.
-#[cfg(feature = "json")]
-pub fn json_to_jsonlines(json: &str) -> Result<String, BabbelError> {
-    convert_format(json, &JsonEngine, &JsonLinesEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON Lines string to CSV string.
-#[cfg(feature = "json")]
-pub fn jsonlines_to_csv(jsonl: &str) -> Result<String, BabbelError> {
-    convert_format(jsonl, &JsonLinesEngine, &CsvEngine, &ConversionOptions::default())
-}
-
-/// Convert CSV string to JSON Lines string.
-#[cfg(feature = "json")]
-pub fn csv_to_jsonlines(csv: &str) -> Result<String, BabbelError> {
-    convert_format(csv, &CsvEngine, &JsonLinesEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON Lines string to YAML string.
-#[cfg(all(feature = "json", feature = "yaml"))]
-pub fn jsonlines_to_yaml(jsonl: &str) -> Result<String, BabbelError> {
-    convert_format(jsonl, &JsonLinesEngine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML string to JSON Lines string.
-#[cfg(all(feature = "yaml", feature = "json"))]
-pub fn yaml_to_jsonlines(yaml: &str) -> Result<String, BabbelError> {
-    convert_format(yaml, &YamlEngine, &JsonLinesEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON Lines string to XML string.
-#[cfg(all(feature = "json", feature = "xml"))]
-pub fn jsonlines_to_xml(jsonl: &str) -> Result<String, BabbelError> {
-    convert_format(jsonl, &JsonLinesEngine, &XmlEngine, &ConversionOptions::default())
-}
-
-/// Convert XML string to JSON Lines string.
-#[cfg(all(feature = "xml", feature = "json"))]
-pub fn xml_to_jsonlines(xml: &str) -> Result<String, BabbelError> {
-    convert_format(xml, &XmlEngine, &JsonLinesEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON Lines string to Bencode byte vector.
-#[cfg(all(feature = "json", feature = "bencode"))]
-pub fn jsonlines_to_bencode(jsonl: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(jsonl.as_bytes(), &JsonLinesEngine, &BencodeEngine, &ConversionOptions::default())
-}
-
-/// Convert Bencode binary payload to JSON Lines string.
-#[cfg(all(feature = "bencode", feature = "json"))]
-pub fn bencode_to_jsonlines(bencode: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bencode, &BencodeEngine, &JsonLinesEngine, &ConversionOptions::default())
-}
-
-// =========================================================================
-// TOML Cross-Format Conversions
-// =========================================================================
-
-/// Convert TOML string to JSON string.
-#[cfg(all(feature = "toml", feature = "json"))]
-pub fn toml_to_json(toml: &str) -> Result<String, BabbelError> {
-    convert_format(toml, &TomlEngine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON string to TOML string.
-#[cfg(all(feature = "json", feature = "toml"))]
-pub fn json_to_toml(json: &str) -> Result<String, BabbelError> {
-    convert_format(json, &JsonEngine, &TomlEngine, &ConversionOptions::default())
-}
-
-/// Convert TOML string to YAML string.
-#[cfg(all(feature = "toml", feature = "yaml"))]
-pub fn toml_to_yaml(toml: &str) -> Result<String, BabbelError> {
-    convert_format(toml, &TomlEngine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML string to TOML string.
-#[cfg(all(feature = "yaml", feature = "toml"))]
-pub fn yaml_to_toml(yaml: &str) -> Result<String, BabbelError> {
-    convert_format(yaml, &YamlEngine, &TomlEngine, &ConversionOptions::default())
-}
-
-/// Convert TOML string to XML string.
-#[cfg(all(feature = "toml", feature = "xml"))]
-pub fn toml_to_xml(toml: &str) -> Result<String, BabbelError> {
-    convert_format(toml, &TomlEngine, &XmlEngine, &ConversionOptions::default())
-}
-
-/// Convert XML string to TOML string.
-#[cfg(all(feature = "xml", feature = "toml"))]
-pub fn xml_to_toml(xml: &str) -> Result<String, BabbelError> {
-    convert_format(xml, &XmlEngine, &TomlEngine, &ConversionOptions::default())
-}
-
-/// Convert TOML string to Bencode byte vector.
-#[cfg(all(feature = "toml", feature = "bencode"))]
-pub fn toml_to_bencode(toml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(toml.as_bytes(), &TomlEngine, &BencodeEngine, &ConversionOptions::default())
-}
-
-/// Convert Bencode binary payload to TOML string.
-#[cfg(all(feature = "bencode", feature = "toml"))]
-pub fn bencode_to_toml(bencode: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bencode, &BencodeEngine, &TomlEngine, &ConversionOptions::default())
-}
-
-/// Convert TOML string to CSV string.
-#[cfg(feature = "toml")]
-pub fn toml_to_csv(toml: &str) -> Result<String, BabbelError> {
-    convert_text(toml, &TomlParser, &CsvEmitter::default())
-}
-
-/// Convert CSV string to TOML string.
-#[cfg(feature = "toml")]
-pub fn csv_to_toml(csv: &str) -> Result<String, BabbelError> {
-    convert_text(csv, &CsvParser::default(), &TomlEmitter)
-}
-
-/// Convert TOML string to INI string.
-#[cfg(feature = "toml")]
-pub fn toml_to_ini(toml: &str) -> Result<String, BabbelError> {
-    convert_text(toml, &TomlParser, &IniEmitter::default())
-}
-
-/// Convert INI string to TOML string.
-#[cfg(feature = "toml")]
-pub fn ini_to_toml(ini: &str) -> Result<String, BabbelError> {
-    convert_text(ini, &IniParser::default(), &TomlEmitter)
-}
-
-/// Convert TOML string to JSON Lines string.
-#[cfg(all(feature = "toml", feature = "json"))]
-pub fn toml_to_jsonlines(toml: &str) -> Result<String, BabbelError> {
-    convert_text(toml, &TomlParser, &JsonLinesEmitter)
-}
-
-/// Convert JSON Lines string to TOML string.
-#[cfg(all(feature = "json", feature = "toml"))]
-pub fn jsonlines_to_toml(jsonl: &str) -> Result<String, BabbelError> {
-    convert_text(jsonl, &JsonLinesParser, &TomlEmitter)
-}
-
-// =========================================================================
-// MessagePack Cross-Format Conversions
-// =========================================================================
-
-/// Convert JSON string to MessagePack byte vector.
-#[cfg(all(feature = "json", feature = "msgpack"))]
-pub fn json_to_msgpack(json: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(json.as_bytes(), &JsonEngine, &MsgPackEngine, &ConversionOptions::default())
-}
-
-/// Convert MessagePack byte payload to JSON string.
-#[cfg(all(feature = "msgpack", feature = "json"))]
-pub fn msgpack_to_json(msgpack: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML string to MessagePack byte vector.
-#[cfg(all(feature = "yaml", feature = "msgpack"))]
-pub fn yaml_to_msgpack(yaml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(yaml.as_bytes(), &YamlEngine, &MsgPackEngine, &ConversionOptions::default())
-}
-
-/// Convert MessagePack byte payload to YAML string.
-#[cfg(all(feature = "msgpack", feature = "yaml"))]
-pub fn msgpack_to_yaml(msgpack: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert XML string to MessagePack byte vector.
-#[cfg(all(feature = "xml", feature = "msgpack"))]
-pub fn xml_to_msgpack(xml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(xml.as_bytes(), &XmlEngine, &MsgPackEngine, &ConversionOptions::default())
-}
-
-/// Convert MessagePack byte payload to XML string.
-#[cfg(all(feature = "msgpack", feature = "xml"))]
-pub fn msgpack_to_xml(msgpack: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &XmlEngine, &ConversionOptions::default())
-}
-
-/// Convert TOML string to MessagePack byte vector.
-#[cfg(all(feature = "toml", feature = "msgpack"))]
-pub fn toml_to_msgpack(toml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(toml.as_bytes(), &TomlEngine, &MsgPackEngine, &ConversionOptions::default())
-}
-
-/// Convert MessagePack byte payload to TOML string.
-#[cfg(all(feature = "msgpack", feature = "toml"))]
-pub fn msgpack_to_toml(msgpack: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &TomlEngine, &ConversionOptions::default())
-}
-
-/// Convert Bencode binary payload to MessagePack byte vector.
-#[cfg(all(feature = "bencode", feature = "msgpack"))]
-pub fn bencode_to_msgpack(bencode: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(bencode, &BencodeEngine, &MsgPackEngine, &ConversionOptions::default())
-}
-
-/// Convert MessagePack byte payload to Bencode byte vector.
-#[cfg(all(feature = "msgpack", feature = "bencode"))]
-pub fn msgpack_to_bencode(msgpack: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(msgpack, &MsgPackEngine, &BencodeEngine, &ConversionOptions::default())
-}
-
-/// Convert CSV string to MessagePack byte vector.
-#[cfg(feature = "msgpack")]
-pub fn csv_to_msgpack(csv: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(csv.as_bytes(), &CsvEngine, &MsgPackEngine, &ConversionOptions::default())
-}
-
-/// Convert MessagePack byte payload to CSV string.
-#[cfg(feature = "msgpack")]
-pub fn msgpack_to_csv(msgpack: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &CsvEngine, &ConversionOptions::default())
-}
-
-// =========================================================================
-// CBOR Cross-Format Conversions
-// =========================================================================
-
-/// Convert JSON string to CBOR byte vector.
-#[cfg(all(feature = "json", feature = "cbor"))]
-pub fn json_to_cbor(json: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(json.as_bytes(), &JsonEngine, &CborEngine, &ConversionOptions::default())
-}
-
-/// Convert CBOR byte payload to JSON string.
-#[cfg(all(feature = "cbor", feature = "json"))]
-pub fn cbor_to_json(cbor: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(cbor, &CborEngine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML string to CBOR byte vector.
-#[cfg(all(feature = "yaml", feature = "cbor"))]
-pub fn yaml_to_cbor(yaml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(yaml.as_bytes(), &YamlEngine, &CborEngine, &ConversionOptions::default())
-}
-
-/// Convert CBOR byte payload to YAML string.
-#[cfg(all(feature = "cbor", feature = "yaml"))]
-pub fn cbor_to_yaml(cbor: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(cbor, &CborEngine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert XML string to CBOR byte vector.
-#[cfg(all(feature = "xml", feature = "cbor"))]
-pub fn xml_to_cbor(xml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(xml.as_bytes(), &XmlEngine, &CborEngine, &ConversionOptions::default())
-}
-
-/// Convert CBOR byte payload to XML string.
-#[cfg(all(feature = "cbor", feature = "xml"))]
-pub fn cbor_to_xml(cbor: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(cbor, &CborEngine, &XmlEngine, &ConversionOptions::default())
-}
-
-/// Convert TOML string to CBOR byte vector.
-#[cfg(all(feature = "toml", feature = "cbor"))]
-pub fn toml_to_cbor(toml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(toml.as_bytes(), &TomlEngine, &CborEngine, &ConversionOptions::default())
-}
-
-/// Convert CBOR byte payload to TOML string.
-#[cfg(all(feature = "cbor", feature = "toml"))]
-pub fn cbor_to_toml(cbor: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(cbor, &CborEngine, &TomlEngine, &ConversionOptions::default())
-}
-
-/// Convert MessagePack byte payload to CBOR byte vector.
-#[cfg(all(feature = "msgpack", feature = "cbor"))]
-pub fn msgpack_to_cbor(msgpack: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(msgpack, &MsgPackEngine, &CborEngine, &ConversionOptions::default())
-}
-
-/// Convert CBOR byte payload to MessagePack byte vector.
-#[cfg(all(feature = "cbor", feature = "msgpack"))]
-pub fn cbor_to_msgpack(cbor: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(cbor, &CborEngine, &MsgPackEngine, &ConversionOptions::default())
-}
-
-/// Convert Bencode binary payload to CBOR byte vector.
-#[cfg(all(feature = "bencode", feature = "cbor"))]
-pub fn bencode_to_cbor(bencode: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(bencode, &BencodeEngine, &CborEngine, &ConversionOptions::default())
-}
-
-/// Convert CBOR byte payload to Bencode byte vector.
-#[cfg(all(feature = "cbor", feature = "bencode"))]
-pub fn cbor_to_bencode(cbor: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(cbor, &CborEngine, &BencodeEngine, &ConversionOptions::default())
-}
-
-/// Convert CSV string to CBOR byte vector.
-#[cfg(feature = "cbor")]
-pub fn csv_to_cbor(csv: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(csv.as_bytes(), &CsvEngine, &CborEngine, &ConversionOptions::default())
-}
-
-/// Convert CBOR byte payload to CSV string.
-#[cfg(feature = "cbor")]
-pub fn cbor_to_csv(cbor: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(cbor, &CborEngine, &CsvEngine, &ConversionOptions::default())
-}
-
-// =========================================================================
-// BSON Cross-Format Conversions
-// =========================================================================
-
-/// Convert JSON string to BSON byte vector.
-#[cfg(all(feature = "json", feature = "bson"))]
-pub fn json_to_bson(json: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(json.as_bytes(), &JsonEngine, &BsonEngine, &ConversionOptions::default())
-}
-
-/// Convert BSON byte payload to JSON string.
-#[cfg(all(feature = "bson", feature = "json"))]
-pub fn bson_to_json(bson: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bson, &BsonEngine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML string to BSON byte vector.
-#[cfg(all(feature = "yaml", feature = "bson"))]
-pub fn yaml_to_bson(yaml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(yaml.as_bytes(), &YamlEngine, &BsonEngine, &ConversionOptions::default())
-}
-
-/// Convert BSON byte payload to YAML string.
-#[cfg(all(feature = "bson", feature = "yaml"))]
-pub fn bson_to_yaml(bson: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bson, &BsonEngine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert XML string to BSON byte vector.
-#[cfg(all(feature = "xml", feature = "bson"))]
-pub fn xml_to_bson(xml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(xml.as_bytes(), &XmlEngine, &BsonEngine, &ConversionOptions::default())
-}
-
-/// Convert BSON byte payload to XML string.
-#[cfg(all(feature = "bson", feature = "xml"))]
-pub fn bson_to_xml(bson: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bson, &BsonEngine, &XmlEngine, &ConversionOptions::default())
-}
-
-/// Convert TOML string to BSON byte vector.
-#[cfg(all(feature = "toml", feature = "bson"))]
-pub fn toml_to_bson(toml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(toml.as_bytes(), &TomlEngine, &BsonEngine, &ConversionOptions::default())
-}
-
-/// Convert BSON byte payload to TOML string.
-#[cfg(all(feature = "bson", feature = "toml"))]
-pub fn bson_to_toml(bson: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bson, &BsonEngine, &TomlEngine, &ConversionOptions::default())
-}
-
-/// Convert MessagePack byte payload to BSON byte vector.
-#[cfg(all(feature = "msgpack", feature = "bson"))]
-pub fn msgpack_to_bson(msgpack: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(msgpack, &MsgPackEngine, &BsonEngine, &ConversionOptions::default())
-}
-
-/// Convert BSON byte payload to MessagePack byte vector.
-#[cfg(all(feature = "bson", feature = "msgpack"))]
-pub fn bson_to_msgpack(bson: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(bson, &BsonEngine, &MsgPackEngine, &ConversionOptions::default())
-}
-
-/// Convert CBOR byte payload to BSON byte vector.
-#[cfg(all(feature = "cbor", feature = "bson"))]
-pub fn cbor_to_bson(cbor: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(cbor, &CborEngine, &BsonEngine, &ConversionOptions::default())
-}
-
-/// Convert BSON byte payload to CBOR byte vector.
-#[cfg(all(feature = "bson", feature = "cbor"))]
-pub fn bson_to_cbor(bson: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(bson, &BsonEngine, &CborEngine, &ConversionOptions::default())
-}
-
-/// Convert Bencode binary payload to BSON byte vector.
-#[cfg(all(feature = "bencode", feature = "bson"))]
-pub fn bencode_to_bson(bencode: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(bencode, &BencodeEngine, &BsonEngine, &ConversionOptions::default())
-}
-
-/// Convert BSON byte payload to Bencode byte vector.
-#[cfg(all(feature = "bson", feature = "bencode"))]
-pub fn bson_to_bencode(bson: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(bson, &BsonEngine, &BencodeEngine, &ConversionOptions::default())
-}
-
-/// Convert CSV string to BSON byte vector.
-#[cfg(feature = "bson")]
-pub fn csv_to_bson(csv: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(csv.as_bytes(), &CsvEngine, &BsonEngine, &ConversionOptions::default())
-}
-
-/// Convert BSON byte payload to CSV string.
-#[cfg(feature = "bson")]
-pub fn bson_to_csv(bson: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bson, &BsonEngine, &CsvEngine, &ConversionOptions::default())
-}
-
-// =========================================================================
-// JSON5 Cross-Format Conversions
-// =========================================================================
-
-/// Convert JSON5 string to standard JSON string.
-#[cfg(feature = "json")]
-pub fn json5_to_json(json5: &str) -> Result<String, BabbelError> {
-    convert_format(json5, &Json5Engine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON string to JSON5 string.
-#[cfg(feature = "json")]
-pub fn json_to_json5(json: &str) -> Result<String, BabbelError> {
-    convert_format(json, &JsonEngine, &Json5Engine, &ConversionOptions::default())
-}
-
-/// Convert JSON5 string to YAML string.
-#[cfg(all(feature = "json", feature = "yaml"))]
-pub fn json5_to_yaml(json5: &str) -> Result<String, BabbelError> {
-    convert_format(json5, &Json5Engine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML string to JSON5 string.
-#[cfg(all(feature = "yaml", feature = "json"))]
-pub fn yaml_to_json5(yaml: &str) -> Result<String, BabbelError> {
-    convert_format(yaml, &YamlEngine, &Json5Engine, &ConversionOptions::default())
-}
-
-/// Convert JSON5 string to TOML string.
-#[cfg(all(feature = "json", feature = "toml"))]
-pub fn json5_to_toml(json5: &str) -> Result<String, BabbelError> {
-    convert_format(json5, &Json5Engine, &TomlEngine, &ConversionOptions::default())
-}
-
-/// Convert TOML string to JSON5 string.
-#[cfg(all(feature = "toml", feature = "json"))]
-pub fn toml_to_json5(toml: &str) -> Result<String, BabbelError> {
-    convert_format(toml, &TomlEngine, &Json5Engine, &ConversionOptions::default())
-}
-
-/// Convert JSON5 string to XML string.
-#[cfg(all(feature = "json", feature = "xml"))]
-pub fn json5_to_xml(json5: &str) -> Result<String, BabbelError> {
-    convert_format(json5, &Json5Engine, &XmlEngine, &ConversionOptions::default())
-}
-
-/// Convert XML string to JSON5 string.
-#[cfg(all(feature = "xml", feature = "json"))]
-pub fn xml_to_json5(xml: &str) -> Result<String, BabbelError> {
-    convert_format(xml, &XmlEngine, &Json5Engine, &ConversionOptions::default())
-}
-
-/// Convert JSON5 string to MessagePack byte vector.
-#[cfg(all(feature = "json", feature = "msgpack"))]
-pub fn json5_to_msgpack(json5: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(json5.as_bytes(), &Json5Engine, &MsgPackEngine, &ConversionOptions::default())
-}
-
-/// Convert MessagePack byte payload to JSON5 string.
-#[cfg(all(feature = "msgpack", feature = "json"))]
-pub fn msgpack_to_json5(msgpack: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &Json5Engine, &ConversionOptions::default())
-}
-
-/// Convert JSON5 string to CBOR byte vector.
-#[cfg(all(feature = "json", feature = "cbor"))]
-pub fn json5_to_cbor(json5: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(json5.as_bytes(), &Json5Engine, &CborEngine, &ConversionOptions::default())
-}
-
-/// Convert CBOR byte payload to JSON5 string.
-#[cfg(all(feature = "cbor", feature = "json"))]
-pub fn cbor_to_json5(cbor: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(cbor, &CborEngine, &Json5Engine, &ConversionOptions::default())
-}
-
-/// Convert JSON5 string to BSON byte vector.
-#[cfg(all(feature = "json", feature = "bson"))]
-pub fn json5_to_bson(json5: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(json5.as_bytes(), &Json5Engine, &BsonEngine, &ConversionOptions::default())
-}
-
-/// Convert BSON byte payload to JSON5 string.
-#[cfg(all(feature = "bson", feature = "json"))]
-pub fn bson_to_json5(bson: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bson, &BsonEngine, &Json5Engine, &ConversionOptions::default())
-}
-
-// =========================================================================
-// RON Cross-Format Conversions
-// =========================================================================
-
-/// Convert RON string to JSON string.
-#[cfg(all(feature = "ron", feature = "json"))]
-pub fn ron_to_json(ron: &str) -> Result<String, BabbelError> {
-    convert_format(ron, &RonEngine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON string to RON string.
-#[cfg(all(feature = "json", feature = "ron"))]
-pub fn json_to_ron(json: &str) -> Result<String, BabbelError> {
-    convert_format(json, &JsonEngine, &RonEngine, &ConversionOptions::default())
-}
-
-/// Convert RON string to YAML string.
-#[cfg(all(feature = "ron", feature = "yaml"))]
-pub fn ron_to_yaml(ron: &str) -> Result<String, BabbelError> {
-    convert_format(ron, &RonEngine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML string to RON string.
-#[cfg(all(feature = "yaml", feature = "ron"))]
-pub fn yaml_to_ron(yaml: &str) -> Result<String, BabbelError> {
-    convert_format(yaml, &YamlEngine, &RonEngine, &ConversionOptions::default())
-}
-
-/// Convert RON string to TOML string.
-#[cfg(all(feature = "ron", feature = "toml"))]
-pub fn ron_to_toml(ron: &str) -> Result<String, BabbelError> {
-    convert_format(ron, &RonEngine, &TomlEngine, &ConversionOptions::default())
-}
-
-/// Convert TOML string to RON string.
-#[cfg(all(feature = "toml", feature = "ron"))]
-pub fn toml_to_ron(toml: &str) -> Result<String, BabbelError> {
-    convert_format(toml, &TomlEngine, &RonEngine, &ConversionOptions::default())
-}
-
-/// Convert RON string to XML string.
-#[cfg(all(feature = "ron", feature = "xml"))]
-pub fn ron_to_xml(ron: &str) -> Result<String, BabbelError> {
-    convert_format(ron, &RonEngine, &XmlEngine, &ConversionOptions::default())
-}
-
-/// Convert XML string to RON string.
-#[cfg(all(feature = "xml", feature = "ron"))]
-pub fn xml_to_ron(xml: &str) -> Result<String, BabbelError> {
-    convert_format(xml, &XmlEngine, &RonEngine, &ConversionOptions::default())
-}
-
-/// Convert RON string to MessagePack byte vector.
-#[cfg(all(feature = "ron", feature = "msgpack"))]
-pub fn ron_to_msgpack(ron: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(ron.as_bytes(), &RonEngine, &MsgPackEngine, &ConversionOptions::default())
-}
-
-/// Convert MessagePack byte payload to RON string.
-#[cfg(all(feature = "msgpack", feature = "ron"))]
-pub fn msgpack_to_ron(msgpack: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &RonEngine, &ConversionOptions::default())
-}
-
-/// Convert RON string to CBOR byte vector.
-#[cfg(all(feature = "ron", feature = "cbor"))]
-pub fn ron_to_cbor(ron: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(ron.as_bytes(), &RonEngine, &CborEngine, &ConversionOptions::default())
-}
-
-/// Convert CBOR byte payload to RON string.
-#[cfg(all(feature = "cbor", feature = "ron"))]
-pub fn cbor_to_ron(cbor: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(cbor, &CborEngine, &RonEngine, &ConversionOptions::default())
-}
-
-/// Convert RON string to BSON byte vector.
-#[cfg(all(feature = "ron", feature = "bson"))]
-pub fn ron_to_bson(ron: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(ron.as_bytes(), &RonEngine, &BsonEngine, &ConversionOptions::default())
-}
-
-/// Convert BSON byte payload to RON string.
-#[cfg(all(feature = "bson", feature = "ron"))]
-pub fn bson_to_ron(bson: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bson, &BsonEngine, &RonEngine, &ConversionOptions::default())
-}
-
-/// Convert RON string to JSON5 string.
-#[cfg(all(feature = "ron", feature = "json"))]
-pub fn ron_to_json5(ron: &str) -> Result<String, BabbelError> {
-    convert_format(ron, &RonEngine, &Json5Engine, &ConversionOptions::default())
-}
-
-/// Convert JSON5 string to RON string.
-#[cfg(all(feature = "json", feature = "ron"))]
-pub fn json5_to_ron(json5: &str) -> Result<String, BabbelError> {
-    convert_format(json5, &Json5Engine, &RonEngine, &ConversionOptions::default())
-}
-
-// =========================================================================
-// KDL Cross-Format Conversions
-// =========================================================================
-
-/// Convert KDL string to JSON string.
-#[cfg(all(feature = "kdl", feature = "json"))]
-pub fn kdl_to_json(kdl: &str) -> Result<String, BabbelError> {
-    convert_format(kdl, &KdlEngine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON string to KDL string.
-#[cfg(all(feature = "json", feature = "kdl"))]
-pub fn json_to_kdl(json: &str) -> Result<String, BabbelError> {
-    convert_format(json, &JsonEngine, &KdlEngine, &ConversionOptions::default())
-}
-
-/// Convert KDL string to YAML string.
-#[cfg(all(feature = "kdl", feature = "yaml"))]
-pub fn kdl_to_yaml(kdl: &str) -> Result<String, BabbelError> {
-    convert_format(kdl, &KdlEngine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML string to KDL string.
-#[cfg(all(feature = "yaml", feature = "kdl"))]
-pub fn yaml_to_kdl(yaml: &str) -> Result<String, BabbelError> {
-    convert_format(yaml, &YamlEngine, &KdlEngine, &ConversionOptions::default())
-}
-
-/// Convert KDL string to TOML string.
-#[cfg(all(feature = "kdl", feature = "toml"))]
-pub fn kdl_to_toml(kdl: &str) -> Result<String, BabbelError> {
-    convert_format(kdl, &KdlEngine, &TomlEngine, &ConversionOptions::default())
-}
-
-/// Convert TOML string to KDL string.
-#[cfg(all(feature = "toml", feature = "kdl"))]
-pub fn toml_to_kdl(toml: &str) -> Result<String, BabbelError> {
-    convert_format(toml, &TomlEngine, &KdlEngine, &ConversionOptions::default())
-}
-
-/// Convert KDL string to XML string.
-#[cfg(all(feature = "kdl", feature = "xml"))]
-pub fn kdl_to_xml(kdl: &str) -> Result<String, BabbelError> {
-    convert_format(kdl, &KdlEngine, &XmlEngine, &ConversionOptions::default())
-}
-
-/// Convert XML string to KDL string.
-#[cfg(all(feature = "xml", feature = "kdl"))]
-pub fn xml_to_kdl(xml: &str) -> Result<String, BabbelError> {
-    convert_format(xml, &XmlEngine, &KdlEngine, &ConversionOptions::default())
-}
-
-/// Convert KDL string to MessagePack byte vector.
-#[cfg(all(feature = "kdl", feature = "msgpack"))]
-pub fn kdl_to_msgpack(kdl: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(kdl.as_bytes(), &KdlEngine, &MsgPackEngine, &ConversionOptions::default())
-}
-
-/// Convert MessagePack byte payload to KDL string.
-#[cfg(all(feature = "msgpack", feature = "kdl"))]
-pub fn msgpack_to_kdl(msgpack: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(msgpack, &MsgPackEngine, &KdlEngine, &ConversionOptions::default())
-}
-
-/// Convert KDL string to CBOR byte vector.
-#[cfg(all(feature = "kdl", feature = "cbor"))]
-pub fn kdl_to_cbor(kdl: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(kdl.as_bytes(), &KdlEngine, &CborEngine, &ConversionOptions::default())
-}
-
-/// Convert CBOR byte payload to KDL string.
-#[cfg(all(feature = "cbor", feature = "kdl"))]
-pub fn cbor_to_kdl(cbor: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(cbor, &CborEngine, &KdlEngine, &ConversionOptions::default())
-}
-
-/// Convert KDL string to BSON byte vector.
-#[cfg(all(feature = "kdl", feature = "bson"))]
-pub fn kdl_to_bson(kdl: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(kdl.as_bytes(), &KdlEngine, &BsonEngine, &ConversionOptions::default())
-}
-
-/// Convert BSON byte payload to KDL string.
-#[cfg(all(feature = "bson", feature = "kdl"))]
-pub fn bson_to_kdl(bson: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(bson, &BsonEngine, &KdlEngine, &ConversionOptions::default())
-}
-
-/// Convert KDL string to RON string.
-#[cfg(all(feature = "kdl", feature = "ron"))]
-pub fn kdl_to_ron(kdl: &str) -> Result<String, BabbelError> {
-    convert_format(kdl, &KdlEngine, &RonEngine, &ConversionOptions::default())
-}
-
-/// Convert RON string to KDL string.
-#[cfg(all(feature = "ron", feature = "kdl"))]
-pub fn ron_to_kdl(ron: &str) -> Result<String, BabbelError> {
-    convert_format(ron, &RonEngine, &KdlEngine, &ConversionOptions::default())
-}
-
-/// Convert KDL string to JSON5 string.
-#[cfg(all(feature = "kdl", feature = "json"))]
-pub fn kdl_to_json5(kdl: &str) -> Result<String, BabbelError> {
-    convert_format(kdl, &KdlEngine, &Json5Engine, &ConversionOptions::default())
-}
-
-/// Convert JSON5 string to KDL string.
-#[cfg(all(feature = "json", feature = "kdl"))]
-pub fn json5_to_kdl(json5: &str) -> Result<String, BabbelError> {
-    convert_format(json5, &Json5Engine, &KdlEngine, &ConversionOptions::default())
-}
-
-// =========================================================================
-// Apache Parquet Cross-Format Conversions
-// =========================================================================
-
-/// Convert Parquet byte payload to JSON string.
-#[cfg(all(feature = "parquet", feature = "json"))]
-pub fn parquet_to_json(parquet: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(parquet, &ParquetEngine, &JsonEngine, &ConversionOptions::default())
-}
-
-/// Convert JSON string (array of row objects) to Parquet byte vector.
-#[cfg(all(feature = "json", feature = "parquet"))]
-pub fn json_to_parquet(json: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(json.as_bytes(), &JsonEngine, &ParquetEngine, &ConversionOptions::default())
-}
-
-/// Convert Parquet byte payload to CSV string.
-#[cfg(feature = "parquet")]
-pub fn parquet_to_csv(parquet: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(parquet, &ParquetEngine, &CsvEngine, &ConversionOptions::default())
-}
-
-/// Convert CSV string to Parquet byte vector.
-#[cfg(feature = "parquet")]
-pub fn csv_to_parquet(csv: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(csv.as_bytes(), &CsvEngine, &ParquetEngine, &ConversionOptions::default())
-}
-
-/// Convert Parquet byte payload to YAML string.
-#[cfg(all(feature = "parquet", feature = "yaml"))]
-pub fn parquet_to_yaml(parquet: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(parquet, &ParquetEngine, &YamlEngine, &ConversionOptions::default())
-}
-
-/// Convert YAML string to Parquet byte vector.
-#[cfg(all(feature = "yaml", feature = "parquet"))]
-pub fn yaml_to_parquet(yaml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(yaml.as_bytes(), &YamlEngine, &ParquetEngine, &ConversionOptions::default())
-}
-
-/// Convert Parquet byte payload to TOML string.
-#[cfg(all(feature = "parquet", feature = "toml"))]
-pub fn parquet_to_toml(parquet: &[u8]) -> Result<String, BabbelError> {
-    convert_format_bytes_to_str(parquet, &ParquetEngine, &TomlEngine, &ConversionOptions::default())
-}
-
-/// Convert TOML string to Parquet byte vector.
-#[cfg(all(feature = "toml", feature = "parquet"))]
-pub fn toml_to_parquet(toml: &str) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(toml.as_bytes(), &TomlEngine, &ParquetEngine, &ConversionOptions::default())
-}
-
-/// Convert Parquet byte payload to MessagePack byte vector.
-#[cfg(all(feature = "parquet", feature = "msgpack"))]
-pub fn parquet_to_msgpack(parquet: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(parquet, &ParquetEngine, &MsgPackEngine, &ConversionOptions::default())
-}
-
-/// Convert MessagePack byte payload to Parquet byte vector.
-#[cfg(all(feature = "msgpack", feature = "parquet"))]
-pub fn msgpack_to_parquet(msgpack: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(msgpack, &MsgPackEngine, &ParquetEngine, &ConversionOptions::default())
-}
-
-/// Convert Parquet byte payload to CBOR byte vector.
-#[cfg(all(feature = "parquet", feature = "cbor"))]
-pub fn parquet_to_cbor(parquet: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(parquet, &ParquetEngine, &CborEngine, &ConversionOptions::default())
-}
-
-/// Convert CBOR byte payload to Parquet byte vector.
-#[cfg(all(feature = "cbor", feature = "parquet"))]
-pub fn cbor_to_parquet(cbor: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(cbor, &CborEngine, &ParquetEngine, &ConversionOptions::default())
-}
-
-/// Convert Parquet byte payload to BSON byte vector.
-#[cfg(all(feature = "parquet", feature = "bson"))]
-pub fn parquet_to_bson(parquet: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(parquet, &ParquetEngine, &BsonEngine, &ConversionOptions::default())
-}
-
-/// Convert BSON byte payload to Parquet byte vector.
-#[cfg(all(feature = "bson", feature = "parquet"))]
-pub fn bson_to_parquet(bson: &[u8]) -> Result<Vec<u8>, BabbelError> {
-    convert_format_bytes(bson, &BsonEngine, &ParquetEngine, &ConversionOptions::default())
-}
-
-
-
-
-

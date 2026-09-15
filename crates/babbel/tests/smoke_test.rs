@@ -98,3 +98,36 @@ fn test_cross_format_conversions() {
         .expect("convert_format_bytes failed");
     assert!(!direct_bytes.is_empty());
 }
+
+#[test]
+fn test_dynamic_registry_conversion() {
+    let opts = babbel::convert::ConversionOptions::default();
+
+    // 1. Dynamic string-to-string conversion by format ID
+    let yaml_out = babbel::convert::convert(r#"{"name":"dynamic","active":true}"#, "json", "yaml", &opts)
+        .expect("convert json -> yaml failed");
+    assert!(yaml_out.contains("name: dynamic") || yaml_out.contains("name: \"dynamic\""));
+
+    // 2. Dynamic string-to-bytes conversion by format ID
+    let bencode_bytes = babbel::convert::convert_dynamic_bytes(r#"{"counter":42}"#.as_bytes(), "json", "bencode", &opts)
+        .expect("convert_dynamic_bytes json -> bencode failed");
+    let reparsed = babbel::bencode::parse_bytes(&bencode_bytes).expect("Reparsing bencode failed");
+    assert!(reparsed.is_dictionary());
+
+    // 3. Dynamic bytes-to-string conversion by format ID
+    let json_from_bencode = babbel::convert::convert_dynamic_bytes(&bencode_bytes, "bencode", "json", &opts)
+        .expect("convert_dynamic_bytes bencode -> json failed");
+    let json_str = std::str::from_utf8(&json_from_bencode).expect("valid utf-8");
+    assert!(json_str.contains("counter") && json_str.contains("42"));
+
+    // 4. Using convert_between with Format enums
+    let toml_out = babbel::convert::convert_between(
+        r#"{"title":"babbel"}"#,
+        babbel::convert::Format::Json,
+        babbel::convert::Format::Toml,
+        &opts,
+    ).expect("convert_between failed");
+    assert!(toml_out.contains("title = \"babbel\""));
+}
+
+

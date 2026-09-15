@@ -340,7 +340,7 @@ Decompose `xml_parser.rs` into focused submodules:
 
 ---
 
-### Phase 6: OCP — Facade & Cross-Format Pipeline Generalization
+### Phase 6: OCP — Facade & Cross-Format Pipeline Generalization [COMPLETED]
 
 #### 1. Problem Analysis
 `crates/babbel/src/convert.rs` has grown to 1,667 lines primarily due to an $O(N^2)$ combinatorial explosion of hardcoded pairwise functions:
