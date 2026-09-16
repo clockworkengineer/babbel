@@ -19,7 +19,6 @@ A high-performance, polyglot serialization, parsing, and document manipulation w
 - [Serde Integration Guide](docs/SERDE_INTEGRATION_GUIDE.md) — Idiomatic Serde serialization & deserialization across all formats
 - [Schema Validation Guide](docs/SCHEMA_VALIDATION_GUIDE.md) — JSON Schema (Draft 7/2020-12), XML DTD/XSD, and Avro schema validation
 - [Conversion Matrix](docs/CONVERSION_MATRIX.md) — Universal $O(N)$ cross-format conversion reference & options across 16 formats
-- [Documentation Expansion Plan](docs/DOCUMENTATION_EXPANSION_PLAN.md) — Roadmap for comprehensive workspace documentation modernization
 - [Embedded Systems Guide](docs/EMBEDDED_GUIDE.md) — `no_std`, stack buffers (`StackBuffer`), and zero-allocation pull parsers
 - [Memory & Benchmarks](docs/BENCHMARKS_AND_MEMORY.md) — Struct size bounds verification (`size_checks.rs`)
 - [Official Conformance Matrix](docs/conformance/README.md) — Specification compliance directory & pass rates
