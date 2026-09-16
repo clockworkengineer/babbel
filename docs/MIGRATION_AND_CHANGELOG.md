@@ -1,10 +1,48 @@
 # Babbel Migration Guide & Changelog
 
-This document details the architectural enhancements, release highlights, backward compatibility guarantees, and migration pathways introduced in the **Babbel SOLID & Extensibility Release (v0.2.0)**.
+This document details the architectural enhancements, release highlights, backward compatibility guarantees, and migration pathways across Babbel releases.
 
 ---
 
-## 1. Release Highlights
+## 1. Release Highlights: Babbel v0.2.1
+
+The v0.2.1 release expands Babbel into an enterprise-grade multi-format serialization ecosystem, bringing support for **HashiCorp HCL (Terraform)**, **Apache Avro**, a **Universal CLI**, **RFC 9535 JSONPath querying**, **RFC 6902/7396 Patch & Diff**, and **Draft 7/2020-12 Schema Validation** across **17 workspace crates** and **16 supported formats**.
+
+### Key Additions in v0.2.1
+
+1. **HashiCorp HCL & Terraform Engine (`babbel_hcl`)**:
+   - Pure-Rust HCL v2 parser, serializer, and `FormatEngine` (`HclEngine`).
+   - Structural block hierarchies, nested blocks, labels, attributes, and comments.
+   - Comprehensive expression evaluation: ternary operators (`? :`), arithmetic, comparisons, logical booleans, interpolation (`${var}`), template directives (`%{if}`, `%{for}`), and heredocs (`<<EOF`, `<<-EOF`).
+   - **100.0% conformance** across all 2,228 tests in the official `kmoneil/hcl-test-suite`.
+2. **Apache Avro Binary & OCF Engine (`babbel_avro`)**:
+   - Schema-driven binary serialization and deserialization (`AvroSchema`, `AvroField`, `from_bytes_with_schema`, `to_vec_with_schema`).
+   - Object Container File (OCF `Obj\x01`) container reader and writer with embedded `"avro.schema"` parsing, compression codecs, and 16-byte random sync markers (`from_bytes_ocf`, `to_vec_ocf`).
+   - Variable-length zigzag varint codec (`i32`, `i64`) and IEEE 754 Little-Endian float/double encoders.
+   - **100.0% conformance** across all 80 test vectors in `drnice/AvroTest`.
+3. **Universal Command-Line Interface (`babbel-cli`)**:
+   - New `babbel` binary executable providing subcommands:
+     - `babbel convert`: Cross-format document conversion with extension autodetection and stdin/stdout piping.
+     - `babbel query`: RFC 9535 JSONPath expression evaluation across any supported document.
+     - `babbel diff`: Structural AST diff generation (RFC 6902 Patch or RFC 7396 Merge Patch).
+     - `babbel patch`: Atomic patch application.
+     - `babbel validate`: JSON Schema verification.
+     - `babbel fmt` & `babbel inspect`: Formatting and structural diagnostics.
+4. **RFC 9535 JSONPath Query Engine**:
+   - Universal query evaluation across `babbel_core::Value` (`jsonpath_query`, `Value::query_path`).
+   - Supports root (`$`), child keys, recursive descent (`..`), wildcards (`*`), slices (`[start:end:step]`), and filter predicates (`[?(@.price < 30)]`).
+5. **RFC 6902 & RFC 7396 Patch & Diff Engines**:
+   - Atomic RFC 6902 operations: `add`, `remove`, `replace`, `move`, `copy`, `test`.
+   - Structural AST differ: `babbel_core::diff(a, b) -> Patch`.
+   - Merge patch semantics: `apply_merge_patch`, `diff_merge_patch`.
+6. **JSON Schema Validator (Draft 7 / Draft 2020-12)**:
+   - In-memory schema compiler (`CompiledSchema`) evaluating universal `Value` AST trees.
+7. **Expanded Conformance & Verification**:
+   - Total automated tests passing across the workspace expanded to **6,500+ tests** with 0 failures and 0 panics.
+
+---
+
+## 2. Release Highlights: Babbel v0.2.0 (SOLID Foundation)
 
 The v0.2.0 release represents a comprehensive architectural modernization across all seven workspace crates (`babbel`, `babbel_core`, `babbel_json`, `babbel_yaml`, `babbel_xml`, `babbel_bencode`, and `babbel_toml`), delivering strict adherence to **SOLID** design principles without sacrificing high throughput or breaking backwards compatibility.
 

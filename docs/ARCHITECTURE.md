@@ -1,6 +1,6 @@
 # Babbel Architecture & Design Principles
 
-Babbel is a high-performance, polyglot serialization, parsing, and document manipulation ecosystem in Rust. It unifies **JSON**, **YAML**, **Bencode**, **XML**, **CSV / TSV**, **INI / Properties**, and **JSON Lines** under a cohesive multi-crate architecture adhering strictly to **DRY** (Don't Repeat Yourself) and **SOLID** engineering principles.
+Babbel is a high-performance, polyglot serialization, parsing, and document manipulation ecosystem in Rust. It unifies **JSON**, **YAML**, **Bencode**, **XML**, **TOML**, **CSV / TSV**, **INI / Properties**, **JSON Lines**, **MessagePack**, **CBOR**, **BSON**, **RON**, **KDL**, **Apache Parquet**, **HashiCorp HCL**, and **Apache Avro** under a cohesive multi-crate architecture adhering strictly to **DRY** (Don't Repeat Yourself) and **SOLID** engineering principles.
 
 ---
 
@@ -10,18 +10,33 @@ Babbel is architected across three distinct, decoupled tiers:
 
 ```mermaid
 graph TD
-    subgraph "Tier 2: Facade & Interoperability"
+    subgraph "Tier 2: Facade, CLI & Interoperability"
         Babbel["babbel (Master Facade & Prelude)"]
-        Convert["babbel::convert (convert_format / convert_format_bytes)"]
+        CLI["babbel-cli (Universal Command-Line Interface)"]
+        Convert["babbel::convert (16-Format O(N) Pipelines)"]
         Registry["babbel::default_registry() (Dynamic FormatRegistry)"]
+        Query["babbel::core::query (RFC 9535 JSONPath)"]
+        Patch["babbel::core::patch (RFC 6902 / 7396 Patch & Diff)"]
     end
 
     subgraph "Tier 1: Domain Format Engines"
-        JSON["babbel_json::JsonEngine (RFC 6901, RFC 7396, JSON5, JSON Lines)"]
-        YAML["babbel_yaml::YamlEngine (YAML 1.2, Anchors/Aliases, Custom Tags)"]
-        XML["babbel_xml::XmlEngine (W3C DOM, C14N, DTD, XSD, XPath 1.0)"]
-        Bencode["babbel_bencode::BencodeEngine (BitTorrent, Zero-Copy Slices)"]
-        TOML["babbel_toml::TomlEngine (TOML v1.1.0, Streaming Pull Parser)"]
+        subgraph "Text & Configuration Engines"
+            JSON["babbel_json::JsonEngine (RFC 6901, RFC 7396, JSON5, JSONL)"]
+            YAML["babbel_yaml::YamlEngine (YAML 1.2, Anchors/Aliases, Tags)"]
+            XML["babbel_xml::XmlEngine (W3C DOM, C14N, DTD, XSD, XPath 1.0)"]
+            TOML["babbel_toml::TomlEngine (TOML v1.1.0, Pull Parser)"]
+            KDL["babbel_kdl::KdlEngine (KDL v2 Document Language)"]
+            RON["babbel_ron::RonEngine (Rusty Object Notation)"]
+            HCL["babbel_hcl::HclEngine (HashiCorp HCL v2 & Terraform)"]
+        end
+        subgraph "Binary & Analytical Engines"
+            Bencode["babbel_bencode::BencodeEngine (BitTorrent Slices)"]
+            MsgPack["babbel_msgpack::MsgPackEngine (MessagePack Specs)"]
+            CBOR["babbel_cbor::CborEngine (RFC 8949 Definite/Indefinite)"]
+            BSON["babbel_bson::BsonEngine (BSON v1.1 Specifications)"]
+            Parquet["babbel_parquet::ParquetEngine (Apache Parquet PAR1)"]
+            Avro["babbel_avro::AvroEngine (Apache Avro Binary & OCF)"]
+        end
     end
 
     subgraph "Tier 0: Foundational Kernel"
@@ -35,6 +50,7 @@ graph TD
 
     Babbel --> Convert
     Babbel --> Registry
+    CLI --> Babbel
     Convert --> CoreAST
     Convert --> CoreCodec
     Registry --> CoreCodec
@@ -44,6 +60,14 @@ graph TD
     Babbel --> XML
     Babbel --> Bencode
     Babbel --> TOML
+    Babbel --> MsgPack
+    Babbel --> CBOR
+    Babbel --> BSON
+    Babbel --> RON
+    Babbel --> KDL
+    Babbel --> Parquet
+    Babbel --> HCL
+    Babbel --> Avro
     Babbel --> CoreText
 
     JSON -.->|implements FormatEngine| CoreCodec
@@ -51,12 +75,28 @@ graph TD
     XML -.->|implements FormatEngine| CoreCodec
     Bencode -.->|implements FormatEngine| CoreCodec
     TOML -.->|implements FormatEngine| CoreCodec
+    MsgPack -.->|implements FormatEngine| CoreCodec
+    CBOR -.->|implements FormatEngine| CoreCodec
+    BSON -.->|implements FormatEngine| CoreCodec
+    RON -.->|implements FormatEngine| CoreCodec
+    KDL -.->|implements FormatEngine| CoreCodec
+    Parquet -.->|implements FormatEngine| CoreCodec
+    HCL -.->|implements FormatEngine| CoreCodec
+    Avro -.->|implements FormatEngine| CoreCodec
 
     JSON --> CoreIO
     YAML --> CoreIO
     XML --> CoreIO
     Bencode --> CoreIO
     TOML --> CoreIO
+    MsgPack --> CoreIO
+    CBOR --> CoreIO
+    BSON --> CoreIO
+    RON --> CoreIO
+    KDL --> CoreIO
+    Parquet --> CoreIO
+    HCL --> CoreIO
+    Avro --> CoreIO
 ```
 
 ### Layer 0: The Core Kernel (`babbel_core`)
@@ -65,6 +105,10 @@ graph TD
   * **Streaming I/O**: Segregated interfaces for pull-based character streaming (`ICharStream`), binary byte reading (`IByteStream`), line-by-line streaming across mixed CRLF/LF/CR (`ILineReader`), rewindability (`IRewindable`), location awareness (`ILocationAware`), and buffered destinations (`IDestination`).
   * **Universal AST (`Value`)**: Canonically represents arbitrary structured data (`Null`, `Bool`, `Integer(i128)`, `Float`, `String`, `Array`, `Object`, `Bytes`) in a cache-aligned 32-byte layout.
   * **Format Engine Abstractions (`babbel_core::codec`)**: Defines `FormatEngine`, `FormatParser`, `FormatEmitter`, `FormatOptions`, and `FormatRegistry` with dynamic registration and static slice lookup (`find_engine*`).
+  * **Query & Patch Engines**:
+    * **RFC 9535 JSONPath Query Engine (`query`)**: Expression evaluation engine supporting root, recursive descent, wildcards, slices, and boolean filters.
+    * **RFC 6902 JSON Patch & RFC 7396 Merge Patch (`patch`, `diff`)**: Structural differ and atomic patch mutator.
+    * **Draft 7 / 2020-12 Schema Validator (`schema`)**: Format-agnostic in-memory schema compiler.
   * **Text Engines**:
     * **RFC 4180 Delimited Text (`csv`)**: High-performance CSV & TSV parsing and emission, delimiter auto-sniffing, multi-line quoted fields, and scalar type inference.
     * **Configuration Text (`ini`)**: Section-based INI (`[section]`), `.properties`, and `.env` parsing, comment handling (`#`, `;`, `!`), and emission.
@@ -75,16 +119,18 @@ graph TD
     * **Memory Control**: `StackBuffer<const N>`, `MemoryTracker`, `EmbeddedLimits`, and 8-byte `CompactError` ensure deterministic execution without heap fragmentation.
   * **DRY Primitives**: Unicode BOM auto-detection (UTF-8, UTF-16 LE/BE, UTF-32 LE/BE), newline normalization, zero-allocation integer formatting via `itoa`, fast float formatting via `dtoa`, and canonical string escaping.
 
-### Layer 1: Domain Format Engines (`babbel_json`, `babbel_yaml`, `babbel_bencode`, `babbel_xml`, `babbel_toml`)
+### Layer 1: Domain Format Engines (13 Specialized Format Crates)
+* **Text & Config Engines**: `babbel_json`, `babbel_yaml`, `babbel_xml`, `babbel_toml`, `babbel_kdl`, `babbel_ron`, `babbel_hcl`.
+* **Binary & Analytical Engines**: `babbel_bencode`, `babbel_msgpack`, `babbel_cbor`, `babbel_bson`, `babbel_parquet`, `babbel_avro`.
 * **Grammar & Semantics**: Each engine implements parsing, syntax validation, document navigation, and serialization for its specific specification.
-* **FormatEngine Implementation**: Each crate exposes an autonomous engine struct (`JsonEngine`, `YamlEngine`, `XmlEngine`, `BencodeEngine`, `TomlEngine`) implementing `babbel_core::FormatEngine`.
-* **JSON Lines Streaming**: `babbel_json::lines` provides streaming `JsonLinesReader` and `to_json_lines` over `ILineReader`.
+* **FormatEngine Implementation**: Each crate exposes an autonomous engine struct implementing `babbel_core::FormatEngine`.
 * **Abstractions**: All format engines depend on `babbel_core::io` abstractions rather than hardcoded OS files or heap buffers.
 * **Autonomy**: Each crate can be consumed independently with minimal binary footprint.
 
-### Layer 2: Facade & Interoperability (`babbel`)
+### Layer 2: Facade, CLI & Interoperability (`babbel`, `babbel-cli`)
 * **Ergonomics**: Provides unified prelude imports and re-exports all format engines and core text engines under feature flags.
-* **$O(N)$ Universal Conversion**: Cross-format conversion pipelines (`babbel::convert::convert_format`, `convert_format_bytes`, `convert_format_bytes_to_str`) between JSON, YAML, XML, Bencode, TOML, CSV, TSV, INI, and JSON Lines route through abstract `FormatEngine` and `Value` AST with zero circular dependencies.
+* **$O(N)$ Universal Conversion**: Cross-format conversion pipelines (`babbel::convert::convert_format`, `convert_format_bytes`) between all 16 supported formats route through abstract `FormatEngine` and `Value` AST with zero circular dependencies.
+* **Universal CLI Tooling (`babbel-cli`)**: Developer command-line interface providing `convert`, `query`, `diff`, `patch`, `validate`, `fmt`, and `inspect` subcommands.
 
 ---
 

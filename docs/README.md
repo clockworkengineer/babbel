@@ -19,13 +19,14 @@ Architectural blueprints, SOLID engineering realizations, and extensibility manu
 | **[SOLID Refactoring Plan](SOLID_REFACTOR_PLAN.md)** | Phased architectural refactoring plan for SOLID compliance across all 14 crates. |
 | **[DRY Refactoring Plan](DRY_REFACTOR_PLAN.md)** | Comprehensive architecture and implementation plan for complete DRY consolidation across all crates. |
 | **[Feature Refactoring & Expansion Plan](FEATURE_REFACTOR_PLAN.md)** | Concrete 8-phase roadmap adding universal JSONPath query, JSON Patch, schema validation, HCL, Avro, CLI, and Serde APIs. |
+| **[Documentation Expansion Plan](DOCUMENTATION_EXPANSION_PLAN.md)** | Comprehensive plan for authoring missing crate READMEs, feature guides, and documentation synchronization. |
 
 ### 2. Specification & Conformance
 Official test suites, standards verification, and formal specification conformance reports located in [`docs/conformance/`](conformance/README.md).
 
 | Document | Standard / Test Suite | Verified Results |
 | :--- | :--- | :--- |
-| **[Official Conformance Matrix](conformance/README.md)** | Full specification index | Directory and summary of all 11 format conformance suites. |
+| **[Official Conformance Matrix](conformance/README.md)** | Full specification index | Directory and summary of all 13 format conformance suites. |
 | **[JSON Conformance](conformance/JSON_CONFORMANCE.md)** | RFC 8259 / nst/JSONTestSuite | **100.0% pass rate** across all 340 test cases (0 failures, 0 panics). |
 | **[YAML 1.2 Conformance](conformance/YAML_CONFORMANCE.md)** | YAML 1.2 Core Spec / Test Suite | **1,085+ test cases** passing across all 10 feature categories. |
 | **[W3C XML Conformance](conformance/XML_CONFORMANCE.md)** | W3C XML TS 20130923 | **100.0% pass rate** across all 12 sub-catalogs (1,834/1,834 tests). |
@@ -36,19 +37,25 @@ Official test suites, standards verification, and formal specification conforman
 | **[RON Conformance](conformance/RON_CONFORMANCE.md)** | RON Spec / starfederation/ron | **100.0% pass rate** across all 100+ test vectors (0 failures, 0 panics). |
 | **[KDL Conformance](conformance/KDL_CONFORMANCE.md)** | KDL v2 / kdl-org/kdl-test | **100.0% pass rate** across all 368 test vectors (0 failures, 0 panics). |
 | **[Apache Parquet Conformance](conformance/PARQUET_CONFORMANCE.md)** | Parquet Format / parquet-testing | **100.0% pass rate** across all 105 test vectors (0 failures, 0 panics). |
-| **[HashiCorp HCL Conformance](conformance/HCL_CONFORMANCE.md)** | HashiCorp HCL v2 / kmoneil/hcl-test-suite | **2,261 tests passing** across all categories (86.4% pass rate, 0 panics). |
+| **[HashiCorp HCL Conformance](conformance/HCL_CONFORMANCE.md)** | HashiCorp HCL v2 / kmoneil/hcl-test-suite | **100.0% pass rate** across all 2,228 tests (0 failures, 0 panics). |
+| **[Apache Avro Conformance](conformance/AVRO_CONFORMANCE.md)** | Apache Avro 1.x / drnice/AvroTest | **100.0% pass rate** across all 80 test vectors (0 failures, 0 panics). |
 | **[Bencode Spec & Conformance](conformance/BENCODE_SPEC_AND_CONFORMANCE.md)** | BitTorrent BEP 0003 | Full specification compliance, zero-copy borrowed slices, and stack parsing. |
 
 ### 3. Specialized Ecosystem Guides
-Targeted guides for performance engineering, embedded targets, and text formats.
+Targeted guides for performance engineering, embedded targets, querying, patching, and text formats.
 
 | Document | Description |
 | :--- | :--- |
-| **[Cross-Format Conversion Matrix](CONVERSION_MATRIX.md)** | Universal $O(N)$ conversion matrix between all 9 formats, engine pipelines, and dynamic registry lookups. |
+| **[CLI User Guide](CLI_GUIDE.md)** | User manual for `babbel` command-line utility (`convert`, `query`, `diff`, `patch`, `validate`, `fmt`, `inspect`). |
+| **[Cross-Format Conversion Matrix](CONVERSION_MATRIX.md)** | Universal $O(N)$ conversion matrix between all 16 formats, engine pipelines, and dynamic registry lookups. |
+| **[JSONPath Query Guide](JSONPATH_QUERY_GUIDE.md)** | RFC 9535 document querying across all formats via universal `Value` AST (`$.store.book[*].author`). |
+| **[JSON Patch & Diff Guide](JSON_PATCH_AND_DIFF_GUIDE.md)** | RFC 6902 atomic document patching, RFC 7396 merge patching, and structural AST diffing. |
+| **[Serde Integration Guide](SERDE_INTEGRATION_GUIDE.md)** | Idiomatic Serde serialization and deserialization across universal `Value` and format engines. |
+| **[Schema Validation Guide](SCHEMA_VALIDATION_GUIDE.md)** | JSON Schema (Draft 7 / 2020-12), XML DTD/XSD, and Avro schema validation across all formats. |
 | **[Embedded Systems & Low-Memory Guide](EMBEDDED_GUIDE.md)** | Guide to `no_std`, stack buffers (`StackBuffer`), zero-allocation destinations, and $O(1)$ RAM pull parsers. |
 | **[Memory & Performance Architecture](BENCHMARKS_AND_MEMORY.md)** | Struct size bounds verification (`size_checks.rs`), zero-allocation formatting, and Windows lock elimination. |
 | **[Text Support Guide](TEXT_SUPPORT_GUIDE.md)** | RFC 4180 CSV/TSV, sectioned INI/.env, JSON Lines (`.jsonl`), frontmatter extraction, and line readers. |
-| **[Candidate Formats Analysis](MISSING_FORMATS_ANALYSIS.md)** | Evaluation of missing formats (MessagePack, CBOR, JSON5, RON, Parquet) and implementation roadmap. |
+| **[Candidate Formats Analysis](MISSING_FORMATS_ANALYSIS.md)** | Evaluation and implementation analysis of format additions (CBOR, MsgPack, BSON, RON, KDL, Parquet, HCL, Avro). |
 
 ### 4. Governance, Releases & Development
 Contribution workflows, release history, and security policies.
@@ -65,7 +72,7 @@ Contribution workflows, release history, and security policies.
 
 ## 📦 Workspace Crates
 
-Babbel is partitioned into seven decoupled, focused crates:
+Babbel is partitioned into seventeen decoupled, focused crates:
 
 | Crate | Package Docs | Path | Role |
 | :--- | :--- | :--- | :--- |
@@ -79,6 +86,12 @@ Babbel is partitioned into seven decoupled, focused crates:
 | **`babbel_msgpack`** | [README](../crates/msgpack/README.md) | `crates/msgpack` | MessagePack DOM engine, `MsgPackEngine`, streaming decoder/encoder, 100% AST fidelity. |
 | **`babbel_cbor`** | [README](../crates/cbor/README.md) | `crates/cbor` | RFC 8949 CBOR DOM engine, `CborEngine`, major types 0-7, streaming decoder/encoder. |
 | **`babbel_bson`** | [README](../crates/bson/README.md) | `crates/bson` | BSON DOM engine, `BsonEngine`, bsonspec.org types, streaming decoder/encoder. |
+| **`babbel_ron`** | [README](../crates/ron/README.md) | `crates/ron` | Pure-Rust RON (Rusty Object Notation) parser, serializer, and `RonEngine`. |
+| **`babbel_kdl`** | [README](../crates/kdl/README.md) | `crates/kdl` | Complete language-neutral KDL v2 document parser, serializer, and `KdlEngine`. |
+| **`babbel_parquet`** | [README](../crates/parquet/README.md) | `crates/parquet` | Fast, pure-Rust Apache Parquet columnar reader, writer, and `ParquetEngine`. |
+| **`babbel_hcl`** | [README](../crates/hcl/README.md) | `crates/hcl` | HashiCorp Configuration Language (HCL v2) and Terraform parser, serializer, and `HclEngine`. |
+| **`babbel_avro`** | [README](../crates/avro/README.md) | `crates/avro` | Fast, pure-Rust Apache Avro binary and Object Container File (OCF) parser, serializer, and `AvroEngine`. |
+| **`babbel-cli`** | [README](../crates/cli/README.md) | `crates/cli` | Universal command-line interface tool providing document conversions, JSONPath querying, diffing, patching, and formatting. |
 
 ---
 

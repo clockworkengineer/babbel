@@ -11,15 +11,19 @@
 //! - **`yaml`**: YAML 1.2 parser/emitter with anchors, aliases, tags, and multi-document streams.
 //! - **`xml`**: Validating XML parser, C14N canonicalization, and XPath 1.0 engine.
 //! - **`bencode`**: Fast, binary-safe BitTorrent Bencode serializer and DOM.
-//! - **`csv`**: RFC 4180 CSV and TSV parsing/emission with delimiter sniffing and type inference.
-//! - **`ini`**: Section-based INI, Java `.properties`, and `.env` parsing/emission.
-//! - **`text`**: Document frontmatter extraction (`split_frontmatter`) and line indentation utilities.
+//! - **`toml`**: Fast, modular, pure-Rust TOML v1.1.0 parser and serializer.
+//! - **`msgpack`**: High-speed, binary-safe MessagePack encoder and decoder.
 //! - **`cbor`**: RFC 8949 Concise Binary Object Representation (CBOR) encoder/decoder.
 //! - **`bson`**: High-performance Binary JSON (BSON v1.1) specification encoder/decoder.
 //! - **`ron`**: Rusty Object Notation (RON) parser and serializer for Rust configurations and games.
-//! - **`kdl`**: KDL Document Language (KDL) parser and serializer for modern CLI and document configs.
+//! - **`kdl`**: KDL Document Language (KDL v2) parser and serializer for modern CLI and document configs.
 //! - **`parquet`**: Apache Parquet columnar storage reader, writer, and FormatEngine for analytical data.
-//! - **`convert`**: Universal $O(N)$ cross-format conversion matrix.
+//! - **`hcl`**: HashiCorp Configuration Language (HCL v2) and Terraform parser and serializer.
+//! - **`avro`**: Apache Avro binary and Object Container File (OCF) parser and serializer.
+//! - **`csv`**: RFC 4180 CSV and TSV parsing/emission with delimiter sniffing and type inference.
+//! - **`ini`**: Section-based INI, Java `.properties`, and `.env` parsing/emission.
+//! - **`text`**: Document frontmatter extraction (`split_frontmatter`) and line indentation utilities.
+//! - **`convert`**: Universal $O(N)$ cross-format conversion matrix across 16 formats.
 //!
 //! ## Quickstart
 //!

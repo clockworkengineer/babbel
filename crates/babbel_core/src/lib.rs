@@ -4,6 +4,16 @@
 //! error diagnostic reporting, and universal data model for the Babbel data format family.
 //!
 //! Designed for high performance, standard library, and `no_std` / embedded targets.
+//!
+//! ## Core Modules
+//!
+//! - **[`model::Value`]**: Universal AST supporting null, boolean, integer (i64/u64), float, string, bytes, array, and ordered map.
+//! - **[`query`]**: RFC 9535 JSONPath query engine supporting root references, child property access, array indexing, slicing, filters, and recursive descent.
+//! - **[`patch`]**: RFC 6902 JSON Patch (`add`, `remove`, `replace`, `move`, `copy`, `test`) and RFC 7396 JSON Merge Patch.
+//! - **[`diff`]**: Structural AST diffing producing RFC 6902 and RFC 7396 patches.
+//! - **[`schema`]**: JSON Schema validation (Draft 7 & 2020-12 core assertions, type checks, string formats, array & object constraints).
+//! - **[`codec`]**: Format codecs, pull-parsers, and streaming emitters with format registry dispatch.
+//! - **[`serde_impl`]**: Bidirectional serde interoperability via `to_value` and `from_value` (when `serde` feature enabled).
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::approx_constant)]

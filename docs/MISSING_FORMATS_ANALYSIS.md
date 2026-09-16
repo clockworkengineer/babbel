@@ -78,25 +78,33 @@ These formats share a 1:1 conceptual mapping with Babbel's universal `Value` AST
   - Type annotations and child nodes.
 - **Implementation**: Pure-Rust zero-dependency crate `babbel_kdl::KdlEngine` implementing `FormatEngine`, recursive-descent parser, node hierarchies, positional arguments, properties (`key=val`), nested children blocks (`{ ... }`), line comments (`//`), nested multiline comments (`/* /* */ */`), slashdash comments (`/-`), raw strings (`r#"..."#`), number bases (hex `0x`, octal `0o`, binary `0b`, float, exponents, underscores), compact & pretty-printed serializers, and full cross-format conversion matrix integration.
 
-### 3.4 HCL (HashiCorp Configuration Language - `.hcl`, `.tf`)
+### 3.4 HCL (HashiCorp Configuration Language - `.hcl`, `.tf`) — [IMPLEMENTED in `babbel_hcl`]
+- **Status**: **Implemented** in `crates/hcl` (`babbel_hcl`), registered in `babbel::FormatRegistry` and `babbel::convert`.
+- **MIME Type**: `application/x-hcl`
 - **Adoption**: Terraform, Nomad, Consul, Packer, cloud infrastructure-as-code.
-- **Trade-off**: Complex grammar with built-in interpolation functions; typically better handled by dedicated grammar runtimes.
+- **Value Proposition**:
+  - The industry-standard configuration language for DevOps and cloud infrastructure provisioning.
+  - Native support for blocks, labels, attributes, heredocs (`<<EOF`, `<<-EOF`), and expressions.
+- **Implementation**: Pure-Rust zero-dependency crate `babbel_hcl::HclEngine` implementing `FormatEngine`, recursive-descent parser, expression evaluator (ternary, arithmetic, logical comparisons), interpolation, tuple arrays, object dictionaries, and 100.0% conformance against official `kmoneil/hcl-test-suite` (2,228 tests).
 
 ---
 
 ## 4. Analytical, Columnar & Big Data Formats
 
-### 4.1 Apache Parquet (`.parquet`)
+### 4.1 Apache Parquet (`.parquet`) — [IMPLEMENTED in `babbel_parquet`]
 - **Adoption**: DuckDB, Polars, Apache Spark, Snowflake, Amazon Athena, analytical data lakes.
 - **Value Proposition**:
   - Columnar storage with dictionary encoding and Snappy/ZSTD compression.
 - **Implementation**: Pure-Rust zero-dependency crate `babbel_parquet::ParquetEngine` implementing `FormatEngine`, self-contained Apache Thrift Compact Protocol codec, valid `PAR1` columnar reading and writing, data page headers, PLAIN encoding, RLE definition levels for nullable columns, types `INT32`, `INT64`, `FLOAT`, `DOUBLE`, `BYTE_ARRAY`, `BOOLEAN`, and cross-format conversion matrix integration.
 
-### 4.2 Apache Avro (`.avro`)
+### 4.2 Apache Avro (`.avro`) — [IMPLEMENTED in `babbel_avro`]
+- **Status**: **Implemented** in `crates/avro` (`babbel_avro`), registered in `babbel::FormatRegistry` and `babbel::convert`.
+- **MIME Type**: `application/avro`
 - **Adoption**: Apache Kafka, event streaming pipelines, Hadoop ecosystem.
 - **Value Proposition**:
   - Row-oriented binary serialization with embedded JSON schema.
-- **Trade-off**: Requires schema negotiation or schema parsing to deserialize binary rows.
+  - Fast, compact zigzag-encoded binary records with zero space overhead.
+- **Implementation**: Pure-Rust crate `babbel_avro::AvroEngine` implementing `FormatEngine`, `AvroSchema` AST and JSON schema parser, schema-driven binary encoder and decoder, complete Object Container File (OCF `Obj\x01`) reader and writer with sync markers, and 100.0% conformance against official `drnice/AvroTest`.
 
 ---
 
@@ -111,7 +119,8 @@ These formats share a 1:1 conceptual mapping with Babbel's universal `Value` AST
 | **KDL** (`.kdl`) | Modern CLI Config | Medium | 85% (Node/attribute mapping) | **IMPLEMENTED (`babbel_kdl`)** |
 | **BSON** (`.bson`) | Database Storage | Medium | 90% (JSON-extended mapping) | **IMPLEMENTED (`babbel_bson`)** |
 | **Apache Parquet** (`.parquet`)| Columnar Big Data | High (Data Science) | 70% (Batch tabular only) | **IMPLEMENTED (`babbel_parquet`)** |
-| **Apache Avro** (`.avro`) | Event Streaming | High (Kafka) | 75% (Schema-bound) | Future / Specialized |
+| **HashiCorp HCL** (`.hcl`, `.tf`)| Cloud Infrastructure | Very High (Terraform) | 90% (Blocks & attributes) | **IMPLEMENTED (`babbel_hcl`)** |
+| **Apache Avro** (`.avro`) | Event Streaming | High (Kafka) | 85% (Schema-bound records) | **IMPLEMENTED (`babbel_avro`)** |
 
 
 ---

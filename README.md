@@ -2,19 +2,24 @@
 
 [![Rust](https://img.shields.io/badge/rust-2024%20edition-orange.svg)](https://www.rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-3500%2B%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-6500%2B%20passing-brightgreen.svg)]()
 [![Architecture: SOLID](https://img.shields.io/badge/architecture-SOLID%20%26%20DRY-purple.svg)](docs/SOLID_ARCHITECTURE_GUIDE.md)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Donate-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/roberttizz1)
 
-A high-performance, polyglot serialization, parsing, and document manipulation workspace in Rust. Babbel brings together **JSON**, **YAML**, **Bencode**, **XML**, **TOML**, **CSV / TSV**, **INI / Properties**, and **JSON Lines** under a unified, modular architecture adhering strictly to **DRY** (Don't Repeat Yourself) and **SOLID** engineering principles.
+A high-performance, polyglot serialization, parsing, and document manipulation workspace in Rust. Babbel brings together **JSON**, **YAML**, **Bencode**, **XML**, **TOML**, **CSV / TSV**, **INI / Properties**, **JSON Lines**, **MessagePack**, **CBOR**, **BSON**, **RON**, **KDL**, **Apache Parquet**, **HashiCorp HCL**, and **Apache Avro** under a unified, modular architecture adhering strictly to **DRY** (Don't Repeat Yourself) and **SOLID** engineering principles.
 
 📖 **Documentation & Guides**:
 - [Documentation Hub](docs/README.md) — Central directory of all specifications, guides, and tutorials
 - [SOLID Architecture Whitepaper](docs/SOLID_ARCHITECTURE_GUIDE.md) — Comprehensive guide to the 6-phase SOLID implementation
 - [Format Engine Plugin Guide](docs/FORMAT_ENGINE_PLUGIN_GUIDE.md) — Tutorial on implementing and registering custom format engines
 - [Architecture Guide](docs/ARCHITECTURE.md) — 3-tier layering model, memory bounds, and design principles
-- [DRY Refactoring Plan](docs/DRY_REFACTOR_PLAN.md) — Concrete architecture and implementation plan for complete workspace DRY consolidation
-- [Conversion Matrix](docs/CONVERSION_MATRIX.md) — Universal $O(N)$ cross-format conversion reference & options
+- [CLI User Guide](docs/CLI_GUIDE.md) — Command-line tool manual (`convert`, `query`, `diff`, `patch`, `validate`, `fmt`, `inspect`)
+- [JSONPath Query Guide](docs/JSONPATH_QUERY_GUIDE.md) — Format-agnostic RFC 9535 document querying across universal `Value`
+- [JSON Patch & Diff Guide](docs/JSON_PATCH_AND_DIFF_GUIDE.md) — RFC 6902 atomic patching, RFC 7396 merge patching, and AST diffing
+- [Serde Integration Guide](docs/SERDE_INTEGRATION_GUIDE.md) — Idiomatic Serde serialization & deserialization across all formats
+- [Schema Validation Guide](docs/SCHEMA_VALIDATION_GUIDE.md) — JSON Schema (Draft 7/2020-12), XML DTD/XSD, and Avro schema validation
+- [Conversion Matrix](docs/CONVERSION_MATRIX.md) — Universal $O(N)$ cross-format conversion reference & options across 16 formats
+- [Documentation Expansion Plan](docs/DOCUMENTATION_EXPANSION_PLAN.md) — Roadmap for comprehensive workspace documentation modernization
 - [Embedded Systems Guide](docs/EMBEDDED_GUIDE.md) — `no_std`, stack buffers (`StackBuffer`), and zero-allocation pull parsers
 - [Memory & Benchmarks](docs/BENCHMARKS_AND_MEMORY.md) — Struct size bounds verification (`size_checks.rs`)
 - [Official Conformance Matrix](docs/conformance/README.md) — Specification compliance directory & pass rates
@@ -28,6 +33,8 @@ A high-performance, polyglot serialization, parsing, and document manipulation w
 - [RON Conformance](docs/conformance/RON_CONFORMANCE.md) — Official starfederation/ron test suite results (100.0% pass rate)
 - [KDL Conformance](docs/conformance/KDL_CONFORMANCE.md) — Official kdl-org/kdl-test suite results (100.0% across 368 tests)
 - [Apache Parquet Conformance](docs/conformance/PARQUET_CONFORMANCE.md) — Official Apache Parquet test suite results (100.0% pass rate)
+- [HashiCorp HCL Conformance](docs/conformance/HCL_CONFORMANCE.md) — Official kmoneil/hcl-test-suite results (100.0% across 2,228 tests)
+- [Apache Avro Conformance](docs/conformance/AVRO_CONFORMANCE.md) — Official drnice/AvroTest suite results (100.0% pass rate)
 - [Bencode Spec & Conformance](docs/conformance/BENCODE_SPEC_AND_CONFORMANCE.md) — BitTorrent BEP 0003 specification & test breakdown
 - [Text Support Guide](docs/TEXT_SUPPORT_GUIDE.md) — RFC 4180 CSV/TSV, INI/.env, JSON Lines, and frontmatter
 - [Migration Guide & Changelog](docs/MIGRATION_AND_CHANGELOG.md) — Release notes and backward compatibility guarantees
@@ -39,11 +46,11 @@ A high-performance, polyglot serialization, parsing, and document manipulation w
 
 ## Workspace Architecture
 
-Babbel is structured as an interconnected multi-crate workspace:
+Babbel is structured as an interconnected multi-crate workspace across **17 specialized crates**:
 
 | Crate | Package Docs | Directory | Description |
 | :--- | :--- | :--- | :--- |
-| **`babbel`** | [README](crates/babbel/README.md) | [`crates/babbel`](crates/babbel) | Master facade crate providing high-level ergonomics, prelude, dynamic `FormatRegistry`, and open-ended conversion pipelines across 9 formats. |
+| **`babbel`** | [README](crates/babbel/README.md) | [`crates/babbel`](crates/babbel) | Master facade crate providing high-level ergonomics, prelude, dynamic `FormatRegistry`, and open-ended conversion pipelines across 16 formats. |
 | **`babbel_core`** | [README](crates/babbel_core/README.md) | [`crates/babbel_core`](crates/babbel_core) | Core architectural kernel containing streaming traits (`ISource`, `IDestination`, `ILineReader`), `FormatEngine` interface, universal `Value` AST, RFC 4180 CSV/TSV, sectioned INI/.env, frontmatter processing, Unicode BOM detection, and embedded primitives. |
 | **`babbel_json`** | [README](crates/json/README.md) | [`crates/json`](crates/json) | Full-featured JSON DOM engine, `JsonEngine`, RFC 6901 JSON Pointer, RFC 7396 JSON Merge Patch, JSON Lines streaming, and zero-allocation `JsonPullParser`. |
 | **`babbel_yaml`** | [README](crates/yaml/README.md) | [`crates/yaml`](crates/yaml) | YAML 1.2 parser and emitter, `YamlEngine`, anchors, aliases, custom tags, multiline block scalars, and SRP-decomposed modules. |
@@ -56,6 +63,9 @@ Babbel is structured as an interconnected multi-crate workspace:
 | **`babbel_ron`** | [README](crates/ron/README.md) | [`crates/ron`](crates/ron) | Pure-Rust RON (Rusty Object Notation) parser, serializer, and `RonEngine` with zero external dependencies. |
 | **`babbel_kdl`** | [README](crates/kdl/README.md) | [`crates/kdl`](crates/kdl) | Complete language-neutral KDL v2 document parser, serializer, and `KdlEngine` with zero external dependencies. |
 | **`babbel_parquet`** | [README](crates/parquet/README.md) | [`crates/parquet`](crates/parquet) | Fast, pure-Rust Apache Parquet columnar reader, writer, and `ParquetEngine` with zero external dependencies. |
+| **`babbel_hcl`** | [README](crates/hcl/README.md) | [`crates/hcl`](crates/hcl) | HashiCorp Configuration Language (HCL v2) and Terraform parser, serializer, and `HclEngine` with zero external dependencies. |
+| **`babbel_avro`** | [README](crates/avro/README.md) | [`crates/avro`](crates/avro) | Fast, pure-Rust Apache Avro binary and Object Container File (OCF) parser, serializer, and `AvroEngine` with zero external dependencies. |
+| **`babbel-cli`** | [README](crates/cli/README.md) | [`crates/cli`](crates/cli) | Universal command-line interface tool providing document conversions, JSONPath querying, diffing, patching, and formatting. |
 
 ---
 

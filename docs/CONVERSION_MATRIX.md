@@ -1,6 +1,6 @@
 # Babbel Cross-Format Conversion Matrix
 
-Babbel provides an open-ended, $O(N)$ universal conversion pipeline between **JSON**, **YAML**, **XML**, **Bencode**, **TOML**, **CSV**, **TSV**, **INI**, and **JSON Lines**.
+Babbel provides an open-ended, $O(N)$ universal conversion pipeline between **16 data formats**: **JSON**, **YAML**, **XML**, **Bencode**, **TOML**, **CSV**, **TSV**, **INI**, **JSON Lines**, **MessagePack**, **CBOR**, **BSON**, **RON**, **KDL**, **Apache Parquet**, **HashiCorp HCL**, and **Apache Avro**.
 
 ---
 
@@ -12,49 +12,25 @@ Babbel solves this by utilizing the **Open-Closed Principle (OCP)** and **Depend
 
 ```mermaid
 graph LR
-    subgraph "Inputs"
-        JSON_IN[JSON]
-        YAML_IN[YAML]
-        XML_IN[XML]
-        BENC_IN[Bencode]
-        TOML_IN[TOML]
-        CSV_IN[CSV / TSV]
-        INI_IN[INI / .env]
-        JSONL_IN[JSON Lines]
+    subgraph "Inputs (16 Formats)"
+        T_IN["Text & Config:<br>JSON, YAML, XML, TOML,<br>KDL, RON, HCL, CSV,<br>TSV, INI, JSON Lines"]
+        B_IN["Binary & Analytical:<br>CBOR, MessagePack, BSON,<br>Apache Parquet, Apache Avro,<br>BitTorrent Bencode"]
     end
 
     subgraph "Core Intermediary"
         AST["babbel_core::Value (Lingua Franca)"]
     end
 
-    subgraph "Outputs"
-        JSON_OUT[JSON]
-        YAML_OUT[YAML]
-        XML_OUT[XML]
-        BENC_OUT[Bencode]
-        TOML_OUT[TOML]
-        CSV_OUT[CSV / TSV]
-        INI_OUT[INI / .env]
-        JSONL_OUT[JSON Lines]
+    subgraph "Outputs (16 Formats)"
+        T_OUT["Text & Config:<br>JSON, YAML, XML, TOML,<br>KDL, RON, HCL, CSV,<br>TSV, INI, JSON Lines"]
+        B_OUT["Binary & Analytical:<br>CBOR, MessagePack, BSON,<br>Apache Parquet, Apache Avro,<br>BitTorrent Bencode"]
     end
 
-    JSON_IN --> AST
-    YAML_IN --> AST
-    XML_IN --> AST
-    BENC_IN --> AST
-    TOML_IN --> AST
-    CSV_IN --> AST
-    INI_IN --> AST
-    JSONL_IN --> AST
+    T_IN --> AST
+    B_IN --> AST
 
-    AST --> JSON_OUT
-    AST --> YAML_OUT
-    AST --> XML_OUT
-    AST --> BENC_OUT
-    AST --> TOML_OUT
-    AST --> CSV_OUT
-    AST --> INI_OUT
-    AST --> JSONL_OUT
+    AST --> T_OUT
+    AST --> B_OUT
 ```
 
 Every format implements:
@@ -140,6 +116,14 @@ The table below outlines semantic behavior across conversion pairs:
 | **CSV / TSV**| Array of row objects | Sequence of mapping rows | Rows $\rightarrow$ `<row>` elements | List of dictionary rows | Rows $\rightarrow$ array of tables | Delimiter swap (CSV $\leftrightarrow$ TSV) | Not recommended (flat table) | 1 record per line |
 | **INI / .env**| Nested object of sections| Section mappings | Properties $\rightarrow$ XML nodes| Key-value dictionary | Sections $\rightarrow$ tables | Sections $\rightarrow$ table records | Delimiter swap (`=` $\leftrightarrow$ `:`) | Section objects $\rightarrow$ JSONL |
 | **JSON Lines**| Array of all records | Multi-document stream | Line records $\rightarrow$ XML | List of dictionary rows | Records $\rightarrow$ array of tables| Unified header table | Object records $\rightarrow$ sections | Filter / re-chunk stream |
+| **CBOR** | Full 1:1 mapping | Direct mapping | Tags $\rightarrow$ elements | Direct mapping | Tables $\leftrightarrow$ maps | Rows $\leftrightarrow$ maps | Sections $\leftrightarrow$ maps | Arrays $\leftrightarrow$ stream |
+| **MessagePack**| Full 1:1 mapping | Direct mapping | Bin $\rightarrow$ base64 nodes | Direct mapping | Tables $\leftrightarrow$ maps | Rows $\leftrightarrow$ maps | Sections $\leftrightarrow$ maps | Arrays $\leftrightarrow$ stream |
+| **BSON** | Full 1:1 mapping | Direct mapping | Binary $\rightarrow$ base64 | Direct mapping | Tables $\leftrightarrow$ maps | Rows $\leftrightarrow$ maps | Sections $\leftrightarrow$ maps | Arrays $\leftrightarrow$ stream |
+| **RON** | Full 1:1 mapping | Rust structs $\rightarrow$ map | Structs $\rightarrow$ elements | Structs $\rightarrow$ dicts | Structs $\rightarrow$ tables | Rows $\leftrightarrow$ structs | Sections $\leftrightarrow$ structs | Tuples/arrays $\rightarrow$ JSONL |
+| **KDL** | Nodes $\rightarrow$ JSON Object | Nodes $\rightarrow$ mapping | Nodes $\rightarrow$ elements | Nodes $\rightarrow$ dicts | Nodes $\rightarrow$ tables | Nodes $\rightarrow$ rows | Properties $\rightarrow$ INI | Nodes $\rightarrow$ records |
+| **HCL** | Blocks $\rightarrow$ JSON Object | Blocks $\rightarrow$ mapping | Blocks $\rightarrow$ elements | Blocks $\rightarrow$ dicts | Blocks $\rightarrow$ tables | Flat blocks $\rightarrow$ CSV | Attributes $\rightarrow$ keys | Blocks $\rightarrow$ JSONL |
+| **Avro** | Schema records $\rightarrow$ JSON| Records $\rightarrow$ mapping | Records $\rightarrow$ XML nodes| Records $\rightarrow$ dicts | Records $\rightarrow$ tables | Row records $\rightarrow$ CSV | Key records $\rightarrow$ INI | Block records $\rightarrow$ JSONL |
+| **Parquet** | Column batches $\rightarrow$ JSON | Columns $\rightarrow$ mapping | Rows $\rightarrow$ XML nodes | Dict records | Tables $\leftrightarrow$ columns | Direct table mapping | Columns $\rightarrow$ sections | Row batches $\rightarrow$ JSONL |
 
 ---
 
