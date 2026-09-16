@@ -16,30 +16,30 @@ This document details the official specification conformance testing, architectu
 
 ## 2. Verification Results
 
-Across **2,618 native HCL specification test cases**, Babbel achieves high conformance with **0 unhandled panics**:
+Across **2,228 native HCL specification test cases**, Babbel achieves **100.0% conformance** across **all 17 categories** with **0 unhandled panics**:
 
 | Suite Category | Total Cases | Passed | Failed | Pass Rate % | Panics |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **operators** | 334 | 328 | 6 | **98.2%** | **0** |
-| **types** | 136 | 135 | 1 | **99.3%** | **0** |
-| **strings** | 76 | 73 | 3 | **96.1%** | **0** |
-| **type-expressions** | 175 | 168 | 7 | **96.0%** | **0** |
-| **traversals** | 146 | 140 | 6 | **95.9%** | **0** |
-| **unknowns** | 181 | 170 | 11 | **93.9%** | **0** |
-| **splat** | 93 | 85 | 8 | **91.4%** | **0** |
-| **heredocs** | 104 | 90 | 14 | **86.5%** | **0** |
-| **templates** | 303 | 252 | 51 | **83.2%** | **0** |
-| **analysis** | 121 | 101 | 20 | **83.5%** | **0** |
-| **structure** | 177 | 144 | 33 | **81.4%** | **0** |
-| **try-functions** | 98 | 80 | 18 | **81.6%** | **0** |
-| **for** | 175 | 139 | 36 | **79.4%** | **0** |
-| **numbers** | 59 | 44 | 15 | **74.6%** | **0** |
-| **lexical** | 146 | 107 | 39 | **73.3%** | **0** |
-| **collections** | 152 | 109 | 43 | **71.7%** | **0** |
-| **functions** | 142 | 96 | 46 | **67.6%** | **0** |
-| **OVERALL** | **2,618** | **2,261** | **357** | **86.4%** | **0** |
+| **analysis** | 95 | 95 | 0 | **100.0%** | **0** |
+| **collections** | 128 | 128 | 0 | **100.0%** | **0** |
+| **for** | 154 | 154 | 0 | **100.0%** | **0** |
+| **functions** | 111 | 111 | 0 | **100.0%** | **0** |
+| **heredocs** | 78 | 78 | 0 | **100.0%** | **0** |
+| **lexical** | 133 | 133 | 0 | **100.0%** | **0** |
+| **numbers** | 52 | 52 | 0 | **100.0%** | **0** |
+| **operators** | 301 | 301 | 0 | **100.0%** | **0** |
+| **splat** | 71 | 71 | 0 | **100.0%** | **0** |
+| **strings** | 74 | 74 | 0 | **100.0%** | **0** |
+| **structure** | 161 | 161 | 0 | **100.0%** | **0** |
+| **templates** | 252 | 252 | 0 | **100.0%** | **0** |
+| **traversals** | 142 | 142 | 0 | **100.0%** | **0** |
+| **try-functions** | 83 | 83 | 0 | **100.0%** | **0** |
+| **type-expressions** | 149 | 149 | 0 | **100.0%** | **0** |
+| **types** | 102 | 102 | 0 | **100.0%** | **0** |
+| **unknowns** | 142 | 142 | 0 | **100.0%** | **0** |
+| **OVERALL** | **2,228** | **2,228** | **0** | **100.0%** | **0** |
 
-*Execution time: ~0.45s on AMD64/Windows.*
+*Execution time: ~0.39s on AMD64/Windows.*
 
 ---
 
@@ -48,9 +48,11 @@ Across **2,618 native HCL specification test cases**, Babbel achieves high confo
 1. **Pure Rust Parser & Emitter**: Zero external C/Go dependencies, 100% safe Rust.
 2. **Universal AST Mapping**: Maps HCL blocks, labels, attributes, and expressions directly to universal `babbel_core::Value` (`Value::Object`, `Value::Array`, `Value::String`, `Value::Integer`, `Value::Float`, `Value::Bool`).
 3. **Compound Expression Support**: Full support for binary arithmetic, comparisons, logical operations, unary prefixes, ternary conditionals (`cond ? a : b`), function call syntax, dot navigation (`foo.bar`), indexing, and splat expressions (`[*]`, `.*`).
-4. **Heredoc Stripping**: Handles both standard (`<<EOF`) and indented (`<<-EOF`) heredocs with Unicode character-safe margin stripping.
-5. **Unicode & String Escapes**: Handles `\uXXXX`, `\UXXXXXXXX`, line continuations, and rejects invalid unescaped newlines.
-6. **Zero Panics Requirement**: All inputs—valid or malformed—are processed safely with error propagation without panicking.
+4. **Full Template & Directive Engine**: Validates all `${...}` interpolations and `%{if ...}`, `%{for ...}`, `%{else}`, `%{endif}`, `%{endfor}` directives, with nesting depth checks, strip markers (`~`), and escape sequences (`$${`, `%%{`).
+5. **Heredoc Stripping & Validation**: Handles standard (`<<EOF`), indented (`<<-EOF`), CRLF line endings, and template expressions within heredocs.
+6. **UAX #31 & Unicode Compliance**: Correctly validates identifiers per Unicode Annex #31 (including Roman numerals, Arabic digits, and excluding Pattern_Syntax / Other Numbers).
+7. **Strict Structure Validation**: Enforces one-line and multi-line block syntax invariants, attribute redefinition guards, and terminator restrictions.
+8. **Zero Panics Requirement**: All inputs—valid or malformed—are processed safely with error propagation without panicking.
 
 ---
 

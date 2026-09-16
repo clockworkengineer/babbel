@@ -30,3 +30,4 @@ target
 **/parquet-format/
 *.zip
 notes/
+**/failures.txt

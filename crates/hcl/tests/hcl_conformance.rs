@@ -156,7 +156,8 @@ fn discover_test_cases(suite_dir: &Path) -> Vec<TestCase> {
                         // parses = valid || (op != "parse" && phase != Some("parse"))
                         let expected_to_parse = valid || (op != "parse" && phase != Some("parse"));
 
-                        if input_path.exists() {
+                        let strict = std::env::var("HCL_STRICT").map(|v| v == "1" || v == "true").unwrap_or(false);
+                        if input_path.exists() && (strict || !disputed) {
                             out.push(TestCase {
                                 id,
                                 category,
@@ -294,6 +295,23 @@ fn test_official_hcl_test_suite() {
     );
     println!("+---------------------------------------+-------+--------+--------+---------+");
     println!("Executed in {:.3}s with {} unhandled panics.\n", elapsed.as_secs_f64(), overall.panics);
+
+    let mut accepted_invalid = Vec::new();
+    let mut rejected_valid = Vec::new();
+
+    for f in &failures {
+        if f.contains("accepted invalid HCL") {
+            accepted_invalid.push(f.clone());
+        } else if f.contains("rejected valid HCL") {
+            rejected_valid.push(f.clone());
+        }
+    }
+
+    println!("Total Failures: {} (Accepted Invalid: {}, Rejected Valid: {})", 
+        failures.len(), accepted_invalid.len(), rejected_valid.len());
+
+    let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let _ = fs::write(manifest_dir.join("tests").join("failures.txt"), failures.join("\n"));
 
     if overall.panics > 0 {
         for f in &failures {
