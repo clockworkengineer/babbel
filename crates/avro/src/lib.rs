@@ -25,12 +25,17 @@
 extern crate alloc;
 
 pub mod error;
+pub mod schema;
 pub mod codec;
 pub mod ocf;
 pub mod engine;
 
 pub use error::AvroError;
-pub use codec::{from_bytes, to_vec, AvroDecoder, AvroEncoder};
+pub use schema::{AvroField, AvroSchema};
+pub use codec::{
+    from_bytes, from_bytes_with_schema, to_vec, to_vec_with_schema,
+    AvroDecoder, AvroEncoder,
+};
 pub use ocf::{from_bytes_ocf, to_vec_ocf, OCF_MAGIC};
 pub use engine::AvroEngine;
 pub use babbel_core::Value;

@@ -5,6 +5,7 @@ use alloc::{format, string::String, string::ToString, vec::Vec};
 
 use babbel_core::Value;
 use crate::error::AvroError;
+use crate::schema::AvroSchema;
 
 /// Binary decoder for raw Avro byte payloads.
 pub struct AvroDecoder<'a> {
@@ -102,6 +103,83 @@ impl<'a> AvroDecoder<'a> {
             6 => self.decode_array(),
             7 => self.decode_map(),
             _ => Err(AvroError::Custom("unrecognized Avro union type tag")),
+        }
+    }
+
+    /// Decode an Avro value according to an explicit [`AvroSchema`].
+    pub fn decode_with_schema(&mut self, schema: &AvroSchema) -> Result<Value, AvroError> {
+        match schema {
+            AvroSchema::Null => Ok(Value::Null),
+            AvroSchema::Boolean => self.read_bool().map(Value::Bool),
+            AvroSchema::Int => self.read_long().map(|i| Value::Integer(i as i128)),
+            AvroSchema::Long => self.read_long().map(|i| Value::Integer(i as i128)),
+            AvroSchema::Float => self.read_float().map(|f| Value::Float(f as f64)),
+            AvroSchema::Double => self.read_double().map(Value::Float),
+            AvroSchema::Bytes => self.read_bytes().map(|b| Value::Bytes(b.to_vec())),
+            AvroSchema::String => self.read_string().map(|s| Value::String(s.to_string())),
+            AvroSchema::Record { fields, .. } => {
+                let mut entries = Vec::with_capacity(fields.len());
+                for f in fields {
+                    let val = self.decode_with_schema(&f.schema)?;
+                    entries.push((f.name.clone(), val));
+                }
+                Ok(Value::Object(entries))
+            }
+            AvroSchema::Union(variants) => {
+                let idx = self.read_long()?;
+                if idx < 0 || (idx as usize) >= variants.len() {
+                    return Err(AvroError::Custom("union index out of bounds in Avro stream"));
+                }
+                self.decode_with_schema(&variants[idx as usize])
+            }
+            AvroSchema::Enum { symbols, .. } => {
+                let idx = self.read_long()?;
+                if idx < 0 || (idx as usize) >= symbols.len() {
+                    return Err(AvroError::Custom("enum symbol index out of bounds in Avro stream"));
+                }
+                Ok(Value::String(symbols[idx as usize].clone()))
+            }
+            AvroSchema::Array { items } => {
+                let mut result = Vec::new();
+                let mut count = self.read_long()?;
+                while count != 0 {
+                    let actual_count = if count < 0 {
+                        let _block_size = self.read_long()?;
+                        -count
+                    } else {
+                        count
+                    };
+                    for _ in 0..actual_count {
+                        result.push(self.decode_with_schema(items)?);
+                    }
+                    count = self.read_long()?;
+                }
+                Ok(Value::Array(result))
+            }
+            AvroSchema::Map { values } => {
+                let mut entries = Vec::new();
+                let mut count = self.read_long()?;
+                while count != 0 {
+                    let actual_count = if count < 0 {
+                        let _block_size = self.read_long()?;
+                        -count
+                    } else {
+                        count
+                    };
+                    for _ in 0..actual_count {
+                        let key = self.read_string()?.to_string();
+                        let val = self.decode_with_schema(values)?;
+                        entries.push((key, val));
+                    }
+                    count = self.read_long()?;
+                }
+                Ok(Value::Object(entries))
+            }
+            AvroSchema::Fixed { size, .. } => {
+                let slice = self.read_slice(*size)?;
+                Ok(Value::Bytes(slice.to_vec()))
+            }
+            AvroSchema::Named(_) => self.decode_value(),
         }
     }
 
@@ -266,9 +344,151 @@ impl AvroEncoder {
         }
     }
 
+    /// Write a universal `Value` according to an explicit [`AvroSchema`].
+    pub fn write_with_schema(&mut self, val: &Value, schema: &AvroSchema) -> Result<(), AvroError> {
+        match schema {
+            AvroSchema::Null => Ok(()),
+            AvroSchema::Boolean => {
+                let b = match val {
+                    Value::Bool(b) => *b,
+                    _ => false,
+                };
+                self.write_bool(b);
+                Ok(())
+            }
+            AvroSchema::Int | AvroSchema::Long => {
+                let n = match val {
+                    Value::Integer(i) => *i as i64,
+                    Value::Float(f) => *f as i64,
+                    _ => 0,
+                };
+                self.write_long(n);
+                Ok(())
+            }
+            AvroSchema::Float => {
+                let f = match val {
+                    Value::Float(f) => *f as f32,
+                    Value::Integer(i) => *i as f32,
+                    _ => 0.0,
+                };
+                self.write_float(f);
+                Ok(())
+            }
+            AvroSchema::Double => {
+                let d = match val {
+                    Value::Float(f) => *f,
+                    Value::Integer(i) => *i as f64,
+                    _ => 0.0,
+                };
+                self.write_double(d);
+                Ok(())
+            }
+            AvroSchema::Bytes => {
+                let bytes = match val {
+                    Value::Bytes(b) => b.as_slice(),
+                    Value::String(s) => s.as_bytes(),
+                    _ => &[],
+                };
+                self.write_bytes(bytes);
+                Ok(())
+            }
+            AvroSchema::String => {
+                let s = match val {
+                    Value::String(s) => s.as_str(),
+                    _ => "",
+                };
+                self.write_string(s);
+                Ok(())
+            }
+            AvroSchema::Record { fields, .. } => {
+                for f in fields {
+                    let field_val = val.get(&f.name)
+                        .or(f.default.as_ref())
+                        .unwrap_or(&Value::Null);
+                    self.write_with_schema(field_val, &f.schema)?;
+                }
+                Ok(())
+            }
+            AvroSchema::Union(variants) => {
+                let (idx, chosen) = variants.iter().enumerate()
+                    .find(|(_, s)| matches_schema(val, s))
+                    .or_else(|| variants.first().map(|s| (0, s)))
+                    .ok_or_else(|| AvroError::Custom("empty union in Avro schema"))?;
+                self.write_long(idx as i64);
+                self.write_with_schema(val, chosen)
+            }
+            AvroSchema::Enum { symbols, .. } => {
+                let s = match val {
+                    Value::String(s) => s.as_str(),
+                    _ => "",
+                };
+                let idx = symbols.iter().position(|sym| sym == s).unwrap_or(0);
+                self.write_long(idx as i64);
+                Ok(())
+            }
+            AvroSchema::Array { items } => {
+                let list = match val {
+                    Value::Array(arr) => arr.as_slice(),
+                    _ => &[],
+                };
+                if !list.is_empty() {
+                    self.write_long(list.len() as i64);
+                    for item in list {
+                        self.write_with_schema(item, items)?;
+                    }
+                }
+                self.write_long(0);
+                Ok(())
+            }
+            AvroSchema::Map { values } => {
+                let entries = match val {
+                    Value::Object(obj) => obj.as_slice(),
+                    _ => &[],
+                };
+                if !entries.is_empty() {
+                    self.write_long(entries.len() as i64);
+                    for (k, v) in entries {
+                        self.write_string(k);
+                        self.write_with_schema(v, values)?;
+                    }
+                }
+                self.write_long(0);
+                Ok(())
+            }
+            AvroSchema::Fixed { size, .. } => {
+                let bytes = match val {
+                    Value::Bytes(b) => b.as_slice(),
+                    _ => &[],
+                };
+                let mut out = bytes.to_vec();
+                out.resize(*size, 0);
+                self.buf.extend_from_slice(&out);
+                Ok(())
+            }
+            AvroSchema::Named(_) => {
+                self.write_value(val);
+                Ok(())
+            }
+        }
+    }
+
     /// Consume the encoder and return the raw byte vector.
     pub fn into_vec(self) -> Vec<u8> {
         self.buf
+    }
+}
+
+fn matches_schema(val: &Value, schema: &AvroSchema) -> bool {
+    match (val, schema) {
+        (Value::Null, AvroSchema::Null) => true,
+        (Value::Bool(_), AvroSchema::Boolean) => true,
+        (Value::Integer(_), AvroSchema::Int | AvroSchema::Long) => true,
+        (Value::Float(_), AvroSchema::Float | AvroSchema::Double) => true,
+        (Value::String(_), AvroSchema::String | AvroSchema::Enum { .. }) => true,
+        (Value::Bytes(_), AvroSchema::Bytes | AvroSchema::Fixed { .. }) => true,
+        (Value::Array(_), AvroSchema::Array { .. }) => true,
+        (Value::Object(_), AvroSchema::Record { .. } | AvroSchema::Map { .. }) => true,
+        _ => false,
     }
 }
 
@@ -279,10 +499,23 @@ pub fn to_vec(value: &Value) -> Result<Vec<u8>, AvroError> {
     Ok(encoder.into_vec())
 }
 
+/// Convenience function to encode a `Value` according to an explicit `AvroSchema`.
+pub fn to_vec_with_schema(value: &Value, schema: &AvroSchema) -> Result<Vec<u8>, AvroError> {
+    let mut encoder = AvroEncoder::new();
+    encoder.write_with_schema(value, schema)?;
+    Ok(encoder.into_vec())
+}
+
 /// Convenience function to decode Avro binary bytes into a `Value`.
 pub fn from_bytes(bytes: &[u8]) -> Result<Value, AvroError> {
     let mut decoder = AvroDecoder::new(bytes);
     decoder.decode_value()
+}
+
+/// Convenience function to decode Avro binary bytes according to an explicit `AvroSchema`.
+pub fn from_bytes_with_schema(bytes: &[u8], schema: &AvroSchema) -> Result<Value, AvroError> {
+    let mut decoder = AvroDecoder::new(bytes);
+    decoder.decode_with_schema(schema)
 }
 
 #[cfg(test)]

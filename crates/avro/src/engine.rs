@@ -26,7 +26,11 @@ impl FormatEngine for AvroEngine {
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        from_bytes(input).map_err(Into::into)
+        if input.starts_with(&crate::OCF_MAGIC) {
+            crate::from_bytes_ocf(input).map_err(Into::into)
+        } else {
+            from_bytes(input).map_err(Into::into)
+        }
     }
 
     fn serialize(

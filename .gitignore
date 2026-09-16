@@ -28,6 +28,7 @@ target
 **/kdl-test/
 **/parquet-testing/
 **/parquet-format/
+**/avro-test-suite/
 *.zip
 notes/
 **/failures.txt

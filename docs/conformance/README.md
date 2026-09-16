@@ -20,7 +20,8 @@ All format engines in Babbel are tested against official, industry-standard, and
 | **RON** | [RON Spec](https://github.com/ron-rs/ron) / [starfederation/ron](https://github.com/starfederation/ron) | 100+ | **100.0%** | **0** | [RON Conformance](RON_CONFORMANCE.md) |
 | **KDL** | [KDL v2 Specification](https://kdl.dev) / [kdl-org/kdl-test](https://github.com/kdl-org/kdl-test) | 368 | **100.0%** | **0** | [KDL Conformance](KDL_CONFORMANCE.md) |
 | **Apache Parquet** | [Parquet Format](https://github.com/apache/parquet-format) / [apache/parquet-testing](https://github.com/apache/parquet-testing) | 105 | **100.0%** | **0** | [Parquet Conformance](PARQUET_CONFORMANCE.md) |
-| **HashiCorp HCL** | [HashiCorp HCL v2](https://github.com/hashicorp/hcl) / [kmoneil/hcl-test-suite](https://github.com/kmoneil/hcl-test-suite) | 2,618 | **86.4%** | **0** | [HCL Conformance](HCL_CONFORMANCE.md) |
+| **HashiCorp HCL** | [HashiCorp HCL v2](https://github.com/hashicorp/hcl) / [kmoneil/hcl-test-suite](https://github.com/kmoneil/hcl-test-suite) | 2,228 | **100.0%** | **0** | [HCL Conformance](HCL_CONFORMANCE.md) |
+| **Apache Avro** | [Apache Avro 1.x](https://avro.apache.org/) / [drnice/AvroTest](https://github.com/drnice/AvroTest) | 80 | **100.0%** | **0** | [Avro Conformance](AVRO_CONFORMANCE.md) |
 | **Bencode** | [BitTorrent BEP 0003](http://bittorrent.org/beps/bep_0003.html) | 48 | **100.0%** | **0** | [Bencode Conformance](BENCODE_SPEC_AND_CONFORMANCE.md) |
 
 ---
@@ -51,4 +52,5 @@ cargo test -p babbel_kdl --test kdl_test_suite
 cargo test -p babbel_ron --test ron_test_suite
 cargo test -p babbel_parquet --test parquet_test_suite
 cargo test -p babbel_hcl --test hcl_conformance
+cargo test -p babbel_avro --test avro_conformance
 ```

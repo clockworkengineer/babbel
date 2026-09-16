@@ -69,6 +69,7 @@ name = "babbel_avro"
 version = "0.2.1"
 dependencies = [
  "babbel_core",
+ "babbel_json",
 ]
 
 [[package]]

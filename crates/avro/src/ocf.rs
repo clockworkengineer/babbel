@@ -39,17 +39,27 @@ pub fn to_vec_ocf(value: &Value, schema_json: &str) -> Result<Vec<u8>, AvroError
     out.extend_from_slice(&meta_encoder.into_vec());
     out.extend_from_slice(&DEFAULT_SYNC_MARKER);
 
+    let parsed_schema = crate::schema::AvroSchema::parse_str(schema_json).ok();
+
     // Serialize payload records
     let mut data_encoder = AvroEncoder::new();
     let count = match value {
         Value::Array(items) => {
             for item in items {
-                data_encoder.write_value(item);
+                if let Some(ref s) = parsed_schema {
+                    data_encoder.write_with_schema(item, s)?;
+                } else {
+                    data_encoder.write_value(item);
+                }
             }
             items.len() as i64
         }
         single => {
-            data_encoder.write_value(single);
+            if let Some(ref s) = parsed_schema {
+                data_encoder.write_with_schema(single, s)?;
+            } else {
+                data_encoder.write_value(single);
+            }
             1i64
         }
     };
@@ -80,13 +90,39 @@ pub fn from_bytes_ocf(bytes: &[u8]) -> Result<Value, AvroError> {
     let mut decoder = AvroDecoder::new(&bytes[4..]);
     // Decode metadata map (map<bytes>)
     let mut meta_count = decoder.read_long()?;
-    while meta_count > 0 {
-        for _ in 0..meta_count {
-            let _key = decoder.read_string()?;
-            let _val = decoder.read_bytes()?;
+    let mut schema_str: Option<String> = None;
+    let mut codec_str: Option<String> = None;
+
+    while meta_count != 0 {
+        let count = if meta_count < 0 {
+            let _block_size = decoder.read_long()?;
+            -meta_count
+        } else {
+            meta_count
+        };
+        for _ in 0..count {
+            let key = decoder.read_string()?;
+            let val = decoder.read_bytes()?;
+            if key == "avro.schema" {
+                schema_str = Some(core::str::from_utf8(val).map_err(|_| AvroError::InvalidUtf8)?.to_string());
+            } else if key == "avro.codec" {
+                codec_str = Some(core::str::from_utf8(val).map_err(|_| AvroError::InvalidUtf8)?.to_string());
+            }
         }
         meta_count = decoder.read_long()?;
     }
+
+    if let Some(codec) = codec_str {
+        if codec != "null" {
+            return Err(AvroError::Custom("unsupported compression codec in Avro OCF"));
+        }
+    }
+
+    let parsed_schema = if let Some(ref s) = schema_str {
+        crate::schema::AvroSchema::parse_str(s).ok()
+    } else {
+        None
+    };
 
     let cursor_after_meta = 4 + decoder.position();
     let mut current_pos = cursor_after_meta;
@@ -102,8 +138,9 @@ pub fn from_bytes_ocf(bytes: &[u8]) -> Result<Value, AvroError> {
     let mut records = Vec::new();
     while current_pos < bytes.len() {
         let mut block_dec = AvroDecoder::new(&bytes[current_pos..]);
-        let count = block_dec.read_long()?;
+        let raw_count = block_dec.read_long()?;
         let block_len = block_dec.read_long()? as usize;
+        let count = raw_count.abs();
         let header_len = block_dec.position();
         current_pos += header_len;
 
@@ -125,7 +162,11 @@ pub fn from_bytes_ocf(bytes: &[u8]) -> Result<Value, AvroError> {
 
         let mut payload_dec = AvroDecoder::new(block_payload);
         for _ in 0..count {
-            records.push(payload_dec.decode_value()?);
+            if let Some(ref s) = parsed_schema {
+                records.push(payload_dec.decode_with_schema(s)?);
+            } else {
+                records.push(payload_dec.decode_value()?);
+            }
         }
     }
 
