@@ -5,8 +5,10 @@ edition = "2024"
 description = "Universal CLI utility for Babbel polyglot serialization, querying, diffing, patching, and formatting"
 license = "MIT"
 authors = ["ClockworkEngineer", "Babbel Contributors"]
+readme = "README.md"
 repository = "https://github.com/clockworkengineer/babbel"
 homepage = "https://github.com/clockworkengineer/babbel"
+documentation = "https://docs.rs/babbel-cli"
 
 [[bin]]
 name = "babbel"
