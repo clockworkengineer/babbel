@@ -3,8 +3,8 @@
 //! Re-exports the unified `Buffer` destination from `babbel_core::io`
 //! and implements Bencode-specific write traits.
 
-pub use babbel_core::io::Buffer;
 use crate::io::traits::{BencodeWrite, BufferedWrite};
+pub use babbel_core::io::Buffer;
 
 impl BencodeWrite for Buffer {
     fn write_byte(&mut self, byte: u8) {

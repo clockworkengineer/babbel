@@ -1,11 +1,12 @@
 //! Cross-format conversion integration tests for Apache Parquet.
 
 use babbel::convert::*;
-use babbel::{default_registry, FormatEmitter, FormatParser, Value};
+use babbel::{FormatEmitter, FormatParser, Value, default_registry};
 
 #[test]
 fn test_json_parquet_roundtrip() {
-    let json_table = r#"[{"id":1,"city":"Prague","score":95.5},{"id":2,"city":"Vienna","score":91.0}]"#;
+    let json_table =
+        r#"[{"id":1,"city":"Prague","score":95.5},{"id":2,"city":"Vienna","score":91.0}]"#;
 
     // JSON -> Parquet
     let pq_bytes = json_to_parquet(json_table).expect("failed json to parquet");
@@ -107,29 +108,38 @@ fn test_bson_parquet_roundtrip() {
 fn test_default_registry_includes_parquet() {
     let registry = default_registry();
     let formats = registry.available_formats();
-    assert!(formats.contains(&"parquet"), "registry should contain parquet");
+    assert!(
+        formats.contains(&"parquet"),
+        "registry should contain parquet"
+    );
 
-    let engine = registry.get_by_id("parquet").expect("should get parquet by id");
+    let engine = registry
+        .get_by_id("parquet")
+        .expect("should get parquet by id");
     assert_eq!(engine.mime_type(), "application/vnd.apache.parquet");
 
-    let engine_ext = registry.get_by_extension("parquet").expect("should get by ext");
+    let engine_ext = registry
+        .get_by_extension("parquet")
+        .expect("should get by ext");
     assert_eq!(engine_ext.format_id(), "parquet");
 }
 
 #[test]
 fn test_parquet_parser_and_emitter_traits() {
-    let dataset = Value::Array(vec![
-        Value::Object(vec![
-            ("id".into(), Value::Integer(42)),
-            ("label".into(), Value::String("Answer".into())),
-        ]),
-    ]);
+    let dataset = Value::Array(vec![Value::Object(vec![
+        ("id".into(), Value::Integer(42)),
+        ("label".into(), Value::String("Answer".into())),
+    ])]);
 
     let mut buf = babbel::core::Buffer::new();
-    ParquetEmitter.emit(&dataset, &mut buf).expect("ParquetEmitter should emit");
+    ParquetEmitter
+        .emit(&dataset, &mut buf)
+        .expect("ParquetEmitter should emit");
     let bytes = buf.into_vec();
     assert_eq!(&bytes[0..4], b"PAR1");
 
-    let decoded = ParquetParser.parse_bytes(&bytes).expect("ParquetParser should parse");
+    let decoded = ParquetParser
+        .parse_bytes(&bytes)
+        .expect("ParquetParser should parse");
     assert_eq!(decoded, dataset);
 }

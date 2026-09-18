@@ -6,16 +6,19 @@ use alloc::{
     vec::Vec,
 };
 
-use babbel_core::Value;
-use crate::error::RonError;
 use super::scalar::decode_escapes;
-use super::{is_ident_part, is_ident_start, RonParser};
+use super::{RonParser, is_ident_part, is_ident_start};
+use crate::error::RonError;
+use babbel_core::Value;
 
 impl<'a> RonParser<'a> {
     /// Handles both `()` (unit/null), `(field: val, ...)` (struct), and `(val, val)` (tuple).
     pub(crate) fn parse_paren_container(&mut self) -> Result<Value, RonError> {
         if self.depth >= self.max_depth {
-            return Err(RonError::RecursionLimitExceeded { depth: self.depth, max: self.max_depth });
+            return Err(RonError::RecursionLimitExceeded {
+                depth: self.depth,
+                max: self.max_depth,
+            });
         }
         self.depth += 1;
         self.cursor += 1; // consume '('
@@ -122,7 +125,10 @@ impl<'a> RonParser<'a> {
 
     pub(crate) fn parse_list(&mut self) -> Result<Value, RonError> {
         if self.depth >= self.max_depth {
-            return Err(RonError::RecursionLimitExceeded { depth: self.depth, max: self.max_depth });
+            return Err(RonError::RecursionLimitExceeded {
+                depth: self.depth,
+                max: self.max_depth,
+            });
         }
         self.depth += 1;
         self.cursor += 1; // consume '['
@@ -149,7 +155,10 @@ impl<'a> RonParser<'a> {
 
     pub(crate) fn parse_map(&mut self) -> Result<Value, RonError> {
         if self.depth >= self.max_depth {
-            return Err(RonError::RecursionLimitExceeded { depth: self.depth, max: self.max_depth });
+            return Err(RonError::RecursionLimitExceeded {
+                depth: self.depth,
+                max: self.max_depth,
+            });
         }
         self.depth += 1;
         self.cursor += 1; // consume '{'
@@ -243,9 +252,11 @@ impl<'a> RonParser<'a> {
         match self.peek() {
             Some('"') | Some('\'') => self.parse_quoted_string(),
             Some(',') => self.parse_comma_prefixed_token(),
-            Some('{') | Some('}') | Some('[') | Some(']') => {
-                Err(RonError::UnexpectedChar { ch: self.peek().unwrap(), line, col })
-            }
+            Some('{') | Some('}') | Some('[') | Some(']') => Err(RonError::UnexpectedChar {
+                ch: self.peek().unwrap(),
+                line,
+                col,
+            }),
             Some(_) => {
                 let atom = self.scan_bare_atom()?;
                 decode_escapes(&atom, line, col)

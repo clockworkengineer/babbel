@@ -1,6 +1,5 @@
 //! Extensible format parser, emitter, and codec traits adhering to OCP and DIP.
 
-
 use crate::error::BabbelError;
 use crate::io::traits::IDestination;
 use crate::model::Value;
@@ -43,7 +42,6 @@ pub trait FormatCodec: FormatParser + FormatEmitter {
 }
 
 pub use crate::emitters::{BencodeEmitter, JsonEmitter, TomlEmitter, XmlEmitter, YamlEmitter};
-
 
 /// Universal format serialization options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -297,23 +295,39 @@ impl FormatEngine for IniEngine {
     }
 }
 
-
 /// Helper function to find an engine from a static slice by format ID.
-pub fn find_engine<'a>(engines: &'a [&'a dyn FormatEngine], id: &str) -> Option<&'a dyn FormatEngine> {
-    engines.iter().copied().find(|e| e.format_id().eq_ignore_ascii_case(id))
+pub fn find_engine<'a>(
+    engines: &'a [&'a dyn FormatEngine],
+    id: &str,
+) -> Option<&'a dyn FormatEngine> {
+    engines
+        .iter()
+        .copied()
+        .find(|e| e.format_id().eq_ignore_ascii_case(id))
 }
 
 /// Helper function to find an engine from a static slice by file extension.
-pub fn find_engine_by_extension<'a>(engines: &'a [&'a dyn FormatEngine], ext: &str) -> Option<&'a dyn FormatEngine> {
+pub fn find_engine_by_extension<'a>(
+    engines: &'a [&'a dyn FormatEngine],
+    ext: &str,
+) -> Option<&'a dyn FormatEngine> {
     let clean_ext = ext.strip_prefix('.').unwrap_or(ext);
     engines.iter().copied().find(|e| {
-        e.file_extensions().iter().any(|fe| fe.eq_ignore_ascii_case(clean_ext))
+        e.file_extensions()
+            .iter()
+            .any(|fe| fe.eq_ignore_ascii_case(clean_ext))
     })
 }
 
 /// Helper function to find an engine from a static slice by MIME type.
-pub fn find_engine_by_mime<'a>(engines: &'a [&'a dyn FormatEngine], mime: &str) -> Option<&'a dyn FormatEngine> {
-    engines.iter().copied().find(|e| e.mime_type().eq_ignore_ascii_case(mime))
+pub fn find_engine_by_mime<'a>(
+    engines: &'a [&'a dyn FormatEngine],
+    mime: &str,
+) -> Option<&'a dyn FormatEngine> {
+    engines
+        .iter()
+        .copied()
+        .find(|e| e.mime_type().eq_ignore_ascii_case(mime))
 }
 
 /// Dynamic format engine registry supporting lookup by format ID, MIME type, or file extension.
@@ -345,25 +359,37 @@ impl FormatRegistry {
 
     /// Finds a format engine by format identifier (e.g. "json", "yaml").
     pub fn get_by_id(&self, id: &str) -> Option<alloc::sync::Arc<dyn FormatEngine>> {
-        self.engines.iter().find(|e| e.format_id().eq_ignore_ascii_case(id)).cloned()
+        self.engines
+            .iter()
+            .find(|e| e.format_id().eq_ignore_ascii_case(id))
+            .cloned()
     }
 
     /// Finds a format engine by identifier or file extension.
     pub fn get(&self, id_or_ext: &str) -> Option<alloc::sync::Arc<dyn FormatEngine>> {
-        self.get_by_id(id_or_ext).or_else(|| self.get_by_extension(id_or_ext))
+        self.get_by_id(id_or_ext)
+            .or_else(|| self.get_by_extension(id_or_ext))
     }
 
     /// Finds a format engine by MIME type (e.g. "application/json").
     pub fn get_by_mime(&self, mime: &str) -> Option<alloc::sync::Arc<dyn FormatEngine>> {
-        self.engines.iter().find(|e| e.mime_type().eq_ignore_ascii_case(mime)).cloned()
+        self.engines
+            .iter()
+            .find(|e| e.mime_type().eq_ignore_ascii_case(mime))
+            .cloned()
     }
 
     /// Finds a format engine by file extension (e.g. "json", ".json", "yaml", "yml").
     pub fn get_by_extension(&self, ext: &str) -> Option<alloc::sync::Arc<dyn FormatEngine>> {
         let clean_ext = ext.strip_prefix('.').unwrap_or(ext);
-        self.engines.iter().find(|e| {
-            e.file_extensions().iter().any(|fe| fe.eq_ignore_ascii_case(clean_ext))
-        }).cloned()
+        self.engines
+            .iter()
+            .find(|e| {
+                e.file_extensions()
+                    .iter()
+                    .any(|fe| fe.eq_ignore_ascii_case(clean_ext))
+            })
+            .cloned()
     }
 
     /// Returns a list of all registered format identifiers.
@@ -443,4 +469,3 @@ mod tests {
         assert_eq!(FormatCodec::format_name(&tsv), "tsv");
     }
 }
-

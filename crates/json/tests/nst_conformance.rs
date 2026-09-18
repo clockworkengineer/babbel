@@ -41,10 +41,10 @@ impl Drop for PanicHookGuard {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ExpectedOutcome {
-    MustAccept,             // y_
-    MustReject,             // n_
-    ImplementationDefined,  // i_
-    Transform,              // test_transform/
+    MustAccept,            // y_
+    MustReject,            // n_
+    ImplementationDefined, // i_
+    Transform,             // test_transform/
 }
 
 #[derive(Debug, Clone)]
@@ -79,7 +79,13 @@ fn find_json_test_suite_dir() -> Option<PathBuf> {
     let mut candidates = vec![
         manifest_dir.join("tests").join("JSONTestSuite"),
         manifest_dir.join("JSONTestSuite"),
-        manifest_dir.join("..").join("..").join("crates").join("json").join("tests").join("JSONTestSuite"),
+        manifest_dir
+            .join("..")
+            .join("..")
+            .join("crates")
+            .join("json")
+            .join("tests")
+            .join("JSONTestSuite"),
         PathBuf::from("crates/json/tests/JSONTestSuite"),
         PathBuf::from("tests/JSONTestSuite"),
         PathBuf::from("JSONTestSuite"),
@@ -98,7 +104,9 @@ fn find_json_test_suite_dir() -> Option<PathBuf> {
         }
     }
 
-    candidates.into_iter().find(|p| p.join("test_parsing").exists())
+    candidates
+        .into_iter()
+        .find(|p| p.join("test_parsing").exists())
 }
 
 /// Discovers all test cases from the test suite directory.
@@ -113,7 +121,11 @@ fn discover_test_cases(suite_dir: &Path) -> Vec<TestCase> {
 
         for entry in file_entries {
             let path = entry.path();
-            let file_name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let file_name = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
             if !file_name.ends_with(".json") {
                 continue;
             }
@@ -123,7 +135,10 @@ fn discover_test_cases(suite_dir: &Path) -> Vec<TestCase> {
             } else if file_name.starts_with("n_") {
                 (ExpectedOutcome::MustReject, "Parsing (Must Reject)")
             } else if file_name.starts_with("i_") {
-                (ExpectedOutcome::ImplementationDefined, "Parsing (Implementation Defined)")
+                (
+                    ExpectedOutcome::ImplementationDefined,
+                    "Parsing (Implementation Defined)",
+                )
             } else {
                 continue;
             };
@@ -145,7 +160,11 @@ fn discover_test_cases(suite_dir: &Path) -> Vec<TestCase> {
 
         for entry in file_entries {
             let path = entry.path();
-            let file_name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let file_name = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
             if !file_name.ends_with(".json") {
                 continue;
             }
@@ -170,7 +189,9 @@ fn test_nst_json_conformance_suite() {
             println!("\n============================================================");
             println!("  nst/JSONTestSuite (RFC 8259 Conformance Suite) not found.");
             println!("  To download and install the official test suite, run:");
-            println!("    powershell -ExecutionPolicy Bypass -File scripts/fetch_json_test_suite.ps1");
+            println!(
+                "    powershell -ExecutionPolicy Bypass -File scripts/fetch_json_test_suite.ps1"
+            );
             println!("    (or ./scripts/fetch_json_test_suite.sh on Unix)");
             println!("============================================================\n");
             return;
@@ -188,7 +209,10 @@ fn test_nst_json_conformance_suite() {
         return;
     }
 
-    println!("Discovered {} test cases across categories.\n", test_cases.len());
+    println!(
+        "Discovered {} test cases across categories.\n",
+        test_cases.len()
+    );
 
     let _panic_guard = PanicHookGuard::new_silent();
     let start_time = Instant::now();
@@ -208,9 +232,8 @@ fn test_nst_json_conformance_suite() {
         };
 
         // Parse inside catch_unwind to detect any panics
-        let parse_result = panic::catch_unwind(AssertUnwindSafe(|| {
-            babbel_json::from_bytes(&bytes)
-        }));
+        let parse_result =
+            panic::catch_unwind(AssertUnwindSafe(|| babbel_json::from_bytes(&bytes)));
 
         match parse_result {
             Ok(Ok(_node)) => {
@@ -293,7 +316,11 @@ fn test_nst_json_conformance_suite() {
         overall.pass_rate()
     );
     println!("+---------------------------------------+-------+--------+--------+---------+");
-    println!("Executed in {:.3}s with {} unhandled panics.\n", elapsed.as_secs_f64(), overall.panics);
+    println!(
+        "Executed in {:.3}s with {} unhandled panics.\n",
+        elapsed.as_secs_f64(),
+        overall.panics
+    );
 
     // Drop silent panic guard before assertions
     drop(_panic_guard);
@@ -302,7 +329,12 @@ fn test_nst_json_conformance_suite() {
         failures.is_empty(),
         "JSONTestSuite conformance suite had {} failure(s):\n  {}",
         failures.len(),
-        failures.iter().take(25).cloned().collect::<Vec<_>>().join("\n  ")
+        failures
+            .iter()
+            .take(25)
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("\n  ")
     );
 
     assert_eq!(

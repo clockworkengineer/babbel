@@ -1,8 +1,8 @@
 //! MessagePack Format Engine adhering to OCP and DIP.
 
 use babbel_core::{
-    io::{IDestination, ISource},
     BabbelError, FormatEngine, FormatOptions, Value,
+    io::{IDestination, ISource},
 };
 
 /// MessagePack format engine implementing [`FormatEngine`].

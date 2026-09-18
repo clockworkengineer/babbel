@@ -4,9 +4,9 @@ use alloc::{
     string::{String, ToString},
 };
 
-use babbel_core::Value;
-use crate::error::RonError;
 use super::RonParser;
+use crate::error::RonError;
+use babbel_core::Value;
 
 impl<'a> RonParser<'a> {
     pub(crate) fn parse_number(&mut self) -> Result<Value, RonError> {
@@ -22,7 +22,11 @@ impl<'a> RonParser<'a> {
 
         if self.consume_str("inf") {
             let is_neg = token.starts_with('-');
-            let f = if is_neg { -core::f64::INFINITY } else { core::f64::INFINITY };
+            let f = if is_neg {
+                -core::f64::INFINITY
+            } else {
+                core::f64::INFINITY
+            };
             return Ok(Value::Float(f));
         }
         if self.consume_str("NaN") {
@@ -46,10 +50,18 @@ impl<'a> RonParser<'a> {
                             }
                         }
                         if digits.is_empty() {
-                            return Err(RonError::InvalidNumber { literal: format!("{}0x", token), line, col });
+                            return Err(RonError::InvalidNumber {
+                                literal: format!("{}0x", token),
+                                line,
+                                col,
+                            });
                         }
                         let raw = i128::from_str_radix(&digits, 16).map_err(|_| {
-                            RonError::InvalidNumber { literal: format!("{}0x{}", token, digits), line, col }
+                            RonError::InvalidNumber {
+                                literal: format!("{}0x{}", token, digits),
+                                line,
+                                col,
+                            }
                         })?;
                         let val = if token.starts_with('-') { -raw } else { raw };
                         return Ok(Value::Integer(val));
@@ -68,10 +80,18 @@ impl<'a> RonParser<'a> {
                             }
                         }
                         if digits.is_empty() {
-                            return Err(RonError::InvalidNumber { literal: format!("{}0b", token), line, col });
+                            return Err(RonError::InvalidNumber {
+                                literal: format!("{}0b", token),
+                                line,
+                                col,
+                            });
                         }
                         let raw = i128::from_str_radix(&digits, 2).map_err(|_| {
-                            RonError::InvalidNumber { literal: format!("{}0b{}", token, digits), line, col }
+                            RonError::InvalidNumber {
+                                literal: format!("{}0b{}", token, digits),
+                                line,
+                                col,
+                            }
                         })?;
                         let val = if token.starts_with('-') { -raw } else { raw };
                         return Ok(Value::Integer(val));
@@ -90,10 +110,18 @@ impl<'a> RonParser<'a> {
                             }
                         }
                         if digits.is_empty() {
-                            return Err(RonError::InvalidNumber { literal: format!("{}0o", token), line, col });
+                            return Err(RonError::InvalidNumber {
+                                literal: format!("{}0o", token),
+                                line,
+                                col,
+                            });
                         }
                         let raw = i128::from_str_radix(&digits, 8).map_err(|_| {
-                            RonError::InvalidNumber { literal: format!("{}0o{}", token, digits), line, col }
+                            RonError::InvalidNumber {
+                                literal: format!("{}0o{}", token, digits),
+                                line,
+                                col,
+                            }
                         })?;
                         let val = if token.starts_with('-') { -raw } else { raw };
                         return Ok(Value::Integer(val));
@@ -144,14 +172,22 @@ impl<'a> RonParser<'a> {
         let clean = token.strip_prefix('+').unwrap_or(&token);
 
         if has_dot || has_exp {
-            let f = clean.parse::<f64>().map_err(|_| RonError::InvalidNumber { literal: token.clone(), line, col })?;
+            let f = clean.parse::<f64>().map_err(|_| RonError::InvalidNumber {
+                literal: token.clone(),
+                line,
+                col,
+            })?;
             Ok(Value::Float(f))
         } else if let Ok(i) = clean.parse::<i128>() {
             Ok(Value::Integer(i))
         } else if let Ok(f) = clean.parse::<f64>() {
             Ok(Value::Float(f))
         } else {
-            Err(RonError::InvalidNumber { literal: token, line, col })
+            Err(RonError::InvalidNumber {
+                literal: token,
+                line,
+                col,
+            })
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿use std::path::Path;
+use std::path::Path;
 // Import the necessary types and functions from babbel_yaml and yaml_utility_lib
 use babbel_yaml::{FileDestination, FileSource, parse, to_xml};
 #[path = "common/utility.rs"]
@@ -46,4 +46,3 @@ fn main() {
         }
     }
 }
-

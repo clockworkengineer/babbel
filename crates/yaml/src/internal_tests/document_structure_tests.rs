@@ -1,4 +1,4 @@
-﻿// =====================================================================================
+// =====================================================================================
 //  File: document_structure_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
@@ -75,11 +75,7 @@ mod tests {
                 );
                 let mut pairs = Vec::new();
                 for (k, v) in map.into_iter() {
-                    let value = match v {
-                        Node::Mapping(p) => Node::Mapping(p),
-                        other => other,
-                    };
-                    pairs.push((Node::Str(k, QuoteType::Unquoted, BlockStyle::None), value));
+                    pairs.push((Node::Str(k, QuoteType::Unquoted, BlockStyle::None), v));
                 }
                 Node::Mapping(pairs)
             }])])
@@ -838,7 +834,8 @@ mod tests {
         // The key "c\n d": 1 (with a real newline inside) is invalid.
         // But "a\nb": 1 (escape sequence "\n") should succeed since it is one line.
         let yaml_invalid = "\"a\\nb\": 1\n\"c\n d\": 1\n";
-        let result_invalid = crate::parse_with_config(yaml_invalid, crate::parser::config::ParserConfig::strict());
+        let result_invalid =
+            crate::parse_with_config(yaml_invalid, crate::parser::config::ParserConfig::strict());
         assert!(
             result_invalid.is_err(),
             "7LBH: multiline double-quoted implicit key should error, got: {:?}",
@@ -847,7 +844,8 @@ mod tests {
 
         // Escape-only case must still succeed
         let yaml_valid = "\"a\\nb\": 1\n";
-        let result_valid = crate::parse_with_config(yaml_valid, crate::parser::config::ParserConfig::strict());
+        let result_valid =
+            crate::parse_with_config(yaml_valid, crate::parser::config::ParserConfig::strict());
         assert!(
             result_valid.is_ok(),
             "7LBH: single-line double-quoted key with escape should succeed, got: {:?}",

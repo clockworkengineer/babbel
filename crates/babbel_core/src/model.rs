@@ -144,9 +144,7 @@ impl Value {
     /// Infallible lookup of an object property by key.
     pub fn get(&self, key: &str) -> Option<&Value> {
         match self {
-            Value::Object(entries) => {
-                entries.iter().find(|(k, _)| k == key).map(|(_, v)| v)
-            }
+            Value::Object(entries) => entries.iter().find(|(k, _)| k == key).map(|(_, v)| v),
             _ => None,
         }
     }
@@ -154,9 +152,7 @@ impl Value {
     /// Mutable lookup of an object property by key.
     pub fn get_mut(&mut self, key: &str) -> Option<&mut Value> {
         match self {
-            Value::Object(entries) => {
-                entries.iter_mut().find(|(k, _)| k == key).map(|(_, v)| v)
-            }
+            Value::Object(entries) => entries.iter_mut().find(|(k, _)| k == key).map(|(_, v)| v),
             _ => None,
         }
     }
@@ -231,12 +227,18 @@ impl Value {
     }
 
     /// Evaluates an RFC 9535 JSONPath expression on this value, returning all matching node references.
-    pub fn jsonpath<'a>(&'a self, expr: &str) -> Result<alloc::vec::Vec<&'a Value>, crate::error::BabbelError> {
+    pub fn jsonpath<'a>(
+        &'a self,
+        expr: &str,
+    ) -> Result<alloc::vec::Vec<&'a Value>, crate::error::BabbelError> {
         crate::query::query(self, expr)
     }
 
     /// Evaluates an RFC 9535 JSONPath expression on this value, returning all matching mutable references.
-    pub fn jsonpath_mut<'a>(&'a mut self, expr: &str) -> Result<alloc::vec::Vec<&'a mut Value>, crate::error::BabbelError> {
+    pub fn jsonpath_mut<'a>(
+        &'a mut self,
+        expr: &str,
+    ) -> Result<alloc::vec::Vec<&'a mut Value>, crate::error::BabbelError> {
         crate::query::query_mut(self, expr)
     }
 
@@ -246,7 +248,10 @@ impl Value {
     }
 
     /// Applies an RFC 6902 JSON Patch in-place to this value.
-    pub fn patch_inplace(&mut self, patch: &crate::patch::Patch) -> Result<(), crate::error::BabbelError> {
+    pub fn patch_inplace(
+        &mut self,
+        patch: &crate::patch::Patch,
+    ) -> Result<(), crate::error::BabbelError> {
         patch.apply_inplace(self)
     }
 
@@ -254,7 +259,6 @@ impl Value {
     pub fn merge_patch(&mut self, patch: &Value) {
         crate::patch::apply_merge_patch(self, patch);
     }
-
 
     /// Emits this value using a pluggable format emitter adhering to OCP.
     pub fn emit<E: crate::codec::FormatEmitter + ?Sized>(
@@ -575,7 +579,7 @@ mod tests {
             ),
         ]);
 
-        assert_eq!(val.is_object(), true);
+        assert!(val.is_object());
         assert_eq!(val.get("title").and_then(|v| v.as_str()), Some("Babbel"));
         assert_eq!(val.get("port").and_then(|v| v.as_i64()), Some(8080));
         assert_eq!(val.get("port").and_then(|v| v.as_u64()), Some(8080));
@@ -654,6 +658,3 @@ mod tests {
         assert!(xml_buf.to_string().starts_with("<root>"));
     }
 }
-
-
-

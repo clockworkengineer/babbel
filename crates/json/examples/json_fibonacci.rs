@@ -1,8 +1,8 @@
-﻿//! Fibonacci sequence generator using JSON format for storage.
+//! Fibonacci sequence generator using JSON format for storage.
 //! This program maintains a sequence of Fibonacci numbers in a JSON file,
 //! reading the existing sequence and appending the next number on each run.
 
-use babbel_json::{FileDestination, FileSource, Node, parse, stringify, Numeric};
+use babbel_json::{FileDestination, FileSource, Node, Numeric, parse, stringify};
 use std::path::Path;
 
 /// Reads a Fibonacci sequence from a JSON-encoded file.
@@ -17,7 +17,10 @@ use std::path::Path;
 fn read_sequence(file_path: &Path) -> Result<Node, String> {
     // Initialize with the default sequence if the file doesn't exist
     if !file_path.exists() {
-        return Ok(Node::Array(vec![Node::Number(Numeric::Integer(1)), Node::Number(Numeric::Integer(1))]));
+        return Ok(Node::Array(vec![
+            Node::Number(Numeric::Integer(1)),
+            Node::Number(Numeric::Integer(1)),
+        ]));
     }
 
     // Try to open and parse the existing file
@@ -29,7 +32,6 @@ fn read_sequence(file_path: &Path) -> Result<Node, String> {
         },
         Err(e) => Err(format!("Failed to open file: {}", e)),
     }
-
 }
 
 /// Adds the next Fibonacci number to the sequence by summing the last two numbers.
@@ -52,7 +54,6 @@ fn add_next(sequence: &mut Node) {
             _ => {}
         }
     }
-
 }
 
 /// Saves the Fibonacci sequence to a JSON-encoded file.
@@ -66,10 +67,13 @@ fn add_next(sequence: &mut Node) {
 /// * `Err(String)` - Error message if writing fails
 fn write_sequence(file_path: &Path, sequence: &Node) -> Result<(), String> {
     // Create a new file destination, falling back to empty string if the path is invalid
-    let  file = FileDestination::new(file_path.to_str().unwrap_or(""));
+    let file = FileDestination::new(file_path.to_str().unwrap_or(""));
     match file {
-        Ok(mut f) => { stringify(&sequence, &mut f).unwrap(); Ok(()) }
-        Err(e) => { Err( e.to_string())}
+        Ok(mut f) => {
+            stringify(&sequence, &mut f).unwrap();
+            Ok(())
+        }
+        Err(e) => Err(e.to_string()),
     }
 }
 
@@ -87,6 +91,6 @@ fn main() {
                 return;
             }
         }
-        Err(e) => eprintln!("Failed to read sequence: {}", e)
+        Err(e) => eprintln!("Failed to read sequence: {}", e),
     }
 }

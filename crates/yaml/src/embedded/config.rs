@@ -135,11 +135,7 @@ mod tests {
     #[test]
     fn test_sequence_items_vs_mapping_pairs() {
         // Sequence and mapping limits should be similar
-        let diff = if MAX_SEQUENCE_ITEMS > MAX_MAPPING_PAIRS {
-            MAX_SEQUENCE_ITEMS - MAX_MAPPING_PAIRS
-        } else {
-            MAX_MAPPING_PAIRS - MAX_SEQUENCE_ITEMS
-        };
+        let diff = MAX_SEQUENCE_ITEMS.abs_diff(MAX_MAPPING_PAIRS);
         assert!(
             diff <= 512,
             "Sequence and mapping item limits should not differ by more than 512"

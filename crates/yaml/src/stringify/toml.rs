@@ -19,7 +19,11 @@ impl NodeSerializer for TomlSerializer {
         stringify(node, dest).map_err(Into::into)
     }
 
-    fn serialize_pretty(&self, node: &Node, dest: &mut dyn IDestination) -> crate::error::Result<()> {
+    fn serialize_pretty(
+        &self,
+        node: &Node,
+        dest: &mut dyn IDestination,
+    ) -> crate::error::Result<()> {
         stringify_pretty(node, dest, 2).map_err(Into::into)
     }
 }

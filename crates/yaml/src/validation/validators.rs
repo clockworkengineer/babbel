@@ -602,7 +602,11 @@ mod additional_validators_tests {
     fn test_type_validator_any() {
         let validator = TypeValidator::new(SchemaType::Any);
         assert!(validator.validate(&Node::from("string")).is_ok());
-        assert!(validator.validate(&Node::Number(Numeric::Integer(1))).is_ok());
+        assert!(
+            validator
+                .validate(&Node::Number(Numeric::Integer(1)))
+                .is_ok()
+        );
         assert!(validator.validate(&Node::Boolean(true)).is_ok());
     }
 

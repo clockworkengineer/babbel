@@ -1,7 +1,7 @@
+use crate::codec::FormatEmitter;
 use crate::error::BabbelError;
 use crate::io::traits::IDestination;
 use crate::model::Value;
-use crate::codec::FormatEmitter;
 
 /// Standard built-in YAML format emitter delegating to universal Value serialization.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]

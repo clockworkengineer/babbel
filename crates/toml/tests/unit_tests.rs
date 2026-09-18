@@ -1,7 +1,7 @@
 //! Comprehensive test suite for babbel_toml validating TOML v1.0.0 features.
 
-use babbel_toml::{from_str, DatetimeKind, Node, TomlPullEvent, TomlPullParser};
 use babbel_core::model::Value;
+use babbel_toml::{DatetimeKind, Node, TomlPullEvent, TomlPullParser, from_str};
 
 #[test]
 fn test_string_escapes_and_multiline() {
@@ -52,17 +52,40 @@ neg_inf = -inf
 not_a_num = nan
 "#;
     let node = from_str(input).expect("Failed to parse numbers");
-    assert_eq!(node.get("dec_int").and_then(|n| n.as_integer()), Some(1_000_000));
+    assert_eq!(
+        node.get("dec_int").and_then(|n| n.as_integer()),
+        Some(1_000_000)
+    );
     assert_eq!(node.get("neg_int").and_then(|n| n.as_integer()), Some(-17));
-    assert_eq!(node.get("hex_int").and_then(|n| n.as_integer()), Some(0xDEADBEEF));
-    assert_eq!(node.get("oct_int").and_then(|n| n.as_integer()), Some(0o755));
-    assert_eq!(node.get("bin_int").and_then(|n| n.as_integer()), Some(0b11010110));
+    assert_eq!(
+        node.get("hex_int").and_then(|n| n.as_integer()),
+        Some(0xDEADBEEF)
+    );
+    assert_eq!(
+        node.get("oct_int").and_then(|n| n.as_integer()),
+        Some(0o755)
+    );
+    assert_eq!(
+        node.get("bin_int").and_then(|n| n.as_integer()),
+        Some(0b11010110)
+    );
 
     assert_eq!(node.get("pi").and_then(|n| n.as_float()), Some(3.14159));
     assert_eq!(node.get("exp").and_then(|n| n.as_float()), Some(5e22));
-    assert_eq!(node.get("pos_inf").and_then(|n| n.as_float()), Some(f64::INFINITY));
-    assert_eq!(node.get("neg_inf").and_then(|n| n.as_float()), Some(f64::NEG_INFINITY));
-    assert!(node.get("not_a_num").and_then(|n| n.as_float()).unwrap().is_nan());
+    assert_eq!(
+        node.get("pos_inf").and_then(|n| n.as_float()),
+        Some(f64::INFINITY)
+    );
+    assert_eq!(
+        node.get("neg_inf").and_then(|n| n.as_float()),
+        Some(f64::NEG_INFINITY)
+    );
+    assert!(
+        node.get("not_a_num")
+            .and_then(|n| n.as_float())
+            .unwrap()
+            .is_nan()
+    );
 }
 
 #[test]
@@ -113,7 +136,10 @@ dc = "eqdc10"
 
     let name = node.get("name").expect("name missing");
     assert_eq!(name.get("first").and_then(|n| n.as_str()), Some("Tom"));
-    assert_eq!(name.get("last").and_then(|n| n.as_str()), Some("Preston-Werner"));
+    assert_eq!(
+        name.get("last").and_then(|n| n.as_str()),
+        Some("Preston-Werner")
+    );
 
     let server = node.get("server").expect("server missing");
     let alpha = server.get("alpha").expect("alpha missing");
@@ -142,7 +168,11 @@ features = [ "json", "toml", "yaml" ]
     if let Value::Object(entries) = &value {
         assert_eq!(entries[0].0, "package");
         if let Value::Object(pkg_entries) = &entries[0].1 {
-            assert!(pkg_entries.iter().any(|(k, v)| k == "name" && v.as_str() == Some("babbel")));
+            assert!(
+                pkg_entries
+                    .iter()
+                    .any(|(k, v)| k == "name" && v.as_str() == Some("babbel"))
+            );
         }
     }
 
@@ -188,18 +218,9 @@ hex_accent = "\xE9"
         node.get("esc_char").and_then(|n| n.as_str()),
         Some("\x1B[31mRed\x1B[0m")
     );
-    assert_eq!(
-        node.get("hex_a").and_then(|n| n.as_str()),
-        Some("a")
-    );
-    assert_eq!(
-        node.get("hex_null").and_then(|n| n.as_str()),
-        Some("\0")
-    );
-    assert_eq!(
-        node.get("hex_accent").and_then(|n| n.as_str()),
-        Some("é")
-    );
+    assert_eq!(node.get("hex_a").and_then(|n| n.as_str()), Some("a"));
+    assert_eq!(node.get("hex_null").and_then(|n| n.as_str()), Some("\0"));
+    assert_eq!(node.get("hex_accent").and_then(|n| n.as_str()), Some("é"));
 }
 
 #[test]
@@ -214,7 +235,8 @@ tbl = {
 }
 empty_trailing = { }
 "#;
-    let node = from_str(input).expect("Failed to parse multiline inline tables with trailing commas");
+    let node =
+        from_str(input).expect("Failed to parse multiline inline tables with trailing commas");
     let tbl = node.get("tbl").expect("tbl missing");
     assert_eq!(tbl.get("key").and_then(|n| n.as_str()), Some("a string"));
     let moar = tbl.get("moar-tbl").expect("moar-tbl missing");

@@ -1,9 +1,9 @@
-﻿//! # XSD Complex Type Sequence Example
+//! # XSD Complex Type Sequence Example
 //!
 //! Demonstrates validating complex type sequence elements (`<xs:complexType>`, `<xs:sequence>`)
 //! using `XsdValidator` and `XmlValidator`.
 
-use babbel_xml::{parse, XsdValidator};
+use babbel_xml::{XsdValidator, parse};
 
 fn main() {
     println!("--- XSD Complex Sequence Example ---");

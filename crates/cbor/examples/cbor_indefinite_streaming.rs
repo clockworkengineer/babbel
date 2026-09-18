@@ -3,8 +3,8 @@
 //! Demonstrates parsing CBOR payloads using indefinite-length containers and chunked strings
 //! terminated by a `BREAK` stop code (`0xFF`), as defined in RFC 8949 Section 3.2.
 
-use babbel_core::Value;
 use babbel_cbor::from_bytes;
+use babbel_core::Value;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Babbel CBOR Indefinite-Length & Streaming Example ===\n");
@@ -18,7 +18,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Parsed AST: {:?}", array_val);
     assert_eq!(
         array_val,
-        Value::Array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)])
+        Value::Array(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3)
+        ])
     );
     println!("Array decoding verified successfully!\n");
 
@@ -42,10 +46,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let indefinite_map_bytes = vec![
         0xBF, // Indefinite map start
         0x66, b's', b'e', b'n', b's', b'o', b'r', // key: "sensor"
-        0x64, b't', b'e', b'm', b'p',             // value: "temp"
+        0x64, b't', b'e', b'm', b'p', // value: "temp"
         0x66, b'a', b'c', b't', b'i', b'v', b'e', // key: "active"
-        0xF5,                                     // value: true
-        0xFF,                                     // Break code
+        0xF5, // value: true
+        0xFF, // Break code
     ];
     println!("--- 3. Decoding Indefinite-Length Map ---");
     println!("Raw bytes: {:02X?}", indefinite_map_bytes);

@@ -1,9 +1,6 @@
 //! KDL Format Engine implementation adhering to OCP and DIP.
 
-use babbel_core::{
-    io::IDestination,
-    BabbelError, FormatEngine, FormatOptions, Value,
-};
+use babbel_core::{BabbelError, FormatEngine, FormatOptions, Value, io::IDestination};
 
 use crate::ast::KdlDocument;
 use crate::serializer::serialize_document;
@@ -26,13 +23,11 @@ impl FormatEngine for KdlEngine {
     }
 
     fn parse_str(&self, input: &str) -> Result<Value, BabbelError> {
-        crate::from_str(input)
-            .map_err(|err| BabbelError::from(err).with_format("kdl"))
+        crate::from_str(input).map_err(|err| BabbelError::from(err).with_format("kdl"))
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        crate::from_bytes(input)
-            .map_err(|err| BabbelError::from(err).with_format("kdl"))
+        crate::from_bytes(input).map_err(|err| BabbelError::from(err).with_format("kdl"))
     }
 
     fn serialize(

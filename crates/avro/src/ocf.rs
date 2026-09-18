@@ -9,17 +9,16 @@
 #[cfg(not(feature = "std"))]
 use alloc::{string::String, string::ToString, vec::Vec};
 
-use babbel_core::Value;
 use crate::codec::{AvroDecoder, AvroEncoder};
 use crate::error::AvroError;
+use babbel_core::Value;
 
 /// 4-byte magic header identifying an Avro Object Container File.
 pub const OCF_MAGIC: [u8; 4] = [b'O', b'b', b'j', 1];
 
 /// Standard 16-byte sync marker for deterministic test runs.
 pub const DEFAULT_SYNC_MARKER: [u8; 16] = [
-    0x42, 0x61, 0x62, 0x62, 0x65, 0x6c, 0x41, 0x76,
-    0x72, 0x6f, 0x53, 0x79, 0x6e, 0x63, 0x30, 0x31,
+    0x42, 0x61, 0x62, 0x62, 0x65, 0x6c, 0x41, 0x76, 0x72, 0x6f, 0x53, 0x79, 0x6e, 0x63, 0x30, 0x31,
 ];
 
 /// Encodes an array of records into a complete Avro Object Container File (OCF).
@@ -80,7 +79,10 @@ pub fn to_vec_ocf(value: &Value, schema_json: &str) -> Result<Vec<u8>, AvroError
 /// Decodes an Avro Object Container File (OCF) into a universal `Value`.
 pub fn from_bytes_ocf(bytes: &[u8]) -> Result<Value, AvroError> {
     if bytes.len() < 24 {
-        return Err(AvroError::UnexpectedEof { expected: 24, available: bytes.len() });
+        return Err(AvroError::UnexpectedEof {
+            expected: 24,
+            available: bytes.len(),
+        });
     }
 
     if &bytes[0..4] != &OCF_MAGIC {
@@ -104,9 +106,17 @@ pub fn from_bytes_ocf(bytes: &[u8]) -> Result<Value, AvroError> {
             let key = decoder.read_string()?;
             let val = decoder.read_bytes()?;
             if key == "avro.schema" {
-                schema_str = Some(core::str::from_utf8(val).map_err(|_| AvroError::InvalidUtf8)?.to_string());
+                schema_str = Some(
+                    core::str::from_utf8(val)
+                        .map_err(|_| AvroError::InvalidUtf8)?
+                        .to_string(),
+                );
             } else if key == "avro.codec" {
-                codec_str = Some(core::str::from_utf8(val).map_err(|_| AvroError::InvalidUtf8)?.to_string());
+                codec_str = Some(
+                    core::str::from_utf8(val)
+                        .map_err(|_| AvroError::InvalidUtf8)?
+                        .to_string(),
+                );
             }
         }
         meta_count = decoder.read_long()?;
@@ -114,7 +124,9 @@ pub fn from_bytes_ocf(bytes: &[u8]) -> Result<Value, AvroError> {
 
     if let Some(codec) = codec_str {
         if codec != "null" {
-            return Err(AvroError::Custom("unsupported compression codec in Avro OCF"));
+            return Err(AvroError::Custom(
+                "unsupported compression codec in Avro OCF",
+            ));
         }
     }
 
@@ -128,7 +140,10 @@ pub fn from_bytes_ocf(bytes: &[u8]) -> Result<Value, AvroError> {
     let mut current_pos = cursor_after_meta;
 
     if bytes.len() < current_pos + 16 {
-        return Err(AvroError::UnexpectedEof { expected: 16, available: bytes.len() - current_pos });
+        return Err(AvroError::UnexpectedEof {
+            expected: 16,
+            available: bytes.len() - current_pos,
+        });
     }
 
     let mut sync_marker = [0u8; 16];

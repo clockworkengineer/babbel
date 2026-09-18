@@ -1,7 +1,7 @@
+use crate::codec::FormatEmitter;
 use crate::error::BabbelError;
 use crate::io::traits::IDestination;
 use crate::model::Value;
-use crate::codec::FormatEmitter;
 
 /// Standard built-in JSON format emitter delegating to universal Value serialization.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -25,7 +25,10 @@ impl JsonEmitter {
                 crate::escape::write_json_escaped_string(s, dest);
             }
             Value::Bytes(bytes) => {
-                crate::escape::write_json_escaped_string(&alloc::string::String::from_utf8_lossy(bytes), dest);
+                crate::escape::write_json_escaped_string(
+                    &alloc::string::String::from_utf8_lossy(bytes),
+                    dest,
+                );
             }
             Value::Array(items) => {
                 dest.add_bytes("[");

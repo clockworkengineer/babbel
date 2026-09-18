@@ -11,15 +11,9 @@ pub enum CborPullEvent<'a> {
     /// Negative integer: -1 - val
     Negative(u64),
     /// Byte string slice (chunked or definite length)
-    ByteString {
-        len: Option<usize>,
-        data: &'a [u8],
-    },
+    ByteString { len: Option<usize>, data: &'a [u8] },
     /// UTF-8 Text string slice (chunked or definite length)
-    TextString {
-        len: Option<usize>,
-        text: &'a str,
-    },
+    TextString { len: Option<usize>, text: &'a str },
     /// Array container start with definite or indefinite length
     ArrayStart(Option<usize>),
     /// Map container start with definite or indefinite length
@@ -69,22 +63,33 @@ impl<'a> CborPullParser<'a> {
             }
             MAJOR_BYTE_STRING => {
                 if info == AI_INDEFINITE {
-                    Ok(CborPullEvent::ByteString { len: None, data: &[] })
+                    Ok(CborPullEvent::ByteString {
+                        len: None,
+                        data: &[],
+                    })
                 } else {
                     let len = self.read_argument(info)? as usize;
                     let data = self.read_bytes(len)?;
-                    Ok(CborPullEvent::ByteString { len: Some(len), data })
+                    Ok(CborPullEvent::ByteString {
+                        len: Some(len),
+                        data,
+                    })
                 }
             }
             MAJOR_TEXT_STRING => {
                 if info == AI_INDEFINITE {
-                    Ok(CborPullEvent::TextString { len: None, text: "" })
+                    Ok(CborPullEvent::TextString {
+                        len: None,
+                        text: "",
+                    })
                 } else {
                     let len = self.read_argument(info)? as usize;
                     let bytes = self.read_bytes(len)?;
-                    let text = core::str::from_utf8(bytes)
-                        .map_err(|_| CborError::InvalidUtf8)?;
-                    Ok(CborPullEvent::TextString { len: Some(len), text })
+                    let text = core::str::from_utf8(bytes).map_err(|_| CborError::InvalidUtf8)?;
+                    Ok(CborPullEvent::TextString {
+                        len: Some(len),
+                        text,
+                    })
                 }
             }
             MAJOR_ARRAY => {
@@ -130,8 +135,8 @@ impl<'a> CborPullParser<'a> {
                 FLOAT_64 => {
                     let bytes = self.read_bytes(8)?;
                     let f = f64::from_be_bytes([
-                        bytes[0], bytes[1], bytes[2], bytes[3],
-                        bytes[4], bytes[5], bytes[6], bytes[7],
+                        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6],
+                        bytes[7],
                     ]);
                     Ok(CborPullEvent::Float(f))
                 }
@@ -144,7 +149,10 @@ impl<'a> CborPullParser<'a> {
 
     fn read_u8(&mut self) -> Result<u8, CborError> {
         if self.cursor >= self.input.len() {
-            return Err(CborError::UnexpectedEof { expected: 1, available: 0 });
+            return Err(CborError::UnexpectedEof {
+                expected: 1,
+                available: 0,
+            });
         }
         let b = self.input[self.cursor];
         self.cursor += 1;
@@ -154,7 +162,10 @@ impl<'a> CborPullParser<'a> {
     fn read_bytes(&mut self, len: usize) -> Result<&'a [u8], CborError> {
         let available = self.input.len().saturating_sub(self.cursor);
         if available < len {
-            return Err(CborError::UnexpectedEof { expected: len, available });
+            return Err(CborError::UnexpectedEof {
+                expected: len,
+                available,
+            });
         }
         let slice = &self.input[self.cursor..self.cursor + len];
         self.cursor += len;
@@ -176,8 +187,7 @@ impl<'a> CborPullParser<'a> {
             AI_8_BYTES => {
                 let bytes = self.read_bytes(8)?;
                 Ok(u64::from_be_bytes([
-                    bytes[0], bytes[1], bytes[2], bytes[3],
-                    bytes[4], bytes[5], bytes[6], bytes[7],
+                    bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
                 ]))
             }
             _ => Err(CborError::Custom("invalid argument info")),
@@ -200,7 +210,11 @@ fn f16_to_f64(bits: u16) -> f64 {
         }
     } else if exp == 0x1f {
         if mant == 0 {
-            if sign { f64::NEG_INFINITY } else { f64::INFINITY }
+            if sign {
+                f64::NEG_INFINITY
+            } else {
+                f64::INFINITY
+            }
         } else {
             f64::NAN
         }

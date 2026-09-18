@@ -277,7 +277,10 @@ impl KdlValue {
             Value::Null => KdlValue::Null,
             Value::Bytes(b) => {
                 // Encode bytes as base64 string or hex string
-                KdlValue::String(alloc::format!("0x{}", babbel_core::text::hex::encode_hex(b)))
+                KdlValue::String(alloc::format!(
+                    "0x{}",
+                    babbel_core::text::hex::encode_hex(b)
+                ))
             }
             Value::Array(_) | Value::Object(_) => {
                 // Complex values in scalar positions fall back to debug string representation

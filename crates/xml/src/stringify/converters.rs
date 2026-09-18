@@ -1,11 +1,11 @@
 //! Format converters serializing XML `Document` to other data formats (JSON, YAML, TOML, Bencode).
 
+use crate::document::Document;
+use crate::error::XmlError;
 use alloc::string::String;
 use alloc::vec::Vec;
 use babbel_core::io::traits::IDestination;
 use babbel_core::model::Value;
-use crate::document::Document;
-use crate::error::XmlError;
 
 /// Converts an XML Document DOM tree to JSON format.
 pub fn to_json(doc: &Document, dest: &mut dyn IDestination) -> Result<(), XmlError> {
@@ -90,4 +90,3 @@ mod tests {
         assert_eq!(json, json_from_doc);
     }
 }
-

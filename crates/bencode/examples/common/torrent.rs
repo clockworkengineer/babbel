@@ -1,5 +1,5 @@
-﻿use std::collections::HashMap;
-use babbel_bencode::{parse, FileSource, Node};
+use babbel_bencode::{FileSource, Node, parse};
+use std::collections::HashMap;
 use std::path::Path;
 
 /// Represents details about a single file within a torrent
@@ -34,7 +34,7 @@ pub struct FileDetails {
 pub struct TorrentFile {
     pub announce: String,
     pub announce_list: Vec<String>,
-    pub  encoding: String,
+    pub encoding: String,
     pub attribute: u64,
     pub comment: String,
     pub creation_date: u64,
@@ -68,7 +68,7 @@ impl TorrentFile {
     /// Helper method to get a string value from a dictionary
     ///
     /// # Arguments
-    /// * `dict` - Dictionary to search in 
+    /// * `dict` - Dictionary to search in
     /// * `key` - Key to look up
     /// * `default` - Default value if key is not found
     ///
@@ -101,7 +101,7 @@ impl TorrentFile {
 
     /// Helper method to get a string from the info dictionary
     ///
-    /// # Arguments 
+    /// # Arguments
     /// * `dict` - Root dictionary containing info dict
     /// * `key` - Key to look up in info dict
     /// * `default` - Default value if key is not found
@@ -241,7 +241,6 @@ impl TorrentFile {
         }
         Ok(())
     }
-
 }
 
 #[cfg(test)]
@@ -264,7 +263,10 @@ mod tests {
         dict.insert("test".to_string(), Node::Str("value".to_string()));
 
         assert_eq!(TorrentFile::get_string(&dict, "test", "default"), "value");
-        assert_eq!(TorrentFile::get_string(&dict, "nonexistent", "default"), "default");
+        assert_eq!(
+            TorrentFile::get_string(&dict, "nonexistent", "default"),
+            "default"
+        );
     }
 
     #[test]
@@ -276,7 +278,10 @@ mod tests {
         dict.insert("info".to_string(), Node::Dictionary(info_dict));
 
         assert_eq!(TorrentFile::get_info_integer(&dict, "attr", 0), 42);
-        assert_eq!(TorrentFile::get_info_integer(&dict, "nonexistent", 100), 100);
+        assert_eq!(
+            TorrentFile::get_info_integer(&dict, "nonexistent", 100),
+            100
+        );
     }
 
     #[test]

@@ -50,17 +50,19 @@ pub fn split_frontmatter(input: &str) -> DocumentWithFrontmatter<'_> {
     let trimmed = input.trim_start_matches('\u{feff}'); // strip BOM if any
 
     // Detect delimiter
-    let (delim, format) = if trimmed.starts_with("---\r\n") || trimmed.starts_with("---\n") || trimmed == "---" {
-        ("---", FrontmatterFormat::Yaml)
-    } else if trimmed.starts_with("+++\r\n") || trimmed.starts_with("+++\n") || trimmed == "+++" {
-        ("+++", FrontmatterFormat::Toml)
-    } else {
-        return DocumentWithFrontmatter {
-            frontmatter: None,
-            content: trimmed,
-            format: None,
+    let (delim, format) =
+        if trimmed.starts_with("---\r\n") || trimmed.starts_with("---\n") || trimmed == "---" {
+            ("---", FrontmatterFormat::Yaml)
+        } else if trimmed.starts_with("+++\r\n") || trimmed.starts_with("+++\n") || trimmed == "+++"
+        {
+            ("+++", FrontmatterFormat::Toml)
+        } else {
+            return DocumentWithFrontmatter {
+                frontmatter: None,
+                content: trimmed,
+                format: None,
+            };
         };
-    };
 
     // Find the end of the first line
     let first_line_end = match trimmed.find('\n') {
@@ -82,7 +84,10 @@ pub fn split_frontmatter(input: &str) -> DocumentWithFrontmatter<'_> {
     let mut offset = 0;
     while offset < rest.len() {
         let line_slice = &rest[offset..];
-        let line_len = line_slice.find('\n').map(|i| i + 1).unwrap_or(line_slice.len());
+        let line_len = line_slice
+            .find('\n')
+            .map(|i| i + 1)
+            .unwrap_or(line_slice.len());
         let current_line = &line_slice[..line_len];
         let trimmed_line = current_line.trim_end_matches(&['\r', '\n'][..]);
 
@@ -98,9 +103,7 @@ pub fn split_frontmatter(input: &str) -> DocumentWithFrontmatter<'_> {
             let fm = fm_raw.trim_end_matches(&['\r', '\n'][..]);
             let content_start = offset + line_len;
             let content = if content_start <= rest.len() {
-                // Strip leading single newline after closing delimiter if present
-                let rem = &rest[content_start..];
-                rem
+                &rest[content_start..]
             } else {
                 ""
             };

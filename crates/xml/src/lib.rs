@@ -25,8 +25,8 @@ pub mod options;
 pub mod parser;
 pub mod stringify;
 pub mod validator;
-pub mod xsd;
 pub mod xpath;
+pub mod xsd;
 
 use crate::alloc_prelude::*;
 
@@ -43,18 +43,18 @@ pub use node::{Attribute, DeclarationData, DocTypeData, NodeData, NodeId, NodeKi
 pub use options::ParseOptions;
 pub use parser::{XmlParser, XmlPullAttribute, XmlPullEvent, XmlPullParser};
 pub use stringify::{
-    canonicalize, canonicalize_to, canonicalize_to_with_options, stringify_to,
-    stringify_to_with_options, CanonicalOptions, CanonicalSerializer, SerializeOptions, XmlSerializer,
+    CanonicalOptions, CanonicalSerializer, SerializeOptions, XmlSerializer, canonicalize,
+    canonicalize_to, canonicalize_to_with_options, stringify_to, stringify_to_with_options,
 };
-pub use validator::XmlValidator;
-pub use xsd::{
-    Compositor, XsdAttributeRule, XsdComplexType, XsdElementRule, XsdRestriction, XsdValidator,
-};
-pub use xpath::{XPathEngine, XPathValue};
 #[cfg(feature = "format-converters")]
 pub use stringify::{
     to_bencode, to_bencode_bytes, to_json, to_json_string, to_toml, to_toml_string, to_yaml,
     to_yaml_string,
+};
+pub use validator::XmlValidator;
+pub use xpath::{XPathEngine, XPathValue};
+pub use xsd::{
+    Compositor, XsdAttributeRule, XsdComplexType, XsdElementRule, XsdRestriction, XsdValidator,
 };
 
 #[cfg(feature = "serde")]
@@ -142,7 +142,10 @@ pub fn parse_source(source: &mut dyn ISource) -> Result<Document> {
 }
 
 /// Parse an XML input stream implementing [`ISource`] into a DOM `Document` with custom options.
-pub fn parse_source_with_options(source: &mut dyn ISource, options: ParseOptions) -> Result<Document> {
+pub fn parse_source_with_options(
+    source: &mut dyn ISource,
+    options: ParseOptions,
+) -> Result<Document> {
     let xml_source = XmlSource::from_source(source);
     let mut parser = XmlParser::new(xml_source, options);
     parser.parse()
@@ -200,7 +203,6 @@ pub fn to_vec(doc: &Document) -> Vec<u8> {
     stringify(doc).into_bytes()
 }
 
-
 /// Parse an XML file from disk into a DOM `Document` with automatic UTF-8 / UTF-16 BOM detection.
 ///
 /// # Arguments
@@ -231,4 +233,3 @@ pub fn parse_file_with_options(
 /// Format engine implementation adhering to OCP and DIP
 pub mod engine;
 pub use engine::XmlEngine;
-

@@ -3,9 +3,9 @@
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::String, string::ToString, vec::Vec};
 
-use babbel_core::Value;
 use crate::error::AvroError;
 use crate::schema::AvroSchema;
+use babbel_core::Value;
 
 /// Binary decoder for raw Avro byte payloads.
 pub struct AvroDecoder<'a> {
@@ -66,8 +66,7 @@ impl<'a> AvroDecoder<'a> {
     pub fn read_double(&mut self) -> Result<f64, AvroError> {
         let bytes = self.read_slice(8)?;
         Ok(f64::from_le_bytes([
-            bytes[0], bytes[1], bytes[2], bytes[3],
-            bytes[4], bytes[5], bytes[6], bytes[7],
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
         ]))
     }
 
@@ -128,14 +127,18 @@ impl<'a> AvroDecoder<'a> {
             AvroSchema::Union(variants) => {
                 let idx = self.read_long()?;
                 if idx < 0 || (idx as usize) >= variants.len() {
-                    return Err(AvroError::Custom("union index out of bounds in Avro stream"));
+                    return Err(AvroError::Custom(
+                        "union index out of bounds in Avro stream",
+                    ));
                 }
                 self.decode_with_schema(&variants[idx as usize])
             }
             AvroSchema::Enum { symbols, .. } => {
                 let idx = self.read_long()?;
                 if idx < 0 || (idx as usize) >= symbols.len() {
-                    return Err(AvroError::Custom("enum symbol index out of bounds in Avro stream"));
+                    return Err(AvroError::Custom(
+                        "enum symbol index out of bounds in Avro stream",
+                    ));
                 }
                 Ok(Value::String(symbols[idx as usize].clone()))
             }
@@ -224,7 +227,10 @@ impl<'a> AvroDecoder<'a> {
     #[inline]
     fn read_u8(&mut self) -> Result<u8, AvroError> {
         if self.cursor >= self.input.len() {
-            return Err(AvroError::UnexpectedEof { expected: 1, available: 0 });
+            return Err(AvroError::UnexpectedEof {
+                expected: 1,
+                available: 0,
+            });
         }
         let b = self.input[self.cursor];
         self.cursor += 1;
@@ -235,7 +241,10 @@ impl<'a> AvroDecoder<'a> {
     fn read_slice(&mut self, len: usize) -> Result<&'a [u8], AvroError> {
         let avail = self.input.len().saturating_sub(self.cursor);
         if avail < len {
-            return Err(AvroError::UnexpectedEof { expected: len, available: avail });
+            return Err(AvroError::UnexpectedEof {
+                expected: len,
+                available: avail,
+            });
         }
         let slice = &self.input[self.cursor..self.cursor + len];
         self.cursor += len;
@@ -251,7 +260,9 @@ pub struct AvroEncoder {
 impl AvroEncoder {
     /// Create a new Avro encoder with default capacity.
     pub fn new() -> Self {
-        Self { buf: Vec::with_capacity(128) }
+        Self {
+            buf: Vec::with_capacity(128),
+        }
     }
 
     /// Write a boolean.
@@ -402,7 +413,8 @@ impl AvroEncoder {
             }
             AvroSchema::Record { fields, .. } => {
                 for f in fields {
-                    let field_val = val.get(&f.name)
+                    let field_val = val
+                        .get(&f.name)
                         .or(f.default.as_ref())
                         .unwrap_or(&Value::Null);
                     self.write_with_schema(field_val, &f.schema)?;
@@ -410,7 +422,9 @@ impl AvroEncoder {
                 Ok(())
             }
             AvroSchema::Union(variants) => {
-                let (idx, chosen) = variants.iter().enumerate()
+                let (idx, chosen) = variants
+                    .iter()
+                    .enumerate()
                     .find(|(_, s)| matches_schema(val, s))
                     .or_else(|| variants.first().map(|s| (0, s)))
                     .ok_or_else(|| AvroError::Custom("empty union in Avro schema"))?;

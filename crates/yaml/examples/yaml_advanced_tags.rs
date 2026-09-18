@@ -1,4 +1,4 @@
-﻿//! Example demonstrating YAML advanced tags
+//! Example demonstrating YAML advanced tags
 //!
 //! This example shows how to use YAML's advanced type tags:
 //! - !!binary - Base64 encoded binary data
@@ -8,7 +8,7 @@
 //! - !!int:hex - Hexadecimal integers
 //! - !!int:oct - Octal integers
 
-use babbel_yaml::{parse, stringify, BufferDestination, BufferSource};
+use babbel_yaml::{BufferDestination, BufferSource, parse, stringify};
 
 fn main() {
     println!("=== YAML Advanced Tags Example ===\n");

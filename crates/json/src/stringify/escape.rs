@@ -3,11 +3,9 @@
 //! Re-exports centralized JSON escaping logic from `babbel_core::escape`.
 
 pub use babbel_core::escape::{
-    json_needs_escaping as needs_escaping,
-    write_json_escaped_string as write_escaped_string,
-    BYTE_BACKSLASH, BYTE_CARRIAGE_RETURN, BYTE_NEWLINE, BYTE_QUOTE, BYTE_TAB,
-    CONTROL_CHAR_LIMIT, ESC_BACKSLASH, ESC_CARRIAGE_RETURN, ESC_NEWLINE, ESC_QUOTE, ESC_TAB,
-    STR_QUOTE,
+    BYTE_BACKSLASH, BYTE_CARRIAGE_RETURN, BYTE_NEWLINE, BYTE_QUOTE, BYTE_TAB, CONTROL_CHAR_LIMIT,
+    ESC_BACKSLASH, ESC_CARRIAGE_RETURN, ESC_NEWLINE, ESC_QUOTE, ESC_TAB, STR_QUOTE,
+    json_needs_escaping as needs_escaping, write_json_escaped_string as write_escaped_string,
 };
 
 /// JSON keyword strings

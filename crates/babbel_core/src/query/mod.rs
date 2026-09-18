@@ -6,10 +6,10 @@ pub mod ast;
 pub mod eval;
 pub mod parser;
 
-use alloc::string::{String, ToString};
-use alloc::vec::Vec;
 use crate::error::BabbelError;
 use crate::model::Value;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 pub use ast::{ComparisonOp, FilterExpr, FilterOperand, PathQuery, QueryPath, Segment};
 pub use parser::JsonPathParser;
 
@@ -75,55 +75,83 @@ mod tests {
     use alloc::vec;
 
     fn sample_bookstore() -> Value {
-        Value::Object(vec![
-            (
-                "store".to_string(),
-                Value::Object(vec![
-                    (
-                        "books".to_string(),
-                        Value::Array(vec![
-                            Value::Object(vec![
-                                ("category".to_string(), Value::String("reference".to_string())),
-                                ("author".to_string(), Value::String("Nigel Rees".to_string())),
-                                ("title".to_string(), Value::String("Sayings of the Century".to_string())),
-                                ("price".to_string(), Value::Float(8.95)),
-                                ("active".to_string(), Value::Bool(true)),
-                            ]),
-                            Value::Object(vec![
-                                ("category".to_string(), Value::String("fiction".to_string())),
-                                ("author".to_string(), Value::String("Evelyn Waugh".to_string())),
-                                ("title".to_string(), Value::String("Sword of Honour".to_string())),
-                                ("price".to_string(), Value::Float(12.99)),
-                                ("active".to_string(), Value::Bool(false)),
-                            ]),
-                            Value::Object(vec![
-                                ("category".to_string(), Value::String("fiction".to_string())),
-                                ("author".to_string(), Value::String("Herman Melville".to_string())),
-                                ("title".to_string(), Value::String("Moby Dick".to_string())),
-                                ("isbn".to_string(), Value::String("0-553-21311-3".to_string())),
-                                ("price".to_string(), Value::Float(8.99)),
-                                ("active".to_string(), Value::Bool(true)),
-                            ]),
-                            Value::Object(vec![
-                                ("category".to_string(), Value::String("fiction".to_string())),
-                                ("author".to_string(), Value::String("J. R. R. Tolkien".to_string())),
-                                ("title".to_string(), Value::String("The Lord of the Rings".to_string())),
-                                ("isbn".to_string(), Value::String("0-395-19395-8".to_string())),
-                                ("price".to_string(), Value::Float(22.99)),
-                                ("active".to_string(), Value::Bool(true)),
-                            ]),
-                        ]),
-                    ),
-                    (
-                        "bicycle".to_string(),
+        Value::Object(vec![(
+            "store".to_string(),
+            Value::Object(vec![
+                (
+                    "books".to_string(),
+                    Value::Array(vec![
                         Value::Object(vec![
-                            ("color".to_string(), Value::String("red".to_string())),
-                            ("price".to_string(), Value::Float(19.95)),
+                            (
+                                "category".to_string(),
+                                Value::String("reference".to_string()),
+                            ),
+                            (
+                                "author".to_string(),
+                                Value::String("Nigel Rees".to_string()),
+                            ),
+                            (
+                                "title".to_string(),
+                                Value::String("Sayings of the Century".to_string()),
+                            ),
+                            ("price".to_string(), Value::Float(8.95)),
+                            ("active".to_string(), Value::Bool(true)),
                         ]),
-                    ),
-                ]),
-            ),
-        ])
+                        Value::Object(vec![
+                            ("category".to_string(), Value::String("fiction".to_string())),
+                            (
+                                "author".to_string(),
+                                Value::String("Evelyn Waugh".to_string()),
+                            ),
+                            (
+                                "title".to_string(),
+                                Value::String("Sword of Honour".to_string()),
+                            ),
+                            ("price".to_string(), Value::Float(12.99)),
+                            ("active".to_string(), Value::Bool(false)),
+                        ]),
+                        Value::Object(vec![
+                            ("category".to_string(), Value::String("fiction".to_string())),
+                            (
+                                "author".to_string(),
+                                Value::String("Herman Melville".to_string()),
+                            ),
+                            ("title".to_string(), Value::String("Moby Dick".to_string())),
+                            (
+                                "isbn".to_string(),
+                                Value::String("0-553-21311-3".to_string()),
+                            ),
+                            ("price".to_string(), Value::Float(8.99)),
+                            ("active".to_string(), Value::Bool(true)),
+                        ]),
+                        Value::Object(vec![
+                            ("category".to_string(), Value::String("fiction".to_string())),
+                            (
+                                "author".to_string(),
+                                Value::String("J. R. R. Tolkien".to_string()),
+                            ),
+                            (
+                                "title".to_string(),
+                                Value::String("The Lord of the Rings".to_string()),
+                            ),
+                            (
+                                "isbn".to_string(),
+                                Value::String("0-395-19395-8".to_string()),
+                            ),
+                            ("price".to_string(), Value::Float(22.99)),
+                            ("active".to_string(), Value::Bool(true)),
+                        ]),
+                    ]),
+                ),
+                (
+                    "bicycle".to_string(),
+                    Value::Object(vec![
+                        ("color".to_string(), Value::String("red".to_string())),
+                        ("price".to_string(), Value::Float(19.95)),
+                    ]),
+                ),
+            ]),
+        )])
     }
 
     #[test]
@@ -203,7 +231,11 @@ mod tests {
         assert_eq!(books_with_isbn.len(), 2);
 
         // Books where active is true and category == 'fiction'
-        let active_fiction = query(&root, "$.store.books[?(@.active == true && @.category == 'fiction')].title").unwrap();
+        let active_fiction = query(
+            &root,
+            "$.store.books[?(@.active == true && @.category == 'fiction')].title",
+        )
+        .unwrap();
         assert_eq!(active_fiction.len(), 2);
         assert_eq!(active_fiction[0].as_str(), Some("Moby Dick"));
         assert_eq!(active_fiction[1].as_str(), Some("The Lord of the Rings"));
@@ -222,4 +254,3 @@ mod tests {
         assert_eq!(updated_color[0].as_str(), Some("blue"));
     }
 }
-

@@ -97,7 +97,11 @@ pub fn parse_ini(input: &str, options: &IniOptions) -> Result<Value, BabbelError
         }
 
         // Check for comment line
-        if options.comment_chars.iter().any(|&c| trimmed.starts_with(c)) {
+        if options
+            .comment_chars
+            .iter()
+            .any(|&c| trimmed.starts_with(c))
+        {
             continue;
         }
 
@@ -211,10 +215,16 @@ fn parse_ini_value(raw: &str, options: &IniOptions) -> Value {
         return Value::Null;
     }
 
-    if clean.eq_ignore_ascii_case("true") || clean.eq_ignore_ascii_case("yes") || clean.eq_ignore_ascii_case("on") {
+    if clean.eq_ignore_ascii_case("true")
+        || clean.eq_ignore_ascii_case("yes")
+        || clean.eq_ignore_ascii_case("on")
+    {
         return Value::Bool(true);
     }
-    if clean.eq_ignore_ascii_case("false") || clean.eq_ignore_ascii_case("no") || clean.eq_ignore_ascii_case("off") {
+    if clean.eq_ignore_ascii_case("false")
+        || clean.eq_ignore_ascii_case("no")
+        || clean.eq_ignore_ascii_case("off")
+    {
         return Value::Bool(false);
     }
 
@@ -281,7 +291,12 @@ pub fn emit_ini_to(
     Ok(())
 }
 
-fn emit_key_value(key: &str, val: &Value, options: &IniOptions, destination: &mut dyn IDestination) {
+fn emit_key_value(
+    key: &str,
+    val: &Value,
+    options: &IniOptions,
+    destination: &mut dyn IDestination,
+) {
     destination.add_bytes(key);
     destination.add_bytes(options.emit_delimiter);
 
@@ -291,7 +306,11 @@ fn emit_key_value(key: &str, val: &Value, options: &IniOptions, destination: &mu
         Value::Integer(i) => destination.add_bytes(&format!("{}", i)),
         Value::Float(f) => destination.add_bytes(&format!("{}", f)),
         Value::String(s) => {
-            let quote = s.contains(' ') || s.contains('#') || s.contains(';') || s.contains('=') || s.contains(':');
+            let quote = s.contains(' ')
+                || s.contains('#')
+                || s.contains(';')
+                || s.contains('=')
+                || s.contains(':');
             if quote {
                 destination.add_bytes("\"");
                 destination.add_bytes(s);
@@ -417,7 +436,10 @@ mod tests {
 
         let db = &obj[1].1;
         let db_obj = db.as_object().unwrap();
-        assert_eq!(db_obj[0], ("host".to_string(), Value::String("localhost".into())));
+        assert_eq!(
+            db_obj[0],
+            ("host".to_string(), Value::String("localhost".into()))
+        );
         assert_eq!(db_obj[1], ("port".to_string(), Value::Integer(5432)));
         assert_eq!(db_obj[2], ("ssl".to_string(), Value::Bool(true)));
     }
@@ -428,7 +450,13 @@ mod tests {
         let val = parse_ini(doc, &IniOptions::env()).unwrap();
         let obj = val.as_object().unwrap();
 
-        assert_eq!(obj[0], ("DATABASE_URL".to_string(), Value::String("postgres://user:pass@localhost:5432/db".into())));
+        assert_eq!(
+            obj[0],
+            (
+                "DATABASE_URL".to_string(),
+                Value::String("postgres://user:pass@localhost:5432/db".into())
+            )
+        );
         assert_eq!(obj[1], ("PORT".to_string(), Value::Integer(3000)));
         assert_eq!(obj[2], ("DEBUG".to_string(), Value::Bool(true)));
     }
@@ -446,11 +474,32 @@ mod tests {
         let doc = "# Embedded config\nbaud_rate = 115200\n\n[wifi]\nssid = IoT_Network\npass = secret123\n";
         let mut parser = IniPullParser::new(doc);
 
-        assert_eq!(parser.next_event(), Some(IniEvent::Comment("# Embedded config")));
-        assert_eq!(parser.next_event(), Some(IniEvent::Entry { key: "baud_rate", val: "115200" }));
+        assert_eq!(
+            parser.next_event(),
+            Some(IniEvent::Comment("# Embedded config"))
+        );
+        assert_eq!(
+            parser.next_event(),
+            Some(IniEvent::Entry {
+                key: "baud_rate",
+                val: "115200"
+            })
+        );
         assert_eq!(parser.next_event(), Some(IniEvent::Section("wifi")));
-        assert_eq!(parser.next_event(), Some(IniEvent::Entry { key: "ssid", val: "IoT_Network" }));
-        assert_eq!(parser.next_event(), Some(IniEvent::Entry { key: "pass", val: "secret123" }));
+        assert_eq!(
+            parser.next_event(),
+            Some(IniEvent::Entry {
+                key: "ssid",
+                val: "IoT_Network"
+            })
+        );
+        assert_eq!(
+            parser.next_event(),
+            Some(IniEvent::Entry {
+                key: "pass",
+                val: "secret123"
+            })
+        );
         assert_eq!(parser.next_event(), None);
     }
 }

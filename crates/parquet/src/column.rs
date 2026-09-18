@@ -6,10 +6,10 @@ use alloc::{
     vec::Vec,
 };
 
-use babbel_core::encoding::varint::{read_varint_u32, write_varint_u32};
-use babbel_core::Value;
 use crate::error::ParquetError;
 use crate::metadata::Type;
+use babbel_core::Value;
+use babbel_core::encoding::varint::{read_varint_u32, write_varint_u32};
 
 /// In-memory column holding typed values for a table column.
 #[derive(Debug, Clone, PartialEq)]
@@ -65,7 +65,7 @@ impl ColumnData {
             }
 
             // Bit-packed RLE header: ((num_groups) << 1) | 1
-            let num_groups = (num_values + 7) / 8;
+            let num_groups = num_values.div_ceil(8);
             let header = ((num_groups as u32) << 1) | 1;
             let mut rle_bytes = Vec::new();
             write_varint_u32(&mut rle_bytes, header);
@@ -144,13 +144,17 @@ impl ColumnData {
         if is_optional {
             // Read 4-byte definition level length
             if data.len() < 4 {
-                return Err(ParquetError::CorruptedPage("Truncated definition levels".into()));
+                return Err(ParquetError::CorruptedPage(
+                    "Truncated definition levels".into(),
+                ));
             }
             let def_len = u32::from_le_bytes(data[0..4].try_into().unwrap()) as usize;
             pos += 4;
 
             if pos + def_len > data.len() {
-                return Err(ParquetError::CorruptedPage("Definition level length exceeds page".into()));
+                return Err(ParquetError::CorruptedPage(
+                    "Definition level length exceeds page".into(),
+                ));
             }
 
             let def_data = &data[pos..pos + def_len];
@@ -158,8 +162,9 @@ impl ColumnData {
 
             // Decode RLE definition levels
             let mut def_reader_pos = 0;
-            let (header, h_len) = read_varint_u32(def_data, def_reader_pos)
-                .map_err(|_| ParquetError::CorruptedPage("Varint overflow in definition levels".into()))?;
+            let (header, h_len) = read_varint_u32(def_data, def_reader_pos).map_err(|_| {
+                ParquetError::CorruptedPage("Varint overflow in definition levels".into())
+            })?;
             def_reader_pos += h_len;
 
             let mut def_bits = Vec::with_capacity(num_values);

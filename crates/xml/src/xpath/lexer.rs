@@ -227,7 +227,11 @@ impl<'a> XPathLexer<'a> {
                 self.advance();
                 let var_name = match self.read_name()? {
                     Token::Name(n) => n,
-                    _ => return Err(XmlError::XPathError("Expected variable name after '$'".into())),
+                    _ => {
+                        return Err(XmlError::XPathError(
+                            "Expected variable name after '$'".into(),
+                        ));
+                    }
                 };
                 Ok(Token::Variable(var_name))
             }
@@ -251,7 +255,9 @@ impl<'a> XPathLexer<'a> {
             }
             self.advance();
         }
-        Err(XmlError::XPathError("Unterminated string literal in XPath".into()))
+        Err(XmlError::XPathError(
+            "Unterminated string literal in XPath".into(),
+        ))
     }
 
     fn read_number(&mut self) -> Result<Token> {

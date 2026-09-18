@@ -7,8 +7,8 @@
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::String, string::ToString, vec::Vec};
 
-use babbel_core::Value;
 use crate::error::BsonError;
+use babbel_core::Value;
 
 /// Extended JSON output mode.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,20 +30,30 @@ pub fn to_extended_json(val: &Value, mode: EJsonMode) -> Value {
                 if *i >= i32::MIN as i128 && *i <= i32::MAX as i128 {
                     Value::Integer(*i)
                 } else {
-                    Value::Object(vec![("$numberLong".to_string(), Value::String(i.to_string()))])
+                    Value::Object(vec![(
+                        "$numberLong".to_string(),
+                        Value::String(i.to_string()),
+                    )])
                 }
             }
-            EJsonMode::Canonical => {
-                Value::Object(vec![("$numberLong".to_string(), Value::String(i.to_string()))])
-            }
+            EJsonMode::Canonical => Value::Object(vec![(
+                "$numberLong".to_string(),
+                Value::String(i.to_string()),
+            )]),
         },
         Value::Float(f) => match mode {
             EJsonMode::Relaxed => {
                 if f.is_nan() {
-                    Value::Object(vec![("$numberDouble".to_string(), Value::String("NaN".to_string()))])
+                    Value::Object(vec![(
+                        "$numberDouble".to_string(),
+                        Value::String("NaN".to_string()),
+                    )])
                 } else if f.is_infinite() {
                     let s = if *f > 0.0 { "Infinity" } else { "-Infinity" };
-                    Value::Object(vec![("$numberDouble".to_string(), Value::String(s.to_string()))])
+                    Value::Object(vec![(
+                        "$numberDouble".to_string(),
+                        Value::String(s.to_string()),
+                    )])
                 } else {
                     Value::Float(*f)
                 }
@@ -52,7 +62,11 @@ pub fn to_extended_json(val: &Value, mode: EJsonMode) -> Value {
                 let s = if f.is_nan() {
                     "NaN".to_string()
                 } else if f.is_infinite() {
-                    if *f > 0.0 { "Infinity".to_string() } else { "-Infinity".to_string() }
+                    if *f > 0.0 {
+                        "Infinity".to_string()
+                    } else {
+                        "-Infinity".to_string()
+                    }
                 } else {
                     format!("{:?}", f)
                 };
@@ -63,15 +77,19 @@ pub fn to_extended_json(val: &Value, mode: EJsonMode) -> Value {
         Value::Bytes(b) => {
             // Hex/Base64 binary wrapper: {"$binary": {"base64": "...", "subType": "00"}}
             let hex_chars: String = b.iter().map(|byte| format!("{:02x}", byte)).collect();
-            Value::Object(vec![
-                ("$binary".to_string(), Value::Object(vec![
+            Value::Object(vec![(
+                "$binary".to_string(),
+                Value::Object(vec![
                     ("hex".to_string(), Value::String(hex_chars)),
                     ("subType".to_string(), Value::String("00".to_string())),
-                ]))
-            ])
+                ]),
+            )])
         }
         Value::Array(items) => {
-            let transformed: Vec<Value> = items.iter().map(|item| to_extended_json(item, mode)).collect();
+            let transformed: Vec<Value> = items
+                .iter()
+                .map(|item| to_extended_json(item, mode))
+                .collect();
             Value::Array(transformed)
         }
         Value::Object(entries) => {
@@ -178,7 +196,9 @@ pub fn from_extended_json(val: &Value) -> Result<Value, BsonError> {
 
 fn hex_to_bytes(s: &str) -> Result<Vec<u8>, BsonError> {
     if s.len() % 2 != 0 {
-        return Err(BsonError::Custom("invalid hex string length for extended json"));
+        return Err(BsonError::Custom(
+            "invalid hex string length for extended json",
+        ));
     }
     let mut bytes = Vec::with_capacity(s.len() / 2);
     let chars: Vec<char> = s.chars().collect();
@@ -201,7 +221,10 @@ mod tests {
         let ejson = to_extended_json(&val, EJsonMode::Canonical);
         assert_eq!(
             ejson,
-            Value::Object(vec![("$numberLong".to_string(), Value::String("9876543210".to_string()))])
+            Value::Object(vec![(
+                "$numberLong".to_string(),
+                Value::String("9876543210".to_string())
+            )])
         );
         let back = from_extended_json(&ejson).unwrap();
         assert_eq!(back, val);

@@ -1,4 +1,4 @@
-﻿use babbel_xml::{parse, DtdValidator};
+use babbel_xml::{DtdValidator, parse};
 
 #[test]
 fn test_dtd_element_content_models() {

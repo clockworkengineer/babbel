@@ -2,12 +2,7 @@
 //! Segregates schema validation responsibilities from the core AST data representation (SRP & ISP compliant).
 
 #[cfg(not(feature = "std"))]
-use alloc::{
-    format,
-    string::String,
-    vec::Vec,
-    collections::BTreeMap as HashMap,
-};
+use alloc::{collections::BTreeMap as HashMap, format, string::String, vec::Vec};
 
 #[cfg(feature = "std")]
 use std::collections::HashMap;

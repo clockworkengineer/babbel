@@ -1,4 +1,4 @@
-﻿//! # W3C DOM Core Mutations Example
+//! # W3C DOM Core Mutations Example
 //!
 //! Demonstrates live tree manipulation and memory management:
 //! - Creating and inserting elements (`insert_before`)
@@ -25,7 +25,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let task2 = doc.get_children(root_id)[1];
     doc.insert_before(root_id, new_task, task2)?;
-    println!("After insert_before (task 1.5 inserted):\n{}\n", stringify(&doc));
+    println!(
+        "After insert_before (task 1.5 inserted):\n{}\n",
+        stringify(&doc)
+    );
 
     // 2. Replace task 1 with an updated task
     let urgent_task = doc.create_element("urgent_task");
@@ -38,7 +41,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 3. Remove task 2
     doc.remove_child(root_id, task2)?;
-    println!("After remove_child (task 2 removed):\n{}\n", stringify(&doc));
+    println!(
+        "After remove_child (task 2 removed):\n{}\n",
+        stringify(&doc)
+    );
 
     // 4. Arena Garbage Compaction
     println!("Arena node count before compaction: {}", doc.len());

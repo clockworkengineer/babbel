@@ -1,5 +1,5 @@
-﻿use babbel_json::misc::print;
-use babbel_json::{parse, FileDestination, FileSource};
+use babbel_json::misc::print;
+use babbel_json::{FileDestination, FileSource, parse};
 use std::path::Path;
 
 #[path = "common/utility.rs"]

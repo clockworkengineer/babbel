@@ -5,7 +5,7 @@
 
 use babbel_core::io::BufferDestination;
 use babbel_core::model::Value;
-use babbel_toml::{from_str, to_string_pretty, Node};
+use babbel_toml::{Node, from_str, to_string_pretty};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== TOML Polyglot Cross-Format Conversions ===\n");
@@ -60,7 +60,10 @@ std = true
     let mut bencode_dest = BufferDestination::new();
     universal_value.serialize_bencode(&mut bencode_dest);
     let bencode_output = bencode_dest.to_string();
-    println!("Bencode binary representation ({} bytes):", bencode_output.len());
+    println!(
+        "Bencode binary representation ({} bytes):",
+        bencode_output.len()
+    );
     println!("{:?}", &bencode_output[..bencode_output.len().min(80)]);
 
     // 5. Convert Universal Value back to TOML Node
@@ -70,7 +73,9 @@ std = true
     println!("{}", roundtripped_toml);
 
     // Assert that key fields survived roundtrip through the universal AST
-    let pkg = roundtripped_node.get("package").expect("package table exists");
+    let pkg = roundtripped_node
+        .get("package")
+        .expect("package table exists");
     assert_eq!(pkg.get("name").and_then(|n| n.as_str()), Some("babbel"));
     assert_eq!(pkg.get("version").and_then(|n| n.as_str()), Some("0.2.0"));
 

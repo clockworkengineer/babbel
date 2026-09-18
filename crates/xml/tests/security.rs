@@ -1,4 +1,4 @@
-﻿use babbel_xml::{parse_bytes, XmlError, ParseOptions, XmlParser, XmlSource};
+use babbel_xml::{ParseOptions, XmlError, XmlParser, XmlSource, parse_bytes};
 
 #[test]
 fn test_nesting_depth_limit() {
@@ -7,7 +7,7 @@ fn test_nesting_depth_limit() {
     let mut options = ParseOptions::default();
     options.max_nesting_depth = 100;
     let mut parser = XmlParser::new(source, options);
-    
+
     let res = parser.parse();
     assert!(matches!(res, Err(XmlError::SecurityLimitExceeded(_))));
 }

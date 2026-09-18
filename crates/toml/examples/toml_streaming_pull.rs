@@ -34,7 +34,10 @@ tags = [ "edge", "warehouse", "zone-4" ]
     let mut active_table = String::from("root");
     let mut current_key = String::new();
 
-    println!("{:<6} {:<24} {:<34}", "Step", "Event Kind", "Value / Context");
+    println!(
+        "{:<6} {:<24} {:<34}",
+        "Step", "Event Kind", "Value / Context"
+    );
     println!("{:-<68}", "");
 
     while let Some(event) = parser.next_event()? {
@@ -42,34 +45,58 @@ tags = [ "edge", "warehouse", "zone-4" ]
 
         match &event {
             TomlPullEvent::StartDocument => {
-                println!("{:<6} {:<24} [Start of Document]", event_count, "StartDocument");
+                println!(
+                    "{:<6} {:<24} [Start of Document]",
+                    event_count, "StartDocument"
+                );
             }
             TomlPullEvent::TableHeader(path) => {
                 active_table = path.clone();
-                println!("{:<6} {:<24} [{}]", event_count, "TableHeader", active_table);
+                println!(
+                    "{:<6} {:<24} [{}]",
+                    event_count, "TableHeader", active_table
+                );
             }
             TomlPullEvent::ArrayOfTablesHeader(path) => {
                 active_table = path.clone();
-                println!("{:<6} {:<24} [[{}]]", event_count, "ArrayOfTablesHeader", active_table);
+                println!(
+                    "{:<6} {:<24} [[{}]]",
+                    event_count, "ArrayOfTablesHeader", active_table
+                );
             }
             TomlPullEvent::Key(k) => {
                 current_key = k.clone();
                 println!("{:<6} {:<24} \"{}\"", event_count, "Key", current_key);
             }
             TomlPullEvent::ValueString(s) => {
-                println!("{:<6} {:<24} \"{}\" (key: {}, table: {})", event_count, "ValueString", s, current_key, active_table);
+                println!(
+                    "{:<6} {:<24} \"{}\" (key: {}, table: {})",
+                    event_count, "ValueString", s, current_key, active_table
+                );
             }
             TomlPullEvent::ValueInteger(i) => {
-                println!("{:<6} {:<24} {} (key: {}, table: {})", event_count, "ValueInteger", i, current_key, active_table);
+                println!(
+                    "{:<6} {:<24} {} (key: {}, table: {})",
+                    event_count, "ValueInteger", i, current_key, active_table
+                );
             }
             TomlPullEvent::ValueFloat(f) => {
-                println!("{:<6} {:<24} {:.2} (table: {})", event_count, "ValueFloat", f, active_table);
+                println!(
+                    "{:<6} {:<24} {:.2} (table: {})",
+                    event_count, "ValueFloat", f, active_table
+                );
             }
             TomlPullEvent::ValueBoolean(b) => {
-                println!("{:<6} {:<24} {} (table: {})", event_count, "ValueBoolean", b, active_table);
+                println!(
+                    "{:<6} {:<24} {} (table: {})",
+                    event_count, "ValueBoolean", b, active_table
+                );
             }
             TomlPullEvent::ValueDatetime(dt) => {
-                println!("{:<6} {:<24} {} (table: {})", event_count, "ValueDatetime", dt, active_table);
+                println!(
+                    "{:<6} {:<24} {} (table: {})",
+                    event_count, "ValueDatetime", dt, active_table
+                );
             }
             TomlPullEvent::StartArray => {
                 println!("{:<6} {:<24} Begin [", event_count, "StartArray");
@@ -90,7 +117,10 @@ tags = [ "edge", "warehouse", "zone-4" ]
     }
 
     println!("{:-<68}", "");
-    println!("Processed {} streaming events with zero document-level allocations!", event_count);
+    println!(
+        "Processed {} streaming events with zero document-level allocations!",
+        event_count
+    );
 
     Ok(())
 }

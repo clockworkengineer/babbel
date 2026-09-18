@@ -13,7 +13,6 @@
 /// scalars, anchors, aliases, and directives. Provides utilities for
 /// managing document boundaries and normalization of parsed nodes.
 ///
-
 pub use parse::parse;
 pub mod explicit_key;
 pub mod flow_punctuation;
@@ -30,7 +29,6 @@ mod main_loop;
 mod parse;
 mod sequence;
 mod value;
-
 
 #[cfg(test)]
 mod tests {
@@ -99,9 +97,10 @@ mod tests {
         let mut source = Buffer::new(b"key: value");
         assert_eq!(source.get_current_indent_level(), 0);
         let directives = crate::parser::directives::DirectiveContext::new();
-        assert!(
-            crate::parser::utils::helpers::peek_ahead_for_mapping_key(&mut source, &directives)
-        );
+        assert!(crate::parser::utils::helpers::peek_ahead_for_mapping_key(
+            &mut source,
+            &directives
+        ));
         assert_eq!(source.get_current_indent_level(), 0);
     }
 
@@ -109,9 +108,10 @@ mod tests {
     fn test_peek_ahead_for_mapping_key_no_colon() {
         let mut source = Buffer::new(b"key value");
         let directives = crate::parser::directives::DirectiveContext::new();
-        assert!(
-            !crate::parser::utils::helpers::peek_ahead_for_mapping_key(&mut source, &directives)
-        );
+        assert!(!crate::parser::utils::helpers::peek_ahead_for_mapping_key(
+            &mut source,
+            &directives
+        ));
         assert_eq!(source.get_current_indent_level(), 0);
     }
 
@@ -119,27 +119,30 @@ mod tests {
     fn test_peek_ahead_for_mapping_key_colon_after_newline() {
         let mut source = Buffer::new(b"key\n: value");
         let directives = crate::parser::directives::DirectiveContext::new();
-        assert!(
-            !crate::parser::utils::helpers::peek_ahead_for_mapping_key(&mut source, &directives)
-        );
+        assert!(!crate::parser::utils::helpers::peek_ahead_for_mapping_key(
+            &mut source,
+            &directives
+        ));
     }
 
     #[test]
     fn test_peek_ahead_for_mapping_key_spaces_before_colon() {
         let mut source = Buffer::new(b"key   : value");
         let directives = crate::parser::directives::DirectiveContext::new();
-        assert!(
-            crate::parser::utils::helpers::peek_ahead_for_mapping_key(&mut source, &directives)
-        );
+        assert!(crate::parser::utils::helpers::peek_ahead_for_mapping_key(
+            &mut source,
+            &directives
+        ));
     }
 
     #[test]
     fn test_peek_ahead_for_mapping_key_empty() {
         let mut source = Buffer::new(b"");
         let directives = crate::parser::directives::DirectiveContext::new();
-        assert!(
-            !crate::parser::utils::helpers::peek_ahead_for_mapping_key(&mut source, &directives)
-        );
+        assert!(!crate::parser::utils::helpers::peek_ahead_for_mapping_key(
+            &mut source,
+            &directives
+        ));
     }
 
     #[test]
@@ -179,7 +182,8 @@ mod tests {
         let mut src = Buffer::new(b"{key1: 1, 'key2': \"two\"}");
         let mut stream =
             crate::parser::token_stream::TokenStream::new(&mut src, &directives, false).unwrap();
-        let node = parse_inline_mapping_with_tokens(&mut stream, &directives, 0, false, None).unwrap();
+        let node =
+            parse_inline_mapping_with_tokens(&mut stream, &directives, 0, false, None).unwrap();
         assert!(matches!(node, Node::Mapping(_)));
         if let Node::Mapping(pairs) = node {
             assert_eq!(pairs.len(), 2);
@@ -201,7 +205,8 @@ mod tests {
         let mut empty = Buffer::new(b"{}");
         let mut stream =
             crate::parser::token_stream::TokenStream::new(&mut empty, &directives, false).unwrap();
-        let node = parse_inline_mapping_with_tokens(&mut stream, &directives, 0, false, None).unwrap();
+        let node =
+            parse_inline_mapping_with_tokens(&mut stream, &directives, 0, false, None).unwrap();
         assert!(matches!(node, Node::Mapping(ref v) if v.is_empty()));
     }
 

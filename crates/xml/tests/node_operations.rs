@@ -1,7 +1,4 @@
-﻿use babbel_xml::{
-    Attribute, Document, NodeKind, parse,
-    EntityMapper, DtdValidator,
-};
+use babbel_xml::{Attribute, Document, DtdValidator, EntityMapper, NodeKind, parse};
 
 #[test]
 fn test_element_node_creation_and_attributes() {
@@ -109,7 +106,10 @@ fn test_comment_node_creation_and_attributes() {
     let comment_id = doc.add_node(NodeKind::Comment("This is a test comment".into()));
     let node = doc.get_node(comment_id).unwrap();
 
-    assert_eq!(node.kind, NodeKind::Comment("This is a test comment".into()));
+    assert_eq!(
+        node.kind,
+        NodeKind::Comment("This is a test comment".into())
+    );
     assert_eq!(node.kind.name(), "#comment");
 }
 
@@ -153,17 +153,18 @@ fn test_processing_instruction_node() {
 #[test]
 fn test_declaration_node() {
     let mut doc = Document::new();
-    let decl_id = doc.add_node(NodeKind::Declaration(Box::new(babbel_xml::DeclarationData {
-        version: "1.0".into(),
-        encoding: Some("UTF-8".into()),
-        standalone: Some(true),
-    })));
+    let decl_id = doc.add_node(NodeKind::Declaration(Box::new(
+        babbel_xml::DeclarationData {
+            version: "1.0".into(),
+            encoding: Some("UTF-8".into()),
+            standalone: Some(true),
+        },
+    )));
 
     let node = doc.get_node(decl_id).unwrap();
     assert_eq!(node.kind.name(), "xml");
 
-    if let NodeKind::Declaration(decl) = &node.kind
-    {
+    if let NodeKind::Declaration(decl) = &node.kind {
         assert_eq!(&*decl.version, "1.0");
         assert_eq!(decl.encoding.as_deref(), Some("UTF-8"));
         assert_eq!(decl.standalone, Some(true));
@@ -175,11 +176,13 @@ fn test_declaration_node() {
 #[test]
 fn test_declaration_stringify_output() {
     let mut doc = Document::new();
-    let decl_id = doc.add_node(NodeKind::Declaration(Box::new(babbel_xml::DeclarationData {
-        version: "1.0".into(),
-        encoding: Some("UTF-8".into()),
-        standalone: Some(true),
-    })));
+    let decl_id = doc.add_node(NodeKind::Declaration(Box::new(
+        babbel_xml::DeclarationData {
+            version: "1.0".into(),
+            encoding: Some("UTF-8".into()),
+            standalone: Some(true),
+        },
+    )));
     doc.set_declaration_id(decl_id);
 
     let root_id = doc.root_id().unwrap();
@@ -218,14 +221,20 @@ fn test_prolog_xml_integration() {
 
     let prolog_id = doc.prolog_id().expect("Prolog exists");
     let children = doc.get_children(prolog_id);
-    assert!(children.len() >= 2, "Prolog should contain declaration, comment, and PI");
+    assert!(
+        children.len() >= 2,
+        "Prolog should contain declaration, comment, and PI"
+    );
 }
 
 #[test]
 fn test_root_node_and_children() {
     let mut doc = Document::new();
     let root_container_id = doc.root_id().expect("Document has root container");
-    assert_eq!(doc.get_node(root_container_id).unwrap().kind, NodeKind::Root);
+    assert_eq!(
+        doc.get_node(root_container_id).unwrap().kind,
+        NodeKind::Root
+    );
 
     let root_elem_id = doc.add_node(NodeKind::Element {
         name: "root".into(),
@@ -290,7 +299,10 @@ fn test_variant_node_types() {
     let mut doc = Document::new();
 
     let prolog = doc.add_node(NodeKind::Prolog);
-    let elem = doc.add_node(NodeKind::Element { name: "test".into(), attributes: vec![] });
+    let elem = doc.add_node(NodeKind::Element {
+        name: "test".into(),
+        attributes: vec![],
+    });
     let text = doc.add_node(NodeKind::Text("text".into()));
 
     assert_eq!(doc.get_node(prolog).unwrap().kind.name(), "#prolog");

@@ -1,4 +1,4 @@
-﻿use babbel_xml::{parse, XmlPullEvent, XmlPullParser};
+use babbel_xml::{XmlPullEvent, XmlPullParser, parse};
 
 #[test]
 fn test_epilog_comments_and_pi() {
@@ -51,12 +51,33 @@ fn test_pull_parser_self_closing_tag_pairing() {
     }
 
     assert_eq!(events.len(), 6);
-    assert!(matches!(events[0], XmlPullEvent::StartElement { name: "catalog", .. }));
-    assert!(matches!(events[1], XmlPullEvent::StartElement { name: "book", .. }));
-    assert!(matches!(events[2], XmlPullEvent::EndElement { name: "book" }));
-    assert!(matches!(events[3], XmlPullEvent::StartElement { name: "book", .. }));
-    assert!(matches!(events[4], XmlPullEvent::EndElement { name: "book" }));
-    assert!(matches!(events[5], XmlPullEvent::EndElement { name: "catalog" }));
+    assert!(matches!(
+        events[0],
+        XmlPullEvent::StartElement {
+            name: "catalog",
+            ..
+        }
+    ));
+    assert!(matches!(
+        events[1],
+        XmlPullEvent::StartElement { name: "book", .. }
+    ));
+    assert!(matches!(
+        events[2],
+        XmlPullEvent::EndElement { name: "book" }
+    ));
+    assert!(matches!(
+        events[3],
+        XmlPullEvent::StartElement { name: "book", .. }
+    ));
+    assert!(matches!(
+        events[4],
+        XmlPullEvent::EndElement { name: "book" }
+    ));
+    assert!(matches!(
+        events[5],
+        XmlPullEvent::EndElement { name: "catalog" }
+    ));
 }
 
 #[test]

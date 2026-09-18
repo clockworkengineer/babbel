@@ -34,11 +34,11 @@ impl Document {
         // Create top-level Prolog container node
         let prolog_id = doc.add_node(NodeKind::Prolog);
         doc.prolog_id = Some(prolog_id);
-        
+
         // Create root virtual container node
         let root_id = doc.add_node(NodeKind::Root);
         doc.root_id = Some(root_id);
-        
+
         doc
     }
 
@@ -68,7 +68,9 @@ impl Document {
 
     /// Returns the tag name of the root element if one exists.
     pub fn get_root_element_name(&self) -> Option<&str> {
-        self.root_element_id().and_then(|id| self.get_node(id)).map(|n| n.kind.name())
+        self.root_element_id()
+            .and_then(|id| self.get_node(id))
+            .map(|n| n.kind.name())
     }
 
     /// Appends a new node kind to the arena and returns its unique [`NodeId`].
@@ -132,14 +134,24 @@ impl Document {
             .children
             .iter()
             .position(|&id| id == child_id)
-            .ok_or_else(|| XmlError::NodeError(format!("Child node {} not found on parent {}", child_id, parent_id)))?;
+            .ok_or_else(|| {
+                XmlError::NodeError(format!(
+                    "Child node {} not found on parent {}",
+                    child_id, parent_id
+                ))
+            })?;
         self.nodes[p_idx].children.remove(pos);
         self.nodes[c_idx].parent = None;
         Ok(child_id)
     }
 
     /// Inserts a new child node immediately before a reference child node under the specified parent.
-    pub fn insert_before(&mut self, parent_id: NodeId, new_child_id: NodeId, ref_child_id: NodeId) -> Result<()> {
+    pub fn insert_before(
+        &mut self,
+        parent_id: NodeId,
+        new_child_id: NodeId,
+        ref_child_id: NodeId,
+    ) -> Result<()> {
         let p_idx = parent_id as usize;
         let n_idx = new_child_id as usize;
         let r_idx = ref_child_id as usize;
@@ -154,14 +166,24 @@ impl Document {
             .children
             .iter()
             .position(|&id| id == ref_child_id)
-            .ok_or_else(|| XmlError::NodeError(format!("Reference child {} not found on parent {}", ref_child_id, parent_id)))?;
+            .ok_or_else(|| {
+                XmlError::NodeError(format!(
+                    "Reference child {} not found on parent {}",
+                    ref_child_id, parent_id
+                ))
+            })?;
         self.nodes[p_idx].children.insert(pos, new_child_id);
         self.nodes[n_idx].parent = Some(parent_id);
         Ok(())
     }
 
     /// Replaces an existing child node with a new child node under the specified parent.
-    pub fn replace_child(&mut self, parent_id: NodeId, new_child_id: NodeId, old_child_id: NodeId) -> Result<NodeId> {
+    pub fn replace_child(
+        &mut self,
+        parent_id: NodeId,
+        new_child_id: NodeId,
+        old_child_id: NodeId,
+    ) -> Result<NodeId> {
         let p_idx = parent_id as usize;
         let n_idx = new_child_id as usize;
         let o_idx = old_child_id as usize;
@@ -176,7 +198,12 @@ impl Document {
             .children
             .iter()
             .position(|&id| id == old_child_id)
-            .ok_or_else(|| XmlError::NodeError(format!("Old child {} not found on parent {}", old_child_id, parent_id)))?;
+            .ok_or_else(|| {
+                XmlError::NodeError(format!(
+                    "Old child {} not found on parent {}",
+                    old_child_id, parent_id
+                ))
+            })?;
         self.nodes[p_idx].children[pos] = new_child_id;
         self.nodes[o_idx].parent = None;
         self.nodes[n_idx].parent = Some(parent_id);
@@ -234,13 +261,21 @@ impl Document {
     }
 
     /// Sets or updates an attribute on an [`NodeKind::Element`] node.
-    pub fn set_attribute(&mut self, elem_id: NodeId, name: impl Into<Box<str>>, value: impl Into<Box<str>>) -> Result<()> {
+    pub fn set_attribute(
+        &mut self,
+        elem_id: NodeId,
+        name: impl Into<Box<str>>,
+        value: impl Into<Box<str>>,
+    ) -> Result<()> {
         let idx = elem_id as usize;
         if idx >= self.nodes.len() {
             return Err(XmlError::NodeError("Invalid Node ID".into()));
         }
         if !self.nodes[idx].kind.set_attribute(name, value) {
-            return Err(XmlError::NodeError(format!("Node {} is not an Element", elem_id)));
+            return Err(XmlError::NodeError(format!(
+                "Node {} is not an Element",
+                elem_id
+            )));
         }
         Ok(())
     }
@@ -283,7 +318,9 @@ impl Document {
                 self.append_child(node_id, text_node_id)?;
                 Ok(())
             }
-            _ => Err(XmlError::NodeError("Cannot set text content on this node type".into())),
+            _ => Err(XmlError::NodeError(
+                "Cannot set text content on this node type".into(),
+            )),
         }
     }
 
@@ -362,7 +399,10 @@ impl Document {
         let match_all = name == "*";
 
         for node in &self.nodes {
-            if let NodeKind::Element { name: elem_name, .. } = &node.kind {
+            if let NodeKind::Element {
+                name: elem_name, ..
+            } = &node.kind
+            {
                 if match_all || &**elem_name == name {
                     results.push(node.id);
                 }
@@ -534,7 +574,9 @@ impl Document {
         for (old_idx, &is_reachable) in reachable.iter().enumerate() {
             if is_reachable {
                 if new_nodes.len() >= (NodeId::MAX as usize) {
-                    return Err(XmlError::NodeError("Compacted arena exceeds NodeId capacity".into()));
+                    return Err(XmlError::NodeError(
+                        "Compacted arena exceeds NodeId capacity".into(),
+                    ));
                 }
                 let new_id = new_nodes.len() as NodeId;
                 id_map[old_idx] = Some(new_id);
@@ -547,7 +589,9 @@ impl Document {
             if let Some(Some(remapped)) = id_map.get(old_id) {
                 node.id = *remapped;
             }
-            node.parent = node.parent.and_then(|p| id_map.get(p as usize).copied().flatten());
+            node.parent = node
+                .parent
+                .and_then(|p| id_map.get(p as usize).copied().flatten());
             node.children = node
                 .children
                 .iter()
@@ -555,10 +599,18 @@ impl Document {
                 .collect();
         }
 
-        self.root_id = self.root_id.and_then(|r| id_map.get(r as usize).copied().flatten());
-        self.prolog_id = self.prolog_id.and_then(|p| id_map.get(p as usize).copied().flatten());
-        self.declaration_id = self.declaration_id.and_then(|d| id_map.get(d as usize).copied().flatten());
-        self.dtd_id = self.dtd_id.and_then(|d| id_map.get(d as usize).copied().flatten());
+        self.root_id = self
+            .root_id
+            .and_then(|r| id_map.get(r as usize).copied().flatten());
+        self.prolog_id = self
+            .prolog_id
+            .and_then(|p| id_map.get(p as usize).copied().flatten());
+        self.declaration_id = self
+            .declaration_id
+            .and_then(|d| id_map.get(d as usize).copied().flatten());
+        self.dtd_id = self
+            .dtd_id
+            .and_then(|d| id_map.get(d as usize).copied().flatten());
 
         self.nodes = new_nodes;
         Ok(())
@@ -620,20 +672,26 @@ impl Document {
 
     /// Returns a list of child node IDs for a given parent node ID.
     pub fn get_children(&self, id: NodeId) -> Vec<NodeId> {
-        self.get_node(id).map(|n| n.children.clone()).unwrap_or_default()
+        self.get_node(id)
+            .map(|n| n.children.clone())
+            .unwrap_or_default()
     }
 
     /// Returns a list of child Node IDs that are [`NodeKind::Element`] variants.
     pub fn get_element_children(&self, id: NodeId) -> Vec<NodeId> {
         self.get_children(id)
             .into_iter()
-            .filter(|&c_id| self.get_node(c_id).map_or(false, |c| matches!(c.kind, NodeKind::Element { .. })))
+            .filter(|&c_id| {
+                self.get_node(c_id)
+                    .map_or(false, |c| matches!(c.kind, NodeKind::Element { .. }))
+            })
             .collect()
     }
 
     /// Looks up an attribute value by name for a given node ID.
     pub fn get_attribute<'a>(&'a self, id: NodeId, attr_name: &str) -> Option<&'a str> {
-        self.get_node(id).and_then(|node| node.kind.get_attribute(attr_name))
+        self.get_node(id)
+            .and_then(|node| node.kind.get_attribute(attr_name))
     }
 
     /// Returns the parent node ID for a given node ID.
@@ -652,7 +710,9 @@ impl Document {
                         if let Some(child) = self.get_node(child_id) {
                             match &child.kind {
                                 NodeKind::Text(t) => text.push_str(t),
-                                NodeKind::Element { .. } => text.push_str(&self.get_text_content(child_id)),
+                                NodeKind::Element { .. } => {
+                                    text.push_str(&self.get_text_content(child_id))
+                                }
                                 _ => {}
                             }
                         }
@@ -786,4 +846,3 @@ impl From<Document> for babbel_core::Value {
         doc.to_value()
     }
 }
-

@@ -3,7 +3,7 @@
 //! Demonstrates constructing a complete TOML document dynamically at runtime
 //! using `Node::new_table()`, `Node::new_array()`, nested tables, and array-of-tables.
 
-use babbel_toml::{to_string_pretty, DatetimeKind, Node, TomlDatetime};
+use babbel_toml::{DatetimeKind, Node, TomlDatetime, to_string_pretty};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== TOML Runtime DOM Creation Example ===\n");

@@ -1,4 +1,4 @@
-﻿//! # XML Namespaces 1.0 Example
+//! # XML Namespaces 1.0 Example
 //!
 //! Demonstrates parsing, inspecting, and resolving W3C Namespaces in XML documents:
 //! - Extracting element prefixes and local names from QNames
@@ -28,23 +28,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Inspect Root Element Namespace
     let prefix = doc.get_prefix(root_id).unwrap_or("(none)");
     let local_name = doc.get_local_name(root_id);
-    let ns_uri = doc.get_namespace_uri(root_id).unwrap_or_else(|| "(none)".to_string());
+    let ns_uri = doc
+        .get_namespace_uri(root_id)
+        .unwrap_or_else(|| "(none)".to_string());
 
     println!("Root QName: {prefix}:{local_name}");
     println!("Root Namespace URI: {ns_uri}\n");
 
     // 2. Namespace Scope Lookups
-    println!("Looking up prefix 'm' from root: {:?}", doc.lookup_namespace_uri(root_id, "m"));
-    println!("Looking up prefix for 'http://schemas.xmlsoap.org/soap/envelope/': {:?}", doc.lookup_prefix(root_id, "http://schemas.xmlsoap.org/soap/envelope/"));
+    println!(
+        "Looking up prefix 'm' from root: {:?}",
+        doc.lookup_namespace_uri(root_id, "m")
+    );
+    println!(
+        "Looking up prefix for 'http://schemas.xmlsoap.org/soap/envelope/': {:?}",
+        doc.lookup_prefix(root_id, "http://schemas.xmlsoap.org/soap/envelope/")
+    );
 
     // 3. Namespace-Aware Query Selectors
     let math_ns = "http://example.org/math";
     let add_elements = doc.get_elements_by_tag_name_ns(math_ns, "Add");
-    println!("\nFound {} element(s) with local name 'Add' in namespace '{math_ns}':", add_elements.len());
+    println!(
+        "\nFound {} element(s) with local name 'Add' in namespace '{math_ns}':",
+        add_elements.len()
+    );
 
     for elem_id in add_elements {
         for child_id in doc.get_children(elem_id) {
-            if doc.get_node(child_id).map_or(false, |n| matches!(n.kind, babbel_xml::NodeKind::Element { .. })) {
+            if doc.get_node(child_id).map_or(false, |n| {
+                matches!(n.kind, babbel_xml::NodeKind::Element { .. })
+            }) {
                 let child_local = doc.get_local_name(child_id);
                 let text = doc.get_text_content(child_id);
                 println!("  Parameter <m:{child_local}> = {text}");

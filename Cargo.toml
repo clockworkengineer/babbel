@@ -34,8 +34,7 @@ babbel_kdl = { path = "crates/kdl", version = "0.2.1" }
 babbel_parquet = { path = "crates/parquet", version = "0.2.1" }
 babbel_hcl = { path = "crates/hcl", version = "0.2.1" }
 babbel_avro = { path = "crates/avro", version = "0.2.1" }
-
-
+babbel = { path = "crates/babbel", version = "0.2.1" }
 
 [workspace.package]
 version = "0.2.1"
@@ -43,6 +42,120 @@ authors = ["ClockworkEngineer", "Babbel Contributors"]
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/clockworkengineer/babbel"
+homepage = "https://github.com/clockworkengineer/babbel"
+rust-version = "1.85.0"
+keywords = ["serialization", "parser", "polyglot", "json", "yaml"]
+categories = ["encoding", "parser-implementations", "data-structures"]
+
+[workspace.lints.rust]
+mismatched_lifetime_syntaxes = "warn"
+
+[workspace.lints.clippy]
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+complexity = { level = "warn", priority = -1 }
+perf = { level = "warn", priority = -1 }
+style = { level = "allow", priority = -1 }
+double_ended_iterator_last = { level = "allow", priority = 1 }
+needless_question_mark = { level = "allow", priority = 1 }
+manual_div_ceil = { level = "allow", priority = 1 }
+vec_init_then_push = { level = "allow", priority = 1 }
+useless_vec = { level = "allow", priority = 1 }
+useless_borrows_in_formatting = { level = "allow", priority = 1 }
+filter_map_identity = { level = "allow", priority = 1 }
+default_constructed_unit_structs = { level = "allow", priority = 1 }
+unnecessary_map_or = { level = "allow", priority = 1 }
+field_reassign_with_default = { level = "allow", priority = 1 }
+len_without_is_empty = { level = "allow", priority = 1 }
+derivable_impls = { level = "allow", priority = 1 }
+inherent_to_string = { level = "allow", priority = 1 }
+if_same_then_else = { level = "allow", priority = 1 }
+result_large_err = { level = "allow", priority = 1 }
+large_enum_variant = { level = "allow", priority = 1 }
+collapsible_if = { level = "allow", priority = 1 }
+clone_on_copy = { level = "allow", priority = 1 }
+while_let_on_iterator = { level = "allow", priority = 1 }
+needless_range_loop = { level = "allow", priority = 1 }
+single_match = { level = "allow", priority = 1 }
+type_complexity = { level = "allow", priority = 1 }
+too_many_arguments = { level = "allow", priority = 1 }
+manual_strip = { level = "allow", priority = 1 }
+question_mark = { level = "allow", priority = 1 }
+bool_assert_comparison = { level = "allow", priority = 1 }
+legacy_numeric_constants = { level = "allow", priority = 1 }
+let_unit_value = { level = "allow", priority = 1 }
+comparison_to_empty = { level = "allow", priority = 1 }
+is_digit_ascii_radix = { level = "allow", priority = 1 }
+new_without_default = { level = "allow", priority = 1 }
+unnecessary_lazy_evaluations = { level = "allow", priority = 1 }
+needless_lifetimes = { level = "allow", priority = 1 }
+byte_char_slices = { level = "allow", priority = 1 }
+let_and_return = { level = "allow", priority = 1 }
+match_like_matches_macro = { level = "allow", priority = 1 }
+approx_constant = { level = "allow", priority = 1 }
+redundant_closure = { level = "allow", priority = 1 }
+useless_format = { level = "allow", priority = 1 }
+ptr_arg = { level = "allow", priority = 1 }
+borrowed_box = { level = "allow", priority = 1 }
+bind_instead_of_map = { level = "allow", priority = 1 }
+upper_case_acronyms = { level = "allow", priority = 1 }
+write_with_newline = { level = "allow", priority = 1 }
+extra_unused_lifetimes = { level = "allow", priority = 1 }
+search_is_some = { level = "allow", priority = 1 }
+manual_range_contains = { level = "allow", priority = 1 }
+result_unit_err = { level = "allow", priority = 1 }
+format_in_format_args = { level = "allow", priority = 1 }
+to_string_in_format_args = { level = "allow", priority = 1 }
+empty_line_after_doc_comments = { level = "allow", priority = 1 }
+module_inception = { level = "allow", priority = 1 }
+doc_lazy_continuation = { level = "allow", priority = 1 }
+op_ref = { level = "allow", priority = 1 }
+match_single_binding = { level = "allow", priority = 1 }
+manual_flatten = { level = "allow", priority = 1 }
+explicit_auto_deref = { level = "allow", priority = 1 }
+manual_unwrap_or_default = { level = "allow", priority = 1 }
+into_iter_without_iter = { level = "allow", priority = 1 }
+iter_without_into_iter = { level = "allow", priority = 1 }
+needless_borrow = { level = "allow", priority = 1 }
+manual_map = { level = "allow", priority = 1 }
+unnecessary_unwrap = { level = "allow", priority = 1 }
+manual_is_ascii_check = { level = "allow", priority = 1 }
+needless_return = { level = "allow", priority = 1 }
+redundant_pattern_matching = { level = "allow", priority = 1 }
+blocks_in_conditions = { level = "allow", priority = 1 }
+bool_comparison = { level = "allow", priority = 1 }
+only_used_in_recursion = { level = "allow", priority = 1 }
+unnecessary_mut_passed = { level = "allow", priority = 1 }
+manual_pattern_char_comparison = { level = "allow", priority = 1 }
+unit_arg = { level = "allow", priority = 1 }
+unnecessary_fallible_conversions = { level = "allow", priority = 1 }
+redundant_static_lifetimes = { level = "allow", priority = 1 }
+crate_in_macro_def = { level = "allow", priority = 1 }
+redundant_guards = { level = "allow", priority = 1 }
+manual_clamp = { level = "allow", priority = 1 }
+enum_variant_names = { level = "allow", priority = 1 }
+needless_late_init = { level = "allow", priority = 1 }
+manual_retain = { level = "allow", priority = 1 }
+unused_unit = { level = "allow", priority = 1 }
+redundant_locals = { level = "allow", priority = 1 }
+type_id_on_box = { level = "allow", priority = 1 }
+box_default = { level = "allow", priority = 1 }
+let_underscore_future = { level = "allow", priority = 1 }
+unnecessary_cast = { level = "allow", priority = 1 }
+range_plus_one = { level = "allow", priority = 1 }
+unnecessary_wraps = { level = "allow", priority = 1 }
+suspicious_else_formatting = { level = "allow", priority = 1 }
+assertions_on_constants = { level = "allow", priority = 1 }
+useless_conversion = { level = "allow", priority = 1 }
+unit_cmp = { level = "allow", priority = 1 }
+while_let_loop = { level = "allow", priority = 1 }
+collapsible_match = { level = "allow", priority = 1 }
+trim_split_whitespace = { level = "allow", priority = 1 }
+single_char_add_str = { level = "allow", priority = 1 }
+needless_as_bytes = { level = "allow", priority = 1 }
+unnecessary_sort_by = { level = "allow", priority = 1 }
+
+
 
 [profile.release]
 opt-level = 3

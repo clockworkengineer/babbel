@@ -4,17 +4,17 @@
 //! and W3C Canonical XML (C14N).
 
 pub mod canonical;
-pub mod serializer;
 #[cfg(feature = "format-converters")]
 pub mod converters;
+pub mod serializer;
 
 pub use canonical::{CanonicalOptions, CanonicalSerializer};
-pub use serializer::{SerializeOptions, XmlSerializer};
 #[cfg(feature = "format-converters")]
 pub use converters::{
     to_bencode, to_bencode_bytes, to_json, to_json_string, to_toml, to_toml_string, to_yaml,
     to_yaml_string,
 };
+pub use serializer::{SerializeOptions, XmlSerializer};
 
 use crate::alloc_prelude::*;
 use crate::document::Document;

@@ -3,8 +3,8 @@
 //! Re-exports the unified `BufferSource` cursor from `babbel_core::io`
 //! and implements Bencode-specific read traits.
 
-pub use babbel_core::io::BufferSource as Buffer;
 use crate::io::traits::{ISource, RewindableRead};
+pub use babbel_core::io::BufferSource as Buffer;
 
 impl RewindableRead for Buffer {
     fn reset(&mut self) {

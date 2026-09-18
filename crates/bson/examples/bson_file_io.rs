@@ -3,9 +3,9 @@
 //! Demonstrates saving and loading BSON database records to and from disk
 //! using Babbel's `to_vec` and `from_bytes`.
 
-use std::fs;
-use babbel_core::Value;
 use babbel_bson::{from_bytes, to_vec};
+use babbel_core::Value;
+use std::fs;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Babbel BSON File I/O Example ===\n");

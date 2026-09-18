@@ -70,14 +70,18 @@ impl<'a> Parser<'a> {
     fn check_valid_char(&self, ch: char) -> Result<(), KdlError> {
         if is_bidi_char(ch) {
             return Err(KdlError::Syntax {
-                message: format!("Forbidden bidirectional unicode character U+{:04X}", ch as u32),
+                message: format!(
+                    "Forbidden bidirectional unicode character U+{:04X}",
+                    ch as u32
+                ),
                 line: self.line,
                 col: self.col,
             });
         }
         if ch == '\u{FEFF}' && self.pos > 0 {
             return Err(KdlError::Syntax {
-                message: "Byte order mark (BOM) is only allowed at the beginning of the document".to_string(),
+                message: "Byte order mark (BOM) is only allowed at the beginning of the document"
+                    .to_string(),
                 line: self.line,
                 col: self.col,
             });
@@ -122,10 +126,13 @@ impl<'a> Parser<'a> {
                         idx += 2;
                         let mut depth = 1;
                         while depth > 0 && self.pos + idx < self.chars.len() {
-                            if self.peek_at(idx) == Some('/') && self.peek_at(idx + 1) == Some('*') {
+                            if self.peek_at(idx) == Some('/') && self.peek_at(idx + 1) == Some('*')
+                            {
                                 idx += 2;
                                 depth += 1;
-                            } else if self.peek_at(idx) == Some('*') && self.peek_at(idx + 1) == Some('/') {
+                            } else if self.peek_at(idx) == Some('*')
+                                && self.peek_at(idx + 1) == Some('/')
+                            {
                                 idx += 2;
                                 depth -= 1;
                             } else {
@@ -249,7 +256,6 @@ impl<'a> Parser<'a> {
 
         Ok(doc)
     }
-
 }
 
 /// Helper to test if a character is valid KDL whitespace.
@@ -257,13 +263,8 @@ impl<'a> Parser<'a> {
 pub(crate) fn is_kdl_whitespace(c: char) -> bool {
     matches!(
         c,
-        ' ' | '\t'
-            | '\u{00A0}'
-            | '\u{1680}'
-            | '\u{2000}'..='\u{200A}'
-            | '\u{202F}'
-            | '\u{205F}'
-            | '\u{3000}'
+        ' ' | '\t' | '\u{00A0}' | '\u{1680}' | '\u{2000}'
+            ..='\u{200A}' | '\u{202F}' | '\u{205F}' | '\u{3000}'
     )
 }
 
@@ -292,17 +293,7 @@ pub(crate) fn is_bare_ident_char(ch: char) -> bool {
         && !is_kdl_newline(ch)
         && !matches!(
             ch,
-            '(' | ')'
-                | '{'
-                | '}'
-                | '['
-                | ']'
-                | '/'
-                | '\\'
-                | '"'
-                | '='
-                | ';'
-                | '#'
+            '(' | ')' | '{' | '}' | '[' | ']' | '/' | '\\' | '"' | '=' | ';' | '#'
         )
         && !ch.is_control()
         && !is_bidi_char(ch)

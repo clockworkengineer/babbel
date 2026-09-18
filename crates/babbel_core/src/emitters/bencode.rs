@@ -1,7 +1,7 @@
+use crate::codec::FormatEmitter;
 use crate::error::BabbelError;
 use crate::io::traits::IDestination;
 use crate::model::Value;
-use crate::codec::FormatEmitter;
 
 /// Standard built-in Bencode format emitter delegating to universal Value serialization.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -24,7 +24,11 @@ impl BencodeEmitter {
             Value::Float(f) => {
                 let mut buf = itoa::Buffer::new();
                 dest.add_bytes("i");
-                let rounded = if *f >= 0.0 { (*f + 0.5) as i64 } else { (*f - 0.5) as i64 };
+                let rounded = if *f >= 0.0 {
+                    (*f + 0.5) as i64
+                } else {
+                    (*f - 0.5) as i64
+                };
                 dest.add_bytes(buf.format(rounded));
                 dest.add_bytes("e");
             }

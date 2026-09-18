@@ -5,7 +5,6 @@
 //!
 //! Copyright (c) 2026 YAML Library Developers
 
-
 ///
 ///
 /// Common result type for parser operations using the library-wide YamlError.

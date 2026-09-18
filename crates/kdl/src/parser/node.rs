@@ -5,9 +5,9 @@ use alloc::{
     vec::Vec,
 };
 
+use super::{Parser, is_bare_ident_char, is_kdl_newline, is_kdl_whitespace};
 use crate::ast::{KdlEntry, KdlNode};
 use crate::error::KdlError;
-use super::{is_bare_ident_char, is_kdl_newline, is_kdl_whitespace, Parser};
 
 impl<'a> Parser<'a> {
     pub(crate) fn parse_node(&mut self) -> Result<KdlNode, KdlError> {
@@ -100,7 +100,10 @@ impl<'a> Parser<'a> {
                         Some('}') => break,
                         Some(other) => {
                             return Err(KdlError::Syntax {
-                                message: format!("Expected newline or ';' after children block, found '{}'", other),
+                                message: format!(
+                                    "Expected newline or ';' after children block, found '{}'",
+                                    other
+                                ),
                                 line: self.line,
                                 col: self.col,
                             });
@@ -207,7 +210,8 @@ impl<'a> Parser<'a> {
         if self.is_property_start() {
             if has_type {
                 return Err(KdlError::Syntax {
-                    message: "Type annotation cannot precede property key; use key=(type)val".to_string(),
+                    message: "Type annotation cannot precede property key; use key=(type)val"
+                        .to_string(),
                     line: self.line,
                     col: self.col,
                 });
@@ -380,15 +384,18 @@ impl<'a> Parser<'a> {
                     let second = ident.chars().nth(1).unwrap();
                     if second.is_ascii_digit() {
                         return Err(KdlError::Syntax {
-                            message: "Bare identifier cannot start with sign followed by digit".to_string(),
+                            message: "Bare identifier cannot start with sign followed by digit"
+                                .to_string(),
                             line: start_line,
                             col: start_col,
                         });
                     }
                 }
-                if first == '.' && ident.len() > 1 && ident.chars().nth(1).unwrap().is_ascii_digit() {
+                if first == '.' && ident.len() > 1 && ident.chars().nth(1).unwrap().is_ascii_digit()
+                {
                     return Err(KdlError::Syntax {
-                        message: "Bare identifier cannot start with dot followed by digit".to_string(),
+                        message: "Bare identifier cannot start with dot followed by digit"
+                            .to_string(),
                         line: start_line,
                         col: start_col,
                     });
@@ -398,7 +405,10 @@ impl<'a> Parser<'a> {
                     "true" | "false" | "null" | "inf" | "-inf" | "nan"
                 ) {
                     return Err(KdlError::Syntax {
-                        message: format!("Reserved keyword '{}' cannot be used as bare identifier", ident),
+                        message: format!(
+                            "Reserved keyword '{}' cannot be used as bare identifier",
+                            ident
+                        ),
                         line: start_line,
                         col: start_col,
                     });
@@ -414,6 +424,4 @@ impl<'a> Parser<'a> {
             None => Err(KdlError::UnexpectedEof),
         }
     }
-
 }
-

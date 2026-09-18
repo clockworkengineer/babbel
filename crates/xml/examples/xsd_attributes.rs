@@ -1,9 +1,9 @@
-﻿//! # XSD Attribute & Type Constraint Example
+//! # XSD Attribute & Type Constraint Example
 //!
 //! Demonstrates parsing XSD attribute declarations (`xs:attribute`) and validating
 //! attribute primitive data types (`xs:integer`) using `XsdValidator` and `XmlValidator`.
 
-use babbel_xml::{parse, XsdValidator};
+use babbel_xml::{XsdValidator, parse};
 
 fn main() {
     println!("--- XSD Attributes Example ---");

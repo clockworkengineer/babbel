@@ -1,4 +1,3 @@
-
 //! Node Utility Functions
 //!
 //! Provides helper functions for constructing tagged, anchored, and mapping nodes
@@ -116,7 +115,7 @@ pub fn get_document_base(node: &Node, n: usize) -> Result<&Node, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::nodes::node::{Node, QuoteType, BlockStyle};
+    use crate::nodes::node::{BlockStyle, Node, QuoteType};
 
     #[test]
     fn test_make_tagged_node() {
@@ -220,4 +219,3 @@ mod tests {
         assert_eq!(normalize_node(&n4), n4);
     }
 }
-

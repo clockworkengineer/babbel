@@ -54,8 +54,7 @@ impl XmlSerializer {
         if !options.omit_xml_declaration {
             if let Some(decl_id) = doc.declaration_id() {
                 if let Some(node) = doc.get_node(decl_id) {
-                    if let NodeKind::Declaration(decl) = &node.kind
-                    {
+                    if let NodeKind::Declaration(decl) = &node.kind {
                         dest.write_str("<?xml version=");
                         dest.write_char(options.quote_char);
                         dest.write_str(&decl.version);

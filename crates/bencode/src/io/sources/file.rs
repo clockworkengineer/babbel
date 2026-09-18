@@ -2,8 +2,8 @@
 //!
 //! Re-exports the unified `FileSource` from `babbel_core::io`.
 
-pub use babbel_core::io::FileSource as File;
 use crate::io::traits::{ISource, RewindableRead};
+pub use babbel_core::io::FileSource as File;
 
 impl RewindableRead for File {
     fn reset(&mut self) {

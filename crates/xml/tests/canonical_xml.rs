@@ -1,5 +1,5 @@
-﻿use babbel_xml::{
-    canonicalize, parse, CanonicalOptions, CanonicalSerializer, SerializeOptions, XmlSerializer,
+use babbel_xml::{
+    CanonicalOptions, CanonicalSerializer, SerializeOptions, XmlSerializer, canonicalize, parse,
 };
 
 #[test]
@@ -89,5 +89,8 @@ fn test_canonical_xml_comments_handling() {
     let mut opts = CanonicalOptions::default();
     opts.with_comments = true;
     let c2 = CanonicalSerializer::canonicalize(&doc, &opts);
-    assert_eq!(c2, "<root><!-- Ignored by default --><data>hello</data></root>");
+    assert_eq!(
+        c2,
+        "<root><!-- Ignored by default --><data>hello</data></root>"
+    );
 }

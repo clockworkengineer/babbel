@@ -1,5 +1,5 @@
+use babbel_bson::{BsonEngine, BsonError, Decoder, DecoderConfig, from_bytes, to_vec};
 use babbel_core::{FormatEngine, FormatOptions, Value};
-use babbel_bson::{from_bytes, to_vec, BsonEngine, BsonError, Decoder, DecoderConfig};
 
 #[test]
 fn test_roundtrip_document_primitives() {
@@ -21,9 +21,7 @@ fn test_roundtrip_document_primitives() {
 #[test]
 fn test_roundtrip_binary_data() {
     let payload = vec![0xca, 0xfe, 0xba, 0xbe, 0x00, 0x01, 0x02];
-    let doc = Value::Object(vec![
-        ("data".into(), Value::Bytes(payload.clone())),
-    ]);
+    let doc = Value::Object(vec![("data".into(), Value::Bytes(payload.clone()))]);
 
     let bytes = to_vec(&doc).unwrap();
     let decoded = from_bytes(&bytes).unwrap();
@@ -48,14 +46,17 @@ fn test_roundtrip_array() {
 fn test_roundtrip_nested_document() {
     let doc = Value::Object(vec![
         ("service".into(), Value::String("database".into())),
-        ("config".into(), Value::Object(vec![
-            ("host".into(), Value::String("127.0.0.1".into())),
-            ("port".into(), Value::Integer(27017)),
-            ("shards".into(), Value::Array(vec![
-                Value::String("s1".into()),
-                Value::String("s2".into()),
-            ])),
-        ])),
+        (
+            "config".into(),
+            Value::Object(vec![
+                ("host".into(), Value::String("127.0.0.1".into())),
+                ("port".into(), Value::Integer(27017)),
+                (
+                    "shards".into(),
+                    Value::Array(vec![Value::String("s1".into()), Value::String("s2".into())]),
+                ),
+            ]),
+        ),
     ]);
 
     let bytes = to_vec(&doc).unwrap();
@@ -70,9 +71,7 @@ fn test_primitive_scalar_wrapping() {
     let bytes = to_vec(&scalar).unwrap();
     let decoded = from_bytes(&bytes).unwrap();
 
-    let expected = Value::Object(vec![
-        ("value".into(), Value::String("standalone".into())),
-    ]);
+    let expected = Value::Object(vec![("value".into(), Value::String("standalone".into()))]);
     assert_eq!(decoded, expected);
 }
 
@@ -111,9 +110,7 @@ fn test_recursion_limit() {
 
 #[test]
 fn test_size_limit() {
-    let doc = Value::Object(vec![
-        ("large".into(), Value::String("A".repeat(50))),
-    ]);
+    let doc = Value::Object(vec![("large".into(), Value::String("A".repeat(50)))]);
     let bytes = to_vec(&doc).unwrap();
 
     let config = DecoderConfig {
@@ -137,7 +134,9 @@ fn test_format_engine_integration() {
         ("version".into(), Value::Integer(2)),
     ]);
 
-    let bytes = engine.serialize_to_vec(&val, &FormatOptions::compact()).unwrap();
+    let bytes = engine
+        .serialize_to_vec(&val, &FormatOptions::compact())
+        .unwrap();
     let parsed = engine.parse_bytes(&bytes).unwrap();
     assert_eq!(val, parsed);
 }

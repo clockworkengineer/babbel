@@ -7,8 +7,8 @@ use alloc::{
     vec::Vec,
 };
 
-use babbel_core::encoding::varint;
 use crate::error::ParquetError;
+use babbel_core::encoding::varint;
 
 pub const TYPE_STOP: u8 = 0;
 pub const TYPE_BOOLEAN_TRUE: u8 = 1;
@@ -154,7 +154,10 @@ impl<'a> ThriftReader<'a> {
     }
 
     pub fn read_bytes(&mut self, len: usize) -> Result<&'a [u8], ParquetError> {
-        let end = self.pos.checked_add(len).ok_or(ParquetError::UnexpectedEof)?;
+        let end = self
+            .pos
+            .checked_add(len)
+            .ok_or(ParquetError::UnexpectedEof)?;
         if end <= self.buf.len() {
             let slice = &self.buf[self.pos..end];
             self.pos = end;

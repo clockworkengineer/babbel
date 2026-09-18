@@ -34,16 +34,10 @@ fn main() {
     );
 
     // Case 2: Illegal underscore at start of number
-    check_syntax(
-        "Prefix Underscore in Number",
-        "bad_number = _42\n",
-    );
+    check_syntax("Prefix Underscore in Number", "bad_number = _42\n");
 
     // Case 3: Double consecutive underscores
-    check_syntax(
-        "Consecutive Underscores",
-        "bad_number = 1__000\n",
-    );
+    check_syntax("Consecutive Underscores", "bad_number = 1__000\n");
 
     // Case 4: Duplicate table definition
     check_syntax(

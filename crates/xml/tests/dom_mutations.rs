@@ -1,4 +1,4 @@
-﻿use babbel_xml::{parse, stringify, NodeKind};
+use babbel_xml::{NodeKind, parse, stringify};
 
 #[test]
 fn test_remove_child() {
@@ -103,7 +103,10 @@ fn test_set_text_content() {
     assert_eq!(doc.get_text_content(p), "Replaced simple text");
     let children = doc.get_children(p);
     assert_eq!(children.len(), 1);
-    assert!(matches!(doc.get_node(children[0]).unwrap().kind, NodeKind::Text(_)));
+    assert!(matches!(
+        doc.get_node(children[0]).unwrap().kind,
+        NodeKind::Text(_)
+    ));
 }
 
 #[test]

@@ -1,4 +1,4 @@
-﻿use babbel_xml::{parse, XPathEngine, XPathValue};
+use babbel_xml::{XPathEngine, XPathValue, parse};
 
 #[test]
 fn test_xpath_position_and_last() {
@@ -13,17 +13,23 @@ fn test_xpath_position_and_last() {
     let engine = XPathEngine::new(&doc);
 
     // position() = 1
-    let first = engine.evaluate_nodes("//book[position() = 1]", None).unwrap();
+    let first = engine
+        .evaluate_nodes("//book[position() = 1]", None)
+        .unwrap();
     assert_eq!(first.len(), 1);
     assert_eq!(doc.get_attribute(first[0], "id"), Some("1"));
 
     // position() = last()
-    let last = engine.evaluate_nodes("//book[position() = last()]", None).unwrap();
+    let last = engine
+        .evaluate_nodes("//book[position() = last()]", None)
+        .unwrap();
     assert_eq!(last.len(), 1);
     assert_eq!(doc.get_attribute(last[0], "id"), Some("3"));
 
     // position() <= 2
-    let first_two = engine.evaluate_nodes("//book[position() <= 2]", None).unwrap();
+    let first_two = engine
+        .evaluate_nodes("//book[position() <= 2]", None)
+        .unwrap();
     assert_eq!(first_two.len(), 2);
 }
 
@@ -57,8 +63,13 @@ fn test_xpath_namespace_uri_function() {
     let doc = parse(xml).unwrap();
     let engine = XPathEngine::new(&doc);
 
-    let res = engine.evaluate("namespace-uri(//soap:Envelope)", None).unwrap();
-    assert_eq!(res, XPathValue::String("http://schemas.xmlsoap.org/soap/envelope/".into()));
+    let res = engine
+        .evaluate("namespace-uri(//soap:Envelope)", None)
+        .unwrap();
+    assert_eq!(
+        res,
+        XPathValue::String("http://schemas.xmlsoap.org/soap/envelope/".into())
+    );
 }
 
 #[test]
@@ -92,11 +103,15 @@ fn test_xpath_modern_string_functions() {
 
     // ends-with
     assert_eq!(
-        engine.evaluate("ends-with('document.xml', '.xml')", None).unwrap(),
+        engine
+            .evaluate("ends-with('document.xml', '.xml')", None)
+            .unwrap(),
         XPathValue::Boolean(true)
     );
     assert_eq!(
-        engine.evaluate("ends-with('document.xml', '.json')", None).unwrap(),
+        engine
+            .evaluate("ends-with('document.xml', '.json')", None)
+            .unwrap(),
         XPathValue::Boolean(false)
     );
 
@@ -112,7 +127,9 @@ fn test_xpath_modern_string_functions() {
 
     // replace
     assert_eq!(
-        engine.evaluate("replace('banana', 'a', 'o')", None).unwrap(),
+        engine
+            .evaluate("replace('banana', 'a', 'o')", None)
+            .unwrap(),
         XPathValue::String("bonono".into())
     );
 }
@@ -131,7 +148,9 @@ fn test_xpath_variable_bindings() {
 
     engine.set_variable("limit", XPathValue::Number(20.0));
 
-    let nodes = engine.evaluate_nodes("//item[@price > $limit]", None).unwrap();
+    let nodes = engine
+        .evaluate_nodes("//item[@price > $limit]", None)
+        .unwrap();
     assert_eq!(nodes.len(), 2);
     assert_eq!(doc.get_attribute(nodes[0], "id"), Some("2"));
     assert_eq!(doc.get_attribute(nodes[1], "id"), Some("3"));
@@ -144,7 +163,9 @@ fn test_xpath_custom_function() {
 
     engine.register_function("square", |args| {
         if args.len() != 1 {
-            return Err(babbel_xml::XmlError::XPathError("square() takes 1 argument".into()));
+            return Err(babbel_xml::XmlError::XPathError(
+                "square() takes 1 argument".into(),
+            ));
         }
         let n = match args[0] {
             XPathValue::Number(num) => num,

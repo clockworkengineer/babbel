@@ -15,9 +15,8 @@ use std::path::PathBuf;
 use std::time::Instant;
 
 use babbel_avro::{
-    from_bytes_ocf, from_bytes_with_schema,
-    to_vec_ocf, to_vec_with_schema,
-    AvroDecoder, AvroEncoder, AvroEngine, AvroError, AvroSchema,
+    AvroDecoder, AvroEncoder, AvroEngine, AvroError, AvroSchema, from_bytes_ocf,
+    from_bytes_with_schema, to_vec_ocf, to_vec_with_schema,
 };
 use babbel_core::{FormatEngine, Value};
 
@@ -68,14 +67,18 @@ fn test_avro_conformance_full_suite() {
     if let Some(ref dir) = suite_dir {
         println!("  Found official Avro test suite at: {}\n", dir.display());
     } else {
-        println!("  NOTICE: Official Avro test suite not found. Run scripts/fetch_avro_test_suite.ps1\n");
+        println!(
+            "  NOTICE: Official Avro test suite not found. Run scripts/fetch_avro_test_suite.ps1\n"
+        );
     }
 
     // -------------------------------------------------------------------------
     // 1. Official drnice/AvroTest OCF Suite (users2.avro)
     // -------------------------------------------------------------------------
     {
-        let cat = categories.entry("1. Official drnice/AvroTest OCF Suite").or_default();
+        let cat = categories
+            .entry("1. Official drnice/AvroTest OCF Suite")
+            .or_default();
 
         if let Some(ref dir) = suite_dir {
             let users2_path = dir.join("users2.avro");
@@ -133,7 +136,10 @@ fn test_avro_conformance_full_suite() {
                     let u1_name = u1.get("name").and_then(|v| v.as_str());
                     let u1_num = u1.get("favorite_number").and_then(|v| v.as_i64());
                     let u1_color = u1.get("favorite_color");
-                    if u1_name == Some("Alyssa") && u1_num == Some(256) && matches!(u1_color, Some(Value::Null)) {
+                    if u1_name == Some("Alyssa")
+                        && u1_num == Some(256)
+                        && matches!(u1_color, Some(Value::Null))
+                    {
                         cat.passed += 1;
                     } else {
                         cat.failed += 1;
@@ -159,7 +165,10 @@ fn test_avro_conformance_full_suite() {
                     let u3_name = u3.get("name").and_then(|v| v.as_str());
                     let u3_num = u3.get("favorite_number");
                     let u3_color = u3.get("favorite_color").and_then(|v| v.as_str());
-                    if u3_name == Some("Charlie") && matches!(u3_num, Some(Value::Null)) && u3_color == Some("blue") {
+                    if u3_name == Some("Charlie")
+                        && matches!(u3_num, Some(Value::Null))
+                        && u3_color == Some("blue")
+                    {
                         cat.passed += 1;
                     } else {
                         cat.failed += 1;
@@ -170,22 +179,23 @@ fn test_avro_conformance_full_suite() {
                     cat.total += 1;
                     let schema_json = r#"{"type":"record","name":"User","namespace":"","fields":[{"name":"name","type":"string"},{"name":"favorite_number","type":["int","null"]},{"name":"favorite_color","type":["string","null"]}]}"#;
                     match to_vec_ocf(&decoded, schema_json) {
-                        Ok(re_encoded) => {
-                            match from_bytes_ocf(&re_encoded) {
-                                Ok(re_decoded) => {
-                                    if re_decoded == decoded {
-                                        cat.passed += 1;
-                                    } else {
-                                        cat.failed += 1;
-                                        eprintln!("Re-decoded value differs from original: {:?} vs {:?}", re_decoded, decoded);
-                                    }
-                                }
-                                Err(e) => {
+                        Ok(re_encoded) => match from_bytes_ocf(&re_encoded) {
+                            Ok(re_decoded) => {
+                                if re_decoded == decoded {
+                                    cat.passed += 1;
+                                } else {
                                     cat.failed += 1;
-                                    eprintln!("Failed to decode re-encoded OCF: {}", e);
+                                    eprintln!(
+                                        "Re-decoded value differs from original: {:?} vs {:?}",
+                                        re_decoded, decoded
+                                    );
                                 }
                             }
-                        }
+                            Err(e) => {
+                                cat.failed += 1;
+                                eprintln!("Failed to decode re-encoded OCF: {}", e);
+                            }
+                        },
                         Err(e) => {
                             cat.failed += 1;
                             eprintln!("to_vec_ocf failed on users2: {}", e);
@@ -221,11 +231,16 @@ fn test_avro_conformance_full_suite() {
     // 2. Avro Schema Parsing & Types
     // -------------------------------------------------------------------------
     {
-        let cat = categories.entry("2. Avro Schema Specification Conformance").or_default();
+        let cat = categories
+            .entry("2. Avro Schema Specification Conformance")
+            .or_default();
 
         let test_cases: Vec<(&str, Box<dyn Fn(&AvroSchema) -> bool>)> = vec![
             (r#""null""#, Box::new(|s| matches!(s, AvroSchema::Null))),
-            (r#""boolean""#, Box::new(|s| matches!(s, AvroSchema::Boolean))),
+            (
+                r#""boolean""#,
+                Box::new(|s| matches!(s, AvroSchema::Boolean)),
+            ),
             (r#""int""#, Box::new(|s| matches!(s, AvroSchema::Int))),
             (r#""long""#, Box::new(|s| matches!(s, AvroSchema::Long))),
             (r#""float""#, Box::new(|s| matches!(s, AvroSchema::Float))),
@@ -234,31 +249,45 @@ fn test_avro_conformance_full_suite() {
             (r#""string""#, Box::new(|s| matches!(s, AvroSchema::String))),
             (
                 r#"["int", "null"]"#,
-                Box::new(|s| matches!(s, AvroSchema::Union(v) if v.len() == 2 && v[0] == AvroSchema::Int && v[1] == AvroSchema::Null)),
+                Box::new(
+                    |s| matches!(s, AvroSchema::Union(v) if v.len() == 2 && v[0] == AvroSchema::Int && v[1] == AvroSchema::Null),
+                ),
             ),
             (
                 r#"{"type": "enum", "name": "Suit", "symbols": ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"]}"#,
-                Box::new(|s| matches!(s, AvroSchema::Enum { name, symbols } if name == "Suit" && symbols.len() == 4)),
+                Box::new(
+                    |s| matches!(s, AvroSchema::Enum { name, symbols } if name == "Suit" && symbols.len() == 4),
+                ),
             ),
             (
                 r#"{"type": "array", "items": "string"}"#,
-                Box::new(|s| matches!(s, AvroSchema::Array { items } if **items == AvroSchema::String)),
+                Box::new(
+                    |s| matches!(s, AvroSchema::Array { items } if **items == AvroSchema::String),
+                ),
             ),
             (
                 r#"{"type": "map", "values": "long"}"#,
-                Box::new(|s| matches!(s, AvroSchema::Map { values } if **values == AvroSchema::Long)),
+                Box::new(
+                    |s| matches!(s, AvroSchema::Map { values } if **values == AvroSchema::Long),
+                ),
             ),
             (
                 r#"{"type": "fixed", "name": "md5", "size": 16}"#,
-                Box::new(|s| matches!(s, AvroSchema::Fixed { name, size } if name == "md5" && *size == 16)),
+                Box::new(
+                    |s| matches!(s, AvroSchema::Fixed { name, size } if name == "md5" && *size == 16),
+                ),
             ),
             (
                 r#"{"type": "record", "name": "Point", "fields": [{"name": "x", "type": "int"}, {"name": "y", "type": "int"}]}"#,
-                Box::new(|s| matches!(s, AvroSchema::Record { name, fields, .. } if name == "Point" && fields.len() == 2)),
+                Box::new(
+                    |s| matches!(s, AvroSchema::Record { name, fields, .. } if name == "Point" && fields.len() == 2),
+                ),
             ),
             (
                 r#"{"type": "record", "name": "LinkedList", "fields": [{"name": "value", "type": "int"}, {"name": "next", "type": ["null", "LinkedList"]}]}"#,
-                Box::new(|s| matches!(s, AvroSchema::Record { name, fields, .. } if name == "LinkedList" && fields.len() == 2)),
+                Box::new(
+                    |s| matches!(s, AvroSchema::Record { name, fields, .. } if name == "LinkedList" && fields.len() == 2),
+                ),
             ),
         ];
 
@@ -285,12 +314,32 @@ fn test_avro_conformance_full_suite() {
     // 3. Avro Binary Primitive Encoding (Zigzag & IEEE 754)
     // -------------------------------------------------------------------------
     {
-        let cat = categories.entry("3. Avro Binary Primitive Encoding").or_default();
+        let cat = categories
+            .entry("3. Avro Binary Primitive Encoding")
+            .or_default();
 
         let zigzag_cases: Vec<i64> = vec![
-            0, -1, 1, -2, 2, 63, -64, 64, 127, -128, 128, 256, -256,
-            1000, -1000, 65535, -65536, i32::MAX as i64, i32::MIN as i64,
-            i64::MAX, i64::MIN,
+            0,
+            -1,
+            1,
+            -2,
+            2,
+            63,
+            -64,
+            64,
+            127,
+            -128,
+            128,
+            256,
+            -256,
+            1000,
+            -1000,
+            65535,
+            -65536,
+            i32::MAX as i64,
+            i32::MIN as i64,
+            i64::MAX,
+            i64::MIN,
         ];
 
         for num in zigzag_cases {
@@ -313,7 +362,16 @@ fn test_avro_conformance_full_suite() {
         }
 
         // Float cases (IEEE 754 little-endian)
-        let float_cases: Vec<f32> = vec![0.0, -0.0, 1.0, -1.0, 3.14159, -42.5, f32::MAX, f32::MIN_POSITIVE];
+        let float_cases: Vec<f32> = vec![
+            0.0,
+            -0.0,
+            1.0,
+            -1.0,
+            3.14159,
+            -42.5,
+            f32::MAX,
+            f32::MIN_POSITIVE,
+        ];
         for f in float_cases {
             cat.total += 1;
             let mut enc = AvroEncoder::new();
@@ -334,7 +392,16 @@ fn test_avro_conformance_full_suite() {
         }
 
         // Double cases (IEEE 754 little-endian)
-        let double_cases: Vec<f64> = vec![0.0, -0.0, 1.0, -1.0, 2.718281828459, 1e100, f64::MAX, f64::MIN_POSITIVE];
+        let double_cases: Vec<f64> = vec![
+            0.0,
+            -0.0,
+            1.0,
+            -1.0,
+            2.718281828459,
+            1e100,
+            f64::MAX,
+            f64::MIN_POSITIVE,
+        ];
         for d in double_cases {
             cat.total += 1;
             let mut enc = AvroEncoder::new();
@@ -355,7 +422,14 @@ fn test_avro_conformance_full_suite() {
         }
 
         // String cases
-        let string_cases = vec!["", "hello", "Babbel Avro Engine", "🌟 UTF-8 Emoji 🚀", "Русский текст", "日本語テスト"];
+        let string_cases = vec![
+            "",
+            "hello",
+            "Babbel Avro Engine",
+            "🌟 UTF-8 Emoji 🚀",
+            "Русский текст",
+            "日本語テスト",
+        ];
         for s in string_cases {
             cat.total += 1;
             let mut enc = AvroEncoder::new();
@@ -380,7 +454,9 @@ fn test_avro_conformance_full_suite() {
     // 4. Avro Complex Types & Schema-Driven Codec
     // -------------------------------------------------------------------------
     {
-        let cat = categories.entry("4. Avro Complex Types & Schema-Driven Codec").or_default();
+        let cat = categories
+            .entry("4. Avro Complex Types & Schema-Driven Codec")
+            .or_default();
 
         // Test 1: Record schema round-trip
         cat.total += 1;
@@ -484,7 +560,8 @@ fn test_avro_conformance_full_suite() {
 
         // Test 4: Enum schema round-trip
         cat.total += 1;
-        let enum_schema_json = r#"{"type": "enum", "name": "Status", "symbols": ["PENDING", "ACTIVE", "CLOSED"]}"#;
+        let enum_schema_json =
+            r#"{"type": "enum", "name": "Status", "symbols": ["PENDING", "ACTIVE", "CLOSED"]}"#;
         let enum_schema = AvroSchema::parse_str(enum_schema_json).unwrap();
         let enum_val = Value::String("ACTIVE".into());
         match to_vec_with_schema(&enum_val, &enum_schema) {
@@ -539,7 +616,9 @@ fn test_avro_conformance_full_suite() {
     // 5. Avro OCF Framing, Sync Markers & Robustness
     // -------------------------------------------------------------------------
     {
-        let cat = categories.entry("5. Avro OCF Framing, Sync Markers & Robustness").or_default();
+        let cat = categories
+            .entry("5. Avro OCF Framing, Sync Markers & Robustness")
+            .or_default();
 
         // Test 1: Invalid magic header detection
         cat.total += 1;
@@ -566,7 +645,8 @@ fn test_avro_conformance_full_suite() {
 
         // Test 3: Sync marker mismatch detection
         cat.total += 1;
-        let schema_json = r#"{"type": "record", "name": "Item", "fields": [{"name": "id", "type": "int"}]}"#;
+        let schema_json =
+            r#"{"type": "record", "name": "Item", "fields": [{"name": "id", "type": "int"}]}"#;
         let rec = Value::Object(vec![("id".into(), Value::Integer(42))]);
         let valid_ocf = to_vec_ocf(&rec, schema_json).unwrap();
         let mut corrupted_sync = valid_ocf.clone();
@@ -586,7 +666,9 @@ fn test_avro_conformance_full_suite() {
     // 6. FormatEngine Trait Conformance
     // -------------------------------------------------------------------------
     {
-        let cat = categories.entry("6. FormatEngine Trait Conformance").or_default();
+        let cat = categories
+            .entry("6. FormatEngine Trait Conformance")
+            .or_default();
 
         let engine = AvroEngine;
 
@@ -636,7 +718,10 @@ fn test_avro_conformance_full_suite() {
                         cat.passed += 1;
                     } else {
                         cat.failed += 1;
-                        eprintln!("Engine roundtrip mismatch: {:?} vs {:?}", roundtrip, test_val);
+                        eprintln!(
+                            "Engine roundtrip mismatch: {:?} vs {:?}",
+                            roundtrip, test_val
+                        );
                     }
                 }
                 Err(e) => {
@@ -660,7 +745,10 @@ fn test_avro_conformance_full_suite() {
     let mut grand_failed = 0;
     let mut grand_panics = 0;
 
-    println!("{:<55} {:>7} {:>7} {:>7} {:>7} {:>9}", "Category", "Total", "Passed", "Failed", "Panics", "Pass Rate");
+    println!(
+        "{:<55} {:>7} {:>7} {:>7} {:>7} {:>9}",
+        "Category", "Total", "Passed", "Failed", "Panics", "Pass Rate"
+    );
     println!("{}", "-".repeat(95));
 
     for (cat_name, stats) in &categories {
@@ -693,7 +781,13 @@ fn test_avro_conformance_full_suite() {
     println!("\nTotal Execution Time: {:.2?}", elapsed);
     println!("===============================================================================\n");
 
-    assert_eq!(grand_failed, 0, "All Avro conformance test vectors must pass with 0 failures");
-    assert_eq!(grand_panics, 0, "All Avro conformance test vectors must pass with 0 panics");
+    assert_eq!(
+        grand_failed, 0,
+        "All Avro conformance test vectors must pass with 0 failures"
+    );
+    assert_eq!(
+        grand_panics, 0,
+        "All Avro conformance test vectors must pass with 0 panics"
+    );
     assert_eq!(grand_pass_rate, 100.0, "Pass rate must be exactly 100.0%");
 }

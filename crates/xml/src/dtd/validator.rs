@@ -1,4 +1,4 @@
-﻿//! # DTD Validation Engine
+//! # DTD Validation Engine
 //!
 //! Parses DTD internal subsets (`<!ELEMENT>`, `<!ATTLIST>`) and validates document structure and required attributes.
 
@@ -8,10 +8,10 @@ use crate::error::{Result, XmlError};
 use crate::node::{NodeId, NodeKind};
 use crate::validator::XmlValidator;
 
-#[cfg(feature = "std")]
-use std::collections::HashMap;
 #[cfg(not(feature = "std"))]
 use alloc::collections::BTreeMap as HashMap;
+#[cfg(feature = "std")]
+use std::collections::HashMap;
 
 /// Representation of DTD element content models.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -129,9 +129,16 @@ impl DtdValidator {
                     let attr_name = parts[2].to_string();
                     let attr_type = parts[3].to_string();
                     let (default_decl, default_value) = if parts.len() >= 5 {
-                        let raw_decl = parts[4..].join(" ").trim_end_matches('>').trim().to_string();
+                        let raw_decl = parts[4..]
+                            .join(" ")
+                            .trim_end_matches('>')
+                            .trim()
+                            .to_string();
                         let def_val = if raw_decl.contains("#FIXED") {
-                            raw_decl.split_whitespace().nth(1).map(|v| v.trim_matches(|c| c == '"' || c == '\'').to_string())
+                            raw_decl
+                                .split_whitespace()
+                                .nth(1)
+                                .map(|v| v.trim_matches(|c| c == '"' || c == '\'').to_string())
                         } else if raw_decl.starts_with('"') || raw_decl.starts_with('\'') {
                             Some(raw_decl.trim_matches(|c| c == '"' || c == '\'').to_string())
                         } else {
@@ -141,15 +148,16 @@ impl DtdValidator {
                     } else {
                         ("#IMPLIED".to_string(), None)
                     };
-                    self.attributes.entry(elem_name.clone()).or_default().push(
-                        DtdAttributeRule {
+                    self.attributes
+                        .entry(elem_name.clone())
+                        .or_default()
+                        .push(DtdAttributeRule {
                             element_name: elem_name,
                             attr_name,
                             attr_type,
                             default_decl,
                             default_value,
-                        },
-                    );
+                        });
                 }
             }
         }
@@ -172,7 +180,11 @@ impl DtdValidator {
                             for rule in rules {
                                 if let Some(def_val) = &rule.default_value {
                                     if !attributes.iter().any(|a| *a.name == rule.attr_name) {
-                                        to_insert.push((nid, rule.attr_name.clone(), def_val.clone()));
+                                        to_insert.push((
+                                            nid,
+                                            rule.attr_name.clone(),
+                                            def_val.clone(),
+                                        ));
                                     }
                                 }
                             }
@@ -194,8 +206,7 @@ impl DtdValidator {
     pub fn validate(&self, doc: &Document) -> Result<()> {
         if let Some(dtd_id) = doc.dtd_id() {
             if let Some(node) = doc.get_node(dtd_id) {
-                if let NodeKind::DocTypeDefinition(dt) = &node.kind
-                {
+                if let NodeKind::DocTypeDefinition(dt) = &node.kind {
                     let mut mut_self = self.clone();
                     if let Some(sys) = &dt.system_id {
                         if let Some(resolver) = &self.external_resolver {
@@ -265,10 +276,18 @@ impl DtdValidator {
                                 }
                                 id_set.insert(id_val, elem_id);
                             } else if rule.attr_type == "IDREF" {
-                                idref_list.push((attr.value.to_string(), name.to_string(), attr.name.to_string()));
+                                idref_list.push((
+                                    attr.value.to_string(),
+                                    name.to_string(),
+                                    attr.name.to_string(),
+                                ));
                             } else if rule.attr_type == "IDREFS" {
                                 for single_ref in attr.value.split_whitespace() {
-                                    idref_list.push((single_ref.to_string(), name.to_string(), attr.name.to_string()));
+                                    idref_list.push((
+                                        single_ref.to_string(),
+                                        name.to_string(),
+                                        attr.name.to_string(),
+                                    ));
                                 }
                             }
                         }
@@ -314,12 +333,16 @@ impl DtdValidator {
                         }
                     }
                     ContentModel::Children(spec) => {
-                        let child_names: Vec<String> = node.children.iter().filter_map(|&c_id| {
-                            doc.get_node(c_id).and_then(|c| match &c.kind {
-                                NodeKind::Element { name, .. } => Some(name.to_string()),
-                                _ => None,
+                        let child_names: Vec<String> = node
+                            .children
+                            .iter()
+                            .filter_map(|&c_id| {
+                                doc.get_node(c_id).and_then(|c| match &c.kind {
+                                    NodeKind::Element { name, .. } => Some(name.to_string()),
+                                    _ => None,
+                                })
                             })
-                        }).collect();
+                            .collect();
 
                         if spec.contains(',') && !spec.contains('*') && !spec.contains('?') {
                             let required_names: Vec<String> = spec

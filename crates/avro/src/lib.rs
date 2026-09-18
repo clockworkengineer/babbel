@@ -24,18 +24,17 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-pub mod error;
-pub mod schema;
 pub mod codec;
-pub mod ocf;
 pub mod engine;
+pub mod error;
+pub mod ocf;
+pub mod schema;
 
-pub use error::AvroError;
-pub use schema::{AvroField, AvroSchema};
-pub use codec::{
-    from_bytes, from_bytes_with_schema, to_vec, to_vec_with_schema,
-    AvroDecoder, AvroEncoder,
-};
-pub use ocf::{from_bytes_ocf, to_vec_ocf, OCF_MAGIC};
-pub use engine::AvroEngine;
 pub use babbel_core::Value;
+pub use codec::{
+    AvroDecoder, AvroEncoder, from_bytes, from_bytes_with_schema, to_vec, to_vec_with_schema,
+};
+pub use engine::AvroEngine;
+pub use error::AvroError;
+pub use ocf::{OCF_MAGIC, from_bytes_ocf, to_vec_ocf};
+pub use schema::{AvroField, AvroSchema};

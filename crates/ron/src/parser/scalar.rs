@@ -7,9 +7,9 @@ use alloc::{
     vec::Vec,
 };
 
-use babbel_core::Value;
+use super::{RonParser, is_ident_part, is_structural_delimiter};
 use crate::error::RonError;
-use super::{is_ident_part, is_structural_delimiter, RonParser};
+use babbel_core::Value;
 
 impl<'a> RonParser<'a> {
     pub(crate) fn scan_bare_atom(&mut self) -> Result<String, RonError> {
@@ -71,7 +71,12 @@ impl<'a> RonParser<'a> {
         }
 
         if atom.is_empty() {
-            Err(RonError::Expected { expected: "bare token", found: String::new(), line, col })
+            Err(RonError::Expected {
+                expected: "bare token",
+                found: String::new(),
+                line,
+                col,
+            })
         } else {
             Ok(atom)
         }
@@ -190,7 +195,11 @@ impl<'a> RonParser<'a> {
         let (line, col) = self.current_line_col();
         let quote = self.peek().ok_or(RonError::UnexpectedEof)?;
         if quote != '"' && quote != '\'' {
-            return Err(RonError::UnexpectedChar { ch: quote, line, col });
+            return Err(RonError::UnexpectedChar {
+                ch: quote,
+                line,
+                col,
+            });
         }
 
         // Count opening run length n
@@ -268,7 +277,9 @@ impl<'a> RonParser<'a> {
             } else if ch == quote {
                 let mut run_len = 0;
                 let check_cursor = self.cursor;
-                while check_cursor + run_len < self.chars.len() && self.chars[check_cursor + run_len].1 == quote {
+                while check_cursor + run_len < self.chars.len()
+                    && self.chars[check_cursor + run_len].1 == quote
+                {
                     run_len += 1;
                 }
                 if run_len >= n {
@@ -325,7 +336,12 @@ impl<'a> RonParser<'a> {
         }
 
         if name.is_empty() {
-            Err(RonError::Expected { expected: "identifier", found: String::new(), line, col })
+            Err(RonError::Expected {
+                expected: "identifier",
+                found: String::new(),
+                line,
+                col,
+            })
         } else {
             Ok(name)
         }
@@ -389,7 +405,12 @@ impl<'a> RonParser<'a> {
             let b = self.next_char().ok_or(RonError::UnexpectedEof)?;
             if self.next_char() != Some('\'') {
                 let (line, col) = self.current_line_col();
-                return Err(RonError::Expected { expected: "closing '\''", found: String::new(), line, col });
+                return Err(RonError::Expected {
+                    expected: "closing '\''",
+                    found: String::new(),
+                    line,
+                    col,
+                });
             }
             return Ok(Value::Integer(b as u8 as i128));
         }
@@ -402,8 +423,6 @@ impl<'a> RonParser<'a> {
             col,
         })
     }
-
-
 }
 
 #[inline]
@@ -411,7 +430,11 @@ fn atom_helper_push(content: &mut String, h: char) {
     content.push(h);
 }
 
-pub(crate) fn decode_escapes(raw: &str, start_line: usize, start_col: usize) -> Result<String, RonError> {
+pub(crate) fn decode_escapes(
+    raw: &str,
+    start_line: usize,
+    start_col: usize,
+) -> Result<String, RonError> {
     let mut result = String::with_capacity(raw.len());
     let chars: Vec<char> = raw.chars().collect();
     let mut i = 0;
@@ -476,12 +499,18 @@ pub(crate) fn decode_escapes(raw: &str, start_line: usize, start_col: usize) -> 
                             return Err(RonError::UnexpectedEof);
                         }
                         i += 1; // consume '}'
-                        let code = u32::from_str_radix(&hex, 16).map_err(|_| {
-                            RonError::InvalidEscape { sequence: hex.clone(), line: start_line, col: start_col }
-                        })?;
-                        let decoded = char::from_u32(code).ok_or_else(|| {
-                            RonError::InvalidEscape { sequence: hex, line: start_line, col: start_col }
-                        })?;
+                        let code =
+                            u32::from_str_radix(&hex, 16).map_err(|_| RonError::InvalidEscape {
+                                sequence: hex.clone(),
+                                line: start_line,
+                                col: start_col,
+                            })?;
+                        let decoded =
+                            char::from_u32(code).ok_or_else(|| RonError::InvalidEscape {
+                                sequence: hex,
+                                line: start_line,
+                                col: start_col,
+                            })?;
                         result.push(decoded);
                     } else {
                         if i + 4 > chars.len() {
@@ -501,7 +530,11 @@ pub(crate) fn decode_escapes(raw: &str, start_line: usize, start_col: usize) -> 
                         }
                         i += 4;
                         let code = u32::from_str_radix(&hex_str, 16).map_err(|_| {
-                            RonError::InvalidEscape { sequence: hex_str.clone(), line: start_line, col: start_col }
+                            RonError::InvalidEscape {
+                                sequence: hex_str.clone(),
+                                line: start_line,
+                                col: start_col,
+                            }
                         })?;
 
                         if (0xD800..=0xDBFF).contains(&code) {
@@ -511,7 +544,8 @@ pub(crate) fn decode_escapes(raw: &str, start_line: usize, start_col: usize) -> 
                                     let low_code = u32::from_str_radix(&low_hex, 16).unwrap_or(0);
                                     if (0xDC00..=0xDFFF).contains(&low_code) {
                                         i += 6;
-                                        let combined = 0x10000 + (((code - 0xD800) << 10) | (low_code - 0xDC00));
+                                        let combined = 0x10000
+                                            + (((code - 0xD800) << 10) | (low_code - 0xDC00));
                                         if let Some(c) = char::from_u32(combined) {
                                             result.push(c);
                                             continue;
@@ -531,9 +565,12 @@ pub(crate) fn decode_escapes(raw: &str, start_line: usize, start_col: usize) -> 
                                 col: start_col,
                             });
                         } else {
-                            let decoded = char::from_u32(code).ok_or_else(|| {
-                                RonError::InvalidEscape { sequence: hex_str.clone(), line: start_line, col: start_col }
-                            })?;
+                            let decoded =
+                                char::from_u32(code).ok_or_else(|| RonError::InvalidEscape {
+                                    sequence: hex_str.clone(),
+                                    line: start_line,
+                                    col: start_col,
+                                })?;
                             result.push(decoded);
                         }
                     }
@@ -545,9 +582,12 @@ pub(crate) fn decode_escapes(raw: &str, start_line: usize, start_col: usize) -> 
                     }
                     let hex_str: String = chars[i..i + 2].iter().collect();
                     i += 2;
-                    let byte = u8::from_str_radix(&hex_str, 16).map_err(|_| {
-                        RonError::InvalidEscape { sequence: hex_str.clone(), line: start_line, col: start_col }
-                    })?;
+                    let byte =
+                        u8::from_str_radix(&hex_str, 16).map_err(|_| RonError::InvalidEscape {
+                            sequence: hex_str.clone(),
+                            line: start_line,
+                            col: start_col,
+                        })?;
                     result.push(byte as char);
                 }
                 other => {
@@ -559,7 +599,11 @@ pub(crate) fn decode_escapes(raw: &str, start_line: usize, start_col: usize) -> 
                 }
             }
         } else if (ch as u32) < 0x20 {
-            return Err(RonError::UnexpectedChar { ch, line: start_line, col: start_col });
+            return Err(RonError::UnexpectedChar {
+                ch,
+                line: start_line,
+                col: start_col,
+            });
         } else {
             result.push(ch);
             i += 1;

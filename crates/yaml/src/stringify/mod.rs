@@ -22,14 +22,13 @@ pub mod serializer;
 pub mod streaming;
 /// toml
 pub mod toml;
-/// xml
-pub mod xml;
 /// Abstraction traits for serializers
 pub mod traits;
+/// xml
+pub mod xml;
 pub use bencode::BencodeSerializer;
 pub use default::YamlSerializer;
 pub use json::JsonSerializer;
 pub use toml::TomlSerializer;
 pub use traits::NodeSerializer;
 pub use xml::XmlSerializer;
-

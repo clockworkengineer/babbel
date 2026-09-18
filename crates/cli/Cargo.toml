@@ -1,19 +1,28 @@
 [package]
 name = "babbel-cli"
-version = "0.2.1"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 description = "Universal CLI utility for Babbel polyglot serialization, querying, diffing, patching, and formatting"
-license = "MIT"
-authors = ["ClockworkEngineer", "Babbel Contributors"]
+license.workspace = true
+authors.workspace = true
 readme = "README.md"
-repository = "https://github.com/clockworkengineer/babbel"
-homepage = "https://github.com/clockworkengineer/babbel"
+repository.workspace = true
+homepage.workspace = true
 documentation = "https://docs.rs/babbel-cli"
+rust-version.workspace = true
+keywords = ["cli", "json", "yaml", "xml", "jsonpath"]
+categories = ["command-line-utilities", "development-tools"]
 
 [[bin]]
 name = "babbel"
 path = "src/main.rs"
 
+[lints]
+workspace = true
+
 [dependencies]
 babbel = { path = "../babbel", version = "0.2.1" }
 babbel_core = { path = "../babbel_core", version = "0.2.1" }
+clap = { version = "4.5", features = ["derive"] }
+clap_complete = "4.5"
+

@@ -2,8 +2,8 @@
 //!
 //! Re-exports the unified `FileDestination` from `babbel_core::io`.
 
-pub use babbel_core::io::FileDestination as File;
 use crate::io::traits::{BencodeWrite, BufferedWrite, IDestination};
+pub use babbel_core::io::FileDestination as File;
 
 impl BencodeWrite for File {
     fn write_byte(&mut self, byte: u8) {

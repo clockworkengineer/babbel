@@ -2,8 +2,8 @@
 
 #[cfg(not(feature = "std"))]
 use alloc::string::ToString;
-use core::fmt;
 use babbel_core::{BabbelError, ErrorCode};
+use core::fmt;
 
 /// Detailed error encountered during CBOR serialization or deserialization.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,8 +31,15 @@ pub enum CborError {
 impl fmt::Display for CborError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::UnexpectedEof { expected, available } => {
-                write!(f, "unexpected end of input: expected {} bytes, but only {} available", expected, available)
+            Self::UnexpectedEof {
+                expected,
+                available,
+            } => {
+                write!(
+                    f,
+                    "unexpected end of input: expected {} bytes, but only {} available",
+                    expected, available
+                )
             }
             Self::InvalidInitialByte(byte) => {
                 write!(f, "invalid CBOR initial byte: 0x{:02x}", byte)
@@ -68,18 +75,14 @@ impl std::error::Error for CborError {}
 impl From<CborError> for BabbelError {
     fn from(err: CborError) -> Self {
         match err {
-            CborError::InvalidUtf8 => {
-                BabbelError::encoding(err.to_string()).with_format("cbor")
-            }
+            CborError::InvalidUtf8 => BabbelError::encoding(err.to_string()).with_format("cbor"),
             CborError::UnexpectedEof { .. } => {
                 BabbelError::eof(err.to_string()).with_format("cbor")
             }
             CborError::RecursionLimitExceeded(_) | CborError::SizeLimitExceeded { .. } => {
                 BabbelError::new(ErrorCode::Custom, err.to_string()).with_format("cbor")
             }
-            _ => {
-                BabbelError::syntax(err.to_string()).with_format("cbor")
-            }
+            _ => BabbelError::syntax(err.to_string()).with_format("cbor"),
         }
     }
 }

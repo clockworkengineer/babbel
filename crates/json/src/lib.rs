@@ -31,8 +31,8 @@ extern crate alloc;
 pub mod error;
 
 // Re-export ParseError and JsonError alias for convenience & format error consistency
-pub use error::parse_error::ParseError;
 pub use error::JsonError;
+pub use error::parse_error::ParseError;
 
 /// Module handling JSON file reading and writing operations
 #[cfg(feature = "file-io")]
@@ -100,15 +100,15 @@ pub use misc::print;
 /// Strip whitespace from a string.
 pub use misc::strip as strip_whitespace;
 
-/// Destination implementation for writing JSON data to a memory buffer
-pub use io::destinations::buffer::Buffer as BufferDestination;
 /// Zero-allocation stack-based destination implementations
 pub use babbel_core::io::{ArrayVecDestination, SliceDestination};
-/// Streaming zero-allocation pull parser for embedded systems
-pub use parser::pull_parser::{JsonPullEvent, JsonPullParser, JsonScalar};
+/// Destination implementation for writing JSON data to a memory buffer
+pub use io::destinations::buffer::Buffer as BufferDestination;
 /// Destination implementation for writing JSON data to a file
 #[cfg(feature = "file-io")]
 pub use io::destinations::file::File as FileDestination;
+/// Streaming zero-allocation pull parser for embedded systems
+pub use parser::pull_parser::{JsonPullEvent, JsonPullParser, JsonScalar};
 
 /// Source implementation for reading JSON data from a memory buffer
 pub use io::sources::buffer::Buffer as BufferSource;
@@ -173,7 +173,10 @@ pub fn to_vec(node: &Node) -> Result<alloc::vec::Vec<u8>, JsonError> {
 
 /// Serialize a JSON [`Node`] directly to an [`IDestination`].
 #[inline]
-pub fn to_destination(node: &Node, dest: &mut dyn babbel_core::io::IDestination) -> Result<(), JsonError> {
+pub fn to_destination(
+    node: &Node,
+    dest: &mut dyn babbel_core::io::IDestination,
+) -> Result<(), JsonError> {
     stringify(node, dest).map_err(JsonError::from)
 }
 
@@ -227,9 +230,10 @@ pub use parser::json5::parse_json5;
 #[cfg(feature = "alloc")]
 pub mod lines;
 #[cfg(feature = "alloc")]
-pub use lines::{parse_json_lines, to_json_lines, to_json_lines_stream, JsonLinesConfig, JsonLinesReader};
+pub use lines::{
+    JsonLinesConfig, JsonLinesReader, parse_json_lines, to_json_lines, to_json_lines_stream,
+};
 
 /// Format engine implementation adhering to OCP and DIP
 pub mod engine;
-pub use engine::{JsonEngine, JsonLinesEngine, Json5Engine};
-
+pub use engine::{Json5Engine, JsonEngine, JsonLinesEngine};

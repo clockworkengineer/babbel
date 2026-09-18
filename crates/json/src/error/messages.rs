@@ -47,4 +47,4 @@ pub const ERR_INVALID_UTF8: &str = "Invalid UTF-8 encoding";
 pub const ERR_INVALID_NUMBER: &str = "Invalid number format";
 
 /// Error message for unescaped control character in string
-pub const ERR_UNESCAPED_CONTROL_CHAR: &str = "Unescaped control character in string";
+pub const ERR_UNESCAPED_CONTROL_CHAR: &str = "Unescaped control character in string";

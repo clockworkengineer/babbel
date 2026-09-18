@@ -3,12 +3,12 @@
 //! Validates universal [`Value`] documents from any format (JSON, YAML, TOML, KDL, CBOR, BSON, etc.)
 //! against standard JSON Schema definitions.
 
+use crate::error::BabbelError;
+use crate::model::Value;
 use alloc::boxed::Box;
 use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use crate::error::BabbelError;
-use crate::model::Value;
 
 /// Structured validation error containing pointer location, failed keyword, and error description.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -174,7 +174,10 @@ impl CompiledSchema {
 
                 // Object constraints
                 if let Some(Value::Array(items)) = get_val(entries, "required") {
-                    let req: Vec<String> = items.iter().filter_map(|i| i.as_str().map(|s| s.to_string())).collect();
+                    let req: Vec<String> = items
+                        .iter()
+                        .filter_map(|i| i.as_str().map(|s| s.to_string()))
+                        .collect();
                     rules.push(ValidationRule::Required(req));
                 }
 
@@ -192,7 +195,9 @@ impl CompiledSchema {
                         Value::Bool(b) => rules.push(ValidationRule::AdditionalPropertiesBool(*b)),
                         sub @ Value::Object(_) => {
                             let compiled = Self::compile(sub)?;
-                            rules.push(ValidationRule::AdditionalPropertiesSchema(Box::new(compiled)));
+                            rules.push(ValidationRule::AdditionalPropertiesSchema(Box::new(
+                                compiled,
+                            )));
                         }
                         _ => {}
                     }
@@ -250,7 +255,9 @@ impl CompiledSchema {
 
                 Ok(Self { rules })
             }
-            _ => Err(BabbelError::syntax("JSON Schema must be a boolean or an object")),
+            _ => Err(BabbelError::syntax(
+                "JSON Schema must be a boolean or an object",
+            )),
         }
     }
 
@@ -270,7 +277,12 @@ impl CompiledSchema {
         self.validate(instance).is_ok()
     }
 
-    fn validate_internal(&self, val: &Value, pointer: &str, errors: &mut Vec<SchemaValidationError>) {
+    fn validate_internal(
+        &self,
+        val: &Value,
+        pointer: &str,
+        errors: &mut Vec<SchemaValidationError>,
+    ) {
         for rule in &self.rules {
             match rule {
                 ValidationRule::Type(expected_types) => {
@@ -278,7 +290,7 @@ impl CompiledSchema {
                         errors.push(SchemaValidationError {
                             pointer: pointer.to_string(),
                             keyword: "type",
-                            message: format!("value does not match expected type(s)"),
+                            message: "value does not match expected type(s)".to_string(),
                         });
                     }
                 }
@@ -328,7 +340,10 @@ impl CompiledSchema {
                             errors.push(SchemaValidationError {
                                 pointer: pointer.to_string(),
                                 keyword: "exclusiveMinimum",
-                                message: format!("{} is less than or equal to exclusiveMinimum {}", num, min),
+                                message: format!(
+                                    "{} is less than or equal to exclusiveMinimum {}",
+                                    num, min
+                                ),
                             });
                         }
                     }
@@ -339,15 +354,24 @@ impl CompiledSchema {
                             errors.push(SchemaValidationError {
                                 pointer: pointer.to_string(),
                                 keyword: "exclusiveMaximum",
-                                message: format!("{} is greater than or equal to exclusiveMaximum {}", num, max),
+                                message: format!(
+                                    "{} is greater than or equal to exclusiveMaximum {}",
+                                    num, max
+                                ),
                             });
                         }
                     }
                 }
                 ValidationRule::MultipleOf(factor) => {
                     if let Some(num) = val.as_f64() {
-                        let remainder = (num / factor).fract();
-                        if remainder.abs() > 1e-9 && (1.0 - remainder.abs()) > 1e-9 {
+                        let div = num / factor;
+                        let remainder = div - (div as i64 as f64);
+                        let abs_rem = if remainder < 0.0 {
+                            -remainder
+                        } else {
+                            remainder
+                        };
+                        if abs_rem > 1e-9 && (1.0 - abs_rem) > 1e-9 {
                             errors.push(SchemaValidationError {
                                 pointer: pointer.to_string(),
                                 keyword: "multipleOf",
@@ -405,10 +429,10 @@ impl CompiledSchema {
                         for key in required_keys {
                             if !entries.iter().any(|(k, _)| k == key) {
                                 errors.push(SchemaValidationError {
-                                pointer: pointer.to_string(),
-                                keyword: "required",
-                                message: format!("missing required property '{}'", key),
-                            });
+                                    pointer: pointer.to_string(),
+                                    keyword: "required",
+                                    message: format!("missing required property '{}'", key),
+                                });
                             }
                         }
                     }
@@ -427,13 +451,18 @@ impl CompiledSchema {
                     if !*allowed {
                         if let Value::Object(entries) = val {
                             // Find declared properties in sibling rule
-                            let declared: Vec<&str> = self.rules.iter().filter_map(|r| {
-                                if let ValidationRule::Properties(p) = r {
-                                    Some(p.iter().map(|(k, _)| k.as_str()).collect::<Vec<_>>())
-                                } else {
-                                    None
-                                }
-                            }).flatten().collect();
+                            let declared: Vec<&str> = self
+                                .rules
+                                .iter()
+                                .filter_map(|r| {
+                                    if let ValidationRule::Properties(p) = r {
+                                        Some(p.iter().map(|(k, _)| k.as_str()).collect::<Vec<_>>())
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .flatten()
+                                .collect();
 
                             for (k, _) in entries {
                                 if !declared.contains(&k.as_str()) {
@@ -449,13 +478,18 @@ impl CompiledSchema {
                 }
                 ValidationRule::AdditionalPropertiesSchema(sub_schema) => {
                     if let Value::Object(entries) = val {
-                        let declared: Vec<&str> = self.rules.iter().filter_map(|r| {
-                            if let ValidationRule::Properties(p) = r {
-                                Some(p.iter().map(|(k, _)| k.as_str()).collect::<Vec<_>>())
-                            } else {
-                                None
-                            }
-                        }).flatten().collect();
+                        let declared: Vec<&str> = self
+                            .rules
+                            .iter()
+                            .filter_map(|r| {
+                                if let ValidationRule::Properties(p) = r {
+                                    Some(p.iter().map(|(k, _)| k.as_str()).collect::<Vec<_>>())
+                                } else {
+                                    None
+                                }
+                            })
+                            .flatten()
+                            .collect();
 
                         for (k, v) in entries {
                             if !declared.contains(&k.as_str()) {
@@ -471,7 +505,11 @@ impl CompiledSchema {
                             errors.push(SchemaValidationError {
                                 pointer: pointer.to_string(),
                                 keyword: "minProperties",
-                                message: format!("object property count {} is less than minimum {}", entries.len(), min),
+                                message: format!(
+                                    "object property count {} is less than minimum {}",
+                                    entries.len(),
+                                    min
+                                ),
                             });
                         }
                     }
@@ -482,7 +520,11 @@ impl CompiledSchema {
                             errors.push(SchemaValidationError {
                                 pointer: pointer.to_string(),
                                 keyword: "maxProperties",
-                                message: format!("object property count {} is greater than maximum {}", entries.len(), max),
+                                message: format!(
+                                    "object property count {} is greater than maximum {}",
+                                    entries.len(),
+                                    max
+                                ),
                             });
                         }
                     }
@@ -501,7 +543,11 @@ impl CompiledSchema {
                             errors.push(SchemaValidationError {
                                 pointer: pointer.to_string(),
                                 keyword: "minItems",
-                                message: format!("array length {} is less than minimum {}", items.len(), min),
+                                message: format!(
+                                    "array length {} is less than minimum {}",
+                                    items.len(),
+                                    min
+                                ),
                             });
                         }
                     }
@@ -512,7 +558,11 @@ impl CompiledSchema {
                             errors.push(SchemaValidationError {
                                 pointer: pointer.to_string(),
                                 keyword: "maxItems",
-                                message: format!("array length {} is greater than maximum {}", items.len(), max),
+                                message: format!(
+                                    "array length {} is greater than maximum {}",
+                                    items.len(),
+                                    max
+                                ),
                             });
                         }
                     }
@@ -526,7 +576,10 @@ impl CompiledSchema {
                                         errors.push(SchemaValidationError {
                                             pointer: pointer.to_string(),
                                             keyword: "uniqueItems",
-                                            message: format!("duplicate item detected at index {} and {}", i, j),
+                                            message: format!(
+                                                "duplicate item detected at index {} and {}",
+                                                i, j
+                                            ),
                                         });
                                         break;
                                     }
@@ -562,7 +615,10 @@ impl CompiledSchema {
                         errors.push(SchemaValidationError {
                             pointer: pointer.to_string(),
                             keyword: "oneOf",
-                            message: format!("value matched {} schemas in oneOf (expected exactly 1)", valid_count),
+                            message: format!(
+                                "value matched {} schemas in oneOf (expected exactly 1)",
+                                valid_count
+                            ),
                         });
                     }
                 }
@@ -632,14 +688,32 @@ mod tests {
     fn test_schema_type_and_required() {
         let schema = Value::Object(vec![
             ("type".to_string(), Value::String("object".to_string())),
-            ("required".to_string(), Value::Array(vec![Value::String("name".to_string()), Value::String("age".to_string())])),
-            ("properties".to_string(), Value::Object(vec![
-                ("name".to_string(), Value::Object(vec![("type".to_string(), Value::String("string".to_string()))])),
-                ("age".to_string(), Value::Object(vec![
-                    ("type".to_string(), Value::String("integer".to_string())),
-                    ("minimum".to_string(), Value::Integer(0)),
-                ])),
-            ])),
+            (
+                "required".to_string(),
+                Value::Array(vec![
+                    Value::String("name".to_string()),
+                    Value::String("age".to_string()),
+                ]),
+            ),
+            (
+                "properties".to_string(),
+                Value::Object(vec![
+                    (
+                        "name".to_string(),
+                        Value::Object(vec![(
+                            "type".to_string(),
+                            Value::String("string".to_string()),
+                        )]),
+                    ),
+                    (
+                        "age".to_string(),
+                        Value::Object(vec![
+                            ("type".to_string(), Value::String("integer".to_string())),
+                            ("minimum".to_string(), Value::Integer(0)),
+                        ]),
+                    ),
+                ]),
+            ),
         ]);
 
         let compiled = CompiledSchema::compile(&schema).unwrap();
@@ -650,9 +724,10 @@ mod tests {
         ]);
         assert!(compiled.is_valid(&valid));
 
-        let missing_age = Value::Object(vec![
-            ("name".to_string(), Value::String("Alice".to_string())),
-        ]);
+        let missing_age = Value::Object(vec![(
+            "name".to_string(),
+            Value::String("Alice".to_string()),
+        )]);
         assert!(!compiled.is_valid(&missing_age));
 
         let invalid_age = Value::Object(vec![
@@ -664,12 +739,19 @@ mod tests {
 
     #[test]
     fn test_schema_combinators() {
-        let schema = Value::Object(vec![
-            ("oneOf".to_string(), Value::Array(vec![
-                Value::Object(vec![("type".to_string(), Value::String("string".to_string()))]),
-                Value::Object(vec![("type".to_string(), Value::String("number".to_string()))]),
-            ])),
-        ]);
+        let schema = Value::Object(vec![(
+            "oneOf".to_string(),
+            Value::Array(vec![
+                Value::Object(vec![(
+                    "type".to_string(),
+                    Value::String("string".to_string()),
+                )]),
+                Value::Object(vec![(
+                    "type".to_string(),
+                    Value::String("number".to_string()),
+                )]),
+            ]),
+        )]);
 
         let compiled = CompiledSchema::compile(&schema).unwrap();
         assert!(compiled.is_valid(&Value::String("test".to_string())));

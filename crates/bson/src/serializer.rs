@@ -3,9 +3,9 @@
 #[cfg(not(feature = "std"))]
 use alloc::{string::ToString, vec::Vec};
 
-use babbel_core::{io::IDestination, Value};
 use crate::constants::*;
 use crate::error::BsonError;
+use babbel_core::{Value, io::IDestination};
 
 /// Helper to write raw byte slices into any [`IDestination`].
 #[inline]

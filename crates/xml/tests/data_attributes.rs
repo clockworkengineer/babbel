@@ -1,4 +1,4 @@
-﻿use babbel_xml::{Attribute, EntityMapper};
+use babbel_xml::{Attribute, EntityMapper};
 
 #[test]
 fn test_attribute_creation_and_search() {
@@ -32,7 +32,10 @@ fn test_entity_mapper_custom_registrations() {
     mapper.register("book", "Pride and Prejudice");
 
     assert_eq!(mapper.expand("&author;").unwrap(), "Jane Austen");
-    assert_eq!(mapper.expand("Book: &book; by &author;").unwrap(), "Book: Pride and Prejudice by Jane Austen");
+    assert_eq!(
+        mapper.expand("Book: &book; by &author;").unwrap(),
+        "Book: Pride and Prejudice by Jane Austen"
+    );
 }
 
 #[test]
@@ -42,7 +45,10 @@ fn test_entity_mapper_recursive_limit() {
     mapper.register("b", "&a;");
 
     let res = mapper.expand("&a;");
-    assert!(res.is_err(), "Recursive entity loop should trigger recursion error");
+    assert!(
+        res.is_err(),
+        "Recursive entity loop should trigger recursion error"
+    );
 }
 
 #[test]

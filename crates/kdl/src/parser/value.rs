@@ -1,9 +1,9 @@
 #[cfg(not(feature = "std"))]
 use alloc::string::ToString;
 
+use super::{Parser, is_bare_ident_char};
 use crate::ast::KdlValue;
 use crate::error::KdlError;
-use super::{is_bare_ident_char, Parser};
 
 impl<'a> Parser<'a> {
     pub(crate) fn parse_value(&mut self) -> Result<KdlValue, KdlError> {

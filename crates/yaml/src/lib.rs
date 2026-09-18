@@ -45,10 +45,10 @@ pub mod devtools;
 /// Module for embedded systems support
 #[cfg(any(feature = "embedded", doc))]
 pub mod embedded;
-/// Module defining error types and handling for YAML operations.
-pub mod error;
 /// Format engine implementation adhering to OCP and DIP
 pub mod engine;
+/// Module defining error types and handling for YAML operations.
+pub mod error;
 pub use engine::YamlEngine;
 /// Module for detecting and handling different Unicode text file formats
 #[cfg(feature = "file-io")]
@@ -116,8 +116,8 @@ pub use nodes::node_utils::get_document_base as get_document;
 /// Returns the number of documents in a YAML stream represented by the Documents node.
 pub use nodes::node_utils::get_number_of_documents;
 
-/// Returns the current version of the YAML library
-pub use nodes::node_utils::get_version as version;
+/// Trait for indexing into a Node safely (by index or key)
+pub use nodes::access::NodeIndex;
 /// Fluent builder for constructing Array nodes
 #[cfg(feature = "alloc")]
 pub use nodes::node::ArrayBuilder;
@@ -128,8 +128,6 @@ pub use nodes::node::BlockStyle;
 pub use nodes::node::MappingBuilder;
 /// Core data structure representing a YAML node in the parsed tree
 pub use nodes::node::Node;
-/// Trait for indexing into a Node safely (by index or key)
-pub use nodes::access::NodeIndex;
 /// Core data structure representing a numeric value node in the parsed tree
 pub use nodes::node::Numeric;
 /// Quote type for string nodes
@@ -137,6 +135,8 @@ pub use nodes::node::QuoteType;
 /// Fluent builder for constructing Set nodes
 #[cfg(feature = "alloc")]
 pub use nodes::node::SetBuilder;
+/// Returns the current version of the YAML library
+pub use nodes::node_utils::get_version as version;
 /// Helper function to create a Node from any value that can be converted into a Node
 pub use nodes::util::make_node;
 /// Helper function to create a Set node from a vector, ensuring uniqueness
@@ -244,7 +244,10 @@ pub fn to_vec(node: &Node) -> crate::error::Result<Vec<u8>> {
 /// Serialize a YAML [`Node`] to any [`IDestination`].
 #[cfg(feature = "stringify")]
 #[inline]
-pub fn to_destination(node: &Node, dest: &mut dyn crate::io::traits::IDestination) -> crate::error::Result<()> {
+pub fn to_destination(
+    node: &Node,
+    dest: &mut dyn crate::io::traits::IDestination,
+) -> crate::error::Result<()> {
     stringify(node, dest)
 }
 /// Converts a Node tree to JSON format

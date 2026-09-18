@@ -6,13 +6,17 @@
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::String, vec::Vec};
 
-use babbel_core::{from_value, to_value, BabbelError, FormatEmitter};
+use babbel_core::{BabbelError, FormatEmitter, from_value, to_value};
 
 /// Deserialize an instance of type `T` from a string in the specified format name
 /// (e.g. `"json"`, `"yaml"`, `"toml"`, `"ron"`, `"kdl"`, `"xml"`, `"csv"`, `"ini"`).
-pub fn from_str<T: serde::de::DeserializeOwned>(input: &str, format: &str) -> Result<T, BabbelError> {
+pub fn from_str<T: serde::de::DeserializeOwned>(
+    input: &str,
+    format: &str,
+) -> Result<T, BabbelError> {
     let registry = crate::default_registry();
-    let engine = registry.get(format)
+    let engine = registry
+        .get(format)
         .ok_or_else(|| BabbelError::custom(format!("unsupported format: {}", format)))?;
     let value = engine.parse_str(input)?;
     from_value(&value).map_err(|e| BabbelError::custom(e.0))
@@ -20,9 +24,13 @@ pub fn from_str<T: serde::de::DeserializeOwned>(input: &str, format: &str) -> Re
 
 /// Deserialize an instance of type `T` from a byte slice in the specified format name
 /// (e.g. `"cbor"`, `"msgpack"`, `"bson"`, `"bencode"`, `"json"`, `"parquet"`).
-pub fn from_slice<T: serde::de::DeserializeOwned>(bytes: &[u8], format: &str) -> Result<T, BabbelError> {
+pub fn from_slice<T: serde::de::DeserializeOwned>(
+    bytes: &[u8],
+    format: &str,
+) -> Result<T, BabbelError> {
     let registry = crate::default_registry();
-    let engine = registry.get(format)
+    let engine = registry
+        .get(format)
         .ok_or_else(|| BabbelError::custom(format!("unsupported format: {}", format)))?;
     let value = engine.parse_bytes(bytes)?;
     from_value(&value).map_err(|e| BabbelError::custom(e.0))
@@ -31,7 +39,8 @@ pub fn from_slice<T: serde::de::DeserializeOwned>(bytes: &[u8], format: &str) ->
 /// Serialize a data structure `T` into a string in the specified format.
 pub fn to_string<T: serde::Serialize>(value: &T, format: &str) -> Result<String, BabbelError> {
     let registry = crate::default_registry();
-    let engine = registry.get(format)
+    let engine = registry
+        .get(format)
         .ok_or_else(|| BabbelError::custom(format!("unsupported format: {}", format)))?;
     let ast = to_value(value).map_err(|e| BabbelError::custom(e.0))?;
     let mut dest = babbel_core::io::Buffer::new();
@@ -40,9 +49,14 @@ pub fn to_string<T: serde::Serialize>(value: &T, format: &str) -> Result<String,
 }
 
 /// Serialize a data structure `T` into a formatted, pretty-printed string in the specified format.
-pub fn to_string_pretty<T: serde::Serialize>(value: &T, format: &str, indent: usize) -> Result<String, BabbelError> {
+pub fn to_string_pretty<T: serde::Serialize>(
+    value: &T,
+    format: &str,
+    indent: usize,
+) -> Result<String, BabbelError> {
     let registry = crate::default_registry();
-    let engine = registry.get(format)
+    let engine = registry
+        .get(format)
         .ok_or_else(|| BabbelError::custom(format!("unsupported format: {}", format)))?;
     let ast = to_value(value).map_err(|e| BabbelError::custom(e.0))?;
     let mut dest = babbel_core::io::Buffer::new();
@@ -53,7 +67,8 @@ pub fn to_string_pretty<T: serde::Serialize>(value: &T, format: &str, indent: us
 /// Serialize a data structure `T` into a byte vector in the specified format.
 pub fn to_vec<T: serde::Serialize>(value: &T, format: &str) -> Result<Vec<u8>, BabbelError> {
     let registry = crate::default_registry();
-    let engine = registry.get(format)
+    let engine = registry
+        .get(format)
         .ok_or_else(|| BabbelError::custom(format!("unsupported format: {}", format)))?;
     let ast = to_value(value).map_err(|e| BabbelError::custom(e.0))?;
     let mut dest = babbel_core::io::Buffer::new();

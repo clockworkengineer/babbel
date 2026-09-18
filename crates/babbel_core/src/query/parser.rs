@@ -1,11 +1,12 @@
 //! RFC 9535 JSONPath parser.
 
-use alloc::boxed::Box;
-use alloc::string::String;
-use alloc::vec::Vec;
+use super::ast::{ComparisonOp, FilterExpr, FilterOperand, PathQuery, QueryPath, Segment};
 use crate::error::BabbelError;
 use crate::model::Value;
-use super::ast::{ComparisonOp, FilterExpr, FilterOperand, PathQuery, QueryPath, Segment};
+use alloc::boxed::Box;
+use alloc::format;
+use alloc::string::String;
+use alloc::vec::Vec;
 
 /// Parser for RFC 9535 JSONPath expressions.
 pub struct JsonPathParser<'a> {
@@ -68,7 +69,8 @@ impl<'a> JsonPathParser<'a> {
                 Some(c) => {
                     return Err(BabbelError::syntax(format!(
                         "unexpected character '{}' in JSONPath expression at index {}",
-                        c, self.current_offset()
+                        c,
+                        self.current_offset()
                     )));
                 }
                 None => break,
@@ -153,7 +155,9 @@ impl<'a> JsonPathParser<'a> {
     fn is_slice_lookahead(&self) -> bool {
         let mut i = self.pos;
         if i < self.chars.len() && (self.chars[i].1 == '-' || self.chars[i].1.is_ascii_digit()) {
-            while i < self.chars.len() && (self.chars[i].1.is_ascii_digit() || self.chars[i].1 == '-') {
+            while i < self.chars.len()
+                && (self.chars[i].1.is_ascii_digit() || self.chars[i].1 == '-')
+            {
                 i += 1;
             }
             while i < self.chars.len() && self.chars[i].1.is_whitespace() {
@@ -358,7 +362,8 @@ impl<'a> JsonPathParser<'a> {
             }
             Some(c) => Err(BabbelError::syntax(format!(
                 "unexpected token '{}' in filter operand at offset {}",
-                c, self.current_offset()
+                c,
+                self.current_offset()
             ))),
             None => Err(BabbelError::syntax("unexpected end of filter operand")),
         }
@@ -468,7 +473,8 @@ impl<'a> JsonPathParser<'a> {
                 break;
             }
         }
-        s.parse::<i64>().map_err(|_| BabbelError::syntax("invalid integer"))
+        s.parse::<i64>()
+            .map_err(|_| BabbelError::syntax("invalid integer"))
     }
 
     fn try_parse_integer(&mut self) -> Option<i64> {
@@ -577,7 +583,9 @@ impl<'a> JsonPathParser<'a> {
             }
             Some(c) => Err(BabbelError::syntax(format!(
                 "expected '{}', found '{}' at offset {}",
-                expected, c, self.current_offset()
+                expected,
+                c,
+                self.current_offset()
             ))),
             None => Err(BabbelError::syntax(format!(
                 "expected '{}', found EOF",
@@ -591,6 +599,9 @@ impl<'a> JsonPathParser<'a> {
     }
 
     fn current_offset(&self) -> usize {
-        self.chars.get(self.pos).map(|&(idx, _)| idx).unwrap_or(self.input.len())
+        self.chars
+            .get(self.pos)
+            .map(|&(idx, _)| idx)
+            .unwrap_or(self.input.len())
     }
 }

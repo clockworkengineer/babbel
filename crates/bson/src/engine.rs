@@ -1,8 +1,8 @@
 //! BSON Format Engine adhering to OCP and DIP.
 
 use babbel_core::{
-    io::{IDestination, ISource},
     BabbelError, FormatEngine, FormatOptions, Value,
+    io::{IDestination, ISource},
 };
 
 /// BSON format engine implementing [`FormatEngine`].
@@ -32,8 +32,7 @@ impl FormatEngine for BsonEngine {
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        crate::parser::from_bytes(input)
-            .map_err(|err| BabbelError::from(err).with_format("bson"))
+        crate::parser::from_bytes(input).map_err(|err| BabbelError::from(err).with_format("bson"))
     }
 
     fn serialize(

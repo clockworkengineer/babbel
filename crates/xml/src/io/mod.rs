@@ -12,4 +12,6 @@ pub use char_utils::{is_valid_xml_char, is_xml_name_char, is_xml_name_start, is_
 pub use destination::{DestinationExt, XmlDestination};
 pub use encoding::Format;
 pub use source::XmlSource;
-pub use traits::{IByteStream, ICharStream, IClearable, IDestination, IPositionAware, IRewindable, ISource};
+pub use traits::{
+    IByteStream, ICharStream, IClearable, IDestination, IPositionAware, IRewindable, ISource,
+};

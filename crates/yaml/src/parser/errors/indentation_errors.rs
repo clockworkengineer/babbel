@@ -1,4 +1,3 @@
-
 /*
  * Indentation Error Helpers
  *

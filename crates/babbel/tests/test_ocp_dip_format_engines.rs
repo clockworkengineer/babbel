@@ -2,9 +2,8 @@
 //! Dependency Inversion Principle (DIP) FormatEngine Architecture.
 
 use babbel::{
-    default_registry, find_engine, find_engine_by_extension, find_engine_by_mime,
     BencodeEngine, FormatEngine, FormatOptions, JsonEngine, TomlEngine, Value, XmlEngine,
-    YamlEngine,
+    YamlEngine, default_registry, find_engine, find_engine_by_extension, find_engine_by_mime,
 };
 
 #[test]
@@ -44,11 +43,15 @@ fn test_format_engine_bidirectional_roundtrip() {
 
     // 1. Parse JSON -> Value
     let json_text = r#"{"name":"babbel","version":1}"#;
-    let val = json.parse_str(json_text).expect("JSON should parse into Value");
+    let val = json
+        .parse_str(json_text)
+        .expect("JSON should parse into Value");
     assert!(matches!(&val, Value::Object(_)));
 
     // 2. Value -> YAML string via YamlEngine
-    let yaml_str = yaml.serialize_to_string(&val, &FormatOptions::default()).expect("YAML serialize");
+    let yaml_str = yaml
+        .serialize_to_string(&val, &FormatOptions::default())
+        .expect("YAML serialize");
     assert!(yaml_str.contains("name: babbel"));
     assert!(yaml_str.contains("version: 1"));
 
@@ -57,7 +60,9 @@ fn test_format_engine_bidirectional_roundtrip() {
     assert!(matches!(&val_from_yaml, Value::Object(_)));
 
     // 4. Value -> TOML string via TomlEngine
-    let toml_str = toml.serialize_to_string(&val_from_yaml, &FormatOptions::default()).expect("TOML serialize");
+    let toml_str = toml
+        .serialize_to_string(&val_from_yaml, &FormatOptions::default())
+        .expect("TOML serialize");
     assert!(toml_str.contains("name = \"babbel\""));
     assert!(toml_str.contains("version = 1"));
 
@@ -72,10 +77,14 @@ fn test_bencode_engine_bytes_roundtrip() {
 
     // Raw bencode dictionary: d4:name6:babbel7:versioni1ee
     let bytes = b"d4:name6:babbel7:versioni1ee";
-    let val = bencode.parse_bytes(bytes).expect("Bencode should parse bytes");
+    let val = bencode
+        .parse_bytes(bytes)
+        .expect("Bencode should parse bytes");
     assert!(matches!(&val, Value::Object(_)));
 
-    let serialized = bencode.serialize_to_vec(&val, &FormatOptions::compact()).expect("Bencode serialize");
+    let serialized = bencode
+        .serialize_to_vec(&val, &FormatOptions::compact())
+        .expect("Bencode serialize");
     assert_eq!(serialized, bytes);
 }
 
@@ -84,10 +93,14 @@ fn test_xml_engine_parse_and_emit() {
     let xml = XmlEngine;
 
     let xml_text = r#"<config version="1"><name>babbel</name></config>"#;
-    let val = xml.parse_str(xml_text).expect("XML should parse into Value");
+    let val = xml
+        .parse_str(xml_text)
+        .expect("XML should parse into Value");
     assert!(matches!(&val, Value::Object(_)));
 
-    let emitted = xml.serialize_to_string(&val, &FormatOptions::default()).expect("XML serialize");
+    let emitted = xml
+        .serialize_to_string(&val, &FormatOptions::default())
+        .expect("XML serialize");
     assert!(emitted.contains("<config"));
     assert!(emitted.contains("</config>"));
 }
@@ -108,14 +121,38 @@ fn test_dynamic_format_registry() {
     assert!(registry.get_by_id("nonexistent").is_none());
 
     // Lookup by MIME
-    assert_eq!(registry.get_by_mime("application/json").unwrap().format_id(), "json");
-    assert_eq!(registry.get_by_mime("application/yaml").unwrap().format_id(), "yaml");
+    assert_eq!(
+        registry
+            .get_by_mime("application/json")
+            .unwrap()
+            .format_id(),
+        "json"
+    );
+    assert_eq!(
+        registry
+            .get_by_mime("application/yaml")
+            .unwrap()
+            .format_id(),
+        "yaml"
+    );
 
     // Lookup by extension (with or without dot)
-    assert_eq!(registry.get_by_extension("json").unwrap().format_id(), "json");
-    assert_eq!(registry.get_by_extension(".yml").unwrap().format_id(), "yaml");
-    assert_eq!(registry.get_by_extension(".torrent").unwrap().format_id(), "bencode");
-    assert_eq!(registry.get_by_extension("toml").unwrap().format_id(), "toml");
+    assert_eq!(
+        registry.get_by_extension("json").unwrap().format_id(),
+        "json"
+    );
+    assert_eq!(
+        registry.get_by_extension(".yml").unwrap().format_id(),
+        "yaml"
+    );
+    assert_eq!(
+        registry.get_by_extension(".torrent").unwrap().format_id(),
+        "bencode"
+    );
+    assert_eq!(
+        registry.get_by_extension("toml").unwrap().format_id(),
+        "toml"
+    );
 }
 
 #[test]
@@ -129,6 +166,16 @@ fn test_static_slice_engine_lookups() {
     ];
 
     assert_eq!(find_engine(engines, "JSON").unwrap().format_id(), "json");
-    assert_eq!(find_engine_by_extension(engines, ".yml").unwrap().format_id(), "yaml");
-    assert_eq!(find_engine_by_mime(engines, "application/xml").unwrap().format_id(), "xml");
+    assert_eq!(
+        find_engine_by_extension(engines, ".yml")
+            .unwrap()
+            .format_id(),
+        "yaml"
+    );
+    assert_eq!(
+        find_engine_by_mime(engines, "application/xml")
+            .unwrap()
+            .format_id(),
+        "xml"
+    );
 }

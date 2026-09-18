@@ -1,4 +1,4 @@
-﻿use babbel_xml::{parse_bytes_with_encoding, parse_reader};
+use babbel_xml::{parse_bytes_with_encoding, parse_reader};
 
 #[test]
 fn test_parse_reader_streaming() {
@@ -45,5 +45,9 @@ fn test_ascii_strict_validation() {
     let invalid_ascii = b"<ascii>Invalid \xFF byte</ascii>";
     let res = parse_bytes_with_encoding(invalid_ascii, "US-ASCII");
     assert!(res.is_err());
-    assert!(res.unwrap_err().to_string().contains("Byte out of 7-bit US-ASCII range"));
+    assert!(
+        res.unwrap_err()
+            .to_string()
+            .contains("Byte out of 7-bit US-ASCII range")
+    );
 }

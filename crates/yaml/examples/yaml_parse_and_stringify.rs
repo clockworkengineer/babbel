@@ -1,7 +1,7 @@
-﻿//! Module: examples/yaml_parse_and_stringify/src/main.rs
+//! Module: examples/yaml_parse_and_stringify/src/main.rs
 
-use std::path::Path;
 use babbel_yaml::{FileDestination, FileSource, parse, stringify};
+use std::path::Path;
 #[path = "common/utility.rs"]
 mod yaml_utility_lib;
 use yaml_utility_lib::get_yaml_file_list;
@@ -16,14 +16,16 @@ use yaml_utility_lib::get_yaml_file_list;
 use babbel_yaml::YamlError;
 
 fn process_yaml_file(file_path: &str) -> Result<(), YamlError> {
-    let mut source = FileSource::new(file_path).map_err(|e| YamlError::new(babbel_yaml::ErrorKind::IoError, e.to_string()))?;
+    let mut source = FileSource::new(file_path)
+        .map_err(|e| YamlError::new(babbel_yaml::ErrorKind::IoError, e.to_string()))?;
     let node = parse(&mut source)?;
     let mut destination = FileDestination::new(
         Path::new(file_path)
             .with_extension("yaml.stringify")
             .to_string_lossy()
             .as_ref(),
-    ).map_err(|e| YamlError::new(babbel_yaml::ErrorKind::IoError, e.to_string()))?;
+    )
+    .map_err(|e| YamlError::new(babbel_yaml::ErrorKind::IoError, e.to_string()))?;
     stringify(&node, &mut destination)?;
     Ok(())
 }
@@ -38,4 +40,3 @@ fn main() {
         }
     }
 }
-

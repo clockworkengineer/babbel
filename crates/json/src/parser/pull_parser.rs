@@ -145,7 +145,9 @@ impl<'a> JsonPullParser<'a> {
                             return Err(ErrorCode::SyntaxError);
                         }
                         self.pos += 1; // skip ':'
-                        self.stack[self.depth - 1] = Some(Container::Object { expecting_key: false });
+                        self.stack[self.depth - 1] = Some(Container::Object {
+                            expecting_key: false,
+                        });
                         return Ok(Some(JsonPullEvent::Key(key)));
                     } else {
                         return Err(ErrorCode::SyntaxError);
@@ -158,7 +160,9 @@ impl<'a> JsonPullParser<'a> {
         match ch {
             b'{' => {
                 self.pos += 1;
-                self.push_container(Container::Object { expecting_key: true })?;
+                self.push_container(Container::Object {
+                    expecting_key: true,
+                })?;
                 Ok(Some(JsonPullEvent::StartObject))
             }
             b'}' => {
@@ -172,7 +176,9 @@ impl<'a> JsonPullParser<'a> {
             }
             b'[' => {
                 self.pos += 1;
-                self.push_container(Container::Array { expecting_value: true })?;
+                self.push_container(Container::Array {
+                    expecting_value: true,
+                })?;
                 Ok(Some(JsonPullEvent::StartArray))
             }
             b']' => {
@@ -236,7 +242,9 @@ impl<'a> JsonPullParser<'a> {
             match self.stack[self.depth - 1] {
                 Some(Container::Object { .. }) => {
                     self.consume_comma_or_end();
-                    self.stack[self.depth - 1] = Some(Container::Object { expecting_key: true });
+                    self.stack[self.depth - 1] = Some(Container::Object {
+                        expecting_key: true,
+                    });
                 }
                 Some(Container::Array { .. }) => {
                     self.consume_comma_or_end();
@@ -265,7 +273,9 @@ impl<'a> JsonPullParser<'a> {
 
     fn consume_literal(&mut self, lit: &str) -> bool {
         let b = lit.as_bytes();
-        if self.pos + b.len() <= self.input.len() && &self.input.as_bytes()[self.pos..self.pos + b.len()] == b {
+        if self.pos + b.len() <= self.input.len()
+            && &self.input.as_bytes()[self.pos..self.pos + b.len()] == b
+        {
             self.pos += b.len();
             true
         } else {
@@ -368,11 +378,17 @@ mod tests {
         let mut parser = JsonPullParser::new(json);
 
         assert_eq!(parser.next_event(), Ok(Some(JsonPullEvent::StartObject)));
-        assert_eq!(parser.next_event(), Ok(Some(JsonPullEvent::Key("empty_arr"))));
+        assert_eq!(
+            parser.next_event(),
+            Ok(Some(JsonPullEvent::Key("empty_arr")))
+        );
         assert_eq!(parser.next_event(), Ok(Some(JsonPullEvent::StartArray)));
         assert_eq!(parser.next_event(), Ok(Some(JsonPullEvent::EndArray)));
 
-        assert_eq!(parser.next_event(), Ok(Some(JsonPullEvent::Key("empty_obj"))));
+        assert_eq!(
+            parser.next_event(),
+            Ok(Some(JsonPullEvent::Key("empty_obj")))
+        );
         assert_eq!(parser.next_event(), Ok(Some(JsonPullEvent::StartObject)));
         assert_eq!(parser.next_event(), Ok(Some(JsonPullEvent::EndObject)));
 

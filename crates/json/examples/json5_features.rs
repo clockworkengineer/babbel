@@ -7,9 +7,9 @@
 //! - Trailing commas in arrays and objects
 //! - Hexadecimal integers (`0x...`), leading/trailing decimal points (`.5`, `5.`), explicit signs (`+42`)
 
-use babbel_json::parser::json5::parse_json5;
-use babbel_json::Json5Engine;
 use babbel_core::{FormatEngine, FormatOptions};
+use babbel_json::Json5Engine;
+use babbel_json::parser::json5::parse_json5;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Babbel JSON5 & JSONC Features Example ===\n");

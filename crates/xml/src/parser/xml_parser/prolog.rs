@@ -76,7 +76,12 @@ impl<'a> XmlParser<'a> {
                     // Validate EncName: [A-Za-z] ([A-Za-z0-9._] | '-')*
                     let mut chars = val.chars();
                     let valid = match chars.next() {
-                        Some(f) => f.is_ascii_alphabetic() && chars.all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '_' || c == '-'),
+                        Some(f) => {
+                            f.is_ascii_alphabetic()
+                                && chars.all(|c| {
+                                    c.is_ascii_alphanumeric() || c == '.' || c == '_' || c == '-'
+                                })
+                        }
                         None => false,
                     };
                     if !valid {
@@ -99,7 +104,9 @@ impl<'a> XmlParser<'a> {
                     // XML 1.0 §2.9 [32]: standalone value must be strictly "yes" or "no" (lowercase)
                     if val != "yes" && val != "no" {
                         return Err(XmlError::SyntaxError {
-                            message: format!("Invalid standalone value '{val}', must be 'yes' or 'no'"),
+                            message: format!(
+                                "Invalid standalone value '{val}', must be 'yes' or 'no'"
+                            ),
                             line: self.source.line(),
                             col: self.source.col(),
                         });
@@ -133,7 +140,9 @@ impl<'a> XmlParser<'a> {
                 && !self.options.is_utf16
             {
                 return Err(XmlError::SyntaxError {
-                    message: format!("Declared encoding '{enc}' does not match byte stream encoding"),
+                    message: format!(
+                        "Declared encoding '{enc}' does not match byte stream encoding"
+                    ),
                     line: self.source.line(),
                     col: self.source.col(),
                 });
@@ -141,11 +150,13 @@ impl<'a> XmlParser<'a> {
         }
 
         self.standalone = standalone;
-        let decl_id = doc.add_node(NodeKind::Declaration(Box::new(crate::node::DeclarationData {
-            version: version.into_boxed_str(),
-            encoding: encoding.map(String::into_boxed_str),
-            standalone,
-        })));
+        let decl_id = doc.add_node(NodeKind::Declaration(Box::new(
+            crate::node::DeclarationData {
+                version: version.into_boxed_str(),
+                encoding: encoding.map(String::into_boxed_str),
+                standalone,
+            },
+        )));
         doc.set_declaration_id(decl_id);
 
         let prolog_id = doc.prolog_id().unwrap_or(0);
@@ -230,7 +241,8 @@ impl<'a> XmlParser<'a> {
 
         if self.source.skip_whitespace() == 0 {
             return Err(XmlError::SyntaxError {
-                message: "Whitespace required between processing instruction target and data".into(),
+                message: "Whitespace required between processing instruction target and data"
+                    .into(),
                 line: self.source.line(),
                 col: self.source.col(),
             });
@@ -245,14 +257,20 @@ impl<'a> XmlParser<'a> {
                     data: data.into_boxed_str(),
                 }));
             }
-            let ch = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
-                message: "Unterminated processing instruction".into(),
-                line: self.source.line(),
-                col: self.source.col(),
-            })?;
+            let ch = self
+                .source
+                .next_char()
+                .ok_or_else(|| XmlError::SyntaxError {
+                    message: "Unterminated processing instruction".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                })?;
             if !is_valid_xml_char(ch) {
                 return Err(XmlError::SyntaxError {
-                    message: format!("Forbidden XML character '\\u{{{:x}}}' in processing instruction", ch as u32),
+                    message: format!(
+                        "Forbidden XML character '\\u{{{:x}}}' in processing instruction",
+                        ch as u32
+                    ),
                     line: self.source.line(),
                     col: self.source.col(),
                 });
@@ -350,17 +368,22 @@ impl<'a> XmlParser<'a> {
         if !is_standalone
             && (system_id.is_some()
                 || public_id.is_some()
-                || internal_subset.as_ref().map(|s| s.contains('%')).unwrap_or(false))
+                || internal_subset
+                    .as_ref()
+                    .map(|s| s.contains('%'))
+                    .unwrap_or(false))
         {
             self.entity_mapper.allow_undeclared = true;
         }
 
-        Ok(doc.add_node(NodeKind::DocTypeDefinition(Box::new(crate::node::DocTypeData {
-            name: name.into_boxed_str(),
-            public_id: public_id.map(String::into_boxed_str),
-            system_id: system_id.map(String::into_boxed_str),
-            internal_subset: internal_subset.map(String::into_boxed_str),
-        }))))
+        Ok(doc.add_node(NodeKind::DocTypeDefinition(Box::new(
+            crate::node::DocTypeData {
+                name: name.into_boxed_str(),
+                public_id: public_id.map(String::into_boxed_str),
+                system_id: system_id.map(String::into_boxed_str),
+                internal_subset: internal_subset.map(String::into_boxed_str),
+            },
+        ))))
     }
 
     pub(crate) fn is_pubid_char(ch: char) -> bool {
@@ -368,11 +391,14 @@ impl<'a> XmlParser<'a> {
     }
 
     pub(crate) fn parse_pubid_literal(&mut self) -> Result<String> {
-        let quote = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
-            message: "Expected quote for PubidLiteral".into(),
-            line: self.source.line(),
-            col: self.source.col(),
-        })?;
+        let quote = self
+            .source
+            .next_char()
+            .ok_or_else(|| XmlError::SyntaxError {
+                message: "Expected quote for PubidLiteral".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            })?;
         if quote != '"' && quote != '\'' {
             return Err(XmlError::SyntaxError {
                 message: "PubidLiteral must start with single or double quote".into(),

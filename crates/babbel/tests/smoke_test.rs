@@ -47,11 +47,13 @@ fn test_cross_format_conversions() {
 
     // 3. Bencode -> JSON
     let bencode = b"d3:agei30e4:user5:alicee";
-    let json_from_bencode = babbel::convert::bencode_to_json(bencode).expect("Bencode -> JSON failed");
+    let json_from_bencode =
+        babbel::convert::bencode_to_json(bencode).expect("Bencode -> JSON failed");
     assert!(json_from_bencode.contains("\"user\"") && json_from_bencode.contains("\"alice\""));
 
     // 4. Bencode -> YAML
-    let yaml_from_bencode = babbel::convert::bencode_to_yaml(bencode).expect("Bencode -> YAML failed");
+    let yaml_from_bencode =
+        babbel::convert::bencode_to_yaml(bencode).expect("Bencode -> YAML failed");
     assert!(yaml_from_bencode.contains("alice"));
 
     // 5. JSON -> Bencode
@@ -65,7 +67,8 @@ fn test_cross_format_conversions() {
     assert!(json_from_toml.contains("babbel") && json_from_toml.contains("4"));
 
     // 7. JSON -> TOML
-    let toml_from_json = babbel::convert::json_to_toml(r#"{"app":"babbel","threads":4}"#).expect("JSON -> TOML failed");
+    let toml_from_json = babbel::convert::json_to_toml(r#"{"app":"babbel","threads":4}"#)
+        .expect("JSON -> TOML failed");
     assert!(toml_from_json.contains("app = \"babbel\""));
 
     // 8. TOML -> YAML
@@ -73,12 +76,15 @@ fn test_cross_format_conversions() {
     assert!(yaml_from_toml.contains("babbel"));
 
     // 9. YAML -> TOML
-    let toml_from_yaml = babbel::convert::yaml_to_toml("app: babbel\n").expect("YAML -> TOML failed");
+    let toml_from_yaml =
+        babbel::convert::yaml_to_toml("app: babbel\n").expect("YAML -> TOML failed");
     assert!(toml_from_yaml.contains("app = \"babbel\""));
 
     // 10. TOML -> Bencode & Bencode -> TOML
-    let bencode_from_toml = babbel::convert::toml_to_bencode(toml_sample).expect("TOML -> Bencode failed");
-    let toml_from_bencode = babbel::convert::bencode_to_toml(&bencode_from_toml).expect("Bencode -> TOML failed");
+    let bencode_from_toml =
+        babbel::convert::toml_to_bencode(toml_sample).expect("TOML -> Bencode failed");
+    let toml_from_bencode =
+        babbel::convert::bencode_to_toml(&bencode_from_toml).expect("Bencode -> TOML failed");
     assert!(toml_from_bencode.contains("app = \"babbel\""));
 
     // 11. TOML -> XML
@@ -89,13 +95,19 @@ fn test_cross_format_conversions() {
     let json_engine = babbel::json::JsonEngine;
     let yaml_engine = babbel::yaml::YamlEngine;
     let opts = babbel::convert::ConversionOptions::default();
-    let direct_yaml = babbel::convert::convert_format(r#"{"hello":"world"}"#, &json_engine, &yaml_engine, &opts)
-        .expect("convert_format failed");
+    let direct_yaml =
+        babbel::convert::convert_format(r#"{"hello":"world"}"#, &json_engine, &yaml_engine, &opts)
+            .expect("convert_format failed");
     assert!(direct_yaml.contains("hello"));
 
     let bencode_engine = babbel::bencode::BencodeEngine;
-    let direct_bytes = babbel::convert::convert_format_bytes(r#"{"hello":"world"}"#.as_bytes(), &json_engine, &bencode_engine, &opts)
-        .expect("convert_format_bytes failed");
+    let direct_bytes = babbel::convert::convert_format_bytes(
+        r#"{"hello":"world"}"#.as_bytes(),
+        &json_engine,
+        &bencode_engine,
+        &opts,
+    )
+    .expect("convert_format_bytes failed");
     assert!(!direct_bytes.is_empty());
 }
 
@@ -104,19 +116,26 @@ fn test_dynamic_registry_conversion() {
     let opts = babbel::convert::ConversionOptions::default();
 
     // 1. Dynamic string-to-string conversion by format ID
-    let yaml_out = babbel::convert::convert(r#"{"name":"dynamic","active":true}"#, "json", "yaml", &opts)
-        .expect("convert json -> yaml failed");
+    let yaml_out =
+        babbel::convert::convert(r#"{"name":"dynamic","active":true}"#, "json", "yaml", &opts)
+            .expect("convert json -> yaml failed");
     assert!(yaml_out.contains("name: dynamic") || yaml_out.contains("name: \"dynamic\""));
 
     // 2. Dynamic string-to-bytes conversion by format ID
-    let bencode_bytes = babbel::convert::convert_dynamic_bytes(r#"{"counter":42}"#.as_bytes(), "json", "bencode", &opts)
-        .expect("convert_dynamic_bytes json -> bencode failed");
+    let bencode_bytes = babbel::convert::convert_dynamic_bytes(
+        r#"{"counter":42}"#.as_bytes(),
+        "json",
+        "bencode",
+        &opts,
+    )
+    .expect("convert_dynamic_bytes json -> bencode failed");
     let reparsed = babbel::bencode::parse_bytes(&bencode_bytes).expect("Reparsing bencode failed");
     assert!(reparsed.is_dictionary());
 
     // 3. Dynamic bytes-to-string conversion by format ID
-    let json_from_bencode = babbel::convert::convert_dynamic_bytes(&bencode_bytes, "bencode", "json", &opts)
-        .expect("convert_dynamic_bytes bencode -> json failed");
+    let json_from_bencode =
+        babbel::convert::convert_dynamic_bytes(&bencode_bytes, "bencode", "json", &opts)
+            .expect("convert_dynamic_bytes bencode -> json failed");
     let json_str = std::str::from_utf8(&json_from_bencode).expect("valid utf-8");
     assert!(json_str.contains("counter") && json_str.contains("42"));
 
@@ -126,8 +145,7 @@ fn test_dynamic_registry_conversion() {
         babbel::convert::Format::Json,
         babbel::convert::Format::Toml,
         &opts,
-    ).expect("convert_between failed");
+    )
+    .expect("convert_between failed");
     assert!(toml_out.contains("title = \"babbel\""));
 }
-
-

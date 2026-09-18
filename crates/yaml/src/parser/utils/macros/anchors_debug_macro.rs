@@ -15,4 +15,3 @@ macro_rules! anchors_debug {
  *
  * Copyright (c) 2026 YAML Library Developers
  */
-

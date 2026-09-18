@@ -1,13 +1,13 @@
-﻿//! # XML Namespaces Subsystem
+//! # XML Namespaces Subsystem
 //!
 //! Provides data structures and scoped resolution for W3C Namespaces in XML 1.0/1.1.
 
 use crate::alloc_prelude::*;
 
-#[cfg(feature = "std")]
-use std::collections::HashMap;
 #[cfg(not(feature = "std"))]
 use alloc::collections::BTreeMap as HashMap;
+#[cfg(feature = "std")]
+use std::collections::HashMap;
 
 /// Representation of an XML namespace declaration binding a prefix to a URI.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -86,8 +86,14 @@ impl Default for NamespaceScope {
     fn default() -> Self {
         let mut initial = HashMap::new();
         // Predefined 'xml' and 'xmlns' namespaces per XML Namespaces 1.0
-        initial.insert("xml".to_string(), "http://www.w3.org/XML/1998/namespace".to_string());
-        initial.insert("xmlns".to_string(), "http://www.w3.org/2000/xmlns/".to_string());
+        initial.insert(
+            "xml".to_string(),
+            "http://www.w3.org/XML/1998/namespace".to_string(),
+        );
+        initial.insert(
+            "xmlns".to_string(),
+            "http://www.w3.org/2000/xmlns/".to_string(),
+        );
         Self {
             scopes: vec![initial],
         }

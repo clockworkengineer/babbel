@@ -1,6 +1,6 @@
-use alloc::vec::Vec;
-use crate::model::Value;
 use super::ast::{ComparisonOp, FilterExpr, FilterOperand, PathQuery, QueryPath, Segment};
+use crate::model::Value;
+use alloc::vec::Vec;
 
 /// Evaluates a `QueryPath` on a root `Value`, collecting references to all matched nodes.
 pub fn evaluate<'a>(path: &QueryPath, root: &'a Value) -> Vec<&'a Value> {
@@ -198,8 +198,14 @@ fn eval_segment_mut<'a>(
                     return; // Negative slicing mutable references not supported without unsafe
                 }
 
-                let s = start.map(|v| normalize_index(v, len)).unwrap_or(0).clamp(0, len);
-                let e = end.map(|v| normalize_index(v, len)).unwrap_or(len).clamp(0, len);
+                let s = start
+                    .map(|v| normalize_index(v, len))
+                    .unwrap_or(0)
+                    .clamp(0, len);
+                let e = end
+                    .map(|v| normalize_index(v, len))
+                    .unwrap_or(len)
+                    .clamp(0, len);
 
                 let mut indices = Vec::new();
                 let mut idx = s;
@@ -208,26 +214,26 @@ fn eval_segment_mut<'a>(
                     idx += step_val;
                 }
 
-                for i in 0..items.len() {
+                for (i, item) in items.iter_mut().enumerate() {
                     if indices.contains(&i) {
-                        // To satisfy borrow checker with disjoint indices
-                        let ptr = &mut items[i] as *mut Value;
-                        output.push(unsafe { &mut *ptr });
+                        output.push(item);
                     }
                 }
             }
         }
         Segment::Descendant(inner) => {
             let ptr = current as *mut Value;
-            eval_segment_mut(inner, unsafe { &mut *ptr }, output);
-            traverse_descendants_mut(unsafe { &mut *ptr }, output, inner);
+            // SAFETY: Evaluates inner segment on current value and recurses into children.
+            unsafe {
+                eval_segment_mut(inner, &mut *ptr, output);
+                traverse_descendants_mut(&mut *ptr, output, inner);
+            }
         }
         Segment::Filter(_) => {
             // Filters can select nodes based on conditions
             if let Value::Array(items) = current {
                 for item in items {
-                    let ptr = item as *mut Value;
-                    output.push(unsafe { &mut *ptr });
+                    output.push(item);
                 }
             }
         }
@@ -267,15 +273,21 @@ fn traverse_descendants_mut<'a>(
         Value::Array(items) => {
             for item in items {
                 let ptr = item as *mut Value;
-                eval_segment_mut(segment, unsafe { &mut *ptr }, output);
-                traverse_descendants_mut(unsafe { &mut *ptr }, output, segment);
+                // SAFETY: Array elements are mutually disjoint in memory.
+                unsafe {
+                    eval_segment_mut(segment, &mut *ptr, output);
+                    traverse_descendants_mut(&mut *ptr, output, segment);
+                }
             }
         }
         Value::Object(entries) => {
             for (_, val) in entries {
                 let ptr = val as *mut Value;
-                eval_segment_mut(segment, unsafe { &mut *ptr }, output);
-                traverse_descendants_mut(unsafe { &mut *ptr }, output, segment);
+                // SAFETY: Object entries are mutually disjoint in memory.
+                unsafe {
+                    eval_segment_mut(segment, &mut *ptr, output);
+                    traverse_descendants_mut(&mut *ptr, output, segment);
+                }
             }
         }
         _ => {}
@@ -283,11 +295,7 @@ fn traverse_descendants_mut<'a>(
 }
 
 fn normalize_index(idx: i64, len: i64) -> i64 {
-    if idx < 0 {
-        len + idx
-    } else {
-        idx
-    }
+    if idx < 0 { len + idx } else { idx }
 }
 
 fn eval_filter(expr: &FilterExpr, current: &Value, root: &Value) -> bool {

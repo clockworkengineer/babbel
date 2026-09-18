@@ -38,9 +38,11 @@ fn node_to_value(node: babbel_json::nodes::Node) -> Value {
         babbel_json::nodes::Node::Array(arr) => {
             Value::Array(arr.into_iter().map(node_to_value).collect())
         }
-        babbel_json::nodes::Node::Object(map) => {
-            Value::Object(map.into_iter().map(|(k, v)| (k, node_to_value(v))).collect())
-        }
+        babbel_json::nodes::Node::Object(map) => Value::Object(
+            map.into_iter()
+                .map(|(k, v)| (k, node_to_value(v)))
+                .collect(),
+        ),
         babbel_json::nodes::Node::None => Value::Null,
     }
 }
@@ -294,18 +296,32 @@ fn categorize_test_path(path_str: &str, is_invalid: bool) -> &'static str {
     if is_invalid {
         if path_str.contains("escape") || path_str.contains("string") {
             "Invalid Strings & Escapes"
-        } else if path_str.contains("type") || path_str.contains("ident") || path_str.contains("key") {
+        } else if path_str.contains("type")
+            || path_str.contains("ident")
+            || path_str.contains("key")
+        {
             "Invalid Types & Identifiers"
         } else {
             "Invalid Structure & Syntax"
         }
-    } else if path_str.contains("multiline") || path_str.contains("raw_string") || path_str.contains("string") {
+    } else if path_str.contains("multiline")
+        || path_str.contains("raw_string")
+        || path_str.contains("string")
+    {
         "Valid Multiline & Raw Strings"
     } else if path_str.contains("prop") || path_str.contains("arg") {
         "Valid Arguments & Properties"
-    } else if path_str.contains("num") || path_str.contains("hex") || path_str.contains("float") || path_str.contains("exp") || path_str.contains("bool") {
+    } else if path_str.contains("num")
+        || path_str.contains("hex")
+        || path_str.contains("float")
+        || path_str.contains("exp")
+        || path_str.contains("bool")
+    {
         "Valid Numbers & Keywords"
-    } else if path_str.contains("child") || path_str.contains("block") || path_str.contains("slashdash") {
+    } else if path_str.contains("child")
+        || path_str.contains("block")
+        || path_str.contains("slashdash")
+    {
         "Valid Children & Blocks"
     } else {
         "Valid Basic & Nodes"
@@ -331,147 +347,189 @@ const EMBEDDED_VECTORS: &[EmbeddedVector] = &[
     EmbeddedVector {
         name: "arg_bare",
         kdl_input: "node arg\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"string","value":"arg"}}],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"string","value":"arg"}}],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Node with string argument
     EmbeddedVector {
         name: "string_arg",
         kdl_input: "node \"hello world\"\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"string","value":"hello world"}}],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"string","value":"hello world"}}],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Node with integer argument
     EmbeddedVector {
         name: "int_arg",
         kdl_input: "node 123\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"number","value":"123.0"}}],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"number","value":"123.0"}}],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Node with negative integer
     EmbeddedVector {
         name: "neg_int_arg",
         kdl_input: "node -42\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"number","value":"-42.0"}}],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"number","value":"-42.0"}}],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Node with property
     EmbeddedVector {
         name: "prop_basic",
         kdl_input: "node key=\"value\"\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[],"props":{"key":{"type":null,"value":{"type":"string","value":"value"}}},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[],"props":{"key":{"type":null,"value":{"type":"string","value":"value"}}},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Node with multiple properties & args
     EmbeddedVector {
         name: "args_and_props",
         kdl_input: "server \"production\" port=8080 active=#true\n",
-        json_expected: Some(r#"[{"type":null,"name":"server","args":[{"type":null,"value":{"type":"string","value":"production"}}],"props":{"port":{"type":null,"value":{"type":"number","value":"8080.0"}},"active":{"type":null,"value":{"type":"boolean","value":"true"}}},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"server","args":[{"type":null,"value":{"type":"string","value":"production"}}],"props":{"port":{"type":null,"value":{"type":"number","value":"8080.0"}},"active":{"type":null,"value":{"type":"boolean","value":"true"}}},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Node with children block
     EmbeddedVector {
         name: "node_children",
         kdl_input: "parent {\n    child_one\n    child_two\n}\n",
-        json_expected: Some(r#"[{"type":null,"name":"parent","args":[],"props":{},"children":[{"type":null,"name":"child_one","args":[],"props":{},"children":[]},{"type":null,"name":"child_two","args":[],"props":{},"children":[]}]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"parent","args":[],"props":{},"children":[{"type":null,"name":"child_one","args":[],"props":{},"children":[]},{"type":null,"name":"child_two","args":[],"props":{},"children":[]}]}]"#,
+        ),
         is_valid: true,
     },
     // Slashdash node
     EmbeddedVector {
         name: "slashdash_node",
         kdl_input: "/- hidden_node\nvisible_node\n",
-        json_expected: Some(r#"[{"type":null,"name":"visible_node","args":[],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"visible_node","args":[],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Slashdash arg
     EmbeddedVector {
         name: "slashdash_arg",
         kdl_input: "node /- \"skip\" \"keep\"\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"string","value":"keep"}}],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"string","value":"keep"}}],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Slashdash prop
     EmbeddedVector {
         name: "slashdash_prop",
         kdl_input: "node /- drop=1 keep=2\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[],"props":{"keep":{"type":null,"value":{"type":"number","value":"2.0"}}},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[],"props":{"keep":{"type":null,"value":{"type":"number","value":"2.0"}}},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Hex number
     EmbeddedVector {
         name: "hex_number",
         kdl_input: "node 0x1A2F\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"number","value":"6703.0"}}],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"number","value":"6703.0"}}],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Octal number
     EmbeddedVector {
         name: "octal_number",
         kdl_input: "node 0o755\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"number","value":"493.0"}}],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"number","value":"493.0"}}],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Binary number
     EmbeddedVector {
         name: "binary_number",
         kdl_input: "node 0b1010\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"number","value":"10.0"}}],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"number","value":"10.0"}}],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Float number
     EmbeddedVector {
         name: "float_number",
         kdl_input: "node 3.14159\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"number","value":"3.14159"}}],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"number","value":"3.14159"}}],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Node type annotation
     EmbeddedVector {
         name: "type_node",
         kdl_input: "(custom)node\n",
-        json_expected: Some(r#"[{"type":"custom","name":"node","args":[],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":"custom","name":"node","args":[],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Arg type annotation
     EmbeddedVector {
         name: "type_arg",
         kdl_input: "node (uuid)\"1234-5678\"\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[{"type":"uuid","value":{"type":"string","value":"1234-5678"}}],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[{"type":"uuid","value":{"type":"string","value":"1234-5678"}}],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Prop type annotation
     EmbeddedVector {
         name: "type_prop",
         kdl_input: "node id=(u64)100\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[],"props":{"id":{"type":"u64","value":{"type":"number","value":"100.0"}}},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[],"props":{"id":{"type":"u64","value":{"type":"number","value":"100.0"}}},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Line comments and block comments
     EmbeddedVector {
         name: "comments",
         kdl_input: "// comment\n/* block */\nnode /* inline */ 1\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"number","value":"1.0"}}],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"number","value":"1.0"}}],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Semicolon separator
     EmbeddedVector {
         name: "semicolons",
         kdl_input: "node1; node2; node3\n",
-        json_expected: Some(r#"[{"type":null,"name":"node1","args":[],"props":{},"children":[]},{"type":null,"name":"node2","args":[],"props":{},"children":[]},{"type":null,"name":"node3","args":[],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node1","args":[],"props":{},"children":[]},{"type":null,"name":"node2","args":[],"props":{},"children":[]},{"type":null,"name":"node3","args":[],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Escaped string
     EmbeddedVector {
         name: "escapes",
         kdl_input: "node \"hello\\nworld\\t\\s\"\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"string","value":"hello\nworld\t "}}],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"string","value":"hello\nworld\t "}}],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Raw string
     EmbeddedVector {
         name: "raw_string",
         kdl_input: "node #\"C:\\Users\\User\"#\n",
-        json_expected: Some(r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"string","value":"C:\\Users\\User"}}],"props":{},"children":[]}]"#),
+        json_expected: Some(
+            r#"[{"type":null,"name":"node","args":[{"type":null,"value":{"type":"string","value":"C:\\Users\\User"}}],"props":{},"children":[]}]"#,
+        ),
         is_valid: true,
     },
     // Empty document
@@ -481,7 +539,6 @@ const EMBEDDED_VECTORS: &[EmbeddedVector] = &[
         json_expected: Some(r#"[]"#),
         is_valid: true,
     },
-
     // Invalid vectors
     EmbeddedVector {
         name: "invalid/unclosed_quote",
@@ -673,7 +730,10 @@ fn test_kdl_conformance_suite() {
                     Ok(Ok(_doc)) => {
                         stat.failed += 1;
                         total_failed += 1;
-                        eprintln!("[FAIL] {}: expected parse error, but parsed successfully", stem);
+                        eprintln!(
+                            "[FAIL] {}: expected parse error, but parsed successfully",
+                            stem
+                        );
                     }
                     Ok(Err(_)) => {
                         // Expected rejection
@@ -755,33 +815,66 @@ fn test_kdl_conformance_suite() {
         (total_passed as f64 / grand_total as f64) * 100.0
     };
 
-    println!("\n===================================================================================================");
-    println!("                                   KDL CONFORMANCE REPORT                                          ");
-    println!("===================================================================================================");
-    println!(" Source: {}", if is_upstream { "kdl-org/kdl-test upstream + embedded fallback" } else { "embedded fallback" });
+    println!(
+        "\n==================================================================================================="
+    );
+    println!(
+        "                                   KDL CONFORMANCE REPORT                                          "
+    );
+    println!(
+        "==================================================================================================="
+    );
+    println!(
+        " Source: {}",
+        if is_upstream {
+            "kdl-org/kdl-test upstream + embedded fallback"
+        } else {
+            "embedded fallback"
+        }
+    );
     println!(" Total Vectors Tested: {}", grand_total);
     println!(" Passed:               {}", total_passed);
     println!(" Failed:               {}", total_failed);
     println!(" Panics:               {}", total_panics);
     println!(" Conformance Score:    {:.2}%", overall_pass_rate);
     println!(" Duration:             {:.2?}", duration);
-    println!("---------------------------------------------------------------------------------------------------");
+    println!(
+        "---------------------------------------------------------------------------------------------------"
+    );
     println!(
         " {:<40} | {:>7} | {:>7} | {:>7} | {:>7} | {:>9}",
         "Category", "Total", "Passed", "Failed", "Panics", "Pass Rate"
     );
-    println!("---------------------------------------------------------------------------------------------------");
+    println!(
+        "---------------------------------------------------------------------------------------------------"
+    );
 
     for (cat_name, stats) in &category_stats {
         println!(
             " {:<40} | {:>7} | {:>7} | {:>7} | {:>7} | {:>8.2}%",
-            cat_name, stats.total, stats.passed, stats.failed, stats.panics, stats.pass_rate()
+            cat_name,
+            stats.total,
+            stats.passed,
+            stats.failed,
+            stats.panics,
+            stats.pass_rate()
         );
     }
-    println!("===================================================================================================\n");
+    println!(
+        "===================================================================================================\n"
+    );
 
     // Zero-panic assertion is mandatory across all tests
-    assert_eq!(total_panics, 0, "FATAL: Conformance runner encountered parser panics!");
-    assert_eq!(total_failed, 0, "FATAL: Conformance runner encountered test failures!");
-    assert!(total_passed > 0, "FATAL: Expected at least one test to pass!");
+    assert_eq!(
+        total_panics, 0,
+        "FATAL: Conformance runner encountered parser panics!"
+    );
+    assert_eq!(
+        total_failed, 0,
+        "FATAL: Conformance runner encountered test failures!"
+    );
+    assert!(
+        total_passed > 0,
+        "FATAL: Expected at least one test to pass!"
+    );
 }

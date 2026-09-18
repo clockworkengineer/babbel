@@ -73,9 +73,7 @@ impl Node {
     /// Look up a value by key if node is a Table.
     pub fn get(&self, key: &str) -> Option<&Node> {
         match self {
-            Node::Table(entries) => {
-                entries.iter().find(|(k, _)| k == key).map(|(_, v)| v)
-            }
+            Node::Table(entries) => entries.iter().find(|(k, _)| k == key).map(|(_, v)| v),
             _ => None,
         }
     }
@@ -83,9 +81,7 @@ impl Node {
     /// Look up a mutable value by key if node is a Table.
     pub fn get_mut(&mut self, key: &str) -> Option<&mut Node> {
         match self {
-            Node::Table(entries) => {
-                entries.iter_mut().find(|(k, _)| k == key).map(|(_, v)| v)
-            }
+            Node::Table(entries) => entries.iter_mut().find(|(k, _)| k == key).map(|(_, v)| v),
             _ => None,
         }
     }

@@ -26,7 +26,11 @@ impl NodeSerializer for XmlSerializer {
         stringify(node, dest).map_err(Into::into)
     }
 
-    fn serialize_pretty(&self, node: &Node, dest: &mut dyn IDestination) -> crate::error::Result<()> {
+    fn serialize_pretty(
+        &self,
+        node: &Node,
+        dest: &mut dyn IDestination,
+    ) -> crate::error::Result<()> {
         stringify_pretty(node, dest, 2).map_err(Into::into)
     }
 }
@@ -484,7 +488,7 @@ mod tests {
         stringify(&m, &mut buf).unwrap();
         let out = buf.to_string();
         // tag should not begin with ASCII digit
-        let tag_start = out.find('<').map(|i| out.chars().nth(i + 1)).flatten();
+        let tag_start = out.find('<').and_then(|i| out.chars().nth(i + 1));
         assert!(tag_start.is_some());
         assert!(!tag_start.unwrap().is_ascii_digit());
         assert!(out.contains("v"));

@@ -14,11 +14,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("timestamp_utc".into(), Value::Integer(1_700_000_000)),
         ("reading_celsius".into(), Value::Float(23.85)),
         ("status_ok".into(), Value::Bool(true)),
-        ("flags".into(), Value::Array(vec![
-            Value::Integer(1),
-            Value::Integer(4),
-            Value::Integer(16),
-        ])),
+        (
+            "flags".into(),
+            Value::Array(vec![
+                Value::Integer(1),
+                Value::Integer(4),
+                Value::Integer(16),
+            ]),
+        ),
     ]);
 
     let options = FormatOptions::default();
@@ -41,10 +44,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{:<15} {:>10}  {}", "Format", "Size (bytes)", "Notes");
     println!("{:-<15} {:-<10}  {:-<35}", "", "", "");
     println!("{:<15} {:>10}  Minified text", "JSON", json_text.len());
-    println!("{:<15} {:>10}  BitTorrent dictionary encoding", "Bencode", bencode_bytes.len());
-    println!("{:<15} {:>10}  Prefix-typed BSON document", "BSON", bson_bytes.len());
-    println!("{:<15} {:>10}  RFC 8949 major types", "CBOR", cbor_bytes.len());
-    println!("{:<15} {:>10}  Fixnum and fixmap compact packing", "MessagePack", msgpack_bytes.len());
+    println!(
+        "{:<15} {:>10}  BitTorrent dictionary encoding",
+        "Bencode",
+        bencode_bytes.len()
+    );
+    println!(
+        "{:<15} {:>10}  Prefix-typed BSON document",
+        "BSON",
+        bson_bytes.len()
+    );
+    println!(
+        "{:<15} {:>10}  RFC 8949 major types",
+        "CBOR",
+        cbor_bytes.len()
+    );
+    println!(
+        "{:<15} {:>10}  Fixnum and fixmap compact packing",
+        "MessagePack",
+        msgpack_bytes.len()
+    );
 
     println!("\nHex inspection of binary formats:");
     println!("--- MessagePack ({} bytes) ---", msgpack_bytes.len());

@@ -1,11 +1,9 @@
-
 //! Node Tree Traversal Helpers
 //!
 //! Provides pre-order traversal utilities for YAML node trees, allowing operations
 //! to be performed on each node and its children recursively.
 //!
 //! Copyright (c) 2026 YAML Library Developers
-
 
 use crate::nodes::node::Node;
 

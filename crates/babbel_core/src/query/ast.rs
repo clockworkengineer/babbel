@@ -1,9 +1,9 @@
 //! RFC 9535 JSONPath AST definitions.
 
+use crate::model::Value;
 use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
-use crate::model::Value;
 
 /// A compiled RFC 9535 JSONPath query expression.
 #[derive(Debug, Clone, PartialEq)]

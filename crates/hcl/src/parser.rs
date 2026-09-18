@@ -3,8 +3,8 @@
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::String, string::ToString, vec::Vec};
 
-use babbel_core::Value;
 use crate::error::HclError;
+use babbel_core::Value;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Directive {
@@ -153,7 +153,10 @@ impl<'a> HclParser<'a> {
         }
     }
 
-    fn parse_attribute_or_block_item(&mut self, is_one_line: bool) -> Result<(String, bool, Value, bool), HclError> {
+    fn parse_attribute_or_block_item(
+        &mut self,
+        is_one_line: bool,
+    ) -> Result<(String, bool, Value, bool), HclError> {
         self.skip_whitespace_and_comments();
         if self.has_unterminated_comment {
             return Err(self.error("unterminated block comment".into()));
@@ -176,10 +179,13 @@ impl<'a> HclParser<'a> {
                     || self.peek_char() == Some('#')
                     || (self.peek_char() == Some('/') && self.peek_ahead(1) == Some('/'))
                 {
-                    return Err(self.error("one-line block must close on the same line without newlines".into()));
+                    return Err(self.error(
+                        "one-line block must close on the same line without newlines".into(),
+                    ));
                 }
                 if self.peek_char() != Some('}') {
-                    return Err(self.error("one-line block can only contain one attribute before '}'".into()));
+                    return Err(self
+                        .error("one-line block can only contain one attribute before '}'".into()));
                 }
                 return Ok((name, false, val, false));
             }
@@ -290,7 +296,9 @@ impl<'a> HclParser<'a> {
                     || self.peek_char() == Some('#')
                     || (self.peek_char() == Some('/') && self.peek_ahead(1) == Some('/'))
                 {
-                    return Err(self.error("one-line block must close on the same line without newlines".into()));
+                    return Err(self.error(
+                        "one-line block must close on the same line without newlines".into(),
+                    ));
                 }
             } else {
                 let saw_nl = self.skip_whitespace_and_newlines();
@@ -305,7 +313,9 @@ impl<'a> HclParser<'a> {
 
             if self.peek_char() == Some('}') {
                 if !is_one_line && !last_ended_with_newline {
-                    return Err(self.error("closing brace of multi-line block must be on its own line".into()));
+                    return Err(self.error(
+                        "closing brace of multi-line block must be on its own line".into(),
+                    ));
                 }
                 self.bump(); // consume '}'
                 return Ok(Value::Object(entries));
@@ -346,11 +356,19 @@ impl<'a> HclParser<'a> {
             Value::Float(f) => alloc::format!("{}", f),
             Value::String(s) => s.clone(),
             Value::Array(arr) => {
-                let inner = arr.iter().map(Self::value_to_expr_string).collect::<Vec<_>>().join(", ");
+                let inner = arr
+                    .iter()
+                    .map(Self::value_to_expr_string)
+                    .collect::<Vec<_>>()
+                    .join(", ");
                 alloc::format!("[{}]", inner)
             }
             Value::Object(obj) => {
-                let inner = obj.iter().map(|(k, val)| alloc::format!("{} = {}", k, Self::value_to_expr_string(val))).collect::<Vec<_>>().join(", ");
+                let inner = obj
+                    .iter()
+                    .map(|(k, val)| alloc::format!("{} = {}", k, Self::value_to_expr_string(val)))
+                    .collect::<Vec<_>>()
+                    .join(", ");
                 alloc::format!("{{{}}}", inner)
             }
             Value::Bytes(b) => alloc::format!("{:?}", b),
@@ -425,7 +443,9 @@ impl<'a> HclParser<'a> {
             Some('+') => Some(("+", 1)),
             Some('-') => Some(("-", 1)),
             Some('*') => Some(("*", 1)),
-            Some('/') if self.peek_ahead(1) != Some('/') && self.peek_ahead(1) != Some('*') => Some(("/", 1)),
+            Some('/') if self.peek_ahead(1) != Some('/') && self.peek_ahead(1) != Some('*') => {
+                Some(("/", 1))
+            }
             Some('%') => Some(("%", 1)),
             _ => None,
         }
@@ -504,16 +524,23 @@ impl<'a> HclParser<'a> {
             let operand = self.parse_unary_or_postfix()?;
             return match operand {
                 Value::Bool(b) => Ok(Value::Bool(!b)),
-                _ => Ok(Value::String(alloc::format!("!{}", Self::value_to_expr_string(&operand)))),
+                _ => Ok(Value::String(alloc::format!(
+                    "!{}",
+                    Self::value_to_expr_string(&operand)
+                ))),
             };
         }
-        if self.peek_char() == Some('-') && self.peek_ahead(1).map_or(true, |c| !c.is_ascii_digit()) {
+        if self.peek_char() == Some('-') && self.peek_ahead(1).map_or(true, |c| !c.is_ascii_digit())
+        {
             self.bump();
             let operand = self.parse_unary_or_postfix()?;
             return match operand {
                 Value::Integer(i) => Ok(Value::Integer(-i)),
                 Value::Float(f) => Ok(Value::Float(-f)),
-                _ => Ok(Value::String(alloc::format!("-{}", Self::value_to_expr_string(&operand)))),
+                _ => Ok(Value::String(alloc::format!(
+                    "-{}",
+                    Self::value_to_expr_string(&operand)
+                ))),
             };
         }
 
@@ -540,7 +567,10 @@ impl<'a> HclParser<'a> {
                     self.skip_expr_whitespace();
                     if self.peek_char() == Some('*') {
                         self.bump();
-                        base = Value::String(alloc::format!("{}.*", Self::value_to_expr_string(&base)));
+                        base = Value::String(alloc::format!(
+                            "{}.*",
+                            Self::value_to_expr_string(&base)
+                        ));
                         saw_legacy_index = false;
                     } else if self.peek_char().map_or(false, |c| c.is_ascii_digit()) {
                         if saw_legacy_index {
@@ -555,11 +585,19 @@ impl<'a> HclParser<'a> {
                                 break;
                             }
                         }
-                        base = Value::String(alloc::format!("{}.{}", Self::value_to_expr_string(&base), num));
+                        base = Value::String(alloc::format!(
+                            "{}.{}",
+                            Self::value_to_expr_string(&base),
+                            num
+                        ));
                         saw_legacy_index = true;
                     } else {
                         let member = self.parse_identifier()?;
-                        base = Value::String(alloc::format!("{}.{}", Self::value_to_expr_string(&base), member));
+                        base = Value::String(alloc::format!(
+                            "{}.{}",
+                            Self::value_to_expr_string(&base),
+                            member
+                        ));
                         saw_legacy_index = false;
                     }
                 }
@@ -591,7 +629,8 @@ impl<'a> HclParser<'a> {
                     if self.peek_ahead(k) == Some('*') {
                         let mut k2 = k + 1;
                         while let Some(c) = self.peek_ahead(k2) {
-                            if c == ' ' || c == '\t' || (allow_newlines && (c == '\n' || c == '\r')) {
+                            if c == ' ' || c == '\t' || (allow_newlines && (c == '\n' || c == '\r'))
+                            {
                                 k2 += 1;
                             } else if c == '/' && self.peek_ahead(k2 + 1) == Some('*') {
                                 k2 += 2;
@@ -615,7 +654,10 @@ impl<'a> HclParser<'a> {
                     if is_splat {
                         self.advance_by(advance_to);
                         self.paren_depth -= 1;
-                        base = Value::String(alloc::format!("{}[*]", Self::value_to_expr_string(&base)));
+                        base = Value::String(alloc::format!(
+                            "{}[*]",
+                            Self::value_to_expr_string(&base)
+                        ));
                         saw_legacy_index = false;
                         continue;
                     }
@@ -704,7 +746,9 @@ impl<'a> HclParser<'a> {
                                 self.skip_whitespace_and_newlines();
                             } else {
                                 self.paren_depth -= 1;
-                                return Err(self.error("expected ',' separating function arguments".into()));
+                                return Err(
+                                    self.error("expected ',' separating function arguments".into())
+                                );
                             }
                         }
                         first = false;
@@ -714,7 +758,10 @@ impl<'a> HclParser<'a> {
                         }
                         let arg = self.parse_expr()?;
                         self.skip_whitespace_and_newlines();
-                        let is_expand = if self.peek_char() == Some('.') && self.peek_ahead(1) == Some('.') && self.peek_ahead(2) == Some('.') {
+                        let is_expand = if self.peek_char() == Some('.')
+                            && self.peek_ahead(1) == Some('.')
+                            && self.peek_ahead(2) == Some('.')
+                        {
                             self.bump();
                             self.bump();
                             self.bump();
@@ -743,7 +790,11 @@ impl<'a> HclParser<'a> {
                         self.paren_depth -= 1;
                         return Err(self.error("expected ')' closing function call".into()));
                     }
-                    let args_str = args.iter().map(Self::value_to_expr_string).collect::<Vec<_>>().join(", ");
+                    let args_str = args
+                        .iter()
+                        .map(Self::value_to_expr_string)
+                        .collect::<Vec<_>>()
+                        .join(", ");
                     Ok(Value::String(alloc::format!("{}({})", id, args_str)))
                 } else if is_namespaced {
                     Err(self.error("namespaced function name must be followed by '('".into()))
@@ -853,7 +904,10 @@ impl<'a> HclParser<'a> {
         self.skip_whitespace_and_newlines();
         let val_expr = self.parse_expr()?;
         self.skip_whitespace_and_newlines();
-        let is_ellipsis = if self.peek_char() == Some('.') && self.peek_ahead(1) == Some('.') && self.peek_ahead(2) == Some('.') {
+        let is_ellipsis = if self.peek_char() == Some('.')
+            && self.peek_ahead(1) == Some('.')
+            && self.peek_ahead(2) == Some('.')
+        {
             self.bump();
             self.bump();
             self.bump();
@@ -962,7 +1016,9 @@ impl<'a> HclParser<'a> {
 
             if !first && !saw_newline && !saw_comma {
                 self.paren_depth -= 1;
-                return Err(self.error("expected newline or comma separating object elements".into()));
+                return Err(
+                    self.error("expected newline or comma separating object elements".into())
+                );
             }
             first = false;
 
@@ -1005,7 +1061,13 @@ impl<'a> HclParser<'a> {
         while let Some(c) = self.peek_char() {
             if c.is_ascii_digit() {
                 self.bump();
-            } else if c == '.' && !has_decimal && !has_exponent && self.peek_ahead(1).map_or(false, |next| next.is_ascii_digit()) {
+            } else if c == '.'
+                && !has_decimal
+                && !has_exponent
+                && self
+                    .peek_ahead(1)
+                    .map_or(false, |next| next.is_ascii_digit())
+            {
                 has_decimal = true;
                 self.bump();
             } else if (c == 'e' || c == 'E') && !has_exponent {
@@ -1020,17 +1082,21 @@ impl<'a> HclParser<'a> {
         }
 
         if (has_decimal || has_exponent) && self.peek_char() == Some('.') {
-            return Err(self.error("unexpected point after exponent or second fractional part".into()));
+            return Err(
+                self.error("unexpected point after exponent or second fractional part".into())
+            );
         }
 
         let is_float = has_decimal || has_exponent;
         let slice = self.get_slice(start, self.idx);
         if is_float {
-            slice.parse::<f64>()
+            slice
+                .parse::<f64>()
                 .map(Value::Float)
                 .map_err(|_| self.error(format!("invalid float: {}", slice)))
         } else {
-            slice.parse::<i128>()
+            slice
+                .parse::<i128>()
                 .map(Value::Integer)
                 .or_else(|_| slice.parse::<f64>().map(Value::Float))
                 .map_err(|_| self.error(format!("invalid integer: {}", slice)))
@@ -1062,20 +1128,26 @@ impl<'a> HclParser<'a> {
                         let mut code = 0u32;
                         for _ in 0..4 {
                             let hex_c = self.bump().ok_or(HclError::UnexpectedEof)?;
-                            let digit = hex_c.to_digit(16).ok_or_else(|| self.error("invalid unicode escape".into()))?;
+                            let digit = hex_c
+                                .to_digit(16)
+                                .ok_or_else(|| self.error("invalid unicode escape".into()))?;
                             code = (code << 4) | digit;
                         }
-                        let ch = char::from_u32(code).ok_or_else(|| self.error("invalid unicode scalar".into()))?;
+                        let ch = char::from_u32(code)
+                            .ok_or_else(|| self.error("invalid unicode scalar".into()))?;
                         s.push(ch);
                     }
                     Some('U') => {
                         let mut code = 0u32;
                         for _ in 0..8 {
                             let hex_c = self.bump().ok_or(HclError::UnexpectedEof)?;
-                            let digit = hex_c.to_digit(16).ok_or_else(|| self.error("invalid unicode escape".into()))?;
+                            let digit = hex_c
+                                .to_digit(16)
+                                .ok_or_else(|| self.error("invalid unicode escape".into()))?;
                             code = (code << 4) | digit;
                         }
-                        let ch = char::from_u32(code).ok_or_else(|| self.error("invalid unicode scalar".into()))?;
+                        let ch = char::from_u32(code)
+                            .ok_or_else(|| self.error("invalid unicode scalar".into()))?;
                         s.push(ch);
                     }
                     Some(c) => return Err(self.error(format!("invalid escape sequence '\\{}'", c))),
@@ -1121,7 +1193,9 @@ impl<'a> HclParser<'a> {
         self.paren_depth += 1;
         self.skip_whitespace_and_newlines();
 
-        if self.peek_char() == Some('}') || (self.peek_char() == Some('~') && self.peek_ahead(1) == Some('}')) {
+        if self.peek_char() == Some('}')
+            || (self.peek_char() == Some('~') && self.peek_ahead(1) == Some('}'))
+        {
             self.paren_depth -= 1;
             return Err(self.error("empty interpolation is not allowed".into()));
         }
@@ -1157,7 +1231,9 @@ impl<'a> HclParser<'a> {
         self.paren_depth += 1;
         self.skip_whitespace_and_newlines();
 
-        if self.peek_char() == Some('}') || (self.peek_char() == Some('~') && self.peek_ahead(1) == Some('}')) {
+        if self.peek_char() == Some('}')
+            || (self.peek_char() == Some('~') && self.peek_ahead(1) == Some('}'))
+        {
             self.paren_depth -= 1;
             return Err(self.error("empty directive is not allowed".into()));
         }
@@ -1308,20 +1384,26 @@ impl<'a> HclParser<'a> {
                         let mut code = 0u32;
                         for _ in 0..4 {
                             let hex_c = self.bump().ok_or(HclError::UnexpectedEof)?;
-                            let digit = hex_c.to_digit(16).ok_or_else(|| self.error("invalid unicode escape".into()))?;
+                            let digit = hex_c
+                                .to_digit(16)
+                                .ok_or_else(|| self.error("invalid unicode escape".into()))?;
                             code = (code << 4) | digit;
                         }
-                        let ch = char::from_u32(code).ok_or_else(|| self.error("invalid unicode scalar".into()))?;
+                        let ch = char::from_u32(code)
+                            .ok_or_else(|| self.error("invalid unicode scalar".into()))?;
                         s.push(ch);
                     }
                     Some('U') => {
                         let mut code = 0u32;
                         for _ in 0..8 {
                             let hex_c = self.bump().ok_or(HclError::UnexpectedEof)?;
-                            let digit = hex_c.to_digit(16).ok_or_else(|| self.error("invalid unicode escape".into()))?;
+                            let digit = hex_c
+                                .to_digit(16)
+                                .ok_or_else(|| self.error("invalid unicode escape".into()))?;
                             code = (code << 4) | digit;
                         }
-                        let ch = char::from_u32(code).ok_or_else(|| self.error("invalid unicode scalar".into()))?;
+                        let ch = char::from_u32(code)
+                            .ok_or_else(|| self.error("invalid unicode scalar".into()))?;
                         s.push(ch);
                     }
                     Some(c) => return Err(self.error(format!("invalid escape sequence '\\{}'", c))),
@@ -1358,11 +1440,15 @@ impl<'a> HclParser<'a> {
         let mut dir_stack: Vec<Directive> = Vec::new();
         while !parser.is_eof() {
             match parser.bump() {
-                Some('$') if parser.peek_char() == Some('$') && parser.peek_ahead(1) == Some('{') => {
+                Some('$')
+                    if parser.peek_char() == Some('$') && parser.peek_ahead(1) == Some('{') =>
+                {
                     parser.bump();
                     parser.bump();
                 }
-                Some('%') if parser.peek_char() == Some('%') && parser.peek_ahead(1) == Some('{') => {
+                Some('%')
+                    if parser.peek_char() == Some('%') && parser.peek_ahead(1) == Some('{') =>
+                {
                     parser.bump();
                     parser.bump();
                 }
@@ -1452,7 +1538,11 @@ impl<'a> HclParser<'a> {
             let min_indent = lines
                 .iter()
                 .filter(|l| !l.trim().is_empty())
-                .map(|l| l.chars().take_while(|c| Self::is_hcl_whitespace(*c)).count())
+                .map(|l| {
+                    l.chars()
+                        .take_while(|c| Self::is_hcl_whitespace(*c))
+                        .count()
+                })
                 .min()
                 .unwrap_or(0);
 
@@ -1484,7 +1574,9 @@ impl<'a> HclParser<'a> {
             if Self::is_hcl_id_start(c) {
                 self.bump();
             } else {
-                return Err(self.error("expected identifier starting with letter or underscore".into()));
+                return Err(
+                    self.error("expected identifier starting with letter or underscore".into())
+                );
             }
         } else {
             return Err(HclError::UnexpectedEof);

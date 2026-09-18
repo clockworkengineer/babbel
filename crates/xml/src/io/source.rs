@@ -6,8 +6,8 @@ use crate::alloc_prelude::*;
 use crate::error::Result;
 #[cfg(feature = "std")]
 use crate::error::XmlError;
-use crate::io::encoding::detect_encoding_and_strip_bom;
 pub use crate::io::encoding::Format;
+use crate::io::encoding::detect_encoding_and_strip_bom;
 
 /// Input source abstraction providing zero-allocation byte positioning and BOM auto-detection.
 #[derive(Debug, Clone)]
@@ -91,11 +91,16 @@ impl XmlSource {
     /// Reads all bytes from an arbitrary `std::io::Read` stream up to `max_bytes`.
     /// Returns [`XmlError::SecurityLimitExceeded`] if the stream exceeds `max_bytes`.
     #[cfg(feature = "std")]
-    pub fn from_reader_with_limit<R: std::io::Read>(mut reader: R, max_bytes: usize) -> Result<Self> {
+    pub fn from_reader_with_limit<R: std::io::Read>(
+        mut reader: R,
+        max_bytes: usize,
+    ) -> Result<Self> {
         use std::io::Read;
         let mut bytes = Vec::new();
         let mut limited = (&mut reader).take((max_bytes + 1) as u64);
-        limited.read_to_end(&mut bytes).map_err(|e| XmlError::Io(e.to_string()))?;
+        limited
+            .read_to_end(&mut bytes)
+            .map_err(|e| XmlError::Io(e.to_string()))?;
         if bytes.len() > max_bytes {
             return Err(XmlError::SecurityLimitExceeded(
                 "Input stream exceeds maximum allowed XML stream size".into(),
@@ -241,7 +246,6 @@ impl XmlSource {
     }
 }
 
-
 impl babbel_core::io::traits::ISource for XmlSource {
     fn next(&mut self) {
         let _ = self.next_char();
@@ -316,4 +320,3 @@ impl babbel_core::io::traits::IStatefulStream for XmlSource {
         self.col = state.column;
     }
 }
-

@@ -3,9 +3,9 @@
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::String, vec::Vec};
 
+use super::tokens::{SpannedToken, Token};
 use crate::error::TomlError;
 use crate::nodes::TomlDatetime;
-use super::tokens::{SpannedToken, Token};
 
 /// Lexer state scanning characters and yielding tokens.
 pub struct Lexer<'a> {
@@ -444,7 +444,12 @@ impl<'a> Lexer<'a> {
                 col,
                 pos,
             )),
-            None => Err(TomlError::syntax("Unfinished escape sequence", line, col, pos)),
+            None => Err(TomlError::syntax(
+                "Unfinished escape sequence",
+                line,
+                col,
+                pos,
+            )),
         }
     }
 
@@ -457,9 +462,9 @@ impl<'a> Lexer<'a> {
     ) -> Result<char, TomlError> {
         let mut val = 0u32;
         for _ in 0..digits {
-            let b = self.advance().ok_or_else(|| {
-                TomlError::syntax("Incomplete unicode escape", line, col, pos)
-            })?;
+            let b = self
+                .advance()
+                .ok_or_else(|| TomlError::syntax("Incomplete unicode escape", line, col, pos))?;
             let digit = match b {
                 b'0'..=b'9' => (b - b'0') as u32,
                 b'a'..=b'f' => (b - b'a' + 10) as u32,
@@ -476,9 +481,8 @@ impl<'a> Lexer<'a> {
             val = (val << 4) | digit;
         }
 
-        char::from_u32(val).ok_or_else(|| {
-            TomlError::syntax("Invalid unicode scalar value", line, col, pos)
-        })
+        char::from_u32(val)
+            .ok_or_else(|| TomlError::syntax("Invalid unicode scalar value", line, col, pos))
     }
 
     fn scan_bare_or_literal(
@@ -502,7 +506,8 @@ impl<'a> Lexer<'a> {
         let mut text = String::new();
 
         // If it starts with + or - or a digit, it could be a number, special float, or datetime
-        let is_numeric_or_sign = first_byte.is_ascii_digit() || first_byte == b'+' || first_byte == b'-';
+        let is_numeric_or_sign =
+            first_byte.is_ascii_digit() || first_byte == b'+' || first_byte == b'-';
 
         if is_numeric_or_sign {
             while let Some(b) = self.peek() {
@@ -676,7 +681,9 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 Err(e) => {
-                    let has_non_key_chars = text.chars().any(|c| !c.is_ascii_alphanumeric() && c != '_' && c != '-');
+                    let has_non_key_chars = text
+                        .chars()
+                        .any(|c| !c.is_ascii_alphanumeric() && c != '_' && c != '-');
                     if has_non_key_chars {
                         return Err(TomlError::syntax(e, start_line, start_col, start_pos));
                     }
@@ -701,9 +708,12 @@ fn validate_toml_number_syntax(text: &str) -> Result<(), &'static str> {
     if text.contains("__") {
         return Err("Double underscore is not permitted");
     }
-    if text.starts_with("0x") || text.starts_with("0X")
-        || text.starts_with("0o") || text.starts_with("0O")
-        || text.starts_with("0b") || text.starts_with("0B")
+    if text.starts_with("0x")
+        || text.starts_with("0X")
+        || text.starts_with("0o")
+        || text.starts_with("0O")
+        || text.starts_with("0b")
+        || text.starts_with("0B")
     {
         if text.len() <= 2 || text.as_bytes()[2] == b'_' {
             return Err("Underscore directly after base prefix is not permitted");
@@ -711,9 +721,12 @@ fn validate_toml_number_syntax(text: &str) -> Result<(), &'static str> {
         return Ok(());
     }
 
-    if text.contains("._") || text.contains("_.")
-        || text.contains("e_") || text.contains("_e")
-        || text.contains("E_") || text.contains("_E")
+    if text.contains("._")
+        || text.contains("_.")
+        || text.contains("e_")
+        || text.contains("_e")
+        || text.contains("E_")
+        || text.contains("_E")
     {
         return Err("Underscore cannot be adjacent to decimal point or exponent");
     }

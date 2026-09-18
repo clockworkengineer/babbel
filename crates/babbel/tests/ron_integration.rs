@@ -1,7 +1,7 @@
 //! Cross-format conversion integration tests for Rusty Object Notation (RON).
 
 use babbel::convert::*;
-use babbel::{default_registry, FormatEmitter, FormatParser};
+use babbel::{FormatEmitter, FormatParser, default_registry};
 
 #[test]
 fn test_json_ron_roundtrip() {
@@ -139,12 +139,19 @@ fn test_default_registry_includes_ron() {
 #[test]
 fn test_ron_parser_and_emitter_traits() {
     let ron_input = "(title: \"Rustacean\", stars: 5)";
-    let parsed = RonParser.parse_str(ron_input).expect("RonParser should parse");
-    assert_eq!(parsed.get("title").and_then(|v| v.as_str()), Some("Rustacean"));
+    let parsed = RonParser
+        .parse_str(ron_input)
+        .expect("RonParser should parse");
+    assert_eq!(
+        parsed.get("title").and_then(|v| v.as_str()),
+        Some("Rustacean")
+    );
     assert_eq!(parsed.get("stars").and_then(|v| v.as_i64()), Some(5));
 
     let mut buf = babbel::core::Buffer::new();
-    RonEmitter.emit(&parsed, &mut buf).expect("RonEmitter should emit");
+    RonEmitter
+        .emit(&parsed, &mut buf)
+        .expect("RonEmitter should emit");
     let output = buf.to_string();
     assert!(output.contains("title: \"Rustacean\""));
     assert!(output.contains("stars: 5"));

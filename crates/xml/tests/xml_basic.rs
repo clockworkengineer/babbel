@@ -1,4 +1,4 @@
-﻿use babbel_xml::{parse, stringify, NodeKind};
+use babbel_xml::{NodeKind, parse, stringify};
 
 #[test]
 fn test_basic_parsing() {
@@ -12,7 +12,7 @@ fn test_basic_parsing() {
 
     let root_elem_id = doc.root_element_id().expect("Should have root element");
     let root_node = doc.get_node(root_elem_id).expect("Root node exists");
-    
+
     if let NodeKind::Element { name, attributes } = &root_node.kind {
         assert_eq!(&**name, "root");
         assert_eq!(attributes.len(), 1);
@@ -77,10 +77,16 @@ fn test_parsing_cdata() {
 #[test]
 fn test_malformed_xml_errors() {
     let unclosed = "<root><child>";
-    assert!(parse(unclosed).is_err(), "Unclosed tag should produce error");
+    assert!(
+        parse(unclosed).is_err(),
+        "Unclosed tag should produce error"
+    );
 
     let mismatched = "<root></other>";
-    assert!(parse(mismatched).is_err(), "Mismatched closing tag should produce error");
+    assert!(
+        parse(mismatched).is_err(),
+        "Mismatched closing tag should produce error"
+    );
 }
 
 #[test]

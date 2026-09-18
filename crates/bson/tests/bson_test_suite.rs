@@ -24,9 +24,9 @@ use std::panic::{self, AssertUnwindSafe};
 use std::path::PathBuf;
 use std::time::Instant;
 
-use babbel_core::testing::parse_dense_hex;
-use babbel_core::Value;
 use babbel_bson::{from_bytes, to_vec};
+use babbel_core::Value;
+use babbel_core::testing::parse_dense_hex;
 
 /// Guard to silence panic output during malformed/fuzz test runs.
 struct PanicHookGuard(Option<Box<dyn Fn(&panic::PanicHookInfo) + Send + Sync + 'static>>);
@@ -71,7 +71,13 @@ fn find_bsonfy_test_suite_dir() -> Option<PathBuf> {
     let mut candidates = vec![
         manifest_dir.join("tests").join("bsonfy"),
         manifest_dir.join("bsonfy"),
-        manifest_dir.join("..").join("..").join("crates").join("bson").join("tests").join("bsonfy"),
+        manifest_dir
+            .join("..")
+            .join("..")
+            .join("crates")
+            .join("bson")
+            .join("tests")
+            .join("bsonfy"),
         PathBuf::from("crates/bson/tests/bsonfy"),
         PathBuf::from("tests/bsonfy"),
         PathBuf::from("bsonfy"),
@@ -90,7 +96,9 @@ fn find_bsonfy_test_suite_dir() -> Option<PathBuf> {
         }
     }
 
-    candidates.into_iter().find(|p| p.join("test").join("spec").join("bson_test.ts").exists())
+    candidates
+        .into_iter()
+        .find(|p| p.join("test").join("spec").join("bson_test.ts").exists())
 }
 
 #[derive(Debug, Clone)]
@@ -120,163 +128,219 @@ fn get_bsonfy_conformance_cases() -> Vec<BsonTestCase> {
             expected: ExpectedOutcome::Accept(Value::Object(vec![])),
             check_roundtrip: true,
         },
-
         // 2. Integers (Int32 & Int64)
         BsonTestCase {
             name: "int32-pos",
             category: "Integers (Int32 & Int64)",
             hex: "0e00000010696e74003412000000",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("int".to_string(), Value::Integer(0x1234))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "int".to_string(),
+                Value::Integer(0x1234),
+            )])),
             check_roundtrip: true,
         },
         BsonTestCase {
             name: "int32-neg",
             category: "Integers (Int32 & Int64)",
             hex: "0e00000010696e7400f6ffffff00",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("int".to_string(), Value::Integer(-10))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "int".to_string(),
+                Value::Integer(-10),
+            )])),
             check_roundtrip: true,
         },
         BsonTestCase {
             name: "int64-pos",
             category: "Integers (Int32 & Int64)",
             hex: "1200000012696e7400907856341200000000",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("int".to_string(), Value::Integer(0x1234567890))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "int".to_string(),
+                Value::Integer(0x1234567890),
+            )])),
             check_roundtrip: true,
         },
         BsonTestCase {
             name: "int64-gt-2^53",
             category: "Integers (Int32 & Int64)",
             hex: "1200000012696e7400FFDEBC9A7856341200",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("int".to_string(), Value::Integer(0x123456789ABCDEFF))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "int".to_string(),
+                Value::Integer(0x123456789ABCDEFF),
+            )])),
             check_roundtrip: true,
         },
         BsonTestCase {
             name: "int64-neg",
             category: "Integers (Int32 & Int64)",
             hex: "1200000012696e74007087a9cbedffffff00",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("int".to_string(), Value::Integer(-78187493520))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "int".to_string(),
+                Value::Integer(-78187493520),
+            )])),
             check_roundtrip: true,
         },
-
         // 3. Floating-Point Numbers
         BsonTestCase {
             name: "double-pi",
             category: "Floating-Point Numbers",
             hex: "1200000001666c6f0044174154fb21094000",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("flo".to_string(), Value::Float(3.1415926535))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "flo".to_string(),
+                Value::Float(3.1415926535),
+            )])),
             check_roundtrip: true,
         },
-
         // 4. Strings & Unicode
         BsonTestCase {
             name: "str-ascii",
             category: "Strings & Unicode",
             hex: "1a00000002737472000c00000048656c6c6f20576f726c640000",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("str".to_string(), Value::String("Hello World".to_string()))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "str".to_string(),
+                Value::String("Hello World".to_string()),
+            )])),
             check_roundtrip: true,
         },
         BsonTestCase {
             name: "str-utf8-umlaut",
             category: "Strings & Unicode",
             hex: "17000000027374720009000000c384c396c39cc39f0000",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("str".to_string(), Value::String("\u{00C4}\u{00D6}\u{00DC}\u{00DF}".to_string()))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "str".to_string(),
+                Value::String("\u{00C4}\u{00D6}\u{00DC}\u{00DF}".to_string()),
+            )])),
             check_roundtrip: true,
         },
-
         // 5. Booleans & Null
         BsonTestCase {
             name: "bool-false",
             category: "Booleans & Null",
             hex: "0c00000008626f6f6c000000",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("bool".to_string(), Value::Bool(false))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "bool".to_string(),
+                Value::Bool(false),
+            )])),
             check_roundtrip: true,
         },
         BsonTestCase {
             name: "bool-true",
             category: "Booleans & Null",
             hex: "0c00000008626f6f6c000100",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("bool".to_string(), Value::Bool(true))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "bool".to_string(),
+                Value::Bool(true),
+            )])),
             check_roundtrip: true,
         },
         BsonTestCase {
             name: "null-value",
             category: "Booleans & Null",
             hex: "0a0000000a6e756c0000",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("nul".to_string(), Value::Null)])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "nul".to_string(),
+                Value::Null,
+            )])),
             check_roundtrip: true,
         },
-
         // 6. Binary & Identifiers
         BsonTestCase {
             name: "binary-generic",
             category: "Binary & Identifiers",
             hex: "190000000562696e000a00000000010203040506070809ff00",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("bin".to_string(), Value::Bytes(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 0xff]))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "bin".to_string(),
+                Value::Bytes(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 0xff]),
+            )])),
             check_roundtrip: true,
         },
         BsonTestCase {
             name: "uuid-subtype-4",
             category: "Binary & Identifiers",
             hex: "20000000057575696400100000000443ab2e98623c03e85f541a1745e01bda00",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("uuid".to_string(), Value::Bytes(vec![
-                0x43, 0xab, 0x2e, 0x98, 0x62, 0x3c, 0x03, 0xe8, 0x5f, 0x54, 0x1a, 0x17, 0x45, 0xe0, 0x1b, 0xda
-            ]))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "uuid".to_string(),
+                Value::Bytes(vec![
+                    0x43, 0xab, 0x2e, 0x98, 0x62, 0x3c, 0x03, 0xe8, 0x5f, 0x54, 0x1a, 0x17, 0x45,
+                    0xe0, 0x1b, 0xda,
+                ]),
+            )])),
             check_roundtrip: false,
         },
         BsonTestCase {
             name: "object-id",
             category: "Binary & Identifiers",
             hex: "16000000076f696400a80557f05c6d7ad09fa7357000",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("oid".to_string(), Value::Bytes(vec![
-                0xa8, 0x05, 0x57, 0xf0, 0x5c, 0x6d, 0x7a, 0xd0, 0x9f, 0xa7, 0x35, 0x70
-            ]))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "oid".to_string(),
+                Value::Bytes(vec![
+                    0xa8, 0x05, 0x57, 0xf0, 0x5c, 0x6d, 0x7a, 0xd0, 0x9f, 0xa7, 0x35, 0x70,
+                ]),
+            )])),
             check_roundtrip: false,
         },
-
         // 7. Arrays & Multidimensional
         BsonTestCase {
             name: "array-integers",
             category: "Arrays & Multidimensional",
             hex: "2b000000046172720021000000103000fa000000103100fb000000103200fc000000103300fd0000000000",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("arr".to_string(), Value::Array(vec![
-                Value::Integer(0xfa), Value::Integer(0xfb), Value::Integer(0xfc), Value::Integer(0xfd)
-            ]))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "arr".to_string(),
+                Value::Array(vec![
+                    Value::Integer(0xfa),
+                    Value::Integer(0xfb),
+                    Value::Integer(0xfc),
+                    Value::Integer(0xfd),
+                ]),
+            )])),
             check_roundtrip: true,
         },
         BsonTestCase {
             name: "array-nested-array",
             category: "Arrays & Multidimensional",
             hex: "4f000000046172720045000000043000210000001030001000000010310011000000103200120000001033001300000000103100fa000000103200fb000000103300fc000000103400fd0000000000",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("arr".to_string(), Value::Array(vec![
-                Value::Array(vec![Value::Integer(0x10), Value::Integer(0x11), Value::Integer(0x12), Value::Integer(0x13)]),
-                Value::Integer(0xfa),
-                Value::Integer(0xfb),
-                Value::Integer(0xfc),
-                Value::Integer(0xfd),
-            ]))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "arr".to_string(),
+                Value::Array(vec![
+                    Value::Array(vec![
+                        Value::Integer(0x10),
+                        Value::Integer(0x11),
+                        Value::Integer(0x12),
+                        Value::Integer(0x13),
+                    ]),
+                    Value::Integer(0xfa),
+                    Value::Integer(0xfb),
+                    Value::Integer(0xfc),
+                    Value::Integer(0xfd),
+                ]),
+            )])),
             check_roundtrip: true,
         },
-
         // 8. Objects & Nested Documents
         BsonTestCase {
             name: "nested-subdocument",
             category: "Objects & Nested Documents",
             hex: "22000000036f626a001800000010696e74000a000000027374720001000000000000",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("obj".to_string(), Value::Object(vec![
-                ("int".to_string(), Value::Integer(10)),
-                ("str".to_string(), Value::String(String::new())),
-            ]))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "obj".to_string(),
+                Value::Object(vec![
+                    ("int".to_string(), Value::Integer(10)),
+                    ("str".to_string(), Value::String(String::new())),
+                ]),
+            )])),
             check_roundtrip: true,
         },
         BsonTestCase {
             name: "complex-vector-bson-spec",
             category: "Objects & Nested Documents",
             hex: "310000000442534f4e002600000002300008000000617765736f6d65000131003333333333331440103200c20700000000",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("BSON".to_string(), Value::Array(vec![
-                Value::String("awesome".to_string()),
-                Value::Float(5.05),
-                Value::Integer(1986),
-            ]))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "BSON".to_string(),
+                Value::Array(vec![
+                    Value::String("awesome".to_string()),
+                    Value::Float(5.05),
+                    Value::Integer(1986),
+                ]),
+            )])),
             check_roundtrip: true,
         },
         BsonTestCase {
@@ -300,7 +364,10 @@ fn get_bsonfy_conformance_cases() -> Vec<BsonTestCase> {
             expected: ExpectedOutcome::Accept(Value::Object(vec![
                 ("id".to_string(), Value::Integer(123456)),
                 ("sk".to_string(), Value::Bytes(vec![1, 2, 3, 4, 5, 6, 7, 8])),
-                ("pk".to_string(), Value::Bytes(vec![255, 254, 253, 252, 251, 250, 249, 248])),
+                (
+                    "pk".to_string(),
+                    Value::Bytes(vec![255, 254, 253, 252, 251, 250, 249, 248]),
+                ),
             ])),
             check_roundtrip: true,
         },
@@ -316,13 +383,15 @@ fn get_bsonfy_conformance_cases() -> Vec<BsonTestCase> {
             ])),
             check_roundtrip: true,
         },
-
         // 9. Temporal / UTC Dates
         BsonTestCase {
             name: "date-timestamp",
             category: "Temporal / UTC Dates",
             hex: "120000000964617400f84308885501000000",
-            expected: ExpectedOutcome::Accept(Value::Object(vec![("dat".to_string(), Value::Integer(1466866091000))])),
+            expected: ExpectedOutcome::Accept(Value::Object(vec![(
+                "dat".to_string(),
+                Value::Integer(1466866091000),
+            )])),
             check_roundtrip: false,
         },
         BsonTestCase {
@@ -336,7 +405,6 @@ fn get_bsonfy_conformance_cases() -> Vec<BsonTestCase> {
             ])),
             check_roundtrip: false,
         },
-
         // 10. Malformed Rejections
         BsonTestCase {
             name: "reject-doc-too-small",
@@ -435,7 +503,10 @@ fn test_embedded_bson_conformance_vectors() {
                     }
                     passed += 1;
                 } else {
-                    println!("Mismatch in test '{}': expected {:?}, got {:?}", case.name, exp, val);
+                    println!(
+                        "Mismatch in test '{}': expected {:?}, got {:?}",
+                        case.name, exp, val
+                    );
                     failed += 1;
                 }
             }
@@ -465,7 +536,11 @@ fn test_embedded_bson_conformance_vectors() {
     }
 
     assert_eq!(failed, 0, "All embedded BSON conformance vectors must pass");
-    assert!(passed >= 30, "Expected at least 30 embedded vectors passed (got {})", passed);
+    assert!(
+        passed >= 30,
+        "Expected at least 30 embedded vectors passed (got {})",
+        passed
+    );
 }
 
 #[test]
@@ -477,7 +552,9 @@ fn test_official_bsonfy_conformance_suite() {
             println!("  mpaland/bsonfy repository directory not found.");
             println!("  Running embedded conformance test vectors instead...");
             println!("  To download and install the official test suite, run:");
-            println!("    powershell -ExecutionPolicy Bypass -File scripts/fetch_bson_test_suite.ps1");
+            println!(
+                "    powershell -ExecutionPolicy Bypass -File scripts/fetch_bson_test_suite.ps1"
+            );
             println!("    (or ./scripts/fetch_bson_test_suite.sh on Unix)");
             println!("============================================================\n");
 
@@ -493,7 +570,10 @@ fn test_official_bsonfy_conformance_suite() {
     println!("============================================================");
 
     let test_file = suite_dir.join("test").join("spec").join("bson_test.ts");
-    assert!(test_file.exists(), "bson_test.ts must exist in bsonfy repository");
+    assert!(
+        test_file.exists(),
+        "bson_test.ts must exist in bsonfy repository"
+    );
 
     let _panic_guard = PanicHookGuard::new_silent();
     let start_time = Instant::now();
@@ -514,7 +594,10 @@ fn test_official_bsonfy_conformance_suite() {
             Err(e) => {
                 stats.failed += 1;
                 overall.failed += 1;
-                failures.push(format!("[{}:{}] Hex parse error: {}", case.category, case.name, e));
+                failures.push(format!(
+                    "[{}:{}] Hex parse error: {}",
+                    case.category, case.name, e
+                ));
                 continue;
             }
         };
@@ -566,7 +649,8 @@ fn test_official_bsonfy_conformance_suite() {
                     case.category, case.name, case.hex, val
                 ));
             }
-            (ExpectedOutcome::Accept(_), Ok(Err(err))) | (ExpectedOutcome::AcceptAnyValid, Ok(Err(err))) => {
+            (ExpectedOutcome::Accept(_), Ok(Err(err)))
+            | (ExpectedOutcome::AcceptAnyValid, Ok(Err(err))) => {
                 stats.failed += 1;
                 overall.failed += 1;
                 failures.push(format!(
@@ -611,7 +695,11 @@ fn test_official_bsonfy_conformance_suite() {
         overall.pass_rate()
     );
     println!("+---------------------------------------+-------+--------+--------+---------+");
-    println!("Executed in {:.3}s with {} unhandled panics.\n", elapsed.as_secs_f64(), overall.panics);
+    println!(
+        "Executed in {:.3}s with {} unhandled panics.\n",
+        elapsed.as_secs_f64(),
+        overall.panics
+    );
 
     drop(_panic_guard);
 
@@ -622,8 +710,14 @@ fn test_official_bsonfy_conformance_suite() {
     );
 
     if !failures.is_empty() {
-        println!("BSON conformance failures (showing first 25):\n  {}",
-            failures.iter().take(25).cloned().collect::<Vec<_>>().join("\n  ")
+        println!(
+            "BSON conformance failures (showing first 25):\n  {}",
+            failures
+                .iter()
+                .take(25)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join("\n  ")
         );
     }
 

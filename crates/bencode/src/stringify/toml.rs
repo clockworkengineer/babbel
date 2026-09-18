@@ -105,7 +105,10 @@ fn stringify_number(value: &i64, destination: &mut (impl BencodeWrite + ?Sized))
 /// # Returns
 /// * `Ok(())` if successful
 /// * `Err(String)` if the array contains mixed types
-fn stringify_array(items: &Vec<Node>, destination: &mut (impl BencodeWrite + ?Sized)) -> Result<(), String> {
+fn stringify_array(
+    items: &Vec<Node>,
+    destination: &mut (impl BencodeWrite + ?Sized),
+) -> Result<(), String> {
     let first_type = get_node_type(&items[0]);
 
     for item in items {

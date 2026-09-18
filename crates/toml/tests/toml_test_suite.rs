@@ -91,7 +91,13 @@ fn find_toml_test_suite_dir() -> Option<PathBuf> {
     let mut candidates = vec![
         manifest_dir.join("tests").join("toml-test"),
         manifest_dir.join("toml-test"),
-        manifest_dir.join("..").join("..").join("crates").join("toml").join("tests").join("toml-test"),
+        manifest_dir
+            .join("..")
+            .join("..")
+            .join("crates")
+            .join("toml")
+            .join("tests")
+            .join("toml-test"),
         PathBuf::from("crates/toml/tests/toml-test"),
         PathBuf::from("tests/toml-test"),
         PathBuf::from("toml-test"),
@@ -110,7 +116,9 @@ fn find_toml_test_suite_dir() -> Option<PathBuf> {
         }
     }
 
-    candidates.into_iter().find(|p| p.join("tests").join("valid").exists())
+    candidates
+        .into_iter()
+        .find(|p| p.join("tests").join("valid").exists())
 }
 
 /// Discovers all test cases from the toml-test suite directory.
@@ -126,7 +134,11 @@ fn discover_test_cases(suite_dir: &Path) -> Vec<TestCase> {
 
         for entry in file_entries {
             let path = entry.path();
-            let file_name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let file_name = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
             if !file_name.ends_with(".toml") {
                 continue;
             }
@@ -148,7 +160,11 @@ fn discover_test_cases(suite_dir: &Path) -> Vec<TestCase> {
 
         for entry in file_entries {
             let path = entry.path();
-            let file_name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let file_name = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
             if !file_name.ends_with(".toml") {
                 continue;
             }
@@ -187,7 +203,9 @@ fn test_official_toml_conformance_suite() {
             println!("\n============================================================");
             println!("  skystrife/toml-test Conformance Suite not found.");
             println!("  To download and install the official test suite, run:");
-            println!("    powershell -ExecutionPolicy Bypass -File scripts/fetch_toml_test_suite.ps1");
+            println!(
+                "    powershell -ExecutionPolicy Bypass -File scripts/fetch_toml_test_suite.ps1"
+            );
             println!("    (or ./scripts/fetch_toml_test_suite.sh on Unix)");
             println!("============================================================\n");
             return;
@@ -200,7 +218,10 @@ fn test_official_toml_conformance_suite() {
     println!("============================================================\n");
 
     let test_cases = discover_test_cases(&suite_dir);
-    assert!(!test_cases.is_empty(), "No toml-test test cases discovered!");
+    assert!(
+        !test_cases.is_empty(),
+        "No toml-test test cases discovered!"
+    );
 
     let mut category_stats: BTreeMap<String, CategoryStats> = BTreeMap::new();
     let mut failures: Vec<(String, String)> = Vec::new();
@@ -241,7 +262,10 @@ fn test_official_toml_conformance_suite() {
                                 stats.failed += 1;
                                 failures.push((
                                     case.id.clone(),
-                                    format!("Roundtrip parse failed for serialized TOML:\n{}", serialized),
+                                    format!(
+                                        "Roundtrip parse failed for serialized TOML:\n{}",
+                                        serialized
+                                    ),
                                 ));
                             }
                         } else {
@@ -250,13 +274,19 @@ fn test_official_toml_conformance_suite() {
                     }
                     Err(e) => {
                         stats.failed += 1;
-                        failures.push((case.id.clone(), format!("Expected valid TOML, but failed: {}", e)));
+                        failures.push((
+                            case.id.clone(),
+                            format!("Expected valid TOML, but failed: {}", e),
+                        ));
                     }
                 },
                 ExpectedOutcome::MustReject => match res {
                     Ok(_) => {
                         stats.failed += 1;
-                        failures.push((case.id.clone(), "Expected invalid TOML to be rejected, but was accepted".to_string()));
+                        failures.push((
+                            case.id.clone(),
+                            "Expected invalid TOML to be rejected, but was accepted".to_string(),
+                        ));
                     }
                     Err(_) => {
                         stats.passed += 1;
@@ -277,7 +307,10 @@ fn test_official_toml_conformance_suite() {
     let elapsed = start_time.elapsed();
 
     // Print summary report
-    println!("{:<30} {:>8} {:>8} {:>8} {:>10}", "Category", "Total", "Passed", "Failed", "Pass Rate");
+    println!(
+        "{:<30} {:>8} {:>8} {:>8} {:>10}",
+        "Category", "Total", "Passed", "Failed", "Pass Rate"
+    );
     println!("{:-<70}", "");
 
     let mut total_cases = 0;
@@ -299,14 +332,14 @@ fn test_official_toml_conformance_suite() {
     }
 
     println!("{:-<70}", "");
-    let overall_pass_rate = if total_cases == 0 { 0.0 } else { (total_passed as f64 / total_cases as f64) * 100.0 };
+    let overall_pass_rate = if total_cases == 0 {
+        0.0
+    } else {
+        (total_passed as f64 / total_cases as f64) * 100.0
+    };
     println!(
         "{:<30} {:>8} {:>8} {:>8} {:>9.2}%",
-        "Total",
-        total_cases,
-        total_passed,
-        total_failed,
-        overall_pass_rate
+        "Total", total_cases, total_passed, total_failed, overall_pass_rate
     );
     println!("\nCompleted in {:.2?}", elapsed);
 

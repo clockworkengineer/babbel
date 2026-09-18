@@ -279,7 +279,7 @@ fn handle_multiple_explicit_keys(
     current_indent: usize,
 ) -> ParseResult<Node> {
     // Now collects (key, value) pairs for all explicit keys at this indent
-    Ok(parse_multiple_explicit_keys(source, current_indent).map_err(YamlError::from)?)
+    parse_multiple_explicit_keys(source, current_indent).map_err(YamlError::from)
 }
 
 /// Helper to skip whitespace and comments with context-aware tab validation.

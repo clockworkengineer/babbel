@@ -6,11 +6,11 @@ use alloc::{
     vec::Vec,
 };
 
-use babbel_core::Value;
 use crate::column::ColumnData;
 use crate::error::ParquetError;
 use crate::metadata::*;
 use crate::thrift::ThriftWriter;
+use babbel_core::Value;
 
 pub const PARQUET_MAGIC: &[u8; 4] = b"PAR1";
 

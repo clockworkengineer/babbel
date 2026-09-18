@@ -1,4 +1,4 @@
-﻿use babbel_xml::{parse, DtdValidator};
+use babbel_xml::{DtdValidator, parse};
 
 #[test]
 fn test_dtd_validation() {
@@ -36,5 +36,8 @@ fn test_dtd_missing_required_attribute() {
     let doc = parse(xml).expect("Should parse XML");
     let dtd = DtdValidator::new();
     let res = dtd.validate(&doc);
-    assert!(res.is_err(), "DTD validation should fail when required attribute is missing");
+    assert!(
+        res.is_err(),
+        "DTD validation should fail when required attribute is missing"
+    );
 }

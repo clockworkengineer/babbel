@@ -1,4 +1,4 @@
-﻿//! Tests verifying integration of `babbel_core` streaming traits (`ISource`, `IDestination`, `IPositionAware`)
+//! Tests verifying integration of `babbel_core` streaming traits (`ISource`, `IDestination`, `IPositionAware`)
 //! with `babbel_xml`.
 
 use babbel_core::io::destinations::Buffer;
@@ -7,8 +7,8 @@ use babbel_core::io::traits::{
     ICharStream, IClearable, IDestination, IPositionAware, IRewindable, ISource,
 };
 use babbel_xml::{
-    canonicalize_to, parse_source, stringify_to, stringify_to_with_options, Document,
-    SerializeOptions, XmlDestination, XmlSource,
+    Document, SerializeOptions, XmlDestination, XmlSource, canonicalize_to, parse_source,
+    stringify_to, stringify_to_with_options,
 };
 
 #[test]
@@ -155,7 +155,10 @@ fn test_canonicalize_to_destination() {
     let mut dest = Buffer::new();
 
     canonicalize_to(&doc, &mut dest);
-    assert_eq!(dest.to_string(), "<root a=\"1\" b=\"2\"><empty></empty></root>");
+    assert_eq!(
+        dest.to_string(),
+        "<root a=\"1\" b=\"2\"><empty></empty></root>"
+    );
 }
 
 #[test]

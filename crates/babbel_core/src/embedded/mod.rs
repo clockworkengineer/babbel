@@ -4,8 +4,8 @@
 //! tailored for resource-constrained microcontrollers, real-time operating systems (RTOS),
 //! and bare-metal environments (`no_std` / `no_alloc`).
 
-use core::cell::Cell;
 use crate::error::ErrorCode;
+use core::cell::Cell;
 
 // ==========================================
 // 1. StackBuffer

@@ -577,9 +577,7 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
             Value::Float(f) => visitor.visit_f64(*f),
             Value::String(s) => visitor.visit_str(s),
             Value::Bytes(b) => visitor.visit_bytes(b),
-            Value::Array(arr) => visitor.visit_seq(SeqAccessHelper {
-                iter: arr.iter(),
-            }),
+            Value::Array(arr) => visitor.visit_seq(SeqAccessHelper { iter: arr.iter() }),
             Value::Object(map) => visitor.visit_map(MapAccessHelper {
                 iter: map.iter(),
                 next_value: None,
@@ -609,7 +607,9 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
     fn deserialize_i64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
         match self.value {
             Value::Integer(i) => {
-                let v: i64 = (*i).try_into().map_err(|_| SerdeError("Integer does not fit in i64".into()))?;
+                let v: i64 = (*i)
+                    .try_into()
+                    .map_err(|_| SerdeError("Integer does not fit in i64".into()))?;
                 visitor.visit_i64(v)
             }
             Value::Float(f) => visitor.visit_i64(*f as i64),
@@ -640,7 +640,9 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
     fn deserialize_u64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
         match self.value {
             Value::Integer(i) if *i >= 0 => {
-                let v: u64 = (*i).try_into().map_err(|_| SerdeError("Integer does not fit in u64".into()))?;
+                let v: u64 = (*i)
+                    .try_into()
+                    .map_err(|_| SerdeError("Integer does not fit in u64".into()))?;
                 visitor.visit_u64(v)
             }
             Value::Float(f) if *f >= 0.0 => visitor.visit_u64(*f as u64),
@@ -732,9 +734,7 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
 
     fn deserialize_seq<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
         match self.value {
-            Value::Array(arr) => visitor.visit_seq(SeqAccessHelper {
-                iter: arr.iter(),
-            }),
+            Value::Array(arr) => visitor.visit_seq(SeqAccessHelper { iter: arr.iter() }),
             _ => Err(SerdeError("Expected array".into())),
         }
     }
@@ -844,7 +844,10 @@ impl<'de> MapAccess<'de> for MapAccessHelper<'de> {
         }
     }
 
-    fn next_value_seed<V: DeserializeSeed<'de>>(&mut self, seed: V) -> Result<V::Value, Self::Error> {
+    fn next_value_seed<V: DeserializeSeed<'de>>(
+        &mut self,
+        seed: V,
+    ) -> Result<V::Value, Self::Error> {
         let val = self
             .next_value
             .take()
@@ -882,7 +885,10 @@ impl<'de> VariantAccess<'de> for VariantAccessHelper<'de> {
         Deserialize::deserialize(ValueDeserializer { value: self.value })
     }
 
-    fn newtype_variant_seed<T: DeserializeSeed<'de>>(self, seed: T) -> Result<T::Value, Self::Error> {
+    fn newtype_variant_seed<T: DeserializeSeed<'de>>(
+        self,
+        seed: T,
+    ) -> Result<T::Value, Self::Error> {
         seed.deserialize(ValueDeserializer { value: self.value })
     }
 
@@ -892,9 +898,7 @@ impl<'de> VariantAccess<'de> for VariantAccessHelper<'de> {
         visitor: V,
     ) -> Result<V::Value, Self::Error> {
         match self.value {
-            Value::Array(arr) => visitor.visit_seq(SeqAccessHelper {
-                iter: arr.iter(),
-            }),
+            Value::Array(arr) => visitor.visit_seq(SeqAccessHelper { iter: arr.iter() }),
             _ => Err(SerdeError("Expected tuple variant array".into())),
         }
     }

@@ -1,15 +1,15 @@
-﻿//! Official YAML 1.2 Test Suite Integration
+//! Official YAML 1.2 Test Suite Integration
 //!
 //! This test suite runs the official YAML test cases from:
 //! https://github.com/yaml/yaml-test-suite (data-2022-01-17 release)
 //!
 //! The test suite contains 351+ test cases covering all aspects of YAML 1.2 specification.
 
+use babbel_yaml::test_helpers::parse_yaml;
 use std::fs;
 use std::panic;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
-use babbel_yaml::test_helpers::parse_yaml;
 
 // Guard to temporarily silence panic output during the YAML test suite run.
 // This keeps the console output focused on per-case PASS/FAIL, while still
@@ -169,9 +169,7 @@ fn load_suite_paths() -> Vec<PathBuf> {
         manifest_dir.join("tests").join("yaml-test-suite"),
     ];
 
-    let suite_paths_file = manifest_dir
-        .join("tests")
-        .join("suite_paths.txt");
+    let suite_paths_file = manifest_dir.join("tests").join("suite_paths.txt");
     if suite_paths_file.exists() {
         if let Ok(contents) = fs::read_to_string(&suite_paths_file) {
             for line in contents.lines() {

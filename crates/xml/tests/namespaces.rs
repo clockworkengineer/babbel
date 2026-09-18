@@ -1,4 +1,4 @@
-﻿use babbel_xml::{parse, NamespaceScope, QName};
+use babbel_xml::{NamespaceScope, QName, parse};
 
 #[test]
 fn test_qname_parsing() {
@@ -10,10 +10,17 @@ fn test_qname_parsing() {
     assert_eq!(prefix, None);
     assert_eq!(local, "book");
 
-    let qn = QName::new(Some("env"), "Body", Some("http://schemas.xmlsoap.org/soap/envelope/"));
+    let qn = QName::new(
+        Some("env"),
+        "Body",
+        Some("http://schemas.xmlsoap.org/soap/envelope/"),
+    );
     assert_eq!(qn.prefix.as_deref(), Some("env"));
     assert_eq!(&*qn.local_name, "Body");
-    assert_eq!(qn.namespace_uri.as_deref(), Some("http://schemas.xmlsoap.org/soap/envelope/"));
+    assert_eq!(
+        qn.namespace_uri.as_deref(),
+        Some("http://schemas.xmlsoap.org/soap/envelope/")
+    );
 }
 
 #[test]
@@ -28,17 +35,29 @@ fn test_namespace_scope_stack() {
     // Root scope
     scope.declare(None, "http://example.com/default");
     scope.declare(Some("p"), "http://example.com/p1");
-    assert_eq!(scope.resolve_prefix(None), Some("http://example.com/default"));
-    assert_eq!(scope.resolve_prefix(Some("p")), Some("http://example.com/p1"));
+    assert_eq!(
+        scope.resolve_prefix(None),
+        Some("http://example.com/default")
+    );
+    assert_eq!(
+        scope.resolve_prefix(Some("p")),
+        Some("http://example.com/p1")
+    );
 
     // Nested scope with shadowing
     scope.push_scope();
     scope.declare(Some("p"), "http://example.com/p2");
-    assert_eq!(scope.resolve_prefix(Some("p")), Some("http://example.com/p2"));
+    assert_eq!(
+        scope.resolve_prefix(Some("p")),
+        Some("http://example.com/p2")
+    );
 
     // Pop scope reverts to outer
     scope.pop_scope();
-    assert_eq!(scope.resolve_prefix(Some("p")), Some("http://example.com/p1"));
+    assert_eq!(
+        scope.resolve_prefix(Some("p")),
+        Some("http://example.com/p1")
+    );
 }
 
 #[test]
@@ -65,7 +84,8 @@ fn test_document_namespace_inspection() {
     );
 
     assert_eq!(
-        doc.lookup_prefix(root, "http://example.org/math").as_deref(),
+        doc.lookup_prefix(root, "http://example.org/math")
+            .as_deref(),
         Some("m")
     );
     assert_eq!(
@@ -82,7 +102,8 @@ fn test_document_namespace_inspection() {
     assert_eq!(math_all.len(), 2); // Add and x
 
     // Wildcard local name match
-    let soap_all = doc.get_elements_by_tag_name_ns("http://schemas.xmlsoap.org/soap/envelope/", "*");
+    let soap_all =
+        doc.get_elements_by_tag_name_ns("http://schemas.xmlsoap.org/soap/envelope/", "*");
     assert_eq!(soap_all.len(), 2); // Envelope and Body
 }
 

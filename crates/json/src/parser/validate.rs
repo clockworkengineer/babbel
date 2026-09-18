@@ -240,22 +240,35 @@ fn validate_string(source: &mut dyn ISource, config: &ParserConfig) -> Result<()
                                                         low_hex[i] = d as u8;
                                                         source.next();
                                                     }
-                                                    _ => return Err("Invalid unicode escape".to_string()),
+                                                    _ => {
+                                                        return Err(
+                                                            "Invalid unicode escape".to_string()
+                                                        );
+                                                    }
                                                 }
                                             }
-                                            if let Ok(low_hex_str) = core::str::from_utf8(&low_hex) {
-                                                if let Ok(low_code) = u32::from_str_radix(low_hex_str, 16) {
+                                            if let Ok(low_hex_str) = core::str::from_utf8(&low_hex)
+                                            {
+                                                if let Ok(low_code) =
+                                                    u32::from_str_radix(low_hex_str, 16)
+                                                {
                                                     if !(0xDC00..=0xDFFF).contains(&low_code) {
-                                                        return Err("Invalid surrogate pair".to_string());
+                                                        return Err(
+                                                            "Invalid surrogate pair".to_string()
+                                                        );
                                                     }
                                                 } else {
-                                                    return Err("Invalid unicode escape".to_string());
+                                                    return Err(
+                                                        "Invalid unicode escape".to_string()
+                                                    );
                                                 }
                                             } else {
                                                 return Err("Invalid unicode escape".to_string());
                                             }
                                         } else {
-                                            return Err("Expected \\u after high surrogate".to_string());
+                                            return Err(
+                                                "Expected \\u after high surrogate".to_string()
+                                            );
                                         }
                                     } else {
                                         return Err("Unpaired high surrogate".to_string());

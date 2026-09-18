@@ -66,12 +66,19 @@ fn test_csv_msgpack_conversion() {
 fn test_default_registry_includes_msgpack() {
     let registry = default_registry();
     let formats = registry.available_formats();
-    assert!(formats.contains(&"msgpack"), "registry should contain msgpack");
+    assert!(
+        formats.contains(&"msgpack"),
+        "registry should contain msgpack"
+    );
 
-    let engine = registry.get_by_id("msgpack").expect("should get msgpack by id");
+    let engine = registry
+        .get_by_id("msgpack")
+        .expect("should get msgpack by id");
     assert_eq!(engine.mime_type(), "application/msgpack");
 
-    let engine_ext = registry.get_by_extension("msgpack").expect("should get by ext");
+    let engine_ext = registry
+        .get_by_extension("msgpack")
+        .expect("should get by ext");
     assert_eq!(engine_ext.format_id(), "msgpack");
 
     let engine_mp = registry.get_by_extension("mp").expect("should get by .mp");

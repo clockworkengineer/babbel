@@ -1,7 +1,7 @@
 //! Cross-format conversion integration tests for KDL Document Language.
 
 use babbel::convert::*;
-use babbel::{default_registry, FormatEmitter, FormatParser};
+use babbel::{FormatEmitter, FormatParser, default_registry};
 
 #[test]
 fn test_json_kdl_roundtrip() {
@@ -154,12 +154,16 @@ fn test_default_registry_includes_kdl() {
 #[test]
 fn test_kdl_parser_and_emitter_traits() {
     let kdl_input = "app \"editor\"\nstatus \"ready\"\n";
-    let parsed = KdlParser.parse_str(kdl_input).expect("KdlParser should parse");
+    let parsed = KdlParser
+        .parse_str(kdl_input)
+        .expect("KdlParser should parse");
     assert_eq!(parsed.get("app").and_then(|v| v.as_str()), Some("editor"));
     assert_eq!(parsed.get("status").and_then(|v| v.as_str()), Some("ready"));
 
     let mut buf = babbel::core::Buffer::new();
-    KdlEmitter.emit(&parsed, &mut buf).expect("KdlEmitter should emit");
+    KdlEmitter
+        .emit(&parsed, &mut buf)
+        .expect("KdlEmitter should emit");
     let output = buf.to_string();
     assert!(output.contains("app \"editor\"") || output.contains("app"));
     assert!(output.contains("status \"ready\"") || output.contains("status"));

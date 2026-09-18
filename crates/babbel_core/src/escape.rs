@@ -112,7 +112,7 @@ pub fn write_json_escaped_string(s: &str, dest: &mut dyn IDestination) {
                 BYTE_TAB => dest.add_bytes(ESC_TAB),
                 b => {
                     let b = b as u32;
-                    let mut buf = [b'\\', b'u', b'0', b'0', b'0', b'0'];
+                    let mut buf = *b"\\u0000";
                     for j in (2..6).rev() {
                         let digit = (b >> (4 * (5 - j))) & 0xF;
                         buf[j] = match digit {
@@ -179,7 +179,8 @@ pub fn is_valid_toml_bare_key(key: &str) -> bool {
     if key.is_empty() {
         return false;
     }
-    key.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+    key.bytes()
+        .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
 }
 
 /// Escapes a string for a TOML basic string literal (inside double quotes).
@@ -270,8 +271,8 @@ pub fn yaml_needs_quoting(s: &str) -> bool {
     // Special YAML indicator characters
     for b in s.bytes() {
         match b {
-            b':' | b'#' | b'[' | b']' | b'{' | b'}' | b',' | b'&' | b'*' | b'?' | b'|'
-            | b'>' | b'!' | b'%' | b'@' | b'`' | b'"' | b'\'' | b'\\' | b'\n' | b'\r' | b'\t' => {
+            b':' | b'#' | b'[' | b']' | b'{' | b'}' | b',' | b'&' | b'*' | b'?' | b'|' | b'>'
+            | b'!' | b'%' | b'@' | b'`' | b'"' | b'\'' | b'\\' | b'\n' | b'\r' | b'\t' => {
                 return true;
             }
             b if b < 0x20 => return true,
@@ -287,7 +288,7 @@ pub fn yaml_needs_quoting(s: &str) -> bool {
 /// Escapes a string for YAML serialization.
 pub fn escape_for_yaml(s: &str) -> String {
     if !yaml_needs_quoting(s) {
-        return s.to_string();
+        return String::from(s);
     }
     let mut out = String::with_capacity(s.len() + 2);
     out.push('"');
@@ -412,7 +413,9 @@ mod tests {
 
         let mut dest = BufferDestination::new();
         write_yaml_escaped_string("foo: bar", &mut dest);
-        assert_eq!(core::str::from_utf8(dest.as_bytes()).unwrap(), "\"foo: bar\"");
+        assert_eq!(
+            core::str::from_utf8(dest.as_bytes()).unwrap(),
+            "\"foo: bar\""
+        );
     }
 }
-

@@ -29,13 +29,15 @@ pub(crate) mod validation;
 #[allow(unused_imports)]
 pub(crate) use comments::parse_comment_token;
 #[allow(unused_imports)]
-pub(crate) use core::{handle_directives, is_token, node_to_inline_string, parse_error_token, to_yaml_error};
+pub(crate) use core::{
+    handle_directives, is_token, node_to_inline_string, parse_error_token, to_yaml_error,
+};
 pub(crate) use document_markers::{
-    classify_doc_marker, parse_document_end_marker, parse_document_markers,
-    peek_tag_after_doc_start, DocMarkerKind,
+    DocMarkerKind, classify_doc_marker, parse_document_end_marker, parse_document_markers,
+    peek_tag_after_doc_start,
 };
 #[allow(unused_imports)]
-pub(crate) use peek_ahead::{classify_block_head, peek_ahead_for_mapping_key, BlockHeadKind};
+pub(crate) use peek_ahead::{BlockHeadKind, classify_block_head, peek_ahead_for_mapping_key};
 #[allow(unused_imports)]
 pub(crate) use validation::{
     validate_comment_spacing_token, validate_indentation_and_whitespace,

@@ -1,4 +1,4 @@
-﻿//! Example demonstrating robust error handling with YAML operations
+//! Example demonstrating robust error handling with YAML operations
 //!
 //! This example shows how to:
 //! - Handle parse errors gracefully
@@ -9,7 +9,7 @@
 //!
 //! Run with `--features enhanced` to see enhanced error handling examples.
 
-use babbel_yaml::{get_document, parse, BufferSource, FileSource, Node};
+use babbel_yaml::{BufferSource, FileSource, Node, get_document, parse};
 
 #[path = "common/enhanced_errors.rs"]
 mod enhanced;
@@ -432,4 +432,3 @@ another_field: another_value
     }
     println!();
 }
-

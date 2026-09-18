@@ -186,8 +186,12 @@ lt = 07:32
         // Test round-trip
         let serialized = to_string(&node)
             .unwrap_or_else(|e| panic!("Serialization failed for '{}': {}", name, e));
-        let roundtrip_node = from_str(&serialized)
-            .unwrap_or_else(|e| panic!("Round-trip parsing failed for '{}': {}\nSerialized:\n{}", name, e, serialized));
+        let roundtrip_node = from_str(&serialized).unwrap_or_else(|e| {
+            panic!(
+                "Round-trip parsing failed for '{}': {}\nSerialized:\n{}",
+                name, e, serialized
+            )
+        });
         assert!(roundtrip_node.is_table());
     }
 }

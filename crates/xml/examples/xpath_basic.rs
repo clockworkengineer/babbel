@@ -1,9 +1,9 @@
-﻿//! # XPath 1.0 Basic Navigation Example
+//! # XPath 1.0 Basic Navigation Example
 //!
 //! Demonstrates evaluating basic XPath location paths (`//book/title`, `/bookstore/book[2]/price`)
 //! against a DOM `Document` using `XPathEngine`.
 
-use babbel_xml::{parse, XPathEngine};
+use babbel_xml::{XPathEngine, parse};
 
 fn main() {
     println!("--- XPath Basic Navigation Example ---");

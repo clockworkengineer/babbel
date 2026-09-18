@@ -31,10 +31,7 @@ use smallvec::SmallVec;
 /// # Returns
 /// * `Result<Node, String>` - Parsed Node or error message if parsing fails
 pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
-    parse_with_config(
-        source,
-        &ParserConfig::unlimited().with_max_depth(Some(256)),
-    )
+    parse_with_config(source, &ParserConfig::unlimited().with_max_depth(Some(256)))
 }
 
 /// Convenience function to parse JSON from a string slice
@@ -492,14 +489,18 @@ fn parse_number(source: &mut dyn ISource) -> Result<Node, String> {
 
     // Handle negative numbers
     if source.current() == Some(MINUS) {
-        num_buf.try_push(MINUS).map_err(|_| ERR_INVALID_NUMBER.to_string())?;
+        num_buf
+            .try_push(MINUS)
+            .map_err(|_| ERR_INVALID_NUMBER.to_string())?;
         source.next();
     }
 
     // Must have at least one digit
     match source.current() {
         Some('0') => {
-            num_buf.try_push('0').map_err(|_| ERR_INVALID_NUMBER.to_string())?;
+            num_buf
+                .try_push('0')
+                .map_err(|_| ERR_INVALID_NUMBER.to_string())?;
             source.next();
             // In JSON, leading zeros are forbidden: '0' must not be followed by another digit
             if let Some(c) = source.current() {
@@ -511,7 +512,9 @@ fn parse_number(source: &mut dyn ISource) -> Result<Node, String> {
         Some(c) if c.is_ascii_digit() => {
             while let Some(d) = source.current() {
                 if d.is_ascii_digit() {
-                    num_buf.try_push(d).map_err(|_| ERR_INVALID_NUMBER.to_string())?;
+                    num_buf
+                        .try_push(d)
+                        .map_err(|_| ERR_INVALID_NUMBER.to_string())?;
                     source.next();
                 } else {
                     break;
@@ -524,7 +527,9 @@ fn parse_number(source: &mut dyn ISource) -> Result<Node, String> {
     // Fractional part
     if source.current() == Some(DECIMAL_POINT) {
         is_float = true;
-        num_buf.try_push(DECIMAL_POINT).map_err(|_| ERR_INVALID_NUMBER.to_string())?;
+        num_buf
+            .try_push(DECIMAL_POINT)
+            .map_err(|_| ERR_INVALID_NUMBER.to_string())?;
         source.next();
 
         // Must have at least one digit after decimal point
@@ -532,7 +537,9 @@ fn parse_number(source: &mut dyn ISource) -> Result<Node, String> {
             Some(d) if d.is_ascii_digit() => {
                 while let Some(d) = source.current() {
                     if d.is_ascii_digit() {
-                        num_buf.try_push(d).map_err(|_| ERR_INVALID_NUMBER.to_string())?;
+                        num_buf
+                            .try_push(d)
+                            .map_err(|_| ERR_INVALID_NUMBER.to_string())?;
                         source.next();
                     } else {
                         break;
@@ -544,15 +551,22 @@ fn parse_number(source: &mut dyn ISource) -> Result<Node, String> {
     }
 
     // Exponent part
-    if matches!(source.current(), Some(EXPONENT_LOWER) | Some(EXPONENT_UPPER)) {
+    if matches!(
+        source.current(),
+        Some(EXPONENT_LOWER) | Some(EXPONENT_UPPER)
+    ) {
         is_float = true;
         let exp_char = source.current().unwrap();
-        num_buf.try_push(exp_char).map_err(|_| ERR_INVALID_NUMBER.to_string())?;
+        num_buf
+            .try_push(exp_char)
+            .map_err(|_| ERR_INVALID_NUMBER.to_string())?;
         source.next();
 
         if let Some(sign) = source.current() {
             if sign == PLUS || sign == MINUS {
-                num_buf.try_push(sign).map_err(|_| ERR_INVALID_NUMBER.to_string())?;
+                num_buf
+                    .try_push(sign)
+                    .map_err(|_| ERR_INVALID_NUMBER.to_string())?;
                 source.next();
             }
         }
@@ -562,7 +576,9 @@ fn parse_number(source: &mut dyn ISource) -> Result<Node, String> {
             Some(d) if d.is_ascii_digit() => {
                 while let Some(d) = source.current() {
                     if d.is_ascii_digit() {
-                        num_buf.try_push(d).map_err(|_| ERR_INVALID_NUMBER.to_string())?;
+                        num_buf
+                            .try_push(d)
+                            .map_err(|_| ERR_INVALID_NUMBER.to_string())?;
                         source.next();
                     } else {
                         break;

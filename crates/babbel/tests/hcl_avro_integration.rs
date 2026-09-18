@@ -1,8 +1,8 @@
 //! Integration tests for HCL and Avro engines in Babbel.
 
-use babbel::default_registry;
-use babbel::core::Value;
 use babbel::FormatEmitter;
+use babbel::core::Value;
+use babbel::default_registry;
 
 #[test]
 fn test_default_registry_includes_hcl_and_avro() {
@@ -63,19 +63,30 @@ fn test_avro_to_cbor_and_msgpack_conversion() {
 
     // Avro parse
     let parsed_avro = avro_engine.parse_bytes(&avro_bytes).unwrap();
-    assert_eq!(parsed_avro.get("sensor_id").and_then(|v| v.as_i64()), Some(98765));
+    assert_eq!(
+        parsed_avro.get("sensor_id").and_then(|v| v.as_i64()),
+        Some(98765)
+    );
 
     // Convert to CBOR
     let mut cbor_dest = babbel::core::io::Buffer::new();
     cbor_engine.emit(&parsed_avro, &mut cbor_dest).unwrap();
     let cbor_bytes = cbor_dest.into_vec();
     let parsed_cbor = cbor_engine.parse_bytes(&cbor_bytes).unwrap();
-    assert_eq!(parsed_cbor.get("sensor_id").and_then(|v| v.as_i64()), Some(98765));
+    assert_eq!(
+        parsed_cbor.get("sensor_id").and_then(|v| v.as_i64()),
+        Some(98765)
+    );
 
     // Convert to MsgPack
     let mut msgpack_dest = babbel::core::io::Buffer::new();
-    msgpack_engine.emit(&parsed_cbor, &mut msgpack_dest).unwrap();
+    msgpack_engine
+        .emit(&parsed_cbor, &mut msgpack_dest)
+        .unwrap();
     let msgpack_bytes = msgpack_dest.into_vec();
     let parsed_msgpack = msgpack_engine.parse_bytes(&msgpack_bytes).unwrap();
-    assert_eq!(parsed_msgpack.get("sensor_id").and_then(|v| v.as_i64()), Some(98765));
+    assert_eq!(
+        parsed_msgpack.get("sensor_id").and_then(|v| v.as_i64()),
+        Some(98765)
+    );
 }

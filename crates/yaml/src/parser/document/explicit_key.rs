@@ -1,4 +1,3 @@
-
 //! Explicit Key Parsing Helpers
 //!
 //! Provides helpers and utilities for parsing explicit keys in YAML mappings,
@@ -107,9 +106,7 @@ pub(crate) fn parse_explicit_mapping_entry(
         // Use stream.current() for error context since TokenStream.lexer is private
         let cur = stream.current().cloned();
         return Err(
-            crate::parser::errors::mapping_errors::expected_explicit_key_token(
-                stream, cur,
-            ),
+            crate::parser::errors::mapping_errors::expected_explicit_key_token(stream, cur),
         );
     }
     stream.next()?;
@@ -123,9 +120,7 @@ pub(crate) fn parse_explicit_mapping_entry(
             // Parse document contents as key (empty explicit key)
             crate::parser::tokens::value::parse_value_with_tokens(stream, directives, 0)?
         }
-        _ => {
-            crate::parser::tokens::value::parse_value_with_tokens(stream, directives, 0)?
-        }
+        _ => crate::parser::tokens::value::parse_value_with_tokens(stream, directives, 0)?,
     };
     // Normalize key_node to Node::Str if not already
     key_node = normalize_node_to_str(&key_node);
@@ -142,13 +137,9 @@ pub(crate) fn parse_explicit_mapping_entry(
                 Some(Token::Newline) => {
                     stream.next()?;
                     stream.skip_trivia()?;
-                    crate::parser::tokens::value::parse_value_with_tokens(
-                        stream, directives, 0,
-                    )?
+                    crate::parser::tokens::value::parse_value_with_tokens(stream, directives, 0)?
                 }
-                _ => crate::parser::tokens::value::parse_value_with_tokens(
-                    stream, directives, 0,
-                )?,
+                _ => crate::parser::tokens::value::parse_value_with_tokens(stream, directives, 0)?,
             }
         }
         // No value indicator, key only
@@ -218,10 +209,8 @@ mod tests {
 
     #[test]
     fn test_guarded_explicit_key_loop_error() {
-        let result = guarded_explicit_key_loop(
-            || Some(Err(crate::error::YamlError::from("fail"))),
-            Some(1),
-        );
+        let result =
+            guarded_explicit_key_loop(|| Some(Err(crate::error::YamlError::from("fail"))), Some(1));
         assert!(result.is_err());
     }
 

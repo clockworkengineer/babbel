@@ -39,7 +39,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     "##;
 
-
     println!("--- 1. Input RON Document ---");
     println!("{}\n", ron_source.trim());
 

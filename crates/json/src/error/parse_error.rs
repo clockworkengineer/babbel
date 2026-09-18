@@ -21,43 +21,35 @@ pub enum ParseError {
         line: Option<usize>,
         column: Option<usize>,
     },
-    
+
     /// Unexpected character encountered
     UnexpectedChar {
         found: char,
         expected: String,
         position: Option<usize>,
     },
-    
+
     /// Unexpected end of input
-    UnexpectedEof {
-        expected: String,
-    },
-    
+    UnexpectedEof { expected: String },
+
     /// Invalid escape sequence in string
     InvalidEscape {
         sequence: String,
         position: Option<usize>,
     },
-    
+
     /// Invalid Unicode escape sequence
     InvalidUnicode {
         sequence: String,
         position: Option<usize>,
     },
-    
+
     /// Number parsing error
-    InvalidNumber {
-        value: String,
-        reason: String,
-    },
-    
+    InvalidNumber { value: String, reason: String },
+
     /// Configuration limit exceeded
-    LimitExceeded {
-        limit_type: String,
-        limit: usize,
-    },
-    
+    LimitExceeded { limit_type: String, limit: usize },
+
     /// Generic string error (for backward compatibility)
     Message(String),
 }
@@ -71,7 +63,7 @@ impl ParseError {
             column,
         }
     }
-    
+
     /// Create an unexpected character error
     pub fn unexpected_char(found: char, expected: impl Into<String>) -> Self {
         ParseError::UnexpectedChar {
@@ -80,14 +72,14 @@ impl ParseError {
             position: None,
         }
     }
-    
+
     /// Create an unexpected EOF error
     pub fn unexpected_eof(expected: impl Into<String>) -> Self {
         ParseError::UnexpectedEof {
             expected: expected.into(),
         }
     }
-    
+
     /// Create a limit exceeded error
     pub fn limit_exceeded(limit_type: impl Into<String>, limit: usize) -> Self {
         ParseError::LimitExceeded {
@@ -95,7 +87,7 @@ impl ParseError {
             limit,
         }
     }
-    
+
     /// Create a generic message error
     pub fn message(msg: impl Into<String>) -> Self {
         ParseError::Message(msg.into())
@@ -105,7 +97,11 @@ impl ParseError {
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ParseError::Syntax { message, line, column } => {
+            ParseError::Syntax {
+                message,
+                line,
+                column,
+            } => {
                 write!(f, "Syntax error: {}", message)?;
                 if let (Some(line), Some(col)) = (line, column) {
                     write!(f, " at line {}, column {}", line, col)?;
@@ -114,7 +110,11 @@ impl fmt::Display for ParseError {
                 }
                 Ok(())
             }
-            ParseError::UnexpectedChar { found, expected, position } => {
+            ParseError::UnexpectedChar {
+                found,
+                expected,
+                position,
+            } => {
                 write!(f, "Unexpected character '{}', expected {}", found, expected)?;
                 if let Some(pos) = position {
                     write!(f, " at position {}", pos)?;
@@ -176,11 +176,17 @@ impl From<ParseError> for String {
 impl From<ParseError> for babbel_core::BabbelError {
     fn from(err: ParseError) -> Self {
         let (code, msg, span) = match &err {
-            ParseError::Syntax { message, line, column } => {
-                let span = line.map(|l| babbel_core::Span::new(
-                    babbel_core::Location::new(l, column.unwrap_or(1), 0),
-                    babbel_core::Location::new(l, column.unwrap_or(1), 0),
-                ));
+            ParseError::Syntax {
+                message,
+                line,
+                column,
+            } => {
+                let span = line.map(|l| {
+                    babbel_core::Span::new(
+                        babbel_core::Location::new(l, column.unwrap_or(1), 0),
+                        babbel_core::Location::new(l, column.unwrap_or(1), 0),
+                    )
+                });
                 (babbel_core::ErrorCode::SyntaxError, message.clone(), span)
             }
             ParseError::UnexpectedEof { expected } => {
@@ -190,11 +196,17 @@ impl From<ParseError> for babbel_core::BabbelError {
                 let m = expected.clone();
                 (babbel_core::ErrorCode::UnexpectedEof, m, None)
             }
-            ParseError::UnexpectedChar { found, expected, position } => {
-                let span = position.map(|p| babbel_core::Span::new(
-                    babbel_core::Location::new(1, p + 1, p),
-                    babbel_core::Location::new(1, p + 1, p),
-                ));
+            ParseError::UnexpectedChar {
+                found,
+                expected,
+                position,
+            } => {
+                let span = position.map(|p| {
+                    babbel_core::Span::new(
+                        babbel_core::Location::new(1, p + 1, p),
+                        babbel_core::Location::new(1, p + 1, p),
+                    )
+                });
                 #[cfg(feature = "alloc")]
                 let m = alloc::format!("unexpected character '{found}', expected {expected}");
                 #[cfg(not(feature = "alloc"))]
@@ -202,10 +214,12 @@ impl From<ParseError> for babbel_core::BabbelError {
                 (babbel_core::ErrorCode::SyntaxError, m, span)
             }
             ParseError::InvalidEscape { sequence, position } => {
-                let span = position.map(|p| babbel_core::Span::new(
-                    babbel_core::Location::new(1, p + 1, p),
-                    babbel_core::Location::new(1, p + 1, p),
-                ));
+                let span = position.map(|p| {
+                    babbel_core::Span::new(
+                        babbel_core::Location::new(1, p + 1, p),
+                        babbel_core::Location::new(1, p + 1, p),
+                    )
+                });
                 #[cfg(feature = "alloc")]
                 let m = alloc::format!("invalid escape sequence '{sequence}'");
                 #[cfg(not(feature = "alloc"))]
@@ -213,10 +227,12 @@ impl From<ParseError> for babbel_core::BabbelError {
                 (babbel_core::ErrorCode::SyntaxError, m, span)
             }
             ParseError::InvalidUnicode { sequence, position } => {
-                let span = position.map(|p| babbel_core::Span::new(
-                    babbel_core::Location::new(1, p + 1, p),
-                    babbel_core::Location::new(1, p + 1, p),
-                ));
+                let span = position.map(|p| {
+                    babbel_core::Span::new(
+                        babbel_core::Location::new(1, p + 1, p),
+                        babbel_core::Location::new(1, p + 1, p),
+                    )
+                });
                 #[cfg(feature = "alloc")]
                 let m = alloc::format!("invalid Unicode escape '{sequence}'");
                 #[cfg(not(feature = "alloc"))]

@@ -1,4 +1,4 @@
-﻿//! YAML Error Handling Module
+//! YAML Error Handling Module
 //!
 //! Aggregates error types, message constants, enhanced error handling, and recovery strategies
 //! for YAML parsing and processing. Provides structured error handling with detailed context
@@ -239,10 +239,12 @@ impl From<YamlError> for babbel_core::BabbelError {
             ErrorKind::Unsupported => babbel_core::ErrorCode::UnsupportedType,
             _ => babbel_core::ErrorCode::Custom,
         };
-        let span = err.line().map(|l| babbel_core::Span::new(
-            babbel_core::Location::new(l, err.column().unwrap_or(1), 0),
-            babbel_core::Location::new(l, err.column().unwrap_or(1), 0),
-        ));
+        let span = err.line().map(|l| {
+            babbel_core::Span::new(
+                babbel_core::Location::new(l, err.column().unwrap_or(1), 0),
+                babbel_core::Location::new(l, err.column().unwrap_or(1), 0),
+            )
+        });
         let mut berr = babbel_core::BabbelError::new(code, err.message()).with_format("yaml");
         if let Some(s) = span {
             berr = berr.with_span(s);

@@ -113,7 +113,10 @@ pub fn parse_json5(input: &str) -> Result<Node, String> {
     let node = parser.parse()?;
     parser.skip_whitespace_and_comments()?;
     if let Some(ch) = parser.peek() {
-        return Err(format!("Unexpected trailing character '{}' at byte {}", ch, parser.cursor));
+        return Err(format!(
+            "Unexpected trailing character '{}' at byte {}",
+            ch, parser.cursor
+        ));
     }
     Ok(node)
 }
@@ -125,7 +128,8 @@ pub fn from_str(input: &str) -> Result<Node, String> {
 
 /// Convenience function to parse JSON5 from a byte slice.
 pub fn from_bytes(bytes: &[u8]) -> Result<Node, String> {
-    let s = core::str::from_utf8(bytes).map_err(|_| "Invalid UTF-8 in JSON5 payload".to_string())?;
+    let s =
+        core::str::from_utf8(bytes).map_err(|_| "Invalid UTF-8 in JSON5 payload".to_string())?;
     parse_json5(s)
 }
 
@@ -147,7 +151,6 @@ impl Json5Parser {
             max_depth: 256,
         }
     }
-
 
     #[inline]
     fn peek(&self) -> Option<char> {
@@ -253,7 +256,10 @@ impl Json5Parser {
                     let key = self.parse_key()?;
                     self.skip_whitespace_and_comments()?;
                     if self.peek() != Some(':') {
-                        return Err(format!("Expected ':' after key in JSON5 object at byte {}", self.cursor));
+                        return Err(format!(
+                            "Expected ':' after key in JSON5 object at byte {}",
+                            self.cursor
+                        ));
                     }
                     self.cursor += 1; // consume ':'
                     let value = self.parse()?;
@@ -270,7 +276,12 @@ impl Json5Parser {
                             self.depth -= 1;
                             return Ok(Node::Object(map));
                         }
-                        Some(c) => return Err(format!("Expected ',' or '}}' in JSON5 object, found '{}'", c)),
+                        Some(c) => {
+                            return Err(format!(
+                                "Expected ',' or '}}' in JSON5 object, found '{}'",
+                                c
+                            ));
+                        }
                         None => return Err("Unexpected EOF in JSON5 object".to_string()),
                     }
                 }
@@ -302,7 +313,10 @@ impl Json5Parser {
                 }
                 Ok(key)
             }
-            Some(c) => Err(format!("Invalid character '{}' starting JSON5 object key", c)),
+            Some(c) => Err(format!(
+                "Invalid character '{}' starting JSON5 object key",
+                c
+            )),
             None => Err("Unexpected EOF while parsing JSON5 key".to_string()),
         }
     }
@@ -339,7 +353,12 @@ impl Json5Parser {
                             self.depth -= 1;
                             return Ok(Node::Array(items));
                         }
-                        Some(c) => return Err(format!("Expected ',' or ']' in JSON5 array, found '{}'", c)),
+                        Some(c) => {
+                            return Err(format!(
+                                "Expected ',' or ']' in JSON5 array, found '{}'",
+                                c
+                            ));
+                        }
                         None => return Err("Unexpected EOF in JSON5 array".to_string()),
                     }
                 }
@@ -349,7 +368,9 @@ impl Json5Parser {
     }
 
     fn parse_string(&mut self) -> Result<Node, String> {
-        let quote = self.next_char().ok_or("Unexpected EOF reading string quote")?;
+        let quote = self
+            .next_char()
+            .ok_or("Unexpected EOF reading string quote")?;
         if quote != '"' && quote != '\'' {
             return Err(format!("Expected quote (' or \"), found '{}'", quote));
         }
@@ -375,7 +396,9 @@ impl Json5Parser {
                         // In JSON5: \0 is null character only if not followed by a digit
                         if let Some(next) = self.peek() {
                             if next.is_ascii_digit() {
-                                return Err("Octal escape sequences are not allowed in JSON5".to_string());
+                                return Err(
+                                    "Octal escape sequences are not allowed in JSON5".to_string()
+                                );
                             }
                         }
                         s.push('\0');
@@ -396,8 +419,9 @@ impl Json5Parser {
                         }
                         let code = u32::from_str_radix(&hex_str, 16)
                             .map_err(|_| "Invalid \\u unicode escape".to_string())?;
-                        let decoded = char::from_u32(code)
-                            .ok_or_else(|| format!("Invalid unicode scalar value U+{:04X}", code))?;
+                        let decoded = char::from_u32(code).ok_or_else(|| {
+                            format!("Invalid unicode scalar value U+{:04X}", code)
+                        })?;
                         s.push(decoded);
                     }
                     Some('\n') => {
@@ -460,7 +484,11 @@ impl Json5Parser {
         // Check for Infinity or NaN
         if self.consume_str("Infinity") {
             let is_neg = token.starts_with('-');
-            let val = if is_neg { -core::f64::INFINITY } else { core::f64::INFINITY };
+            let val = if is_neg {
+                -core::f64::INFINITY
+            } else {
+                core::f64::INFINITY
+            };
             return Ok(Node::Number(Numeric::Float(val)));
         }
         if self.consume_str("NaN") {
@@ -468,7 +496,9 @@ impl Json5Parser {
         }
 
         // Check for Hexadecimal: 0x or 0X
-        if self.peek() == Some('0') && (self.peek_next() == Some('x') || self.peek_next() == Some('X')) {
+        if self.peek() == Some('0')
+            && (self.peek_next() == Some('x') || self.peek_next() == Some('X'))
+        {
             self.cursor += 2; // consume 0x
             let mut hex_digits = String::new();
             while let Some(ch) = self.peek() {
@@ -484,7 +514,11 @@ impl Json5Parser {
             }
             let raw_int = i64::from_str_radix(&hex_digits, 16)
                 .map_err(|_| "Hexadecimal integer out of 64-bit range".to_string())?;
-            let signed_int = if token.starts_with('-') { -raw_int } else { raw_int };
+            let signed_int = if token.starts_with('-') {
+                -raw_int
+            } else {
+                raw_int
+            };
             return Ok(Node::Number(Numeric::Integer(signed_int)));
         }
 

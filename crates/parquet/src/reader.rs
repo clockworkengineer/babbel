@@ -1,17 +1,14 @@
 //! Parquet binary file reader.
 
 #[cfg(not(feature = "std"))]
-use alloc::{
-    string::ToString,
-    vec::Vec,
-};
+use alloc::{string::ToString, vec::Vec};
 
-use babbel_core::Value;
 use crate::column::ColumnData;
 use crate::error::ParquetError;
 use crate::metadata::*;
 use crate::thrift::ThriftReader;
 use crate::writer::PARQUET_MAGIC;
+use babbel_core::Value;
 
 /// Read standard Apache Parquet binary bytes into a tabular Babbel `Value::Array`.
 pub fn read_parquet(bytes: &[u8]) -> Result<Value, ParquetError> {
@@ -33,7 +30,9 @@ pub fn read_parquet(bytes: &[u8]) -> Result<Value, ParquetError> {
     // 3. Read metadata length
     let meta_len = u32::from_le_bytes(bytes[len - 8..len - 4].try_into().unwrap()) as usize;
     if meta_len > len - 8 {
-        return Err(ParquetError::CorruptedPage("Metadata length exceeds file size".into()));
+        return Err(ParquetError::CorruptedPage(
+            "Metadata length exceeds file size".into(),
+        ));
     }
 
     let meta_start = len - 8 - meta_len;
@@ -44,7 +43,9 @@ pub fn read_parquet(bytes: &[u8]) -> Result<Value, ParquetError> {
     let file_meta = FileMetaData::decode(&mut meta_reader)?;
 
     if file_meta.schema.is_empty() {
-        return Err(ParquetError::CorruptedPage("Parquet schema is missing".into()));
+        return Err(ParquetError::CorruptedPage(
+            "Parquet schema is missing".into(),
+        ));
     }
 
     // Map schema elements: element 0 is root, elements 1.. are columns
@@ -71,7 +72,9 @@ pub fn read_parquet(bytes: &[u8]) -> Result<Value, ParquetError> {
                             )));
                         }
                         if meta.data_page_offset < 0 {
-                            return Err(ParquetError::CorruptedPage("Negative data page offset".into()));
+                            return Err(ParquetError::CorruptedPage(
+                                "Negative data page offset".into(),
+                            ));
                         }
                         let offset = meta.data_page_offset as usize;
                         if offset >= bytes.len() {
@@ -83,12 +86,18 @@ pub fn read_parquet(bytes: &[u8]) -> Result<Value, ParquetError> {
                         let page_header = PageHeader::decode(&mut page_reader)?;
                         let header_size = page_reader.pos;
 
-                        let payload_offset = offset.checked_add(header_size).ok_or(ParquetError::UnexpectedEof)?;
+                        let payload_offset = offset
+                            .checked_add(header_size)
+                            .ok_or(ParquetError::UnexpectedEof)?;
                         if page_header.uncompressed_page_size < 0 {
-                            return Err(ParquetError::CorruptedPage("Negative uncompressed page size".into()));
+                            return Err(ParquetError::CorruptedPage(
+                                "Negative uncompressed page size".into(),
+                            ));
                         }
                         let payload_size = page_header.uncompressed_page_size as usize;
-                        let payload_end = payload_offset.checked_add(payload_size).ok_or(ParquetError::UnexpectedEof)?;
+                        let payload_end = payload_offset
+                            .checked_add(payload_size)
+                            .ok_or(ParquetError::UnexpectedEof)?;
                         if payload_end > bytes.len() {
                             return Err(ParquetError::UnexpectedEof);
                         }
@@ -118,11 +127,7 @@ pub fn read_parquet(bytes: &[u8]) -> Result<Value, ParquetError> {
     for row_idx in 0..rows_count {
         let mut row_obj = Vec::with_capacity(decoded_columns.len());
         for col in &decoded_columns {
-            let val = col
-                .values
-                .get(row_idx)
-                .cloned()
-                .unwrap_or(Value::Null);
+            let val = col.values.get(row_idx).cloned().unwrap_or(Value::Null);
             row_obj.push((col.name.clone(), val));
         }
         rows.push(Value::Object(row_obj));

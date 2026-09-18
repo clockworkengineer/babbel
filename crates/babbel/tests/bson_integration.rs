@@ -103,6 +103,8 @@ fn test_default_registry_includes_bson() {
     let engine = registry.get_by_id("bson").expect("should get bson by id");
     assert_eq!(engine.mime_type(), "application/bson");
 
-    let engine_ext = registry.get_by_extension("bson").expect("should get by ext");
+    let engine_ext = registry
+        .get_by_extension("bson")
+        .expect("should get by ext");
     assert_eq!(engine_ext.format_id(), "bson");
 }

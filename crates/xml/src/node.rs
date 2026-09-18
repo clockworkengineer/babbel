@@ -66,10 +66,7 @@ pub enum NodeKind {
     /// XML Comment (`<!-- ... -->`).
     Comment(Box<str>),
     /// Processing Instruction (`<?target data?>`).
-    ProcessingInstruction {
-        target: Box<str>,
-        data: Box<str>,
-    },
+    ProcessingInstruction { target: Box<str>, data: Box<str> },
     /// DTD DOCTYPE Definition (`<!DOCTYPE name ...>`).
     DocTypeDefinition(Box<DocTypeData>),
     /// Entity Reference (`&name;`).
@@ -96,7 +93,10 @@ impl NodeKind {
     /// Looks up an attribute value by name if this node is an [`NodeKind::Element`].
     pub fn get_attribute<'a>(&'a self, target: &str) -> Option<&'a str> {
         if let NodeKind::Element { attributes, .. } = self {
-            attributes.iter().find(|a| &*a.name == target).map(|a| &*a.value)
+            attributes
+                .iter()
+                .find(|a| &*a.name == target)
+                .map(|a| &*a.value)
         } else {
             None
         }

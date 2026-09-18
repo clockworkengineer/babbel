@@ -6,7 +6,7 @@ use alloc::{
     string::{String, ToString},
 };
 
-use babbel_core::{io::IDestination, Value};
+use babbel_core::{Value, io::IDestination};
 
 use crate::ast::{KdlDocument, KdlEntry, KdlNode, KdlValue};
 use crate::error::KdlError;
@@ -90,7 +90,13 @@ fn serialize_node(
         if pretty {
             dest.add_byte(b'\n');
             for child in &node.children {
-                serialize_node(child, dest, current_indent + indent_size, pretty, indent_size)?;
+                serialize_node(
+                    child,
+                    dest,
+                    current_indent + indent_size,
+                    pretty,
+                    indent_size,
+                )?;
             }
             write_indent(dest, current_indent);
             dest.add_byte(b'}');

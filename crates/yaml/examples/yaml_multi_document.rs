@@ -1,4 +1,4 @@
-﻿//! Example demonstrating YAML multi-document streams
+//! Example demonstrating YAML multi-document streams
 //!
 //! This example shows how to:
 //! - Parse YAML files containing multiple documents
@@ -8,7 +8,7 @@
 //! - Handle end-of-document markers (...)
 
 use babbel_yaml::{
-    get_document, get_number_of_documents, parse, stringify, BufferDestination, BufferSource, Node,
+    BufferDestination, BufferSource, Node, get_document, get_number_of_documents, parse, stringify,
 };
 
 fn main() {

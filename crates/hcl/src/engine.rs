@@ -1,8 +1,8 @@
 //! `FormatEngine` implementation for HCL v2.
 
-use babbel_core::{BabbelError, FormatEngine, FormatOptions, Value};
-use babbel_core::io::IDestination;
 use crate::{from_str, to_string, to_string_pretty};
+use babbel_core::io::IDestination;
+use babbel_core::{BabbelError, FormatEngine, FormatOptions, Value};
 
 /// Format engine for HashiCorp HCL v2 (`.hcl`, `.tf`, `.tfvars`).
 #[derive(Debug, Clone, Copy, Default)]

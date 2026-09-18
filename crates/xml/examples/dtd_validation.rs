@@ -1,9 +1,9 @@
-﻿//! # XML DTD Validation Example
+//! # XML DTD Validation Example
 //!
 //! Demonstrates validating document structures against DTD content models
 //! (`<!ELEMENT>`) and required attribute rules (`<!ATTLIST ... #REQUIRED>`) using `XmlValidator`.
 
-use babbel_xml::{parse, DtdValidator};
+use babbel_xml::{DtdValidator, parse};
 
 fn main() {
     println!("--- XML DTD Validation Example ---");

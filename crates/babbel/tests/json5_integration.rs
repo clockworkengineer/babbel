@@ -7,16 +7,19 @@ fn test_default_registry_includes_json5() {
     let formats = registry.available_formats();
     assert!(formats.contains(&"json5"), "registry should contain json5");
 
-    let engine = registry.get_by_id("json5").expect("json5 should be registered in default_registry");
+    let engine = registry
+        .get_by_id("json5")
+        .expect("json5 should be registered in default_registry");
     assert_eq!(engine.format_id(), "json5");
     assert_eq!(engine.mime_type(), "application/json5");
     assert!(engine.file_extensions().contains(&"json5"));
     assert!(engine.file_extensions().contains(&"jsonc"));
 
-    let engine_ext = registry.get_by_extension("json5").expect("should get by ext");
+    let engine_ext = registry
+        .get_by_extension("json5")
+        .expect("should get by ext");
     assert_eq!(engine_ext.format_id(), "json5");
 }
-
 
 #[test]
 fn test_json5_to_json_conversion() {

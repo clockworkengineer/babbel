@@ -3,9 +3,9 @@
 //! Demonstrates saving and loading MessagePack binary files to and from disk
 //! using Babbel's `to_vec` and `from_bytes`.
 
-use std::fs;
 use babbel_core::Value;
 use babbel_msgpack::{from_bytes, to_vec};
+use std::fs;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Babbel MessagePack File I/O Example ===\n");
@@ -43,10 +43,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let loaded = from_bytes(&loaded_bytes)?;
     println!("Successfully loaded and parsed file!");
 
-    println!("Service:    {:?}", loaded.get("service").and_then(|v| v.as_str()));
-    println!("Port:       {:?}", loaded.get("port").and_then(|v| v.as_i64()));
-    println!("Rate limit: {:?}", loaded.get("rate_limit_per_sec").and_then(|v| v.as_i64()));
-    println!("TLS:        {:?}", loaded.get("tls_enabled").and_then(|v| v.as_bool()));
+    println!(
+        "Service:    {:?}",
+        loaded.get("service").and_then(|v| v.as_str())
+    );
+    println!(
+        "Port:       {:?}",
+        loaded.get("port").and_then(|v| v.as_i64())
+    );
+    println!(
+        "Rate limit: {:?}",
+        loaded.get("rate_limit_per_sec").and_then(|v| v.as_i64())
+    );
+    println!(
+        "TLS:        {:?}",
+        loaded.get("tls_enabled").and_then(|v| v.as_bool())
+    );
 
     assert_eq!(loaded, document);
     println!("File roundtrip verification successful!");

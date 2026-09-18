@@ -43,11 +43,11 @@ pub mod parser;
 pub mod pull;
 pub mod serializer;
 
+pub use babbel_core::Value;
 pub use constants::*;
 pub use edn::{from_edn, to_edn};
 pub use engine::CborEngine;
 pub use error::CborError;
-pub use parser::{from_bytes, Decoder, DecoderConfig};
+pub use parser::{Decoder, DecoderConfig, from_bytes};
 pub use pull::{CborPullEvent, CborPullParser};
 pub use serializer::{serialize_to_dest, to_vec};
-pub use babbel_core::Value;

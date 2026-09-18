@@ -1,8 +1,8 @@
 //! JSON and JSON5 Format Engines adhering to OCP and DIP.
 
 use babbel_core::{
-    io::{IDestination, ISource},
     BabbelError, FormatEngine, FormatOptions, Value,
+    io::{IDestination, ISource},
 };
 
 /// JSON format engine implementing [`FormatEngine`].
@@ -116,5 +116,4 @@ impl FormatEngine for Json5Engine {
         value.serialize_json(destination);
         Ok(())
     }
-
 }

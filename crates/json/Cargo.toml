@@ -1,16 +1,21 @@
 [package]
 name = "babbel_json"
-version = "0.2.1"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 description = "Fast, modular JSON toolkit with streaming parsers, JSON Pointer (RFC 6901), and Merge Patch"
-license = "MIT"
-authors = ["ClockworkEngineer", "Babbel Contributors"]
-repository = "https://github.com/clockworkengineer/babbel"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
 documentation = "https://docs.rs/babbel_json"
-homepage = "https://github.com/clockworkengineer/babbel"
+homepage.workspace = true
+rust-version.workspace = true
 keywords = ["json", "serialization", "parser", "rust", "library"]
 categories = ["encoding", "parser-implementations", "data-structures"]
 readme = "README.md"
+
+[lints]
+workspace = true
+
 
 [features]
 default = [

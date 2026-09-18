@@ -1,4 +1,4 @@
-﻿#[allow(unused_imports)]
+#[allow(unused_imports)]
 #[cfg(feature = "std")]
 use std::collections::HashMap;
 
@@ -9,12 +9,11 @@ use alloc::collections::BTreeMap as HashMap;
 use core::str::FromStr;
 
 #[allow(unused_imports)]
-pub use super::types::{Node, Numeric};
-#[allow(unused_imports)]
 pub use super::accessors::*;
+#[allow(unused_imports)]
+pub use super::types::{Node, Numeric};
 
 impl Node {
-
     /// Deep merges another node into this node
     ///
     /// For objects, recursively merges keys. If both have the same key:
@@ -90,7 +89,6 @@ impl Node {
 
     /// Returns the length of an array or object, None for other types
 
-
     /// Gets a value using JSON Pointer notation (RFC 6901)
     ///
     /// # Examples
@@ -163,12 +161,10 @@ impl Node {
     }
 }
 
-
-
-#[allow(unused_imports)]
-pub use super::indexing::*;
 #[allow(unused_imports)]
 pub use super::convert::*;
+#[allow(unused_imports)]
+pub use super::indexing::*;
 
 /// Helper functions to create a Node from any value that can be converted into a Node
 pub fn make_node<T>(value: T) -> Node

@@ -1,4 +1,4 @@
-﻿use babbel_json::{parse, to_toml, FileDestination, FileSource};
+use babbel_json::{FileDestination, FileSource, parse, to_toml};
 use std::fs;
 use std::path::Path;
 

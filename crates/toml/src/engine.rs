@@ -1,9 +1,6 @@
 //! TOML Format Engine adhering to OCP and DIP.
 
-use babbel_core::{
-    io::IDestination,
-    BabbelError, FormatEngine, FormatOptions, Value,
-};
+use babbel_core::{BabbelError, FormatEngine, FormatOptions, Value, io::IDestination};
 
 /// TOML format engine implementing [`FormatEngine`].
 #[derive(Debug, Default, Clone, Copy)]

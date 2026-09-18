@@ -335,9 +335,9 @@ impl From<&Node> for babbel_core::model::Value {
             Node::None => babbel_core::model::Value::Null,
             Node::Integer(i) => babbel_core::model::Value::Integer(*i as i128),
             Node::Str(s) => babbel_core::model::Value::String(s.clone()),
-            Node::List(list) => {
-                babbel_core::model::Value::Array(list.iter().map(babbel_core::model::Value::from).collect())
-            }
+            Node::List(list) => babbel_core::model::Value::Array(
+                list.iter().map(babbel_core::model::Value::from).collect(),
+            ),
             Node::Dictionary(dict) => {
                 let mut entries: Vec<(String, babbel_core::model::Value)> = dict
                     .iter()

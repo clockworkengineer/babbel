@@ -23,17 +23,16 @@ pub enum Encoding {
 }
 
 /// Detects BOM markers and returns the stripped UTF-8 string or decoded content alongside the detected encoding.
-pub fn detect_encoding_and_strip_bom(bytes: &[u8]) -> Result<(Cow<'_, str>, Encoding), &'static str> {
+pub fn detect_encoding_and_strip_bom(
+    bytes: &[u8],
+) -> Result<(Cow<'_, str>, Encoding), &'static str> {
     if bytes.len() >= 3 && bytes[0..3] == [0xEF, 0xBB, 0xBF] {
         let s = core::str::from_utf8(&bytes[3..]).map_err(|_| "Invalid UTF-8 after BOM")?;
         Ok((Cow::Borrowed(s), Encoding::Utf8))
     } else if bytes.len() >= 2 && bytes[0..2] == [0xFF, 0xFE] {
         // UTF-16 LE
         let u16_slice: &[u16] = unsafe {
-            core::slice::from_raw_parts(
-                bytes[2..].as_ptr() as *const u16,
-                (bytes.len() - 2) / 2,
-            )
+            core::slice::from_raw_parts(bytes[2..].as_ptr() as *const u16, (bytes.len() - 2) / 2)
         };
         let s = char::decode_utf16(u16_slice.iter().cloned())
             .collect::<Result<String, _>>()
@@ -45,7 +44,7 @@ pub fn detect_encoding_and_strip_bom(bytes: &[u8]) -> Result<(Cow<'_, str>, Enco
         for chunk in bytes[2..].chunks_exact(2) {
             u16_vec.push(u16::from_be_bytes([chunk[0], chunk[1]]));
         }
-        let s = char::decode_utf16(u16_vec.into_iter())
+        let s = char::decode_utf16(u16_vec)
             .collect::<Result<String, _>>()
             .map_err(|_| "Invalid UTF-16 BE sequence")?;
         Ok((Cow::Owned(s), Encoding::Utf16Be))

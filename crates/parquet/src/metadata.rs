@@ -32,7 +32,9 @@ impl Type {
             5 => Ok(Type::Double),
             6 => Ok(Type::ByteArray),
             7 => Ok(Type::FixedLenByteArray),
-            _ => Err(ParquetError::UnsupportedType(alloc::format!("Type {}", val))),
+            _ => Err(ParquetError::UnsupportedType(alloc::format!(
+                "Type {}", val
+            ))),
         }
     }
 }
@@ -50,7 +52,10 @@ impl FieldRepetitionType {
             0 => Ok(FieldRepetitionType::Required),
             1 => Ok(FieldRepetitionType::Optional),
             2 => Ok(FieldRepetitionType::Repeated),
-            _ => Err(ParquetError::UnsupportedType(alloc::format!("RepetitionType {}", val))),
+            _ => Err(ParquetError::UnsupportedType(alloc::format!(
+                "RepetitionType {}",
+                val
+            ))),
         }
     }
 }

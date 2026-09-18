@@ -1,7 +1,7 @@
 //! Fast, allocation-conscious hexadecimal encoding and decoding.
 
 #[cfg(not(feature = "std"))]
-use alloc::{format, string::String, vec::Vec};
+use alloc::{string::String, vec::Vec};
 
 /// Encodes raw bytes as a lowercase hexadecimal string.
 pub fn encode_hex(bytes: &[u8]) -> String {

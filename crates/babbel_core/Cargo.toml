@@ -1,14 +1,20 @@
 [package]
 name = "babbel_core"
-version = "0.2.1"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 description = "Shared core I/O, encoding, numeric, error, and AST primitives for the Babbel data format family"
-license = "MIT"
-authors = ["ClockworkEngineer", "Babbel Contributors"]
+license.workspace = true
+authors.workspace = true
 readme = "README.md"
-repository = "https://github.com/clockworkengineer/babbel"
-homepage = "https://github.com/clockworkengineer/babbel"
+repository.workspace = true
+homepage.workspace = true
 documentation = "https://docs.rs/babbel_core"
+rust-version.workspace = true
+keywords = ["core", "io", "ast", "serialization", "encoding"]
+categories.workspace = true
+
+[lints]
+workspace = true
 
 [features]
 default = ["std", "file-io", "serde"]

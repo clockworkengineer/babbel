@@ -1,9 +1,9 @@
-﻿//! # XSD Simple Type Restriction Facets Example
+//! # XSD Simple Type Restriction Facets Example
 //!
 //! Demonstrates validating numeric simple type restriction facets (`minInclusive`, `maxInclusive`)
 //! using `XsdValidator` and `XmlValidator`.
 
-use babbel_xml::{parse, XsdValidator};
+use babbel_xml::{XsdValidator, parse};
 
 fn main() {
     println!("--- XSD Type Restrictions Example ---");

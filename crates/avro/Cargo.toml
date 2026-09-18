@@ -1,14 +1,20 @@
 [package]
 name = "babbel_avro"
-version = "0.2.1"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 description = "Fast, pure-Rust Apache Avro binary and Object Container File (OCF) parser, serializer, and FormatEngine"
-license = "MIT"
-authors = ["ClockworkEngineer", "Babbel Contributors"]
-repository = "https://github.com/clockworkengineer/babbel"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
 documentation = "https://docs.rs/babbel_avro"
-homepage = "https://github.com/clockworkengineer/babbel"
+homepage.workspace = true
+rust-version.workspace = true
+keywords = ["avro", "apache", "binary", "parser", "serializer"]
+categories = ["parser-implementations", "encoding"]
 readme = "README.md"
+
+[lints]
+workspace = true
 
 [features]
 default = ["std"]

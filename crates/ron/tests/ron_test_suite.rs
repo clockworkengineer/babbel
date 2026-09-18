@@ -38,9 +38,11 @@ fn node_to_value(node: babbel_json::nodes::Node) -> Value {
         babbel_json::nodes::Node::Array(arr) => {
             Value::Array(arr.into_iter().map(node_to_value).collect())
         }
-        babbel_json::nodes::Node::Object(map) => {
-            Value::Object(map.into_iter().map(|(k, v)| (k, node_to_value(v))).collect())
-        }
+        babbel_json::nodes::Node::Object(map) => Value::Object(
+            map.into_iter()
+                .map(|(k, v)| (k, node_to_value(v)))
+                .collect(),
+        ),
         babbel_json::nodes::Node::None => Value::Null,
     }
 }
@@ -88,7 +90,13 @@ fn find_ron_test_suite_dir() -> Option<PathBuf> {
     let mut candidates = vec![
         manifest_dir.join("tests").join("ron-upstream"),
         manifest_dir.join("ron-upstream"),
-        manifest_dir.join("..").join("..").join("crates").join("ron").join("tests").join("ron-upstream"),
+        manifest_dir
+            .join("..")
+            .join("..")
+            .join("crates")
+            .join("ron")
+            .join("tests")
+            .join("ron-upstream"),
         PathBuf::from("crates/ron/tests/ron-upstream"),
         PathBuf::from("tests/ron-upstream"),
         PathBuf::from("ron-upstream"),
@@ -107,7 +115,10 @@ fn find_ron_test_suite_dir() -> Option<PathBuf> {
     }
 
     for candidate in candidates {
-        let manifest = candidate.join("testdata").join("conformance").join("manifest.json");
+        let manifest = candidate
+            .join("testdata")
+            .join("conformance")
+            .join("manifest.json");
         if manifest.is_file() {
             return Some(candidate);
         }
@@ -138,7 +149,9 @@ fn values_equal_modulo_key_order(v1: &Value, v2: &Value) -> bool {
             if a1.len() != a2.len() {
                 return false;
             }
-            a1.iter().zip(a2.iter()).all(|(x, y)| values_equal_modulo_key_order(x, y))
+            a1.iter()
+                .zip(a2.iter())
+                .all(|(x, y)| values_equal_modulo_key_order(x, y))
         }
         (Value::Object(o1), Value::Object(o2)) => {
             if o1.len() != o2.len() {
@@ -173,7 +186,10 @@ fn categorize_test_path(path_str: &str, is_invalid: bool) -> &'static str {
         "Valid Records & Elided Maps"
     } else if path_str.contains("escape") {
         "Valid String Escapes & Unicode"
-    } else if path_str.contains("delimiter") || path_str.contains("quad") || path_str.contains("repeated") {
+    } else if path_str.contains("delimiter")
+        || path_str.contains("quad")
+        || path_str.contains("repeated")
+    {
         "Valid Delimiter-Aware & Quoted Strings"
     } else if path_str.contains("punctuation") || path_str.contains("comma") {
         "Valid Punctuation & Comma Tokens"
@@ -198,48 +214,62 @@ const EMBEDDED_VECTORS: &[EmbeddedVector] = &[
     EmbeddedVector {
         name: "records/basic_users_settings",
         ron_input: "users [{id 100 name Ada roles [admin writer] active true}]\nsettings {retry {max 3 backoffMs 250} tags [llm json]}",
-        json_expected: Some("{\"settings\":{\"retry\":{\"backoffMs\":250,\"max\":3},\"tags\":[\"llm\",\"json\"]},\"users\":[{\"active\":true,\"id\":100,\"name\":\"Ada\",\"roles\":[\"admin\",\"writer\"]}]}"),
+        json_expected: Some(
+            "{\"settings\":{\"retry\":{\"backoffMs\":250,\"max\":3},\"tags\":[\"llm\",\"json\"]},\"users\":[{\"active\":true,\"id\":100,\"name\":\"Ada\",\"roles\":[\"admin\",\"writer\"]}]}",
+        ),
         is_valid: true,
     },
     EmbeddedVector {
         name: "records/top_level_elided_map",
         ron_input: "name Ada\nmanager {# 200}\ntags [math logic]",
-        json_expected: Some("{\"manager\":{\"#\":200},\"name\":\"Ada\",\"tags\":[\"math\",\"logic\"]}"),
+        json_expected: Some(
+            "{\"manager\":{\"#\":200},\"name\":\"Ada\",\"tags\":[\"math\",\"logic\"]}",
+        ),
         is_valid: true,
     },
     // Valid escapes
     EmbeddedVector {
         name: "escapes/json_controls_and_unicode",
         ron_input: "apostrophe '''''\nlineFeed a\\nb\ntab a\\tb\nescapedKeyword tr\\u0075e\nescapedSpace a\\u0020b\nunicode A\\u03a9\\uD83D\\uDE00",
-        json_expected: Some("{\"apostrophe\":\"'\",\"escapedKeyword\":\"true\",\"escapedSpace\":\"a b\",\"lineFeed\":\"a\\nb\",\"tab\":\"a\\tb\",\"unicode\":\"AΩ😀\"}"),
+        json_expected: Some(
+            "{\"apostrophe\":\"'\",\"escapedKeyword\":\"true\",\"escapedSpace\":\"a b\",\"lineFeed\":\"a\\nb\",\"tab\":\"a\\tb\",\"unicode\":\"AΩ😀\"}",
+        ),
         is_valid: true,
     },
     // Valid comma escapes
     EmbeddedVector {
         name: "comma_escapes/tab_and_pair",
         ron_input: "backslash [,\\\\]\nlineFeed [,\\n]\ntab [,\\t]\nunicodePair [,\\uD83D\\uDE00]",
-        json_expected: Some("{\"backslash\":[\",\\\\\"],\"lineFeed\":[\",\\n\"],\"tab\":[\",\\t\"],\"unicodePair\":[\",😀\"]}"),
+        json_expected: Some(
+            "{\"backslash\":[\",\\\\\"],\"lineFeed\":[\",\\n\"],\"tab\":[\",\\t\"],\"unicodePair\":[\",😀\"]}",
+        ),
         is_valid: true,
     },
     // Valid delimiter-aware strings
     EmbeddedVector {
         name: "delimiter_aware_strings/nested_quotes",
         ron_input: "data ['{\"coordinates\":[12.5,-42.25],\"type\":\"Point\"}']\nquotes ['a\"b' \"\"\"a \"quoted\" phrase\"\"\" \"\"\"\"contains \"\"\" inside and \" too\"\"\"\"]",
-        json_expected: Some("{\"data\":[\"{\\\"coordinates\\\":[12.5,-42.25],\\\"type\\\":\\\"Point\\\"}\"],\"quotes\":[\"a\\\"b\",\"a \\\"quoted\\\" phrase\",\"contains \\\"\\\"\\\" inside and \\\" too\"]}"),
+        json_expected: Some(
+            "{\"data\":[\"{\\\"coordinates\\\":[12.5,-42.25],\\\"type\\\":\\\"Point\\\"}\"],\"quotes\":[\"a\\\"b\",\"a \\\"quoted\\\" phrase\",\"contains \\\"\\\"\\\" inside and \\\" too\"]}",
+        ),
         is_valid: true,
     },
     // Valid strings & quotes
     EmbeddedVector {
         name: "strings/various_framings",
         ron_input: "[Ada hello '' \"\" \"it's fine\" 'contains \"\" inside' ?name 'Ada Lovelace' 'true' 'null' '123' #_ada -ada]",
-        json_expected: Some("[\"Ada\",\"hello\",\"\",\"\",\"it's fine\",\"contains \\\"\\\" inside\",\"?name\",\"Ada Lovelace\",\"true\",\"null\",\"123\",\"#_ada\",\"-ada\"]"),
+        json_expected: Some(
+            "[\"Ada\",\"hello\",\"\",\"\",\"it's fine\",\"contains \\\"\\\" inside\",\"?name\",\"Ada Lovelace\",\"true\",\"null\",\"123\",\"#_ada\",\"-ada\"]",
+        ),
         is_valid: true,
     },
     // Valid punctuation tokens
     EmbeddedVector {
         name: "punctuation/unquote_and_prefixed",
         ron_input: "unquote [, x]\nunquoteSplicing [,@ xs]\ncommaPrefixed [,foo]\nunquoteKey {, value}",
-        json_expected: Some("{\"commaPrefixed\":[\",foo\"],\"unquote\":[\",\",\"x\"],\"unquoteKey\":{\",\":\"value\"},\"unquoteSplicing\":[\",@\",\"xs\"]}"),
+        json_expected: Some(
+            "{\"commaPrefixed\":[\",foo\"],\"unquote\":[\",\",\"x\"],\"unquoteKey\":{\",\":\"value\"},\"unquoteSplicing\":[\",@\",\"xs\"]}",
+        ),
         is_valid: true,
     },
     // Valid scalars
@@ -413,7 +443,10 @@ fn test_ron_official_conformance_suite() {
     let run_upstream = suite_dir_opt.is_some();
 
     if let Some(suite_dir) = &suite_dir_opt {
-        let manifest_path = suite_dir.join("testdata").join("conformance").join("manifest.json");
+        let manifest_path = suite_dir
+            .join("testdata")
+            .join("conformance")
+            .join("manifest.json");
         let conformance_dir = suite_dir.join("testdata").join("conformance");
 
         if let Ok(manifest_content) = fs::read_to_string(&manifest_path) {
@@ -421,28 +454,34 @@ fn test_ron_official_conformance_suite() {
                 // 1. Run Valid Cases from manifest.json
                 if let Some(valid_list) = manifest_val.get("valid").and_then(|v| v.as_array()) {
                     for item in valid_list {
-                        let name = item.get("name").and_then(|v| v.as_str()).unwrap_or("unnamed");
+                        let name = item
+                            .get("name")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("unnamed");
                         let ron_inputs = item.get("ronInputs").and_then(|v| v.as_array());
                         let json_input_rel = item.get("jsonInput").and_then(|v| v.as_str());
 
                         if let (Some(inputs), Some(json_rel)) = (ron_inputs, json_input_rel) {
                             let json_path = conformance_dir.join(json_rel);
                             let json_content = fs::read_to_string(&json_path).unwrap_or_default();
-                            let expected_json_val = babbel_json::from_str(&json_content).map(node_to_value);
+                            let expected_json_val =
+                                babbel_json::from_str(&json_content).map(node_to_value);
 
                             for ron_input_val in inputs {
                                 if let Some(ron_rel) = ron_input_val.as_str() {
                                     let ron_path = conformance_dir.join(ron_rel);
-                                    let ron_content = fs::read_to_string(&ron_path).unwrap_or_default();
+                                    let ron_content =
+                                        fs::read_to_string(&ron_path).unwrap_or_default();
                                     let category = categorize_test_path(ron_rel, false);
                                     let stats = categories.entry(category).or_default();
                                     stats.total += 1;
                                     total_stats.total += 1;
 
                                     let _guard = PanicHookGuard::new_silent();
-                                    let ron_parse_result = panic::catch_unwind(AssertUnwindSafe(|| {
-                                        from_str(&ron_content)
-                                    }));
+                                    let ron_parse_result =
+                                        panic::catch_unwind(AssertUnwindSafe(|| {
+                                            from_str(&ron_content)
+                                        }));
 
                                     match ron_parse_result {
                                         Ok(Ok(val)) => {
@@ -453,7 +492,10 @@ fn test_ron_official_conformance_suite() {
                                                 } else {
                                                     stats.failed += 1;
                                                     total_stats.failed += 1;
-                                                    eprintln!("[FAIL] Value mismatch for '{}' ({})\n  Parsed RON: {:?}\n  Expected JSON: {:?}", name, ron_rel, val, expected);
+                                                    eprintln!(
+                                                        "[FAIL] Value mismatch for '{}' ({})\n  Parsed RON: {:?}\n  Expected JSON: {:?}",
+                                                        name, ron_rel, val, expected
+                                                    );
                                                 }
                                             } else {
                                                 stats.passed += 1;
@@ -463,12 +505,18 @@ fn test_ron_official_conformance_suite() {
                                         Ok(Err(err)) => {
                                             stats.failed += 1;
                                             total_stats.failed += 1;
-                                            eprintln!("[FAIL] Parse error for '{}' ({}): {:?}", name, ron_rel, err);
+                                            eprintln!(
+                                                "[FAIL] Parse error for '{}' ({}): {:?}",
+                                                name, ron_rel, err
+                                            );
                                         }
                                         Err(_) => {
                                             stats.panics += 1;
                                             total_stats.panics += 1;
-                                            eprintln!("[PANIC] Panic during parse of '{}' ({})", name, ron_rel);
+                                            eprintln!(
+                                                "[PANIC] Panic during parse of '{}' ({})",
+                                                name, ron_rel
+                                            );
                                         }
                                     }
                                 }
@@ -478,7 +526,9 @@ fn test_ron_official_conformance_suite() {
                 }
 
                 // 2. Run Invalid Cases from manifest.json
-                if let Some(invalid_list) = manifest_val.get("invalidRON").and_then(|v| v.as_array()) {
+                if let Some(invalid_list) =
+                    manifest_val.get("invalidRON").and_then(|v| v.as_array())
+                {
                     for item in invalid_list {
                         if let Some(rel_path) = item.as_str() {
                             let full_path = conformance_dir.join(rel_path);
@@ -489,9 +539,8 @@ fn test_ron_official_conformance_suite() {
                             total_stats.total += 1;
 
                             let _guard = PanicHookGuard::new_silent();
-                            let result = panic::catch_unwind(AssertUnwindSafe(|| {
-                                from_str(&content)
-                            }));
+                            let result =
+                                panic::catch_unwind(AssertUnwindSafe(|| from_str(&content)));
 
                             match result {
                                 Ok(Err(_)) => {
@@ -502,7 +551,10 @@ fn test_ron_official_conformance_suite() {
                                 Ok(Ok(_val)) => {
                                     stats.failed += 1;
                                     total_stats.failed += 1;
-                                    eprintln!("[FAIL] Invalid file unexpectedly parsed: {}", rel_path);
+                                    eprintln!(
+                                        "[FAIL] Invalid file unexpectedly parsed: {}",
+                                        rel_path
+                                    );
                                 }
                                 Err(_) => {
                                     stats.panics += 1;
@@ -525,22 +577,24 @@ fn test_ron_official_conformance_suite() {
         total_stats.total += 1;
 
         let _guard = PanicHookGuard::new_silent();
-        let parse_result = panic::catch_unwind(AssertUnwindSafe(|| {
-            from_str(vec.ron_input)
-        }));
+        let parse_result = panic::catch_unwind(AssertUnwindSafe(|| from_str(vec.ron_input)));
 
         if vec.is_valid {
             match parse_result {
                 Ok(Ok(val)) => {
                     if let Some(json_exp) = vec.json_expected {
-                        if let Ok(expected_val) = babbel_json::from_str(json_exp).map(node_to_value) {
+                        if let Ok(expected_val) = babbel_json::from_str(json_exp).map(node_to_value)
+                        {
                             if values_equal_modulo_key_order(&val, &expected_val) {
                                 stats.passed += 1;
                                 total_stats.passed += 1;
                             } else {
                                 stats.failed += 1;
                                 total_stats.failed += 1;
-                                eprintln!("[FAIL] Embedded vector mismatch: {}\n  Parsed RON: {:?}\n  Expected JSON: {:?}", vec.name, val, expected_val);
+                                eprintln!(
+                                    "[FAIL] Embedded vector mismatch: {}\n  Parsed RON: {:?}\n  Expected JSON: {:?}",
+                                    vec.name, val, expected_val
+                                );
                             }
                         } else {
                             stats.passed += 1;
@@ -571,7 +625,10 @@ fn test_ron_official_conformance_suite() {
                 Ok(Ok(_)) => {
                     stats.failed += 1;
                     total_stats.failed += 1;
-                    eprintln!("[FAIL] Embedded invalid vector unexpectedly parsed: {}", vec.name);
+                    eprintln!(
+                        "[FAIL] Embedded invalid vector unexpectedly parsed: {}",
+                        vec.name
+                    );
                 }
                 Err(_) => {
                     stats.panics += 1;
@@ -585,11 +642,21 @@ fn test_ron_official_conformance_suite() {
     let elapsed = start_time.elapsed();
 
     // 4. Print Formatted ASCII Conformance Report
-    println!("\n+---------------------------------------------------------------------------------------+");
-    println!("|          starfederation/ron (Readable Object Notation) Conformance Test Suite         |");
-    println!("+------------------------------------------------------+-------+--------+--------+------+");
-    println!("| Category                                             | Total | Passed | Failed | Panics| Pass %|");
-    println!("+------------------------------------------------------+-------+--------+--------+------+");
+    println!(
+        "\n+---------------------------------------------------------------------------------------+"
+    );
+    println!(
+        "|          starfederation/ron (Readable Object Notation) Conformance Test Suite         |"
+    );
+    println!(
+        "+------------------------------------------------------+-------+--------+--------+------+"
+    );
+    println!(
+        "| Category                                             | Total | Passed | Failed | Panics| Pass %|"
+    );
+    println!(
+        "+------------------------------------------------------+-------+--------+--------+------+"
+    );
     for (cat_name, stats) in &categories {
         println!(
             "| {:<52} | {:>5} | {:>6} | {:>6} | {:>4} | {:>5.1}%|",
@@ -601,7 +668,9 @@ fn test_ron_official_conformance_suite() {
             stats.pass_rate()
         );
     }
-    println!("+------------------------------------------------------+-------+--------+--------+------+");
+    println!(
+        "+------------------------------------------------------+-------+--------+--------+------+"
+    );
     println!(
         "| TOTAL (Upstream + Embedded)                          | {:>5} | {:>6} | {:>6} | {:>4} | {:>5.1}%|",
         total_stats.total,
@@ -610,16 +679,30 @@ fn test_ron_official_conformance_suite() {
         total_stats.panics,
         total_stats.pass_rate()
     );
-    println!("+------------------------------------------------------+-------+--------+--------+------+");
+    println!(
+        "+------------------------------------------------------+-------+--------+--------+------+"
+    );
     println!(
         "| Suite Source: {:<38} | Elapsed: {:>13?} |",
-        if run_upstream { "Upstream + Embedded" } else { "Embedded Fallback" },
+        if run_upstream {
+            "Upstream + Embedded"
+        } else {
+            "Embedded Fallback"
+        },
         elapsed
     );
-    println!("+---------------------------------------------------------------------------------------+\n");
+    println!(
+        "+---------------------------------------------------------------------------------------+\n"
+    );
 
     // Strict requirements: 0 panics, and 100% pass on embedded + upstream!
     assert_eq!(total_stats.panics, 0, "Conformance suite had panics!");
-    assert_eq!(total_stats.failed, 0, "Conformance suite had test failures!");
-    assert!(total_stats.passed > 0, "At least one test should have passed!");
+    assert_eq!(
+        total_stats.failed, 0,
+        "Conformance suite had test failures!"
+    );
+    assert!(
+        total_stats.passed > 0,
+        "At least one test should have passed!"
+    );
 }

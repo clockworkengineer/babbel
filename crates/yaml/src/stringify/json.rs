@@ -22,7 +22,11 @@ impl NodeSerializer for JsonSerializer {
         stringify(node, dest)
     }
 
-    fn serialize_pretty(&self, node: &Node, dest: &mut dyn IDestination) -> crate::error::Result<()> {
+    fn serialize_pretty(
+        &self,
+        node: &Node,
+        dest: &mut dyn IDestination,
+    ) -> crate::error::Result<()> {
         stringify_pretty(node, dest, 2)
     }
 }

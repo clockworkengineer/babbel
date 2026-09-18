@@ -65,7 +65,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Max Panes:     {}", max);
     }
     if let Some(layout) = parsed.get("layout") {
-        println!("Layout defined: Object with {} top-level entries", layout.as_object().map_or(0, |o| o.len()));
+        println!(
+            "Layout defined: Object with {} top-level entries",
+            layout.as_object().map_or(0, |o| o.len())
+        );
     }
 
     // 2. Serialize to compact KDL

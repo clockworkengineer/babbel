@@ -1,9 +1,9 @@
-﻿//! # XML Analysis Example
+//! # XML Analysis Example
 //!
 //! Demonstrates iterating over DOM arena nodes (`doc.nodes()`), categorizing node variants
 //! (`Element`, `Text`, `Comment`), and counting metrics across a document structure.
 
-use babbel_xml::{parse, NodeKind};
+use babbel_xml::{NodeKind, parse};
 
 fn main() {
     println!("--- XML Analyze File Example ---");

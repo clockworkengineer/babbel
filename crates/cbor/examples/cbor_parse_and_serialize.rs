@@ -3,8 +3,8 @@
 //! Demonstrates constructing Babbel `Value` AST, serializing to standard
 //! RFC 8949 CBOR binary with `to_vec`, parsing back with `from_bytes`, and inspecting fields.
 
-use babbel_core::Value;
 use babbel_cbor::{from_bytes, to_vec};
+use babbel_core::Value;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Babbel CBOR Parse & Serialize Example ===\n");

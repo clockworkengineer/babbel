@@ -2,8 +2,8 @@
 
 #[cfg(not(feature = "std"))]
 use alloc::string::ToString;
-use core::fmt;
 use babbel_core::{BabbelError, ErrorCode};
+use core::fmt;
 
 /// Detailed error encountered during MessagePack serialization or deserialization.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,8 +29,15 @@ pub enum MsgPackError {
 impl fmt::Display for MsgPackError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::UnexpectedEof { expected, available } => {
-                write!(f, "unexpected end of input: expected {} bytes, but only {} available", expected, available)
+            Self::UnexpectedEof {
+                expected,
+                available,
+            } => {
+                write!(
+                    f,
+                    "unexpected end of input: expected {} bytes, but only {} available",
+                    expected, available
+                )
             }
             Self::InvalidMarker(byte) => {
                 write!(f, "invalid MessagePack marker: 0x{:02x}", byte)
@@ -72,9 +79,7 @@ impl From<MsgPackError> for BabbelError {
             MsgPackError::RecursionLimitExceeded(_) | MsgPackError::SizeLimitExceeded { .. } => {
                 BabbelError::new(ErrorCode::Custom, err.to_string()).with_format("msgpack")
             }
-            _ => {
-                BabbelError::syntax(err.to_string()).with_format("msgpack")
-            }
+            _ => BabbelError::syntax(err.to_string()).with_format("msgpack"),
         }
     }
 }

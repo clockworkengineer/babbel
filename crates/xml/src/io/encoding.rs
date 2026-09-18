@@ -82,7 +82,9 @@ pub fn decode_with_encoding(bytes: &[u8], encoding: &str) -> Result<(String, For
             let s: String = bytes.iter().map(|&b| b as char).collect();
             Ok((s, Format::Ascii))
         }
-        _ => Err(XmlError::Io(format!("Unsupported character encoding: {encoding}"))),
+        _ => Err(XmlError::Io(format!(
+            "Unsupported character encoding: {encoding}"
+        ))),
     }
 }
 

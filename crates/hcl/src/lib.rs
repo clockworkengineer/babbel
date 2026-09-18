@@ -24,16 +24,16 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+pub mod engine;
 pub mod error;
 pub mod parser;
 pub mod serializer;
-pub mod engine;
 
-pub use error::HclError;
-pub use parser::{from_str, HclParser};
-pub use serializer::{to_string, to_string_pretty, HclSerializerConfig};
-pub use engine::HclEngine;
 pub use babbel_core::Value;
+pub use engine::HclEngine;
+pub use error::HclError;
+pub use parser::{HclParser, from_str};
+pub use serializer::{HclSerializerConfig, to_string, to_string_pretty};
 
 /// Deserialize a universal Babbel [`Value`] from raw HCL byte slice.
 pub fn from_bytes(bytes: &[u8]) -> Result<Value, HclError> {

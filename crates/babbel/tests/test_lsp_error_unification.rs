@@ -2,12 +2,12 @@
 //! Invariant hardening & universal error unification across format crates.
 
 use babbel::{
+    BabbelError,
     bencode::BencodeError,
     json::{JsonError, ParseError},
     toml::TomlError,
     xml::XmlError,
     yaml::{ErrorKind as YamlErrorKind, Node as YamlNode, YamlError},
-    BabbelError,
 };
 
 #[test]
@@ -27,7 +27,11 @@ fn test_universal_error_substitution_to_babbel_error() {
     let yaml_err = YamlError::new(YamlErrorKind::SyntaxError, "unexpected yaml anchor");
     let babbel_from_yaml: BabbelError = yaml_err.into();
     assert_eq!(babbel_from_yaml.format, Some("yaml"));
-    assert!(babbel_from_yaml.to_string().contains("unexpected yaml anchor"));
+    assert!(
+        babbel_from_yaml
+            .to_string()
+            .contains("unexpected yaml anchor")
+    );
 
     // 3. XML error -> BabbelError
     let xml_err = XmlError::SyntaxError {
@@ -43,7 +47,11 @@ fn test_universal_error_substitution_to_babbel_error() {
     let toml_err = TomlError::syntax("invalid key-value pair", 2, 10, 20);
     let babbel_from_toml: BabbelError = toml_err.into();
     assert_eq!(babbel_from_toml.format, Some("toml"));
-    assert!(babbel_from_toml.to_string().contains("invalid key-value pair"));
+    assert!(
+        babbel_from_toml
+            .to_string()
+            .contains("invalid key-value pair")
+    );
 
     // 5. Bencode error -> BabbelError
     let bencode_err = BencodeError::EmptyInput;

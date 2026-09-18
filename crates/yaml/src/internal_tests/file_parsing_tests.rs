@@ -1,4 +1,4 @@
-﻿// =====================================================================================
+// =====================================================================================
 //  File: file_parsing_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ mod tests {
                 continue;
             }
 
-            match FileSource::new(&file_path.to_string()) {
+            match FileSource::new(&file_path) {
                 Ok(mut source) => {
                     let result = parse(&mut source);
                     assert!(

@@ -39,7 +39,11 @@ impl<'a> XPathEngine<'a> {
     }
 
     /// Evaluates an XPath expression string expecting a Node-Set result (`Vec<NodeId>`).
-    pub fn evaluate_nodes(&self, expression: &str, context_node: Option<NodeId>) -> Result<Vec<NodeId>> {
+    pub fn evaluate_nodes(
+        &self,
+        expression: &str,
+        context_node: Option<NodeId>,
+    ) -> Result<Vec<NodeId>> {
         match self.evaluate(expression, context_node)? {
             XPathValue::NodeSet(ns) => Ok(ns),
             _ => Ok(Vec::new()),

@@ -1,4 +1,4 @@
-﻿//! # Advanced XPath 1.0 Example
+//! # Advanced XPath 1.0 Example
 //!
 //! Demonstrates advanced XPath 1.0 features:
 //! - Variable reference bindings (`$var`) in expressions
@@ -6,7 +6,7 @@
 //! - XPath 1.0 context functions: `position()` and `last()`
 //! - Modern string manipulation functions: `ends-with()`, `lower-case()`
 
-use babbel_xml::{parse, XPathEngine, XPathValue};
+use babbel_xml::{XPathEngine, XPathValue, parse};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("--- Advanced XPath 1.0 Example ---");

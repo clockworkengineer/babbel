@@ -5,10 +5,10 @@
 use crate::alloc_prelude::*;
 use crate::error::{Result, XmlError};
 
-#[cfg(feature = "std")]
-use std::collections::HashMap;
 #[cfg(not(feature = "std"))]
 use alloc::collections::BTreeMap as HashMap;
+#[cfg(feature = "std")]
+use std::collections::HashMap;
 
 /// Standard XML 1.0 predefined entity table mappings `(name, replacement)`.
 pub const PREDEFINED_ENTITIES: &[(&str, &str)] = &[
@@ -63,7 +63,9 @@ impl EntityMapper {
     /// Per XML 1.0 §4.2, the first declaration of an entity is binding.
     pub fn register(&mut self, name: impl Into<String>, value: impl Into<String>) {
         let name_str = name.into();
-        self.entities.entry(name_str).or_insert_with(|| value.into());
+        self.entities
+            .entry(name_str)
+            .or_insert_with(|| value.into());
     }
 
     /// Looks up an entity reference replacement value by name.
@@ -83,7 +85,12 @@ impl EntityMapper {
         self.expand_with_depth(input, 0, &mut total_expanded)
     }
 
-    fn expand_with_depth(&self, input: &str, depth: usize, total_expanded: &mut usize) -> Result<String> {
+    fn expand_with_depth(
+        &self,
+        input: &str,
+        depth: usize,
+        total_expanded: &mut usize,
+    ) -> Result<String> {
         if depth > self.max_depth {
             return Err(XmlError::SecurityLimitExceeded(
                 "Maximum entity expansion depth exceeded (possible XML Bomb/Billion Laughs)".into(),
@@ -113,7 +120,9 @@ impl EntityMapper {
                         let code_str = &entity_ref[1..];
                         let codepoint = if let Some(hex_digits) = code_str.strip_prefix('x') {
                             if hex_digits.is_empty() {
-                                return Err(XmlError::EntityError("Empty hex character reference".into()));
+                                return Err(XmlError::EntityError(
+                                    "Empty hex character reference".into(),
+                                ));
                             }
                             u32::from_str_radix(hex_digits, 16)
                         } else if code_str.starts_with('X') {
@@ -122,7 +131,9 @@ impl EntityMapper {
                             )));
                         } else {
                             if code_str.is_empty() {
-                                return Err(XmlError::EntityError("Empty numeric character reference".into()));
+                                return Err(XmlError::EntityError(
+                                    "Empty numeric character reference".into(),
+                                ));
                             }
                             code_str.parse::<u32>()
                         };
@@ -174,14 +185,30 @@ impl EntityMapper {
 
                         // Named reference
                         match entity_ref {
-                            "lt" => { *total_expanded += 1; result.push('<'); }
-                            "gt" => { *total_expanded += 1; result.push('>'); }
-                            "amp" => { *total_expanded += 1; result.push('&'); }
-                            "quot" => { *total_expanded += 1; result.push('"'); }
-                            "apos" => { *total_expanded += 1; result.push('\''); }
+                            "lt" => {
+                                *total_expanded += 1;
+                                result.push('<');
+                            }
+                            "gt" => {
+                                *total_expanded += 1;
+                                result.push('>');
+                            }
+                            "amp" => {
+                                *total_expanded += 1;
+                                result.push('&');
+                            }
+                            "quot" => {
+                                *total_expanded += 1;
+                                result.push('"');
+                            }
+                            "apos" => {
+                                *total_expanded += 1;
+                                result.push('\'');
+                            }
                             _ => {
                                 if let Some(val) = self.entities.get(entity_ref) {
-                                    let expanded_val = self.expand_with_depth(val, depth + 1, total_expanded)?;
+                                    let expanded_val =
+                                        self.expand_with_depth(val, depth + 1, total_expanded)?;
                                     result.push_str(&expanded_val);
                                 } else if self.allow_undeclared {
                                     result.push('&');
@@ -210,7 +237,9 @@ impl EntityMapper {
                 }
             } else {
                 let ch = input[pos..].chars().next().ok_or_else(|| {
-                    XmlError::EntityError("Unexpected EOF reading character in entity expansion".into())
+                    XmlError::EntityError(
+                        "Unexpected EOF reading character in entity expansion".into(),
+                    )
                 })?;
                 *total_expanded += ch.len_utf8();
                 if *total_expanded > self.max_expansion_size {

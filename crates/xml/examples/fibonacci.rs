@@ -1,9 +1,9 @@
-﻿//! # Algorithmic Fibonacci Document Generation Example
+//! # Algorithmic Fibonacci Document Generation Example
 //!
 //! Demonstrates programmatically populating an XML DOM tree in a loop to generate
 //! structured numerical XML documents at runtime.
 
-use babbel_xml::{stringify, Attribute, Document, NodeKind};
+use babbel_xml::{Attribute, Document, NodeKind, stringify};
 
 fn main() {
     println!("--- Fibonacci XML Document Generation Example ---");

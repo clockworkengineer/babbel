@@ -1,9 +1,9 @@
-﻿//! Embedded Compatibility Test Example
+//! Embedded Compatibility Test Example
 //!
 //! This example validates that babbel_json can be built and used for embedded systems.
 
-use babbel_json::embedded::{sensor, ArrayBuilder, ObjectBuilder};
-use babbel_json::{parse_with_config, stringify, BufferDestination, BufferSource, ParserConfig};
+use babbel_json::embedded::{ArrayBuilder, ObjectBuilder, sensor};
+use babbel_json::{BufferDestination, BufferSource, ParserConfig, parse_with_config, stringify};
 
 pub fn test_sensor_reading() {
     let _reading = sensor::simple_reading("temp_01", 23.5, 1234567890);
@@ -35,9 +35,7 @@ pub fn test_parsing() {
 }
 
 pub fn test_stringify() {
-    let node = ObjectBuilder::new()
-        .add_str("test", "value")
-        .build();
+    let node = ObjectBuilder::new().add_str("test", "value").build();
     let mut dest = BufferDestination::new();
     let _ = stringify(&node, &mut dest);
 }

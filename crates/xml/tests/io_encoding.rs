@@ -1,4 +1,4 @@
-﻿use babbel_xml::{parse_bytes, Format, XmlSource, XmlDestination};
+use babbel_xml::{Format, XmlDestination, XmlSource, parse_bytes};
 
 #[test]
 fn test_bom_detection_utf8() {

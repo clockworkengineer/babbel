@@ -1,4 +1,4 @@
-﻿//! Fibonacci sequence generator using bencode format for storage.
+//! Fibonacci sequence generator using bencode format for storage.
 //! This program maintains a sequence of Fibonacci numbers in a bencode file,
 //! reading the existing sequence and appending the next number on each run.
 
@@ -28,7 +28,6 @@ fn read_sequence(file_path: &Path) -> Result<Node, String> {
         },
         Err(e) => Err(format!("Failed to open file: {}", e)),
     }
-
 }
 
 /// Adds the next Fibonacci number to the sequence by summing the last two numbers.
@@ -51,7 +50,6 @@ fn add_next(sequence: &mut Node) {
             _ => {}
         }
     }
-
 }
 
 /// Saves the Fibonacci sequence to a bencode-encoded file.
@@ -65,10 +63,13 @@ fn add_next(sequence: &mut Node) {
 /// * `Err(String)` - Error message if writing fails
 fn write_sequence(file_path: &Path, sequence: &Node) -> Result<(), String> {
     // Create a new file destination, falling back to empty string if the path is invalid
-    let  file = FileDestination::new(file_path.to_str().unwrap_or(""));
+    let file = FileDestination::new(file_path.to_str().unwrap_or(""));
     match file {
-        Ok(mut f) => { stringify(&sequence, &mut f)?; Ok(()) }
-        Err(e) => { Err( e.to_string())}
+        Ok(mut f) => {
+            stringify(&sequence, &mut f)?;
+            Ok(())
+        }
+        Err(e) => Err(e.to_string()),
     }
 }
 
@@ -86,6 +87,6 @@ fn main() {
                 return;
             }
         }
-        Err(e) => eprintln!("Failed to read sequence: {}", e)
+        Err(e) => eprintln!("Failed to read sequence: {}", e),
     }
 }

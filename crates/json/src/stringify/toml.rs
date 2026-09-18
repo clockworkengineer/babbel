@@ -2,8 +2,8 @@
 //!
 //! Powered by universal `babbel_core::model::Value` and `TomlEmitter`.
 
-use crate::io::traits::IDestination;
 use crate::Node;
+use crate::io::traits::IDestination;
 use alloc::string::{String, ToString};
 
 /// Converts a Node structure to a TOML formatted string

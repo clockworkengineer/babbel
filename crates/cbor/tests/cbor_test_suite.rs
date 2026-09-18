@@ -21,9 +21,9 @@ use std::panic::{self, AssertUnwindSafe};
 use std::path::PathBuf;
 use std::time::Instant;
 
-use babbel_core::testing::parse_dense_hex;
-use babbel_core::Value;
 use babbel_cbor::{from_bytes, to_vec};
+use babbel_core::Value;
+use babbel_core::testing::parse_dense_hex;
 
 /// Guard to silence panic output during malformed/fuzz test runs.
 struct PanicHookGuard(Option<Box<dyn Fn(&panic::PanicHookInfo) + Send + Sync + 'static>>);
@@ -68,7 +68,13 @@ fn find_cbor_test_vectors_dir() -> Option<PathBuf> {
     let mut candidates = vec![
         manifest_dir.join("tests").join("test-vectors"),
         manifest_dir.join("test-vectors"),
-        manifest_dir.join("..").join("..").join("crates").join("cbor").join("tests").join("test-vectors"),
+        manifest_dir
+            .join("..")
+            .join("..")
+            .join("crates")
+            .join("cbor")
+            .join("tests")
+            .join("test-vectors"),
         PathBuf::from("crates/cbor/tests/test-vectors"),
         PathBuf::from("tests/test-vectors"),
         PathBuf::from("test-vectors"),
@@ -87,12 +93,22 @@ fn find_cbor_test_vectors_dir() -> Option<PathBuf> {
         }
     }
 
-    candidates.into_iter().find(|p| p.join("appendix_a.json").exists())
+    candidates
+        .into_iter()
+        .find(|p| p.join("appendix_a.json").exists())
 }
 
 /// Categorizes a test case by hex initial bytes and expected outcome.
-fn categorize_cbor_case(hex: &str, diagnostic: Option<&str>, decoded: Option<&Value>) -> &'static str {
-    if hex.starts_with("5f") || hex.starts_with("7f") || hex.starts_with("9f") || hex.starts_with("bf") {
+fn categorize_cbor_case(
+    hex: &str,
+    diagnostic: Option<&str>,
+    decoded: Option<&Value>,
+) -> &'static str {
+    if hex.starts_with("5f")
+        || hex.starts_with("7f")
+        || hex.starts_with("9f")
+        || hex.starts_with("bf")
+    {
         "Indefinite-Length Streams"
     } else if hex.starts_with('c') || hex.starts_with('d') {
         "Tags & Extension Data"
@@ -136,11 +152,12 @@ fn node_to_value(node: babbel_json::Node) -> Value {
             babbel_json::Numeric::UInt8(u) => Value::Integer(u as i128),
         },
         babbel_json::Node::Str(s) => Value::String(s),
-        babbel_json::Node::Array(arr) => {
-            Value::Array(arr.into_iter().map(node_to_value).collect())
-        }
+        babbel_json::Node::Array(arr) => Value::Array(arr.into_iter().map(node_to_value).collect()),
         babbel_json::Node::Object(map) => {
-            let mut entries: Vec<_> = map.into_iter().map(|(k, v)| (k, node_to_value(v))).collect();
+            let mut entries: Vec<_> = map
+                .into_iter()
+                .map(|(k, v)| (k, node_to_value(v)))
+                .collect();
             entries.sort_by(|a, b| a.0.cmp(&b.0));
             Value::Object(entries)
         }
@@ -148,7 +165,11 @@ fn node_to_value(node: babbel_json::Node) -> Value {
 }
 
 /// Matches decoded Value against expected decoded JSON AST or diagnostic string.
-fn matches_cbor_expected(decoded: &Value, expected_decoded: Option<&Value>, diagnostic: Option<&str>) -> bool {
+fn matches_cbor_expected(
+    decoded: &Value,
+    expected_decoded: Option<&Value>,
+    diagnostic: Option<&str>,
+) -> bool {
     if let Some(exp) = expected_decoded {
         match (decoded, exp) {
             (Value::Null, Value::Null) => true,
@@ -167,7 +188,10 @@ fn matches_cbor_expected(decoded: &Value, expected_decoded: Option<&Value>, diag
             (Value::Float(a), Value::Integer(b)) => (a - *b as f64).abs() < 1e-5,
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Array(a), Value::Array(b)) => {
-                a.len() == b.len() && a.iter().zip(b.iter()).all(|(x, y)| matches_cbor_expected(x, Some(y), None))
+                a.len() == b.len()
+                    && a.iter()
+                        .zip(b.iter())
+                        .all(|(x, y)| matches_cbor_expected(x, Some(y), None))
             }
             (Value::Object(a), Value::Object(b)) => {
                 if a.len() != b.len() {
@@ -199,8 +223,12 @@ fn matches_cbor_expected(decoded: &Value, expected_decoded: Option<&Value>, diag
             "h'01020304'" => matches!(decoded, Value::Bytes(b) if b == &[1, 2, 3, 4]),
             "{1: 2, 3: 4}" => match decoded {
                 Value::Object(entries) => {
-                    entries.iter().any(|(k, v)| k == "1" && v == &Value::Integer(2))
-                        && entries.iter().any(|(k, v)| k == "3" && v == &Value::Integer(4))
+                    entries
+                        .iter()
+                        .any(|(k, v)| k == "1" && v == &Value::Integer(2))
+                        && entries
+                            .iter()
+                            .any(|(k, v)| k == "3" && v == &Value::Integer(4))
                 }
                 _ => false,
             },
@@ -239,14 +267,30 @@ fn run_embedded_cbor_conformance_vectors() -> (usize, usize, usize) {
         ("int-100", "1864", Value::Integer(100)),
         ("int-1000", "1903e8", Value::Integer(1000)),
         ("int-1000000", "1a000f4240", Value::Integer(1000000)),
-        ("int-10^12", "1b000000e8d4a51000", Value::Integer(1000000000000)),
-        ("int-u64-max", "1bffffffffffffffff", Value::Integer(18446744073709551615)),
-        ("int-bignum-pos", "c249010000000000000000", Value::Integer(18446744073709551616)),
+        (
+            "int-10^12",
+            "1b000000e8d4a51000",
+            Value::Integer(1000000000000),
+        ),
+        (
+            "int-u64-max",
+            "1bffffffffffffffff",
+            Value::Integer(18446744073709551615),
+        ),
+        (
+            "int-bignum-pos",
+            "c249010000000000000000",
+            Value::Integer(18446744073709551616),
+        ),
         ("int--1", "20", Value::Integer(-1)),
         ("int--10", "29", Value::Integer(-10)),
         ("int--100", "3863", Value::Integer(-100)),
         ("int--1000", "3903e7", Value::Integer(-1000)),
-        ("int-bignum-neg", "c349010000000000000000", Value::Integer(-18446744073709551617)),
+        (
+            "int-bignum-neg",
+            "c349010000000000000000",
+            Value::Integer(-18446744073709551617),
+        ),
         ("bool-false", "f4", Value::Bool(false)),
         ("bool-true", "f5", Value::Bool(true)),
         ("null", "f6", Value::Null),
@@ -258,9 +302,21 @@ fn run_embedded_cbor_conformance_vectors() -> (usize, usize, usize) {
         ("bytes-empty", "40", Value::Bytes(vec![])),
         ("bytes-4", "4401020304", Value::Bytes(vec![1, 2, 3, 4])),
         ("array-empty", "80", Value::Array(vec![])),
-        ("array-123", "83010203", Value::Array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)])),
+        (
+            "array-123",
+            "83010203",
+            Value::Array(vec![
+                Value::Integer(1),
+                Value::Integer(2),
+                Value::Integer(3),
+            ]),
+        ),
         ("map-empty", "a0", Value::Object(vec![])),
-        ("map-a1", "a1616101", Value::Object(vec![("a".to_string(), Value::Integer(1))])),
+        (
+            "map-a1",
+            "a1616101",
+            Value::Object(vec![("a".to_string(), Value::Integer(1))]),
+        ),
     ];
 
     let mut passed = 0;
@@ -284,7 +340,10 @@ fn run_embedded_cbor_conformance_vectors() -> (usize, usize, usize) {
                     }
                     passed += 1;
                 } else {
-                    println!("Embedded test '{}' mismatch: expected {:?}, got {:?}", name, expected, val);
+                    println!(
+                        "Embedded test '{}' mismatch: expected {:?}, got {:?}",
+                        name, expected, val
+                    );
                     failed += 1;
                 }
             }
@@ -308,7 +367,11 @@ fn test_embedded_cbor_conformance_vectors() {
     let (passed, failed, panics) = run_embedded_cbor_conformance_vectors();
     assert_eq!(panics, 0, "No panics in embedded CBOR conformance vectors");
     assert_eq!(failed, 0, "All embedded CBOR conformance vectors must pass");
-    assert!(passed >= 30, "Expected at least 30 embedded vectors passed (got {})", passed);
+    assert!(
+        passed >= 30,
+        "Expected at least 30 embedded vectors passed (got {})",
+        passed
+    );
 }
 
 #[test]
@@ -320,12 +383,17 @@ fn test_official_cbor_conformance_suite() {
             println!("  cbor/test-vectors (RFC 7049 Appendix A) not found.");
             println!("  Running embedded conformance test vectors instead...");
             println!("  To download and install the official test suite, run:");
-            println!("    powershell -ExecutionPolicy Bypass -File scripts/fetch_cbor_test_suite.ps1");
+            println!(
+                "    powershell -ExecutionPolicy Bypass -File scripts/fetch_cbor_test_suite.ps1"
+            );
             println!("    (or ./scripts/fetch_cbor_test_suite.sh on Unix)");
             println!("============================================================\n");
 
             let (passed, failed, panics) = run_embedded_cbor_conformance_vectors();
-            println!("Embedded conformance suite: {} passed, {} failed, {} panics", passed, failed, panics);
+            println!(
+                "Embedded conformance suite: {} passed, {} failed, {} panics",
+                passed, failed, panics
+            );
             assert_eq!(panics, 0, "No panics in embedded CBOR conformance vectors");
             assert_eq!(failed, 0, "All embedded CBOR conformance vectors must pass");
             return;
@@ -339,7 +407,8 @@ fn test_official_cbor_conformance_suite() {
 
     let json_file = suite_dir.join("appendix_a.json");
     let raw_json_bytes = fs::read(&json_file).expect("Failed to read appendix_a.json");
-    let suite_node = babbel_json::from_bytes(&raw_json_bytes).expect("Failed to parse appendix_a.json with babbel_json");
+    let suite_node = babbel_json::from_bytes(&raw_json_bytes)
+        .expect("Failed to parse appendix_a.json with babbel_json");
     let suite_value = node_to_value(suite_node);
 
     let test_array = match suite_value {
@@ -371,10 +440,13 @@ fn test_official_cbor_conformance_suite() {
         };
 
         let decoded_entry = obj.iter().find(|(k, _)| k == "decoded").map(|(_, v)| v);
-        let diagnostic_entry = obj.iter().find(|(k, _)| k == "diagnostic").and_then(|(_, v)| match v {
-            Value::String(s) => Some(s.as_str()),
-            _ => None,
-        });
+        let diagnostic_entry =
+            obj.iter()
+                .find(|(k, _)| k == "diagnostic")
+                .and_then(|(_, v)| match v {
+                    Value::String(s) => Some(s.as_str()),
+                    _ => None,
+                });
 
         let category = categorize_cbor_case(hex_str, diagnostic_entry, decoded_entry);
         let stats = category_results.entry(category).or_default();
@@ -387,7 +459,10 @@ fn test_official_cbor_conformance_suite() {
             Err(e) => {
                 stats.failed += 1;
                 overall.failed += 1;
-                failures.push(format!("[{}:{}] Hex parse error for '{}': {}", category, idx, hex_str, e));
+                failures.push(format!(
+                    "[{}:{}] Hex parse error for '{}': {}",
+                    category, idx, hex_str, e
+                ));
                 continue;
             }
         };
@@ -462,7 +537,11 @@ fn test_official_cbor_conformance_suite() {
         overall.pass_rate()
     );
     println!("+---------------------------------------+-------+--------+--------+---------+");
-    println!("Executed in {:.3}s with {} unhandled panics.\n", elapsed.as_secs_f64(), overall.panics);
+    println!(
+        "Executed in {:.3}s with {} unhandled panics.\n",
+        elapsed.as_secs_f64(),
+        overall.panics
+    );
 
     drop(_panic_guard);
 
@@ -473,8 +552,14 @@ fn test_official_cbor_conformance_suite() {
     );
 
     if !failures.is_empty() {
-        println!("CBOR conformance failures (showing first 25):\n  {}",
-            failures.iter().take(25).cloned().collect::<Vec<_>>().join("\n  ")
+        println!(
+            "CBOR conformance failures (showing first 25):\n  {}",
+            failures
+                .iter()
+                .take(25)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join("\n  ")
         );
     }
 

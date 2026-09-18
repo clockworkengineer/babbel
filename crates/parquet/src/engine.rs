@@ -1,8 +1,8 @@
 //! Parquet Format Engine implementation adhering to OCP and DIP.
 
 use babbel_core::{
-    io::{IDestination, ISource},
     BabbelError, FormatEngine, FormatOptions, Value,
+    io::{IDestination, ISource},
 };
 
 /// Apache Parquet format engine implementing [`FormatEngine`].
@@ -32,8 +32,7 @@ impl FormatEngine for ParquetEngine {
     }
 
     fn parse_bytes(&self, input: &[u8]) -> Result<Value, BabbelError> {
-        crate::read_parquet(input)
-            .map_err(|err| BabbelError::from(err).with_format("parquet"))
+        crate::read_parquet(input).map_err(|err| BabbelError::from(err).with_format("parquet"))
     }
 
     fn serialize(

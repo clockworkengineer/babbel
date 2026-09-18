@@ -1,7 +1,7 @@
+use crate::codec::FormatEmitter;
 use crate::error::BabbelError;
 use crate::io::traits::IDestination;
 use crate::model::Value;
-use crate::codec::FormatEmitter;
 
 /// Standard built-in TOML format emitter delegating to universal Value serialization.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -14,7 +14,9 @@ impl TomlEmitter {
             Value::Object(entries) => {
                 serialize_toml_table(entries, "", dest);
             }
-            Value::Array(items) if !items.is_empty() && items.iter().all(|x| matches!(x, Value::Object(_))) => {
+            Value::Array(items)
+                if !items.is_empty() && items.iter().all(|x| matches!(x, Value::Object(_))) =>
+            {
                 for item in items {
                     dest.add_bytes("[[item]]\n");
                     if let Value::Object(entries) = item {
@@ -151,7 +153,10 @@ fn serialize_toml_value(val: &Value, dest: &mut dyn IDestination) {
         }
         Value::String(s) => crate::escape::write_toml_escaped_string(s, dest),
         Value::Bytes(b) => {
-            crate::escape::write_toml_escaped_string(&alloc::string::String::from_utf8_lossy(b), dest);
+            crate::escape::write_toml_escaped_string(
+                &alloc::string::String::from_utf8_lossy(b),
+                dest,
+            );
         }
         Value::Array(items) => {
             dest.add_byte(b'[');

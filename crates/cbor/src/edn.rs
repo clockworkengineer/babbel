@@ -3,8 +3,8 @@
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::String, string::ToString, vec::Vec};
 
-use babbel_core::Value;
 use crate::error::CborError;
+use babbel_core::Value;
 
 /// Formats a universal [`Value`] into CBOR Extended Diagnostic Notation (EDN).
 pub fn to_edn(val: &Value) -> String {
@@ -84,7 +84,10 @@ fn format_edn(val: &Value, out: &mut String) {
 pub fn from_edn(input: &str) -> Result<Value, CborError> {
     let trimmed = input.trim();
     if trimmed.is_empty() {
-        return Err(CborError::UnexpectedEof { expected: 1, available: 0 });
+        return Err(CborError::UnexpectedEof {
+            expected: 1,
+            available: 0,
+        });
     }
 
     if trimmed == "null" || trimmed == "undefined" {
@@ -112,9 +115,15 @@ pub fn from_edn(input: &str) -> Result<Value, CborError> {
         let mut bytes = Vec::with_capacity(hex_slice.len() / 2);
         let mut chars = hex_slice.chars().filter(|c| !c.is_whitespace());
         while let Some(c1) = chars.next() {
-            let c2 = chars.next().ok_or_else(|| CborError::Custom("odd hex length in h''"))?;
-            let b1 = c1.to_digit(16).ok_or_else(|| CborError::Custom("invalid hex digit"))?;
-            let b2 = c2.to_digit(16).ok_or_else(|| CborError::Custom("invalid hex digit"))?;
+            let c2 = chars
+                .next()
+                .ok_or_else(|| CborError::Custom("odd hex length in h''"))?;
+            let b1 = c1
+                .to_digit(16)
+                .ok_or_else(|| CborError::Custom("invalid hex digit"))?;
+            let b2 = c2
+                .to_digit(16)
+                .ok_or_else(|| CborError::Custom("invalid hex digit"))?;
             bytes.push(((b1 << 4) | b2) as u8);
         }
         return Ok(Value::Bytes(bytes));
@@ -129,7 +138,9 @@ pub fn from_edn(input: &str) -> Result<Value, CborError> {
     }
 
     // Quoted strings
-    if (trimmed.starts_with('"') && trimmed.ends_with('"')) || (trimmed.starts_with('\'') && trimmed.ends_with('\'')) {
+    if (trimmed.starts_with('"') && trimmed.ends_with('"'))
+        || (trimmed.starts_with('\'') && trimmed.ends_with('\''))
+    {
         let unquoted = &trimmed[1..trimmed.len() - 1];
         return Ok(Value::String(unquoted.to_string()));
     }

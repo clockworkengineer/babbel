@@ -1,5 +1,5 @@
 use babbel_core::{FormatEngine, FormatOptions, Value};
-use babbel_msgpack::{from_bytes, to_vec, Decoder, DecoderConfig, MsgPackEngine, MsgPackError};
+use babbel_msgpack::{Decoder, DecoderConfig, MsgPackEngine, MsgPackError, from_bytes, to_vec};
 
 #[test]
 fn test_roundtrip_primitives() {
@@ -174,25 +174,34 @@ fn test_roundtrip_map() {
 #[test]
 fn test_nested_structures() {
     let complex = Value::Object(vec![
-        ("users".into(), Value::Array(vec![
-            Value::Object(vec![
-                ("id".into(), Value::Integer(1)),
-                ("name".into(), Value::String("Alice".into())),
-                ("roles".into(), Value::Array(vec![
-                    Value::String("admin".into()),
-                    Value::String("dev".into()),
-                ])),
+        (
+            "users".into(),
+            Value::Array(vec![
+                Value::Object(vec![
+                    ("id".into(), Value::Integer(1)),
+                    ("name".into(), Value::String("Alice".into())),
+                    (
+                        "roles".into(),
+                        Value::Array(vec![
+                            Value::String("admin".into()),
+                            Value::String("dev".into()),
+                        ]),
+                    ),
+                ]),
+                Value::Object(vec![
+                    ("id".into(), Value::Integer(2)),
+                    ("name".into(), Value::String("Bob".into())),
+                    ("roles".into(), Value::Array(vec![])),
+                ]),
             ]),
+        ),
+        (
+            "meta".into(),
             Value::Object(vec![
-                ("id".into(), Value::Integer(2)),
-                ("name".into(), Value::String("Bob".into())),
-                ("roles".into(), Value::Array(vec![])),
+                ("count".into(), Value::Integer(2)),
+                ("raw".into(), Value::Bytes(vec![1, 2, 3, 4])),
             ]),
-        ])),
-        ("meta".into(), Value::Object(vec![
-            ("count".into(), Value::Integer(2)),
-            ("raw".into(), Value::Bytes(vec![1, 2, 3, 4])),
-        ])),
+        ),
     ]);
 
     let bytes = to_vec(&complex).unwrap();
@@ -260,7 +269,9 @@ fn test_format_engine_integration() {
         ("price".into(), Value::Integer(99)),
     ]);
 
-    let bytes = engine.serialize_to_vec(&val, &FormatOptions::compact()).unwrap();
+    let bytes = engine
+        .serialize_to_vec(&val, &FormatOptions::compact())
+        .unwrap();
     let parsed = engine.parse_bytes(&bytes).unwrap();
     assert_eq!(val, parsed);
 }

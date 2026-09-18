@@ -25,7 +25,9 @@ impl<'a> XmlParser<'a> {
                     let ent_name = parts[name_idx];
                     if self.options.namespace_aware && ent_name.contains(':') {
                         return Err(XmlError::SyntaxError {
-                            message: format!("Entity name '{ent_name}' cannot contain a colon in namespace-aware XML"),
+                            message: format!(
+                                "Entity name '{ent_name}' cannot contain a colon in namespace-aware XML"
+                            ),
                             line: self.source.line(),
                             col: self.source.col(),
                         });
@@ -43,10 +45,20 @@ impl<'a> XmlParser<'a> {
                             "External entity references in DOCTYPE are forbidden by security policy".into(),
                         ));
                     }
-                    if is_external && self.options.allow_external_entities && trimmed.contains("SYSTEM") && !trimmed.contains("NDATA") {
+                    if is_external
+                        && self.options.allow_external_entities
+                        && trimmed.contains("SYSTEM")
+                        && !trimmed.contains("NDATA")
+                    {
                         let raw_val = parts[val_idx..].join(" ");
-                        let sys_val = raw_val.trim_matches(|c| c == '"' || c == '\'' || c == '>' || c == ';').trim();
-                        let file_name = sys_val.strip_prefix("SYSTEM").unwrap_or(sys_val).trim().trim_matches(|c| c == '"' || c == '\'');
+                        let sys_val = raw_val
+                            .trim_matches(|c| c == '"' || c == '\'' || c == '>' || c == ';')
+                            .trim();
+                        let file_name = sys_val
+                            .strip_prefix("SYSTEM")
+                            .unwrap_or(sys_val)
+                            .trim()
+                            .trim_matches(|c| c == '"' || c == '\'');
                         #[cfg(feature = "std")]
                         {
                             let file_path = if let Some(base) = &self.options.base_dir {
@@ -55,9 +67,14 @@ impl<'a> XmlParser<'a> {
                                 std::path::PathBuf::from(file_name)
                             };
                             if let Ok(bytes) = std::fs::read(&file_path) {
-                                if let Ok((loaded_text, _)) = babbel_core::encoding::detect_encoding_and_strip_bom(&bytes) {
+                                if let Ok((loaded_text, _)) =
+                                    babbel_core::encoding::detect_encoding_and_strip_bom(&bytes)
+                                {
                                     // XML 1.0 §4.3.4: An XML 1.0 document cannot include external entity with version 1.1
-                                    if loaded_text.contains("<?xml") && (loaded_text.contains("version=\"1.1\"") || loaded_text.contains("version='1.1'")) {
+                                    if loaded_text.contains("<?xml")
+                                        && (loaded_text.contains("version=\"1.1\"")
+                                            || loaded_text.contains("version='1.1'"))
+                                    {
                                         return Err(XmlError::SyntaxError {
                                             message: "XML 1.0 document cannot include external entity with version 1.1".into(),
                                             line: self.source.line(),
@@ -83,7 +100,9 @@ impl<'a> XmlParser<'a> {
                     let not_name = parts[1];
                     if self.options.namespace_aware && not_name.contains(':') {
                         return Err(XmlError::SyntaxError {
-                            message: format!("Notation name '{not_name}' cannot contain a colon in namespace-aware XML"),
+                            message: format!(
+                                "Notation name '{not_name}' cannot contain a colon in namespace-aware XML"
+                            ),
                             line: self.source.line(),
                             col: self.source.col(),
                         });
@@ -95,7 +114,9 @@ impl<'a> XmlParser<'a> {
                     let needle = format!("&{ext};");
                     if trimmed.contains(&needle) {
                         return Err(XmlError::SyntaxError {
-                            message: format!("Attribute values must not contain references to external entity '&{ext};'"),
+                            message: format!(
+                                "Attribute values must not contain references to external entity '&{ext};'"
+                            ),
                             line: self.source.line(),
                             col: self.source.col(),
                         });
@@ -107,11 +128,14 @@ impl<'a> XmlParser<'a> {
     }
 
     pub(crate) fn parse_entity_value(&mut self) -> Result<String> {
-        let quote = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
-            message: "Expected quote for EntityValue".into(),
-            line: self.source.line(),
-            col: self.source.col(),
-        })?;
+        let quote = self
+            .source
+            .next_char()
+            .ok_or_else(|| XmlError::SyntaxError {
+                message: "Expected quote for EntityValue".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            })?;
         if quote != '"' && quote != '\'' {
             return Err(XmlError::SyntaxError {
                 message: "EntityValue must be quoted".into(),
@@ -168,7 +192,10 @@ impl<'a> XmlParser<'a> {
                             if let Some(c) = char::from_u32(cp) {
                                 if !is_valid_xml_char(c) {
                                     return Err(XmlError::SyntaxError {
-                                        message: format!("Forbidden XML character '\\u{{{:x}}}' in character reference", cp),
+                                        message: format!(
+                                            "Forbidden XML character '\\u{{{:x}}}' in character reference",
+                                            cp
+                                        ),
                                         line: self.source.line(),
                                         col: self.source.col(),
                                     });
@@ -176,7 +203,9 @@ impl<'a> XmlParser<'a> {
                                 s.push(c);
                             } else {
                                 return Err(XmlError::SyntaxError {
-                                    message: format!("Invalid code point {cp} in character reference"),
+                                    message: format!(
+                                        "Invalid code point {cp} in character reference"
+                                    ),
                                     line: self.source.line(),
                                     col: self.source.col(),
                                 });
@@ -203,7 +232,8 @@ impl<'a> XmlParser<'a> {
                     s.push_str(&name);
                     if !self.source.consume(";") {
                         return Err(XmlError::SyntaxError {
-                            message: "Expected ';' terminating entity reference inside EntityValue".into(),
+                            message: "Expected ';' terminating entity reference inside EntityValue"
+                                .into(),
                             line: self.source.line(),
                             col: self.source.col(),
                         });
@@ -213,7 +243,10 @@ impl<'a> XmlParser<'a> {
             } else {
                 if !is_valid_xml_char(ch) {
                     return Err(XmlError::SyntaxError {
-                        message: format!("Forbidden XML character '\\u{{{:x}}}' in EntityValue", ch as u32),
+                        message: format!(
+                            "Forbidden XML character '\\u{{{:x}}}' in EntityValue",
+                            ch as u32
+                        ),
                         line: self.source.line(),
                         col: self.source.col(),
                     });
@@ -384,9 +417,17 @@ impl<'a> XmlParser<'a> {
                 let val = self.parse_entity_value()?;
                 if !is_param {
                     self.entity_mapper.register(&name, &val);
-                    subset.push_str(&format!("<!ENTITY {} \"{}\">", name, val.replace('"', "&quot;")));
+                    subset.push_str(&format!(
+                        "<!ENTITY {} \"{}\">",
+                        name,
+                        val.replace('"', "&quot;")
+                    ));
                 } else {
-                    subset.push_str(&format!("<!ENTITY % {} \"{}\">", name, val.replace('"', "&quot;")));
+                    subset.push_str(&format!(
+                        "<!ENTITY % {} \"{}\">",
+                        name,
+                        val.replace('"', "&quot;")
+                    ));
                 }
             } else {
                 return Err(XmlError::SyntaxError {

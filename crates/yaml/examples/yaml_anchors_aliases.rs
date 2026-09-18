@@ -1,4 +1,4 @@
-﻿//! Example demonstrating YAML anchors and aliases for node reuse
+//! Example demonstrating YAML anchors and aliases for node reuse
 //!
 //! This example shows how to:
 //! - Parse YAML with anchors (&) and aliases (*)
@@ -6,7 +6,7 @@
 //! - Understand how the library resolves aliases
 //! - Work with the !!merge tag for inheritance patterns
 
-use babbel_yaml::{parse, stringify, BufferDestination, BufferSource, Node};
+use babbel_yaml::{BufferDestination, BufferSource, Node, parse, stringify};
 
 fn main() {
     println!("=== YAML Anchors and Aliases Example ===\n");

@@ -144,7 +144,6 @@ impl Buffer {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

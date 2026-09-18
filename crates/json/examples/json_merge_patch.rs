@@ -1,9 +1,9 @@
-﻿//! Demonstrates JSON merging and patching operations
+//! Demonstrates JSON merging and patching operations
 //!
 //! Shows how to merge JSON objects, apply configuration overlays,
 //! and manage hierarchical configurations with deep merge strategies.
 
-use babbel_json::{parse, stringify, BufferDestination, BufferSource, Node};
+use babbel_json::{BufferDestination, BufferSource, Node, parse, stringify};
 use std::collections::HashMap;
 
 fn main() {

@@ -1,4 +1,3 @@
-
 //! Value Parsing Logic
 //!
 //! Implements parsing logic for YAML values, handling tags, anchors, aliases, inline collections,
@@ -38,21 +37,20 @@ pub(crate) fn parse_value(
     // - Flow collections (better token boundaries)
     // - Aliases (simpler token handling)
 
-    use crate::parser::tokens::value::parse_value_with_tokens;
     use crate::parser::token_stream::TokenStream;
+    use crate::parser::tokens::value::parse_value_with_tokens;
 
     let mut stream = TokenStream::new(source, directives, false)?;
     let node = parse_value_with_tokens(&mut stream, directives, 0)?;
     Ok(node)
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::directives::DirectiveContext;
     use crate::io::sources::buffer::Buffer;
-    use crate::nodes::node::{Node, QuoteType, BlockStyle};
+    use crate::nodes::node::{BlockStyle, Node, QuoteType};
+    use crate::parser::directives::DirectiveContext;
 
     fn parse_val_from_str(yaml: &str) -> Node {
         let directives = DirectiveContext::new();
@@ -63,19 +61,28 @@ mod tests {
     #[test]
     fn test_plain_scalar_value() {
         let node = parse_val_from_str("plain value\n");
-        assert_eq!(node, Node::Str("plain value".into(), QuoteType::Unquoted, BlockStyle::None));
+        assert_eq!(
+            node,
+            Node::Str("plain value".into(), QuoteType::Unquoted, BlockStyle::None)
+        );
     }
 
     #[test]
     fn test_single_quoted_scalar_value() {
         let node = parse_val_from_str("'quoted'\n");
-        assert_eq!(node, Node::Str("quoted".into(), QuoteType::Single, BlockStyle::None));
+        assert_eq!(
+            node,
+            Node::Str("quoted".into(), QuoteType::Single, BlockStyle::None)
+        );
     }
 
     #[test]
     fn test_double_quoted_scalar_value() {
         let node = parse_val_from_str("\"quoted\"\n");
-        assert_eq!(node, Node::Str("quoted".into(), QuoteType::Double, BlockStyle::None));
+        assert_eq!(
+            node,
+            Node::Str("quoted".into(), QuoteType::Double, BlockStyle::None)
+        );
     }
 
     #[test]

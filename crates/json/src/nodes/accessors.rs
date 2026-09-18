@@ -4,8 +4,8 @@ use std::collections::HashMap;
 #[cfg(not(feature = "std"))]
 use alloc::{collections::BTreeMap as HashMap, string::String, vec::Vec};
 
-use core::mem;
 use super::types::{Node, Numeric};
+use core::mem;
 
 impl Node {
     /// Safely gets a value from an object by key without panicking

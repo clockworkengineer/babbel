@@ -1,4 +1,4 @@
-﻿use babbel_xml::{parse, XPathEngine, XPathValue};
+use babbel_xml::{XPathEngine, XPathValue, parse};
 
 const BOOKSTORE_XML: &str = r#"<?xml version="1.0"?>
 <bookstore>
@@ -35,23 +35,33 @@ fn test_xpath_basic_navigation() {
     let xpath = XPathEngine::new(&doc);
 
     // /bookstore
-    let root_nodes = xpath.evaluate_nodes("/bookstore", None).expect("Select root");
+    let root_nodes = xpath
+        .evaluate_nodes("/bookstore", None)
+        .expect("Select root");
     assert_eq!(root_nodes.len(), 1);
 
     // //book
-    let all_books = xpath.evaluate_nodes("//book", None).expect("Select all books");
+    let all_books = xpath
+        .evaluate_nodes("//book", None)
+        .expect("Select all books");
     assert_eq!(all_books.len(), 4);
 
     // /bookstore/book
-    let direct_books = xpath.evaluate_nodes("/bookstore/book", None).expect("Direct books");
+    let direct_books = xpath
+        .evaluate_nodes("/bookstore/book", None)
+        .expect("Direct books");
     assert_eq!(direct_books.len(), 4);
 
     // //book/title
-    let titles = xpath.evaluate_nodes("//book/title", None).expect("Book titles");
+    let titles = xpath
+        .evaluate_nodes("//book/title", None)
+        .expect("Book titles");
     assert_eq!(titles.len(), 4);
 
     // /bookstore/*
-    let root_children = xpath.evaluate_nodes("/bookstore/*", None).expect("Root elements");
+    let root_children = xpath
+        .evaluate_nodes("/bookstore/*", None)
+        .expect("Root elements");
     assert_eq!(root_children.len(), 4);
 }
 
@@ -69,15 +79,21 @@ fn test_xpath_predicates_and_functions() {
     assert_eq!(author_count, XPathValue::Number(5.0));
 
     // //book[@category='cooking']
-    let cooking = xpath.evaluate_nodes("//book[@category='cooking']", None).unwrap();
+    let cooking = xpath
+        .evaluate_nodes("//book[@category='cooking']", None)
+        .unwrap();
     assert_eq!(cooking.len(), 1);
 
     // //book[@category='web']
-    let web = xpath.evaluate_nodes("//book[@category='web']", None).unwrap();
+    let web = xpath
+        .evaluate_nodes("//book[@category='web']", None)
+        .unwrap();
     assert_eq!(web.len(), 2);
 
     // contains
-    let contains_res = xpath.evaluate("contains(/bookstore/book[1]/title, 'Italian')", None).unwrap();
+    let contains_res = xpath
+        .evaluate("contains(/bookstore/book[1]/title, 'Italian')", None)
+        .unwrap();
     assert_eq!(contains_res, XPathValue::Boolean(true));
 }
 
@@ -87,11 +103,26 @@ fn test_xpath_expanded_functions_and_axes() {
     let xpath = XPathEngine::new(&doc);
 
     // Math & Boolean functions
-    assert_eq!(xpath.evaluate("floor(3.7)", None).unwrap(), XPathValue::Number(3.0));
-    assert_eq!(xpath.evaluate("ceiling(3.2)", None).unwrap(), XPathValue::Number(4.0));
-    assert_eq!(xpath.evaluate("round(3.5)", None).unwrap(), XPathValue::Number(4.0));
-    assert_eq!(xpath.evaluate("true()", None).unwrap(), XPathValue::Boolean(true));
-    assert_eq!(xpath.evaluate("false()", None).unwrap(), XPathValue::Boolean(false));
+    assert_eq!(
+        xpath.evaluate("floor(3.7)", None).unwrap(),
+        XPathValue::Number(3.0)
+    );
+    assert_eq!(
+        xpath.evaluate("ceiling(3.2)", None).unwrap(),
+        XPathValue::Number(4.0)
+    );
+    assert_eq!(
+        xpath.evaluate("round(3.5)", None).unwrap(),
+        XPathValue::Number(4.0)
+    );
+    assert_eq!(
+        xpath.evaluate("true()", None).unwrap(),
+        XPathValue::Boolean(true)
+    );
+    assert_eq!(
+        xpath.evaluate("false()", None).unwrap(),
+        XPathValue::Boolean(false)
+    );
 
     // String functions
     assert_eq!(
@@ -99,19 +130,27 @@ fn test_xpath_expanded_functions_and_axes() {
         XPathValue::String("XML Lib".into())
     );
     assert_eq!(
-        xpath.evaluate("substring('Hello World', 1, 5)", None).unwrap(),
+        xpath
+            .evaluate("substring('Hello World', 1, 5)", None)
+            .unwrap(),
         XPathValue::String("Hello".into())
     );
     assert_eq!(
-        xpath.evaluate("substring-before('2005-09-02', '-')", None).unwrap(),
+        xpath
+            .evaluate("substring-before('2005-09-02', '-')", None)
+            .unwrap(),
         XPathValue::String("2005".into())
     );
     assert_eq!(
-        xpath.evaluate("substring-after('2005-09-02', '-')", None).unwrap(),
+        xpath
+            .evaluate("substring-after('2005-09-02', '-')", None)
+            .unwrap(),
         XPathValue::String("09-02".into())
     );
     assert_eq!(
-        xpath.evaluate("normalize-space('   hello   world   ')", None).unwrap(),
+        xpath
+            .evaluate("normalize-space('   hello   world   ')", None)
+            .unwrap(),
         XPathValue::String("hello world".into())
     );
     assert_eq!(
@@ -120,7 +159,9 @@ fn test_xpath_expanded_functions_and_axes() {
     );
 
     // Sibling Axes
-    let next_siblings = xpath.evaluate_nodes("/bookstore/book[1]/following-sibling::book", None).unwrap();
+    let next_siblings = xpath
+        .evaluate_nodes("/bookstore/book[1]/following-sibling::book", None)
+        .unwrap();
     assert_eq!(next_siblings.len(), 3);
 }
 

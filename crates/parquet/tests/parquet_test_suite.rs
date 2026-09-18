@@ -9,12 +9,12 @@
 use std::fs;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
 use babbel_core::Value;
-use babbel_parquet::{read_parquet, write_parquet, ParquetError};
+use babbel_parquet::{ParquetError, read_parquet, write_parquet};
 
 /// Panic hook guard that counts panics and restores the default hook upon drop.
 struct PanicHookGuard {
@@ -157,7 +157,10 @@ fn test_parquet_official_conformance() {
                 Value::Object(vec![("s".into(), Value::String("".into()))]),
                 Value::Object(vec![("s".into(), Value::String("hello world".into()))]),
                 Value::Object(vec![("s".into(), Value::String("UTF-8: 🚀 ✨ 🦀".into()))]),
-                Value::Object(vec![("s".into(), Value::String("multi\nline\ttext".into()))]),
+                Value::Object(vec![(
+                    "s".into(),
+                    Value::String("multi\nline\ttext".into()),
+                )]),
             ]),
         ),
         (
@@ -175,7 +178,12 @@ fn test_parquet_official_conformance() {
         let res = panic::catch_unwind(AssertUnwindSafe(|| {
             let bytes = write_parquet(&dataset).expect("write failed");
             assert_eq!(&bytes[0..4], b"PAR1", "{}: invalid magic prefix", name);
-            assert_eq!(&bytes[bytes.len() - 4..], b"PAR1", "{}: invalid magic suffix", name);
+            assert_eq!(
+                &bytes[bytes.len() - 4..],
+                b"PAR1",
+                "{}: invalid magic suffix",
+                name
+            );
             let roundtrip = read_parquet(&bytes).expect("read failed");
             assert_eq!(roundtrip, dataset, "{}: roundtrip mismatch", name);
         }));
@@ -224,9 +232,18 @@ fn test_parquet_official_conformance() {
         (
             "multiple_nullable_columns",
             Value::Array(vec![
-                Value::Object(vec![("a".into(), Value::Integer(1)), ("b".into(), Value::Null)]),
-                Value::Object(vec![("a".into(), Value::Null), ("b".into(), Value::String("two".into()))]),
-                Value::Object(vec![("a".into(), Value::Integer(3)), ("b".into(), Value::String("three".into()))]),
+                Value::Object(vec![
+                    ("a".into(), Value::Integer(1)),
+                    ("b".into(), Value::Null),
+                ]),
+                Value::Object(vec![
+                    ("a".into(), Value::Null),
+                    ("b".into(), Value::String("two".into())),
+                ]),
+                Value::Object(vec![
+                    ("a".into(), Value::Integer(3)),
+                    ("b".into(), Value::String("three".into())),
+                ]),
                 Value::Object(vec![("a".into(), Value::Null), ("b".into(), Value::Null)]),
             ]),
         ),
@@ -247,47 +264,44 @@ fn test_parquet_official_conformance() {
     // Category 3: Valid Tabular Datasets & Edge Cases
     // =========================================================================
     let tabular_cases: Vec<(&str, Value)> = vec![
-        (
-            "empty_table",
-            Value::Array(vec![]),
-        ),
+        ("empty_table", Value::Array(vec![])),
         (
             "single_row_multiple_cols",
-            Value::Array(vec![
-                Value::Object(vec![
-                    ("id".into(), Value::Integer(101)),
-                    ("name".into(), Value::String("Admin".into())),
-                    ("active".into(), Value::Bool(true)),
-                    ("rating".into(), Value::Float(4.85)),
-                ]),
-            ]),
+            Value::Array(vec![Value::Object(vec![
+                ("id".into(), Value::Integer(101)),
+                ("name".into(), Value::String("Admin".into())),
+                ("active".into(), Value::Bool(true)),
+                ("rating".into(), Value::Float(4.85)),
+            ])]),
         ),
         (
             "wide_table_10_cols",
-            Value::Array(vec![
-                Value::Object(vec![
-                    ("c0".into(), Value::Integer(0)),
-                    ("c1".into(), Value::Integer(1)),
-                    ("c2".into(), Value::Integer(2)),
-                    ("c3".into(), Value::Integer(3)),
-                    ("c4".into(), Value::Integer(4)),
-                    ("c5".into(), Value::String("col5".into())),
-                    ("c6".into(), Value::String("col6".into())),
-                    ("c7".into(), Value::Bool(true)),
-                    ("c8".into(), Value::Float(8.0)),
-                    ("c9".into(), Value::Float(9.0)),
-                ]),
-            ]),
+            Value::Array(vec![Value::Object(vec![
+                ("c0".into(), Value::Integer(0)),
+                ("c1".into(), Value::Integer(1)),
+                ("c2".into(), Value::Integer(2)),
+                ("c3".into(), Value::Integer(3)),
+                ("c4".into(), Value::Integer(4)),
+                ("c5".into(), Value::String("col5".into())),
+                ("c6".into(), Value::String("col6".into())),
+                ("c7".into(), Value::Bool(true)),
+                ("c8".into(), Value::Float(8.0)),
+                ("c9".into(), Value::Float(9.0)),
+            ])]),
         ),
         (
             "hundred_rows_tabular",
-            Value::Array((0..100).map(|i| {
-                Value::Object(vec![
-                    ("index".into(), Value::Integer(i as i128)),
-                    ("name".into(), Value::String(format!("item_{}", i))),
-                    ("flag".into(), Value::Bool(i % 2 == 0)),
-                ])
-            }).collect()),
+            Value::Array(
+                (0..100)
+                    .map(|i| {
+                        Value::Object(vec![
+                            ("index".into(), Value::Integer(i as i128)),
+                            ("name".into(), Value::String(format!("item_{}", i))),
+                            ("flag".into(), Value::Bool(i % 2 == 0)),
+                        ])
+                    })
+                    .collect(),
+            ),
         ),
     ];
 
@@ -321,7 +335,12 @@ fn test_parquet_official_conformance() {
         let res = panic::catch_unwind(AssertUnwindSafe(|| {
             let err = read_parquet(corrupted);
             assert!(err.is_err(), "{}: expected error but got ok", name);
-            assert_eq!(err.unwrap_err(), ParquetError::InvalidMagic, "{}: expected InvalidMagic", name);
+            assert_eq!(
+                err.unwrap_err(),
+                ParquetError::InvalidMagic,
+                "{}: expected InvalidMagic",
+                name
+            );
         }));
         let panicked = res.is_err() || _guard.panics() > panic_before;
         cat_magic.record(!panicked, panicked);
@@ -331,7 +350,10 @@ fn test_parquet_official_conformance() {
     // Category 5: Corrupted Metadata & Headers
     // =========================================================================
     // Generate valid base bytes first to corrupt metadata
-    let base_sample = Value::Array(vec![Value::Object(vec![("num".into(), Value::Integer(42))])]);
+    let base_sample = Value::Array(vec![Value::Object(vec![(
+        "num".into(),
+        Value::Integer(42),
+    )])]);
     let valid_bytes = write_parquet(&base_sample).expect("base write");
 
     let mut bad_meta_len = valid_bytes.clone();
@@ -397,7 +419,10 @@ fn test_parquet_official_conformance() {
     // Category 7 & 8: External Official Files (parquet-testing)
     // =========================================================================
     if let Some(suite_dir) = find_parquet_test_dir() {
-        println!("[INFO] Found official Parquet test suite at: {}", suite_dir.display());
+        println!(
+            "[INFO] Found official Parquet test suite at: {}",
+            suite_dir.display()
+        );
 
         // Category 7: data/*.parquet
         let data_dir = suite_dir.join("data");
@@ -446,7 +471,9 @@ fn test_parquet_official_conformance() {
             }
         }
     } else {
-        println!("[NOTICE] Official parquet-testing directory not found. Using embedded fallback suite.");
+        println!(
+            "[NOTICE] Official parquet-testing directory not found. Using embedded fallback suite."
+        );
     }
 
     let elapsed = start_time.elapsed();
@@ -531,6 +558,12 @@ fn test_parquet_official_conformance() {
     println!("Zero Panics Guarantee: {} panics recorded", total_panics);
     println!("=================================================================================\n");
 
-    assert_eq!(total_panics, 0, "Panics occurred during Parquet conformance tests!");
-    assert_eq!(total_passed, total_vectors, "Some Parquet test cases failed!");
+    assert_eq!(
+        total_panics, 0,
+        "Panics occurred during Parquet conformance tests!"
+    );
+    assert_eq!(
+        total_passed, total_vectors,
+        "Some Parquet test cases failed!"
+    );
 }

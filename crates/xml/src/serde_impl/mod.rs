@@ -1,4 +1,4 @@
-﻿//! # Serde Serialization & Deserialization
+//! # Serde Serialization & Deserialization
 //!
 //! Provides bidirectional mapping between Rust types and XML documents using `serde`.
 
@@ -8,12 +8,8 @@ use crate::error::{Result, XmlError};
 use crate::node::{NodeId, NodeKind};
 use crate::parse;
 
-use serde::de::{
-    self, DeserializeOwned, Deserializer, MapAccess, SeqAccess, Visitor,
-};
-use serde::ser::{
-    self, Serialize, SerializeMap, SerializeSeq, SerializeStruct, Serializer,
-};
+use serde::de::{self, DeserializeOwned, Deserializer, MapAccess, SeqAccess, Visitor};
+use serde::ser::{self, Serialize, SerializeMap, SerializeSeq, SerializeStruct, Serializer};
 
 /// Error type for XML serialization.
 #[derive(Debug)]
@@ -89,7 +85,9 @@ pub fn to_string_with_root<T: Serialize>(root_tag: &str, value: &T) -> Result<St
     writer.output.push('>');
 
     let serializer = ValueSerializer::new(&mut writer);
-    value.serialize(serializer).map_err(|e| XmlError::SerializationError(e.to_string()))?;
+    value
+        .serialize(serializer)
+        .map_err(|e| XmlError::SerializationError(e.to_string()))?;
 
     writer.output.push_str("</");
     writer.output.push_str(root_tag);
@@ -150,7 +148,10 @@ impl<'a> NodeDeserializer<'a> {
 impl<'de, 'a> Deserializer<'de> for NodeDeserializer<'a> {
     type Error = de::value::Error;
 
-    fn deserialize_any<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_any<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         match self.target {
             NodeOrText::Text(t) => visitor.visit_str(t),
             NodeOrText::Element(nid) => {
@@ -160,7 +161,9 @@ impl<'de, 'a> Deserializer<'de> for NodeDeserializer<'a> {
                         _ => false,
                     };
                     let has_child_elements = node.children.iter().any(|&c| {
-                        self.doc.get_node(c).map_or(false, |n| matches!(n.kind, NodeKind::Element { .. }))
+                        self.doc
+                            .get_node(c)
+                            .map_or(false, |n| matches!(n.kind, NodeKind::Element { .. }))
                     });
                     if has_child_elements || has_attrs {
                         self.deserialize_map(visitor)
@@ -175,7 +178,10 @@ impl<'de, 'a> Deserializer<'de> for NodeDeserializer<'a> {
         }
     }
 
-    fn deserialize_bool<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_bool<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         let text = self.text_content();
         let trimmed = text.trim();
         if trimmed == "true" || trimmed == "1" {
@@ -183,43 +189,71 @@ impl<'de, 'a> Deserializer<'de> for NodeDeserializer<'a> {
         } else if trimmed == "false" || trimmed == "0" {
             visitor.visit_bool(false)
         } else {
-            Err(de::Error::invalid_value(de::Unexpected::Str(trimmed), &"boolean ('true' or 'false')"))
+            Err(de::Error::invalid_value(
+                de::Unexpected::Str(trimmed),
+                &"boolean ('true' or 'false')",
+            ))
         }
     }
 
-    fn deserialize_i8<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_i8<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         self.deserialize_i64(visitor)
     }
 
-    fn deserialize_i16<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_i16<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         self.deserialize_i64(visitor)
     }
 
-    fn deserialize_i32<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_i32<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         self.deserialize_i64(visitor)
     }
 
-    fn deserialize_i64<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_i64<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         let text = self.text_content();
-        let val = text.trim().parse::<i64>().map_err(|_| {
-            de::Error::invalid_value(de::Unexpected::Str(&text), &"integer")
-        })?;
+        let val = text
+            .trim()
+            .parse::<i64>()
+            .map_err(|_| de::Error::invalid_value(de::Unexpected::Str(&text), &"integer"))?;
         visitor.visit_i64(val)
     }
 
-    fn deserialize_u8<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_u8<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         self.deserialize_u64(visitor)
     }
 
-    fn deserialize_u16<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_u16<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         self.deserialize_u64(visitor)
     }
 
-    fn deserialize_u32<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_u32<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         self.deserialize_u64(visitor)
     }
 
-    fn deserialize_u64<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_u64<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         let text = self.text_content();
         let val = text.trim().parse::<u64>().map_err(|_| {
             de::Error::invalid_value(de::Unexpected::Str(&text), &"unsigned integer")
@@ -227,11 +261,17 @@ impl<'de, 'a> Deserializer<'de> for NodeDeserializer<'a> {
         visitor.visit_u64(val)
     }
 
-    fn deserialize_f32<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_f32<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         self.deserialize_f64(visitor)
     }
 
-    fn deserialize_f64<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_f64<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         let text = self.text_content();
         let val = text.trim().parse::<f64>().map_err(|_| {
             de::Error::invalid_value(de::Unexpected::Str(&text), &"floating point number")
@@ -239,37 +279,61 @@ impl<'de, 'a> Deserializer<'de> for NodeDeserializer<'a> {
         visitor.visit_f64(val)
     }
 
-    fn deserialize_char<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_char<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         let text = self.text_content();
-        let ch = text.chars().next().ok_or_else(|| de::Error::invalid_length(0, &"1 character"))?;
+        let ch = text
+            .chars()
+            .next()
+            .ok_or_else(|| de::Error::invalid_length(0, &"1 character"))?;
         visitor.visit_char(ch)
     }
 
-    fn deserialize_str<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_str<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         let text = self.text_content();
         visitor.visit_str(&text)
     }
 
-    fn deserialize_string<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_string<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         let text = self.text_content();
         visitor.visit_string(text)
     }
 
-    fn deserialize_bytes<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_bytes<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         let text = self.text_content();
         visitor.visit_bytes(text.as_bytes())
     }
 
-    fn deserialize_byte_buf<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_byte_buf<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         let text = self.text_content();
         visitor.visit_byte_buf(text.into_bytes())
     }
 
-    fn deserialize_option<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_option<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         visitor.visit_some(self)
     }
 
-    fn deserialize_unit<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_unit<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         visitor.visit_unit()
     }
 
@@ -289,12 +353,22 @@ impl<'de, 'a> Deserializer<'de> for NodeDeserializer<'a> {
         visitor.visit_newtype_struct(self)
     }
 
-    fn deserialize_seq<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_seq<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         if let NodeOrText::Element(nid) = self.target {
             if let Some(node) = self.doc.get_node(nid) {
-                let children: Vec<NodeId> = node.children.iter().copied().filter(|&c| {
-                    self.doc.get_node(c).map_or(false, |n| matches!(n.kind, NodeKind::Element { .. }))
-                }).collect();
+                let children: Vec<NodeId> = node
+                    .children
+                    .iter()
+                    .copied()
+                    .filter(|&c| {
+                        self.doc
+                            .get_node(c)
+                            .map_or(false, |n| matches!(n.kind, NodeKind::Element { .. }))
+                    })
+                    .collect();
                 return visitor.visit_seq(ElementSeqAccess {
                     doc: self.doc,
                     children,
@@ -326,12 +400,17 @@ impl<'de, 'a> Deserializer<'de> for NodeDeserializer<'a> {
         self.deserialize_seq(visitor)
     }
 
-    fn deserialize_map<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_map<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         if let NodeOrText::Element(nid) = self.target {
             let access = ElementMapAccess::new(self.doc, nid);
             visitor.visit_map(access)
         } else {
-            Err(de::Error::custom("Expected XML element for map/struct deserialization"))
+            Err(de::Error::custom(
+                "Expected XML element for map/struct deserialization",
+            ))
         }
     }
 
@@ -354,11 +433,17 @@ impl<'de, 'a> Deserializer<'de> for NodeDeserializer<'a> {
         visitor.visit_enum(de::value::StrDeserializer::new(&text))
     }
 
-    fn deserialize_identifier<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_identifier<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         self.deserialize_str(visitor)
     }
 
-    fn deserialize_ignored_any<V: Visitor<'de>>(self, visitor: V) -> core::result::Result<V::Value, Self::Error> {
+    fn deserialize_ignored_any<V: Visitor<'de>>(
+        self,
+        visitor: V,
+    ) -> core::result::Result<V::Value, Self::Error> {
         visitor.visit_unit()
     }
 }
@@ -409,7 +494,8 @@ impl<'de, 'a> MapAccess<'de> for ElementMapAccess<'a> {
     ) -> core::result::Result<Option<K::Value>, Self::Error> {
         if self.idx < self.entries.len() {
             let key = &self.entries[self.idx].0;
-            seed.deserialize(de::value::StrDeserializer::new(key)).map(Some)
+            seed.deserialize(de::value::StrDeserializer::new(key))
+                .map(Some)
         } else {
             Ok(None)
         }
@@ -496,7 +582,9 @@ impl<'a> Serializer for ValueSerializer<'a> {
     type SerializeStructVariant = ser::Impossible<(), Self::Error>;
 
     fn serialize_bool(self, v: bool) -> core::result::Result<(), Self::Error> {
-        self.writer.output.push_str(if v { "true" } else { "false" });
+        self.writer
+            .output
+            .push_str(if v { "true" } else { "false" });
         Ok(())
     }
 
@@ -571,7 +659,10 @@ impl<'a> Serializer for ValueSerializer<'a> {
         Ok(())
     }
 
-    fn serialize_some<T: ?Sized + Serialize>(self, value: &T) -> core::result::Result<(), Self::Error> {
+    fn serialize_some<T: ?Sized + Serialize>(
+        self,
+        value: &T,
+    ) -> core::result::Result<(), Self::Error> {
         value.serialize(self)
     }
 
@@ -617,11 +708,19 @@ impl<'a> Serializer for ValueSerializer<'a> {
         Ok(())
     }
 
-    fn serialize_seq(self, _len: Option<usize>) -> core::result::Result<Self::SerializeSeq, Self::Error> {
-        Ok(SeqSerializer { writer: self.writer })
+    fn serialize_seq(
+        self,
+        _len: Option<usize>,
+    ) -> core::result::Result<Self::SerializeSeq, Self::Error> {
+        Ok(SeqSerializer {
+            writer: self.writer,
+        })
     }
 
-    fn serialize_tuple(self, len: usize) -> core::result::Result<Self::SerializeTuple, Self::Error> {
+    fn serialize_tuple(
+        self,
+        len: usize,
+    ) -> core::result::Result<Self::SerializeTuple, Self::Error> {
         self.serialize_seq(Some(len))
     }
 
@@ -643,7 +742,10 @@ impl<'a> Serializer for ValueSerializer<'a> {
         Err(ser::Error::custom("Tuple variants not supported in XML"))
     }
 
-    fn serialize_map(self, _len: Option<usize>) -> core::result::Result<Self::SerializeMap, Self::Error> {
+    fn serialize_map(
+        self,
+        _len: Option<usize>,
+    ) -> core::result::Result<Self::SerializeMap, Self::Error> {
         Ok(MapSerializer {
             writer: self.writer,
             current_key: None,
@@ -655,7 +757,9 @@ impl<'a> Serializer for ValueSerializer<'a> {
         _name: &'static str,
         _len: usize,
     ) -> core::result::Result<Self::SerializeStruct, Self::Error> {
-        Ok(StructSerializer { writer: self.writer })
+        Ok(StructSerializer {
+            writer: self.writer,
+        })
     }
 
     fn serialize_struct_variant(
@@ -709,7 +813,10 @@ impl<'a> SerializeSeq for SeqSerializer<'a> {
     type Ok = ();
     type Error = CustomSerError;
 
-    fn serialize_element<T: ?Sized + Serialize>(&mut self, value: &T) -> core::result::Result<(), Self::Error> {
+    fn serialize_element<T: ?Sized + Serialize>(
+        &mut self,
+        value: &T,
+    ) -> core::result::Result<(), Self::Error> {
         self.writer.output.push_str("<item>");
         value.serialize(ValueSerializer::new(self.writer))?;
         self.writer.output.push_str("</item>");
@@ -725,7 +832,10 @@ impl<'a> ser::SerializeTuple for SeqSerializer<'a> {
     type Ok = ();
     type Error = CustomSerError;
 
-    fn serialize_element<T: ?Sized + Serialize>(&mut self, value: &T) -> core::result::Result<(), Self::Error> {
+    fn serialize_element<T: ?Sized + Serialize>(
+        &mut self,
+        value: &T,
+    ) -> core::result::Result<(), Self::Error> {
         SerializeSeq::serialize_element(self, value)
     }
 
@@ -738,7 +848,10 @@ impl<'a> ser::SerializeTupleStruct for SeqSerializer<'a> {
     type Ok = ();
     type Error = CustomSerError;
 
-    fn serialize_field<T: ?Sized + Serialize>(&mut self, value: &T) -> core::result::Result<(), Self::Error> {
+    fn serialize_field<T: ?Sized + Serialize>(
+        &mut self,
+        value: &T,
+    ) -> core::result::Result<(), Self::Error> {
         SerializeSeq::serialize_element(self, value)
     }
 
@@ -756,15 +869,24 @@ impl<'a> SerializeMap for MapSerializer<'a> {
     type Ok = ();
     type Error = CustomSerError;
 
-    fn serialize_key<T: ?Sized + Serialize>(&mut self, key: &T) -> core::result::Result<(), Self::Error> {
+    fn serialize_key<T: ?Sized + Serialize>(
+        &mut self,
+        key: &T,
+    ) -> core::result::Result<(), Self::Error> {
         let mut key_writer = XmlSerWriter::new();
         key.serialize(ValueSerializer::new(&mut key_writer))?;
         self.current_key = Some(key_writer.output);
         Ok(())
     }
 
-    fn serialize_value<T: ?Sized + Serialize>(&mut self, value: &T) -> core::result::Result<(), Self::Error> {
-        let key = self.current_key.take().unwrap_or_else(|| "entry".to_string());
+    fn serialize_value<T: ?Sized + Serialize>(
+        &mut self,
+        value: &T,
+    ) -> core::result::Result<(), Self::Error> {
+        let key = self
+            .current_key
+            .take()
+            .unwrap_or_else(|| "entry".to_string());
         self.writer.output.push('<');
         self.writer.output.push_str(&key);
         self.writer.output.push('>');

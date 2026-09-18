@@ -1,4 +1,4 @@
-﻿//! # XSD Schema Validator
+//! # XSD Schema Validator
 //!
 //! Parses XSD schema documents (`xs:schema`) and validates DOM documents against elements, types, and restriction facets.
 
@@ -8,10 +8,10 @@ use crate::error::{Result, XmlError};
 use crate::node::{NodeId, NodeKind};
 use crate::validator::XmlValidator;
 
-#[cfg(feature = "std")]
-use std::collections::HashMap;
 #[cfg(not(feature = "std"))]
 use alloc::collections::BTreeMap as HashMap;
+#[cfg(feature = "std")]
+use std::collections::HashMap;
 
 /// XSD simple type restriction facets.
 #[derive(Debug, Clone, Default)]
@@ -147,7 +147,9 @@ impl XsdValidator {
                                 let mut ct = self.parse_complex_type(schema_doc, c_id);
                                 ct.name = ct_name.to_string();
                                 for elem in &ct.elements {
-                                    self.elements.entry(elem.name.clone()).or_insert_with(|| elem.clone());
+                                    self.elements
+                                        .entry(elem.name.clone())
+                                        .or_insert_with(|| elem.clone());
                                 }
                                 self.complex_types.insert(ct_name.to_string(), ct);
                             }
@@ -156,7 +158,9 @@ impl XsdValidator {
                             if !rule.name.is_empty() {
                                 if let Some(ct) = &rule.complex_type {
                                     for elem in &ct.elements {
-                                        self.elements.entry(elem.name.clone()).or_insert_with(|| elem.clone());
+                                        self.elements
+                                            .entry(elem.name.clone())
+                                            .or_insert_with(|| elem.clone());
                                     }
                                 }
                                 self.elements.insert(rule.name.clone(), rule);
@@ -169,8 +173,14 @@ impl XsdValidator {
     }
 
     fn parse_element_node(&self, schema_doc: &Document, node_id: NodeId) -> XsdElementRule {
-        let elem_name = schema_doc.get_attribute(node_id, "name").unwrap_or_default().to_string();
-        let elem_type = schema_doc.get_attribute(node_id, "type").unwrap_or("").to_string();
+        let elem_name = schema_doc
+            .get_attribute(node_id, "name")
+            .unwrap_or_default()
+            .to_string();
+        let elem_type = schema_doc
+            .get_attribute(node_id, "type")
+            .unwrap_or("")
+            .to_string();
         let min_str = schema_doc.get_attribute(node_id, "minOccurs");
         let max_str = schema_doc.get_attribute(node_id, "maxOccurs");
         let (min_occurs, max_occurs) = Self::parse_occurs(min_str, max_str);
@@ -193,7 +203,11 @@ impl XsdValidator {
 
         XsdElementRule {
             name: elem_name,
-            elem_type: if elem_type.is_empty() { "xs:string".to_string() } else { elem_type },
+            elem_type: if elem_type.is_empty() {
+                "xs:string".to_string()
+            } else {
+                elem_type
+            },
             min_occurs,
             max_occurs,
             restriction,
@@ -223,7 +237,8 @@ impl XsdValidator {
                                 ct.elements = self.collect_group_elements(schema_doc, c_id);
                             }
                             "attribute" => {
-                                ct.attributes.push(self.parse_attribute_node(schema_doc, c_id));
+                                ct.attributes
+                                    .push(self.parse_attribute_node(schema_doc, c_id));
                             }
                             _ => {}
                         }
@@ -235,7 +250,11 @@ impl XsdValidator {
         ct
     }
 
-    fn collect_group_elements(&self, schema_doc: &Document, group_id: NodeId) -> Vec<XsdElementRule> {
+    fn collect_group_elements(
+        &self,
+        schema_doc: &Document,
+        group_id: NodeId,
+    ) -> Vec<XsdElementRule> {
         let mut elements = Vec::new();
         if let Some(node) = schema_doc.get_node(group_id) {
             for &c_id in &node.children {
@@ -252,10 +271,20 @@ impl XsdValidator {
     }
 
     fn parse_attribute_node(&self, schema_doc: &Document, attr_id: NodeId) -> XsdAttributeRule {
-        let name = schema_doc.get_attribute(attr_id, "name").unwrap_or_default().to_string();
-        let attr_type = schema_doc.get_attribute(attr_id, "type").unwrap_or("xs:string").to_string();
-        let use_val = schema_doc.get_attribute(attr_id, "use").unwrap_or("optional");
-        let default = schema_doc.get_attribute(attr_id, "default").map(|s| s.to_string());
+        let name = schema_doc
+            .get_attribute(attr_id, "name")
+            .unwrap_or_default()
+            .to_string();
+        let attr_type = schema_doc
+            .get_attribute(attr_id, "type")
+            .unwrap_or("xs:string")
+            .to_string();
+        let use_val = schema_doc
+            .get_attribute(attr_id, "use")
+            .unwrap_or("optional");
+        let default = schema_doc
+            .get_attribute(attr_id, "default")
+            .map(|s| s.to_string());
 
         XsdAttributeRule {
             name,
@@ -339,9 +368,10 @@ impl XsdValidator {
         if let NodeKind::Element { name, .. } = &node.kind {
             if let Some(rule) = self.elements.get(&**name) {
                 // Resolve complex type
-                let ct_opt = rule.complex_type.as_ref().or_else(|| {
-                    self.complex_types.get(&rule.elem_type)
-                });
+                let ct_opt = rule
+                    .complex_type
+                    .as_ref()
+                    .or_else(|| self.complex_types.get(&rule.elem_type));
 
                 if let Some(ct) = ct_opt {
                     // Attribute validation
@@ -364,16 +394,24 @@ impl XsdValidator {
                     }
 
                     // Child elements and compositor validation
-                    let child_elements: Vec<(NodeId, String)> = node.children.iter().filter_map(|&c_id| {
-                        doc.get_node(c_id).and_then(|c| match &c.kind {
-                            NodeKind::Element { name: child_name, .. } => Some((c_id, child_name.to_string())),
-                            _ => None,
+                    let child_elements: Vec<(NodeId, String)> = node
+                        .children
+                        .iter()
+                        .filter_map(|&c_id| {
+                            doc.get_node(c_id).and_then(|c| match &c.kind {
+                                NodeKind::Element {
+                                    name: child_name, ..
+                                } => Some((c_id, child_name.to_string())),
+                                _ => None,
+                            })
                         })
-                    }).collect();
+                        .collect();
 
                     match ct.compositor {
                         Some(Compositor::Choice) => {
-                            if child_elements.is_empty() && ct.elements.iter().any(|e| e.min_occurs > 0) {
+                            if child_elements.is_empty()
+                                && ct.elements.iter().any(|e| e.min_occurs > 0)
+                            {
                                 return Err(XmlError::XsdError(format!(
                                     "Element <{name}> requires at least one choice child element"
                                 )));
@@ -388,7 +426,10 @@ impl XsdValidator {
                         }
                         Some(Compositor::Sequence) => {
                             for expected in &ct.elements {
-                                let count = child_elements.iter().filter(|(_, cn)| *cn == expected.name).count();
+                                let count = child_elements
+                                    .iter()
+                                    .filter(|(_, cn)| *cn == expected.name)
+                                    .count();
                                 if count < expected.min_occurs {
                                     return Err(XmlError::XsdError(format!(
                                         "Element <{name}> missing required sequence child <{}> (expected {}, found {})",
@@ -407,7 +448,10 @@ impl XsdValidator {
                         }
                         Some(Compositor::All) => {
                             for expected in &ct.elements {
-                                let count = child_elements.iter().filter(|(_, cn)| *cn == expected.name).count();
+                                let count = child_elements
+                                    .iter()
+                                    .filter(|(_, cn)| *cn == expected.name)
+                                    .count();
                                 if count < expected.min_occurs {
                                     return Err(XmlError::XsdError(format!(
                                         "Element <{name}> missing required child <{}> in xs:all group",
@@ -434,7 +478,9 @@ impl XsdValidator {
                 if rule.elem_type == "xs:integer" || rule.elem_type == "xsd:integer" {
                     if !trimmed.is_empty() {
                         let parsed = trimmed.parse::<i64>().map_err(|_| {
-                            XmlError::XsdError(format!("Element <{name}> value '{trimmed}' is not a valid integer"))
+                            XmlError::XsdError(format!(
+                                "Element <{name}> value '{trimmed}' is not a valid integer"
+                            ))
                         })?;
 
                         if let Some(min) = rule.restriction.min_inclusive {
@@ -453,7 +499,12 @@ impl XsdValidator {
                         }
                     }
                 } else if rule.elem_type == "xs:boolean" || rule.elem_type == "xsd:boolean" {
-                    if !trimmed.is_empty() && trimmed != "true" && trimmed != "false" && trimmed != "1" && trimmed != "0" {
+                    if !trimmed.is_empty()
+                        && trimmed != "true"
+                        && trimmed != "false"
+                        && trimmed != "1"
+                        && trimmed != "0"
+                    {
                         return Err(XmlError::XsdError(format!(
                             "Element <{name}> value '{trimmed}' is not a valid boolean"
                         )));

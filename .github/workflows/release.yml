@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-binaries:
+    name: Build Binary (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive: tar.gz
+          - target: x86_64-apple-darwin
+            os: macos-13
+            archive: tar.gz
+          - target: aarch64-apple-darwin
+            os: macos-14
+            archive: tar.gz
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build Release Binary
+        run: cargo build --release --target ${{ matrix.target }} -p babbel-cli --bin babbel
+
+      - name: Generate Shell Completions
+        shell: bash
+        run: |
+          BIN_PATH="target/${{ matrix.target }}/release/babbel"
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            BIN_PATH="${BIN_PATH}.exe"
+          fi
+          mkdir -p completions
+          "$BIN_PATH" completions bash > completions/babbel.bash
+          "$BIN_PATH" completions zsh > completions/_babbel
+          "$BIN_PATH" completions fish > completions/babbel.fish
+          "$BIN_PATH" completions powershell > completions/_babbel.ps1
+
+      - name: Package Release Archive (Unix)
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          ARCHIVE_NAME="babbel-${TAG_NAME}-${{ matrix.target }}.tar.gz"
+          tar -czf "$ARCHIVE_NAME" \
+            -C "target/${{ matrix.target }}/release" babbel \
+            -C ../../../ LICENSE README.md \
+            -C ../../../ completions
+          sha256sum "$ARCHIVE_NAME" > "${ARCHIVE_NAME}.sha256"
+          echo "ASSET_ARCHIVE=$ARCHIVE_NAME" >> $GITHUB_ENV
+          echo "ASSET_CHECKSUM=${ARCHIVE_NAME}.sha256" >> $GITHUB_ENV
+
+      - name: Package Release Archive (Windows)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          $tag = "${env:GITHUB_REF}".Replace("refs/tags/", "")
+          $archiveName = "babbel-$tag-${{ matrix.target }}.zip"
+          Compress-Archive -Path "target/${{ matrix.target }}/release/babbel.exe", "LICENSE", "README.md", "completions" -DestinationPath $archiveName
+          $hash = (Get-FileHash -Path $archiveName -Algorithm SHA256).Hash.ToLower()
+          "$hash  $archiveName" | Out-File -FilePath "${archiveName}.sha256" -Encoding ascii
+          echo "ASSET_ARCHIVE=$archiveName" >> $env:GITHUB_ENV
+          echo "ASSET_CHECKSUM=${archiveName}.sha256" >> $env:GITHUB_ENV
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.ASSET_ARCHIVE }}
+            ${{ env.ASSET_CHECKSUM }}

@@ -12,7 +12,10 @@ fn test_basic_nodes_and_arguments() {
     "#;
 
     let val = from_str(kdl).expect("failed to parse basic kdl");
-    assert_eq!(val.get("title").and_then(|v| v.as_str()), Some("Babbel KDL"));
+    assert_eq!(
+        val.get("title").and_then(|v| v.as_str()),
+        Some("Babbel KDL")
+    );
     assert_eq!(val.get("author").and_then(|v| v.as_str()), Some("Alice"));
     assert_eq!(val.get("stars").and_then(|v| v.as_i64()), Some(100));
     assert_eq!(val.get("active").and_then(|v| v.as_bool()), Some(true));
@@ -27,7 +30,10 @@ fn test_properties() {
 
     let val = from_str(kdl).expect("failed to parse properties");
     let server = val.get("server").expect("server node missing");
-    assert_eq!(server.get("host").and_then(|v| v.as_str()), Some("127.0.0.1"));
+    assert_eq!(
+        server.get("host").and_then(|v| v.as_str()),
+        Some("127.0.0.1")
+    );
     assert_eq!(server.get("port").and_then(|v| v.as_i64()), Some(8080));
     assert_eq!(server.get("timeout").and_then(|v| v.as_f64()), Some(30.5));
 }
@@ -117,5 +123,8 @@ fn test_pretty_serialize_roundtrip() {
     let window = app.get("window").expect("window missing");
     assert_eq!(window.get("width").and_then(|v| v.as_i64()), Some(1920));
     assert_eq!(window.get("height").and_then(|v| v.as_i64()), Some(1080));
-    assert_eq!(window.get("fullscreen").and_then(|v| v.as_bool()), Some(true));
+    assert_eq!(
+        window.get("fullscreen").and_then(|v| v.as_bool()),
+        Some(true)
+    );
 }

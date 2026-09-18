@@ -2,8 +2,8 @@
 //!
 //! Demonstrates using `CborEngine` via Babbel's unified `FormatEngine` trait.
 
-use babbel_core::{FormatEngine, FormatOptions, Value};
 use babbel_cbor::CborEngine;
+use babbel_core::{FormatEngine, FormatOptions, Value};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Babbel CBOR FormatEngine Example ===\n");

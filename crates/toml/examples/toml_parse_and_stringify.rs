@@ -3,7 +3,7 @@
 //! Demonstrates parsing a TOML document, accessing tables and fields,
 //! updating values in the DOM, and serializing back with standard and pretty stringifiers.
 
-use babbel_toml::{from_str, to_string, to_string_pretty, Node};
+use babbel_toml::{Node, from_str, to_string, to_string_pretty};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== TOML Parse and Stringify Example ===\n");
@@ -44,13 +44,22 @@ endpoints = [ "/metrics", "/stats" ]
     }
 
     if let Some(server) = doc.get("server") {
-        let host = server.get("host").and_then(|n| n.as_str()).unwrap_or("unknown");
+        let host = server
+            .get("host")
+            .and_then(|n| n.as_str())
+            .unwrap_or("unknown");
         let port = server.get("port").and_then(|n| n.as_i64()).unwrap_or(0);
-        let workers = server.get("max_workers").and_then(|n| n.as_i64()).unwrap_or(1);
+        let workers = server
+            .get("max_workers")
+            .and_then(|n| n.as_i64())
+            .unwrap_or(1);
         println!("Server Host:      {}:{} (workers: {})", host, port, workers);
 
         if let Some(timeouts) = server.get("timeouts") {
-            let read_s = timeouts.get("read_seconds").and_then(|n| n.as_i64()).unwrap_or(0);
+            let read_s = timeouts
+                .get("read_seconds")
+                .and_then(|n| n.as_i64())
+                .unwrap_or(0);
             println!("Read Timeout:     {}s", read_s);
         }
     }

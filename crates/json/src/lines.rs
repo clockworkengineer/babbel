@@ -85,7 +85,9 @@ impl<R: ILineReader> JsonLinesReader<R> {
                 continue;
             }
 
-            if self.config.ignore_comments && (check_slice.starts_with('#') || check_slice.starts_with("//")) {
+            if self.config.ignore_comments
+                && (check_slice.starts_with('#') || check_slice.starts_with("//"))
+            {
                 continue;
             }
 
@@ -145,7 +147,10 @@ pub fn to_json_lines(nodes: &[Node]) -> Result<String, String> {
 }
 
 /// Serializes a slice of [`Node`]s to an [`IDestination`] sink as line-delimited JSON.
-pub fn to_json_lines_stream(nodes: &[Node], destination: &mut dyn IDestination) -> Result<(), String> {
+pub fn to_json_lines_stream(
+    nodes: &[Node],
+    destination: &mut dyn IDestination,
+) -> Result<(), String> {
     for node in nodes {
         stringify(node, destination)?;
         destination.add_byte(b'\n');

@@ -77,9 +77,6 @@ pub trait ISource {
     }
 }
 
-
-
-
 // ==========================================
 // 3. Segregated Capabilities (ISP compliant)
 // ==========================================
@@ -114,8 +111,6 @@ pub trait ITracked: ILocationAware + IPositionAware {
 }
 
 impl<T: ILocationAware + IPositionAware + ?Sized> ITracked for T {}
-
-
 
 /// Interface for destinations that can be flushed to underlying storage.
 pub trait IFlushable {

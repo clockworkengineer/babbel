@@ -7,8 +7,8 @@ use alloc::{
     vec::Vec,
 };
 
-use babbel_core::{io::IDestination, Value};
 use crate::error::RonError;
+use babbel_core::{Value, io::IDestination};
 
 /// Configuration options for RON serialization.
 #[derive(Debug, Clone)]
@@ -75,7 +75,6 @@ impl<'a> RonSerializer<'a> {
     fn write_str(&mut self, s: &str) {
         self.dest.add_bytes(s);
     }
-
 
     fn write_newline_and_indent(&mut self) {
         if self.config.pretty {
@@ -147,7 +146,6 @@ impl<'a> RonSerializer<'a> {
                     let encoded = c.encode_utf8(&mut buf);
                     self.dest.add_bytes(encoded);
                 }
-
             }
         }
         self.dest.add_byte(b'"');
@@ -298,9 +296,7 @@ fn format_i128<'a>(val: i128, buf: &'a mut [u8; 40]) -> &'a str {
 fn is_valid_ident(s: &str) -> bool {
     let mut chars = s.chars();
     match chars.next() {
-        Some(c) if c.is_alphabetic() || c == '_' => {
-            chars.all(|c| c.is_alphanumeric() || c == '_')
-        }
+        Some(c) if c.is_alphabetic() || c == '_' => chars.all(|c| c.is_alphanumeric() || c == '_'),
         _ => false,
     }
 }

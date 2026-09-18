@@ -2,8 +2,8 @@
 
 #[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
-use core::fmt;
 use babbel_core::BabbelError;
+use core::fmt;
 
 /// Errors encountered when parsing or serializing HCL documents.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,9 +50,7 @@ impl From<HclError> for BabbelError {
             HclError::InvalidUtf8 => {
                 BabbelError::encoding("invalid UTF-8 in HCL input").with_format("hcl")
             }
-            HclError::Custom(msg) => {
-                BabbelError::custom(*msg).with_format("hcl")
-            }
+            HclError::Custom(msg) => BabbelError::custom(*msg).with_format("hcl"),
         }
     }
 }

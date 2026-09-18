@@ -4,8 +4,8 @@
 //! serializing to binary BSON format with `to_vec`, parsing back with `from_bytes`,
 //! and inspecting typed fields (int32/int64, doubles, strings, subdocuments, arrays, binary).
 
-use babbel_core::Value;
 use babbel_bson::{from_bytes, to_vec};
+use babbel_core::Value;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Babbel BSON Parse & Serialize Example ===\n");
@@ -13,13 +13,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Build a BSON document.
     // In the BSON specification (bsonspec.org), a top-level BSON datum is always a Document (Object).
     let binary_uuid = vec![
-        0xA1, 0xB2, 0xC3, 0xD4, 0xE5, 0xF6, 0x07, 0x18,
-        0x29, 0x3A, 0x4B, 0x5C, 0x6D, 0x7E, 0x8F, 0x90,
+        0xA1, 0xB2, 0xC3, 0xD4, 0xE5, 0xF6, 0x07, 0x18, 0x29, 0x3A, 0x4B, 0x5C, 0x6D, 0x7E, 0x8F,
+        0x90,
     ];
 
     let root = Value::Object(vec![
         ("_id".into(), Value::Bytes(binary_uuid.clone())),
-        ("title".into(), Value::String("Advanced Systems Engineering".into())),
+        (
+            "title".into(),
+            Value::String("Advanced Systems Engineering".into()),
+        ),
         ("views".into(), Value::Integer(1_250_000)), // int32 / int64
         ("rating".into(), Value::Float(4.92)),       // 64-bit IEEE 754 float
         ("published".into(), Value::Bool(true)),
@@ -28,7 +31,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "author".into(),
             Value::Object(vec![
                 ("name".into(), Value::String("Ada Lovelace".into())),
-                ("affiliation".into(), Value::String("Analytical Engines".into())),
+                (
+                    "affiliation".into(),
+                    Value::String("Analytical Engines".into()),
+                ),
             ]),
         ),
         (
@@ -48,7 +54,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Display first 4 bytes which encode total document length in little-endian
     let doc_len = u32::from_le_bytes([encoded[0], encoded[1], encoded[2], encoded[3]]);
-    println!("Document length header (first 4 bytes little-endian): {} bytes", doc_len);
+    println!(
+        "Document length header (first 4 bytes little-endian): {} bytes",
+        doc_len
+    );
     assert_eq!(doc_len as usize, encoded.len());
 
     println!("\nHex representation:");

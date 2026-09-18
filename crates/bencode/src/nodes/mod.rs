@@ -20,4 +20,3 @@ pub mod fixed;
 
 /// Schema validation and field querying extension trait
 pub mod query;
-

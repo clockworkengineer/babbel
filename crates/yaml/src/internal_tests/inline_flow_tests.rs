@@ -1,4 +1,4 @@
-﻿// =====================================================================================
+// =====================================================================================
 //  File: inline_flow_tests.rs
 //  Location: library/src/internal_tests/
 // -------------------------------------------------------------------------------------
@@ -54,11 +54,7 @@ mod tests {
             Node::Documents(vec![Document(vec![{
                 let mut pairs = Vec::new();
                 for (k, v) in map.into_iter() {
-                    let value = match v {
-                        Node::Mapping(p) => Node::Mapping(p),
-                        other => other,
-                    };
-                    pairs.push((Node::Str(k, QuoteType::Unquoted, BlockStyle::None), value));
+                    pairs.push((Node::Str(k, QuoteType::Unquoted, BlockStyle::None), v));
                 }
 
                 Node::Mapping(pairs)

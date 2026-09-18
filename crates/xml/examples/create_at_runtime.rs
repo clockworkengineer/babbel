@@ -1,9 +1,9 @@
-﻿//! # XML Runtime Creation Example
+//! # XML Runtime Creation Example
 //!
 //! Demonstrates constructing an XML DOM tree dynamically at runtime using `Document::new()`,
 //! `doc.add_node()`, `Attribute::new()`, and `doc.append_child()`.
 
-use babbel_xml::{stringify, Attribute, DeclarationData, Document, NodeKind};
+use babbel_xml::{Attribute, DeclarationData, Document, NodeKind, stringify};
 
 fn main() {
     println!("--- XML Create At Runtime Example ---");

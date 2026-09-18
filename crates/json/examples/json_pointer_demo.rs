@@ -1,11 +1,11 @@
-﻿//! Demonstrates JSON Pointer (RFC 6901) operations
+//! Demonstrates JSON Pointer (RFC 6901) operations
 //!
 //! Shows how to navigate, query, and modify JSON structures using JSON Pointer syntax.
 //! JSON Pointers provide a standard way to identify specific values within a JSON document.
 
 use babbel_json::{
-    parse, pointer_get, pointer_get_mut, pointer_remove, pointer_set, stringify, BufferDestination,
-    BufferSource, Node, Numeric,
+    BufferDestination, BufferSource, Node, Numeric, parse, pointer_get, pointer_get_mut,
+    pointer_remove, pointer_set, stringify,
 };
 use std::collections::HashMap;
 

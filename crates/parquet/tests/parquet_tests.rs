@@ -1,6 +1,6 @@
 use babbel_core::Value;
-use babbel_parquet::{read_parquet, write_parquet, ParquetError};
-use babbel_parquet::thrift::{ThriftReader, ThriftWriter, TYPE_I32, TYPE_STOP};
+use babbel_parquet::thrift::{TYPE_I32, TYPE_STOP, ThriftReader, ThriftWriter};
+use babbel_parquet::{ParquetError, read_parquet, write_parquet};
 
 #[test]
 fn test_thrift_codec_roundtrip() {

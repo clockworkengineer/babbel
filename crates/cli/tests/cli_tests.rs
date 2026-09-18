@@ -27,7 +27,7 @@ fn test_cli_version_and_help() {
     let out_help = Command::new(&bin).arg("--help").output().unwrap();
     assert!(out_help.status.success());
     let help_str = String::from_utf8(out_help.stdout).unwrap();
-    assert!(help_str.contains("SUBCOMMANDS:"));
+    assert!(help_str.contains("Commands:") || help_str.contains("SUBCOMMANDS:"));
 }
 
 #[test]
@@ -137,7 +137,11 @@ fn test_cli_validate_subcommand() {
     let schema_file = temp_dir.join("schema.json");
 
     fs::write(&doc_file, r#"{"username": "admin", "age": 30}"#).unwrap();
-    fs::write(&schema_file, r#"{"type": "object", "required": ["username", "age"]}"#).unwrap();
+    fs::write(
+        &schema_file,
+        r#"{"type": "object", "required": ["username", "age"]}"#,
+    )
+    .unwrap();
 
     let out = Command::new(&bin)
         .arg("validate")
@@ -152,4 +156,60 @@ fn test_cli_validate_subcommand() {
     assert!(stdout.contains("VALID:"));
 
     let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn test_cli_completions_subcommand() {
+    let bin = get_babbel_bin();
+    let out = Command::new(&bin)
+        .arg("completions")
+        .arg("bash")
+        .output()
+        .unwrap();
+
+    assert!(out.status.success());
+    let stdout = String::from_utf8(out.stdout).unwrap();
+    assert!(stdout.contains("babbel"));
+}
+
+#[test]
+fn test_cli_query_first_flag() {
+    let bin = get_babbel_bin();
+    let temp_dir = std::env::temp_dir().join("babbel_cli_first_test");
+    let _ = fs::create_dir_all(&temp_dir);
+
+    let json_file = temp_dir.join("data.json");
+    fs::write(&json_file, r#"{"items": [10, 20, 30]}"#).unwrap();
+
+    let out = Command::new(&bin)
+        .arg("query")
+        .arg(&json_file)
+        .arg("-q")
+        .arg("$.items[*]")
+        .arg("--first")
+        .output()
+        .unwrap();
+
+    assert!(out.status.success());
+    let stdout = String::from_utf8(out.stdout).unwrap();
+    assert_eq!(stdout.trim(), "10");
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn test_cli_error_exit_code_without_panic() {
+    let bin = get_babbel_bin();
+    let out = Command::new(&bin)
+        .arg("convert")
+        .arg("non_existent_file_xyz_123.json")
+        .arg("-t")
+        .arg("yaml")
+        .output()
+        .unwrap();
+
+    assert_eq!(out.status.code(), Some(2));
+    let stderr = String::from_utf8(out.stderr).unwrap();
+    assert!(stderr.contains("error: failed to read file"));
+    assert!(!stderr.contains("panicked at"));
 }

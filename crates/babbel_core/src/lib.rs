@@ -46,24 +46,21 @@ pub mod text;
 
 // Re-export key primitives for ergonomic downstream usage
 pub use chars::{is_digit, is_hex_digit, is_newline, is_whitespace};
-pub use diff::{diff, diff_merge_patch};
-pub use patch::{apply_merge_patch, Patch, PatchOp};
-pub use query::{query as jsonpath_query, query_mut as jsonpath_query_mut, JsonPath};
-pub use schema::{validate as validate_schema, CompiledSchema, SchemaValidationError};
-pub use codec::{
-    find_engine, find_engine_by_extension, find_engine_by_mime, BencodeEmitter, CsvEngine,
-    FormatCodec, FormatEmitter, FormatEngine, FormatOptions, FormatParser, IniEngine, JsonEmitter,
-    TomlEmitter, TsvEngine, XmlEmitter, YamlEmitter,
-};
 #[cfg(feature = "alloc")]
 pub use codec::FormatRegistry;
-pub use csv::{
-    emit_csv, emit_csv_to, parse_csv, sniff_delimiter, CsvFieldsIter, CsvOptions, CsvPullParser,
-    CsvRecord,
+pub use codec::{
+    BencodeEmitter, CsvEngine, FormatCodec, FormatEmitter, FormatEngine, FormatOptions,
+    FormatParser, IniEngine, JsonEmitter, TomlEmitter, TsvEngine, XmlEmitter, YamlEmitter,
+    find_engine, find_engine_by_extension, find_engine_by_mime,
 };
+pub use csv::{
+    CsvFieldsIter, CsvOptions, CsvPullParser, CsvRecord, emit_csv, emit_csv_to, parse_csv,
+    sniff_delimiter,
+};
+pub use diff::{diff, diff_merge_patch};
 pub use embedded::{CompactError, EmbeddedLimits, MemoryTracker, StackBuffer};
-pub use encoding::{detect_encoding_and_strip_bom, normalize_newlines, Encoding};
-pub use error::{format_error_snippet, BabbelError, ErrorCode, Location, Span};
+pub use encoding::{Encoding, detect_encoding_and_strip_bom, normalize_newlines};
+pub use error::{BabbelError, ErrorCode, Location, Span, format_error_snippet};
 pub use escape::{
     escape_for_json, escape_for_toml, escape_for_xml, escape_for_yaml, is_valid_toml_bare_key,
     json_needs_escaping, write_json_escaped_string, write_toml_escaped_string,
@@ -71,9 +68,9 @@ pub use escape::{
 };
 #[cfg(feature = "file-io")]
 pub use file::{
-    detect_format, list_files_by_extension, read_file_to_string, write_file_from_string, Format,
+    Format, detect_format, list_files_by_extension, read_file_to_string, write_file_from_string,
 };
-pub use ini::{emit_ini, emit_ini_to, parse_ini, IniEvent, IniOptions, IniPullParser};
+pub use ini::{IniEvent, IniOptions, IniPullParser, emit_ini, emit_ini_to, parse_ini};
 pub use io::{
     ArrayVecDestination, Buffer, BufferDestination, BufferSource, ByteSliceSource,
     ByteSourceAdapter, IByteReader, IByteStream, ICharStream, IClearable, IDestination,
@@ -83,12 +80,13 @@ pub use io::{
 #[cfg(feature = "file-io")]
 pub use io::{FileDestination, FileSource};
 pub use model::{FormatVisitor, Value};
-pub use num::{format_float, format_integer, Numeric};
-pub use text::{
-    decode_hex, dedent, encode_hex, encode_hex_upper, indent, line_count, split_frontmatter,
-    trim_lines, DocumentWithFrontmatter, FrontmatterFormat,
-};
+pub use num::{Numeric, format_float, format_integer};
+pub use patch::{Patch, PatchOp, apply_merge_patch};
+pub use query::{JsonPath, query as jsonpath_query, query_mut as jsonpath_query_mut};
+pub use schema::{CompiledSchema, SchemaValidationError, validate as validate_schema};
 #[cfg(feature = "serde")]
-pub use serde_impl::{from_value, to_value, SerdeError};
-
-
+pub use serde_impl::{SerdeError, from_value, to_value};
+pub use text::{
+    DocumentWithFrontmatter, FrontmatterFormat, decode_hex, dedent, encode_hex, encode_hex_upper,
+    indent, line_count, split_frontmatter, trim_lines,
+};

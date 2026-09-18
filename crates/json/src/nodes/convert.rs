@@ -4,8 +4,8 @@ use std::collections::HashMap;
 #[cfg(not(feature = "std"))]
 use alloc::{collections::BTreeMap as HashMap, string::String, vec::Vec};
 
-use core::fmt;
 use super::types::{Node, Numeric};
+use core::fmt;
 
 /// Converts a vector of values into an array node
 impl<T: Into<Node>> From<Vec<T>> for Node {
@@ -13,8 +13,6 @@ impl<T: Into<Node>> From<Vec<T>> for Node {
         Node::Array(value.into_iter().map(|x| x.into()).collect())
     }
 }
-
-
 
 impl From<i64> for Node {
     fn from(value: i64) -> Self {
@@ -118,8 +116,6 @@ impl<T: Into<Node>> From<HashMap<String, T>> for Node {
         Node::Object(map.into_iter().map(|(k, v)| (k, v.into())).collect())
     }
 }
-
-
 
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -281,11 +277,14 @@ impl From<&Node> for babbel_core::model::Value {
                 Numeric::UInt8(u) => babbel_core::model::Value::Integer(*u as i128),
                 Numeric::Float(f) => babbel_core::model::Value::Float(*f),
             },
-            Node::Array(arr) => {
-                babbel_core::model::Value::Array(arr.iter().map(babbel_core::model::Value::from).collect())
-            }
+            Node::Array(arr) => babbel_core::model::Value::Array(
+                arr.iter().map(babbel_core::model::Value::from).collect(),
+            ),
             Node::Object(map) => {
-                let mut entries: alloc::vec::Vec<(alloc::string::String, babbel_core::model::Value)> = map
+                let mut entries: alloc::vec::Vec<(
+                    alloc::string::String,
+                    babbel_core::model::Value,
+                )> = map
                     .iter()
                     .map(|(k, v)| (k.clone(), babbel_core::model::Value::from(v)))
                     .collect();
@@ -314,11 +313,16 @@ impl From<Node> for babbel_core::model::Value {
                 Numeric::UInt8(u) => babbel_core::model::Value::Integer(u as i128),
                 Numeric::Float(f) => babbel_core::model::Value::Float(f),
             },
-            Node::Array(arr) => {
-                babbel_core::model::Value::Array(arr.into_iter().map(babbel_core::model::Value::from).collect())
-            }
+            Node::Array(arr) => babbel_core::model::Value::Array(
+                arr.into_iter()
+                    .map(babbel_core::model::Value::from)
+                    .collect(),
+            ),
             Node::Object(map) => {
-                let mut entries: alloc::vec::Vec<(alloc::string::String, babbel_core::model::Value)> = map
+                let mut entries: alloc::vec::Vec<(
+                    alloc::string::String,
+                    babbel_core::model::Value,
+                )> = map
                     .into_iter()
                     .map(|(k, v)| (k, babbel_core::model::Value::from(v)))
                     .collect();
@@ -328,5 +332,3 @@ impl From<Node> for babbel_core::model::Value {
         }
     }
 }
-
-

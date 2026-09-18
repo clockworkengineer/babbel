@@ -30,7 +30,7 @@ mod tests {
         let files_dir = "../files";
         let json_files = get_json_file_paths(files_dir);
         for file_path in json_files {
-            match FileSource::new(&file_path.to_string()) {
+            match FileSource::new(&file_path) {
                 Ok(mut source) => {
                     let result = parse(&mut source);
                     assert!(

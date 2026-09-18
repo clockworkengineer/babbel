@@ -1,4 +1,4 @@
-﻿//! # Streaming I/O & Encodings Example
+//! # Streaming I/O & Encodings Example
 //!
 //! Demonstrates:
 //! - Parsing XML streams from arbitrary `std::io::Read` sources (e.g. `Cursor`, `File`, `TcpStream`)
@@ -17,14 +17,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let doc = parse_reader(cursor)?;
     let root_id = doc.root_element_id().unwrap();
-    println!("Parsed from streaming reader: <{}> with {} metric nodes", doc.get_local_name(root_id), doc.get_children(root_id).len());
+    println!(
+        "Parsed from streaming reader: <{}> with {} metric nodes",
+        doc.get_local_name(root_id),
+        doc.get_children(root_id).len()
+    );
 
     // 2. Decoding ISO-8859-1 (Latin-1)
     // 0xE9 = 'é', 0xFC = 'ü'
     let latin1_bytes: &[u8] = b"<cafe name=\"Caf\xE9\" city=\"M\xFCnchen\"/>";
     let latin1_doc = parse_bytes_with_encoding(latin1_bytes, "ISO-8859-1")?;
     let cafe_id = latin1_doc.root_element_id().unwrap();
-    println!("Decoded ISO-8859-1: name='{}', city='{}'",
+    println!(
+        "Decoded ISO-8859-1: name='{}', city='{}'",
         latin1_doc.get_attribute(cafe_id, "name").unwrap(),
         latin1_doc.get_attribute(cafe_id, "city").unwrap()
     );
@@ -34,7 +39,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let win1252_bytes: &[u8] = b"<product symbol=\"\x80\" brand=\"SuperTool\x99\"/>";
     let win_doc = parse_bytes_with_encoding(win1252_bytes, "WINDOWS-1252")?;
     let prod_id = win_doc.root_element_id().unwrap();
-    println!("Decoded Windows-1252: symbol='{}', brand='{}'",
+    println!(
+        "Decoded Windows-1252: symbol='{}', brand='{}'",
         win_doc.get_attribute(prod_id, "symbol").unwrap(),
         win_doc.get_attribute(prod_id, "brand").unwrap()
     );

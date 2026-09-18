@@ -1,5 +1,5 @@
+use babbel_cbor::{CborEngine, CborError, Decoder, DecoderConfig, from_bytes, to_vec};
 use babbel_core::{FormatEngine, FormatOptions, Value};
-use babbel_cbor::{from_bytes, to_vec, CborEngine, CborError, Decoder, DecoderConfig};
 
 #[test]
 fn test_roundtrip_primitives() {
@@ -49,12 +49,24 @@ fn test_roundtrip_integers_rfc8949() {
     assert_eq!(from_bytes(&[0x18, 0x64]).unwrap(), Value::Integer(100));
 
     // 1000 -> 0x19, 0x03, 0xe8
-    assert_eq!(to_vec(&Value::Integer(1000)).unwrap(), vec![0x19, 0x03, 0xe8]);
-    assert_eq!(from_bytes(&[0x19, 0x03, 0xe8]).unwrap(), Value::Integer(1000));
+    assert_eq!(
+        to_vec(&Value::Integer(1000)).unwrap(),
+        vec![0x19, 0x03, 0xe8]
+    );
+    assert_eq!(
+        from_bytes(&[0x19, 0x03, 0xe8]).unwrap(),
+        Value::Integer(1000)
+    );
 
     // 1000000 -> 0x1a, 0x00, 0x0f, 0x42, 0x40
-    assert_eq!(to_vec(&Value::Integer(1000000)).unwrap(), vec![0x1a, 0x00, 0x0f, 0x42, 0x40]);
-    assert_eq!(from_bytes(&[0x1a, 0x00, 0x0f, 0x42, 0x40]).unwrap(), Value::Integer(1000000));
+    assert_eq!(
+        to_vec(&Value::Integer(1000000)).unwrap(),
+        vec![0x1a, 0x00, 0x0f, 0x42, 0x40]
+    );
+    assert_eq!(
+        from_bytes(&[0x1a, 0x00, 0x0f, 0x42, 0x40]).unwrap(),
+        Value::Integer(1000000)
+    );
 
     // 1000000000000 -> 0x1b, ...
     let big_val = Value::Integer(1000000000000);
@@ -86,8 +98,14 @@ fn test_negative_integers_rfc8949() {
     assert_eq!(from_bytes(&[0x38, 0x63]).unwrap(), Value::Integer(-100));
 
     // -1000 -> 0x39, 0x03, 0xe7
-    assert_eq!(to_vec(&Value::Integer(-1000)).unwrap(), vec![0x39, 0x03, 0xe7]);
-    assert_eq!(from_bytes(&[0x39, 0x03, 0xe7]).unwrap(), Value::Integer(-1000));
+    assert_eq!(
+        to_vec(&Value::Integer(-1000)).unwrap(),
+        vec![0x39, 0x03, 0xe7]
+    );
+    assert_eq!(
+        from_bytes(&[0x39, 0x03, 0xe7]).unwrap(),
+        Value::Integer(-1000)
+    );
 }
 
 #[test]
@@ -118,8 +136,14 @@ fn test_roundtrip_strings_rfc8949() {
     assert_eq!(from_bytes(&[0x60]).unwrap(), Value::String("".into()));
 
     // "a" -> 0x61, 0x61
-    assert_eq!(to_vec(&Value::String("a".into())).unwrap(), vec![0x61, 0x61]);
-    assert_eq!(from_bytes(&[0x61, 0x61]).unwrap(), Value::String("a".into()));
+    assert_eq!(
+        to_vec(&Value::String("a".into())).unwrap(),
+        vec![0x61, 0x61]
+    );
+    assert_eq!(
+        from_bytes(&[0x61, 0x61]).unwrap(),
+        Value::String("a".into())
+    );
 
     // "IETF" -> 0x64, 'I', 'E', 'T', 'F'
     let s = Value::String("IETF".into());
@@ -155,7 +179,11 @@ fn test_roundtrip_arrays_rfc8949() {
     assert_eq!(from_bytes(&[0x80]).unwrap(), Value::Array(vec![]));
 
     // [1, 2, 3] -> 0x83, 0x01, 0x02, 0x03
-    let arr = Value::Array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+    let arr = Value::Array(vec![
+        Value::Integer(1),
+        Value::Integer(2),
+        Value::Integer(3),
+    ]);
     assert_eq!(to_vec(&arr).unwrap(), vec![0x83, 0x01, 0x02, 0x03]);
     assert_eq!(from_bytes(&[0x83, 0x01, 0x02, 0x03]).unwrap(), arr);
 
@@ -179,10 +207,16 @@ fn test_roundtrip_maps_rfc8949() {
     // {"a": 1, "b": [2, 3]} -> 0xa2, 0x61, 0x61, 0x01, 0x61, 0x62, 0x82, 0x02, 0x03
     let map = Value::Object(vec![
         ("a".into(), Value::Integer(1)),
-        ("b".into(), Value::Array(vec![Value::Integer(2), Value::Integer(3)])),
+        (
+            "b".into(),
+            Value::Array(vec![Value::Integer(2), Value::Integer(3)]),
+        ),
     ]);
     let bytes = to_vec(&map).unwrap();
-    assert_eq!(bytes, vec![0xa2, 0x61, 0x61, 0x01, 0x61, 0x62, 0x82, 0x02, 0x03]);
+    assert_eq!(
+        bytes,
+        vec![0xa2, 0x61, 0x61, 0x01, 0x61, 0x62, 0x82, 0x02, 0x03]
+    );
     assert_eq!(from_bytes(&bytes).unwrap(), map);
 }
 
@@ -190,7 +224,10 @@ fn test_roundtrip_maps_rfc8949() {
 fn test_indefinite_containers() {
     // Indefinite array: 0x9f, 0x01, 0x02, 0xff -> [1, 2]
     let arr = from_bytes(&[0x9f, 0x01, 0x02, 0xff]).unwrap();
-    assert_eq!(arr, Value::Array(vec![Value::Integer(1), Value::Integer(2)]));
+    assert_eq!(
+        arr,
+        Value::Array(vec![Value::Integer(1), Value::Integer(2)])
+    );
 
     // Indefinite map: 0xbf, 0x61, 0x61, 0x01, 0xff -> {"a": 1}
     let map = from_bytes(&[0xbf, 0x61, 0x61, 0x01, 0xff]).unwrap();
@@ -260,7 +297,9 @@ fn test_format_engine_integration() {
         ("price".into(), Value::Integer(99)),
     ]);
 
-    let bytes = engine.serialize_to_vec(&val, &FormatOptions::compact()).unwrap();
+    let bytes = engine
+        .serialize_to_vec(&val, &FormatOptions::compact())
+        .unwrap();
     let parsed = engine.parse_bytes(&bytes).unwrap();
     assert_eq!(val, parsed);
 }
@@ -274,12 +313,22 @@ fn test_cbor_pull_parser() {
         Value::Integer(1),
         Value::String("hello".into()),
         Value::Bool(true),
-    ])).unwrap();
+    ]))
+    .unwrap();
 
     let mut parser = CborPullParser::new(&bytes);
-    assert_eq!(parser.next_event().unwrap(), CborPullEvent::ArrayStart(Some(3)));
+    assert_eq!(
+        parser.next_event().unwrap(),
+        CborPullEvent::ArrayStart(Some(3))
+    );
     assert_eq!(parser.next_event().unwrap(), CborPullEvent::Unsigned(1));
-    assert_eq!(parser.next_event().unwrap(), CborPullEvent::TextString { len: Some(5), text: "hello" });
+    assert_eq!(
+        parser.next_event().unwrap(),
+        CborPullEvent::TextString {
+            len: Some(5),
+            text: "hello"
+        }
+    );
     assert_eq!(parser.next_event().unwrap(), CborPullEvent::Simple(21));
     assert_eq!(parser.next_event().unwrap(), CborPullEvent::End);
 }
@@ -305,4 +354,3 @@ fn test_cbor_edn() {
     let parsed_int = from_edn("100").unwrap();
     assert_eq!(parsed_int, Value::Integer(100));
 }
-

@@ -16,7 +16,10 @@ fn test_ron_primitives() {
     assert_eq!(from_str("0o77").unwrap(), Value::Integer(63));
     assert_eq!(from_str("1_000_000").unwrap(), Value::Integer(1_000_000));
     assert_eq!(from_str("3.14").unwrap(), Value::Float(3.14));
-    assert_eq!(from_str("\"hello world\"").unwrap(), Value::String("hello world".into()));
+    assert_eq!(
+        from_str("\"hello world\"").unwrap(),
+        Value::String("hello world".into())
+    );
     assert_eq!(from_str("'x'").unwrap(), Value::String("x".into()));
 }
 
@@ -50,8 +53,14 @@ fn test_ron_struct_and_map() {
     )
     "#;
     let struct_val = from_str(struct_input).expect("Failed to parse struct");
-    assert_eq!(struct_val.get("window_width").and_then(|v| v.as_i64()), Some(1920));
-    assert_eq!(struct_val.get("vsync").and_then(|v| v.as_bool()), Some(true));
+    assert_eq!(
+        struct_val.get("window_width").and_then(|v| v.as_i64()),
+        Some(1920)
+    );
+    assert_eq!(
+        struct_val.get("vsync").and_then(|v| v.as_bool()),
+        Some(true)
+    );
 
     let map_input = r#"
     {
@@ -109,10 +118,13 @@ fn test_ron_roundtrip() {
     let original = Value::Object(vec![
         ("name".into(), Value::String("bevy_app".into())),
         ("version".into(), Value::Integer(1)),
-        ("features".into(), Value::Array(vec![
-            Value::String("2d".into()),
-            Value::String("audio".into()),
-        ])),
+        (
+            "features".into(),
+            Value::Array(vec![
+                Value::String("2d".into()),
+                Value::String("audio".into()),
+            ]),
+        ),
     ]);
 
     let serialized = to_string(&original).unwrap();

@@ -23,10 +23,7 @@ pub enum MsgPackPullEvent<'a> {
     /// Map container start with exact key-value pair count
     MapStart(usize),
     /// Extension type with type code and payload slice
-    Extension {
-        ext_type: i8,
-        data: &'a [u8],
-    },
+    Extension { ext_type: i8, data: &'a [u8] },
     /// End of stream
     End,
 }
@@ -126,8 +123,7 @@ impl<'a> MsgPackPullParser<'a> {
             FLOAT64 => {
                 let bytes = self.read_bytes(8)?;
                 let f = f64::from_be_bytes([
-                    bytes[0], bytes[1], bytes[2], bytes[3],
-                    bytes[4], bytes[5], bytes[6], bytes[7],
+                    bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
                 ]);
                 Ok(MsgPackPullEvent::Float(f))
             }
@@ -228,7 +224,10 @@ impl<'a> MsgPackPullParser<'a> {
 
     fn read_u8(&mut self) -> Result<u8, MsgPackError> {
         if self.cursor >= self.input.len() {
-            return Err(MsgPackError::UnexpectedEof { expected: 1, available: 0 });
+            return Err(MsgPackError::UnexpectedEof {
+                expected: 1,
+                available: 0,
+            });
         }
         let b = self.input[self.cursor];
         self.cursor += 1;
@@ -242,7 +241,10 @@ impl<'a> MsgPackPullParser<'a> {
     fn read_bytes(&mut self, len: usize) -> Result<&'a [u8], MsgPackError> {
         let available = self.input.len().saturating_sub(self.cursor);
         if available < len {
-            return Err(MsgPackError::UnexpectedEof { expected: len, available });
+            return Err(MsgPackError::UnexpectedEof {
+                expected: len,
+                available,
+            });
         }
         let slice = &self.input[self.cursor..self.cursor + len];
         self.cursor += len;
@@ -262,8 +264,7 @@ impl<'a> MsgPackPullParser<'a> {
     fn read_u64(&mut self) -> Result<u64, MsgPackError> {
         let bytes = self.read_bytes(8)?;
         Ok(u64::from_be_bytes([
-            bytes[0], bytes[1], bytes[2], bytes[3],
-            bytes[4], bytes[5], bytes[6], bytes[7],
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
         ]))
     }
 
@@ -287,12 +288,12 @@ mod tests {
     #[test]
     fn test_msgpack_pull_parser_scalars() {
         let data = [
-            0x05,       // pos fixint 5
-            0xe5,       // neg fixint -27
-            0xc0,       // nil
-            0xc3,       // true
+            0x05, // pos fixint 5
+            0xe5, // neg fixint -27
+            0xc0, // nil
+            0xc3, // true
             0xa4, b't', b'e', b's', b't', // fixstr "test"
-            0x92, 0x01, 0x02,             // fixarray [1, 2]
+            0x92, 0x01, 0x02, // fixarray [1, 2]
         ];
 
         let mut parser = MsgPackPullParser::new(&data);
@@ -300,8 +301,14 @@ mod tests {
         assert_eq!(parser.next_event().unwrap(), MsgPackPullEvent::Integer(-27));
         assert_eq!(parser.next_event().unwrap(), MsgPackPullEvent::Nil);
         assert_eq!(parser.next_event().unwrap(), MsgPackPullEvent::Bool(true));
-        assert_eq!(parser.next_event().unwrap(), MsgPackPullEvent::String("test"));
-        assert_eq!(parser.next_event().unwrap(), MsgPackPullEvent::ArrayStart(2));
+        assert_eq!(
+            parser.next_event().unwrap(),
+            MsgPackPullEvent::String("test")
+        );
+        assert_eq!(
+            parser.next_event().unwrap(),
+            MsgPackPullEvent::ArrayStart(2)
+        );
         assert_eq!(parser.next_event().unwrap(), MsgPackPullEvent::Integer(1));
         assert_eq!(parser.next_event().unwrap(), MsgPackPullEvent::Integer(2));
         assert_eq!(parser.next_event().unwrap(), MsgPackPullEvent::End);

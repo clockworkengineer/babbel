@@ -1,4 +1,3 @@
-
 //! Error Helper Functions
 //!
 //! Provides helper functions for constructing common YAML parsing errors, including

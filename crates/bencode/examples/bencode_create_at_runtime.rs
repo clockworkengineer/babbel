@@ -1,8 +1,8 @@
-﻿//! This example demonstrates how to create a complex Bencode data structure at runtime.
+//! This example demonstrates how to create a complex Bencode data structure at runtime.
 //! It shows various nested structures commonly found in torrent files.
 
-use babbel_bencode::nodes::node::Node;
 use babbel_bencode::make_node;
+use babbel_bencode::nodes::node::Node;
 use std::collections::HashMap;
 
 /// Creates a complex Bencode tree structure that resembles a typical torrent file,
@@ -12,8 +12,14 @@ fn main() {
     let mut root = HashMap::new();
 
     // Simple string and integer nodes
-    root.insert("announce".to_string(), make_node("udp://tracker.example.com:80"));
-    root.insert("created by".to_string(), make_node("AI Assistant Example Generator"));
+    root.insert(
+        "announce".to_string(),
+        make_node("udp://tracker.example.com:80"),
+    );
+    root.insert(
+        "created by".to_string(),
+        make_node("AI Assistant Example Generator"),
+    );
     root.insert("creation date".to_string(), make_node(1_725_000_000));
 
     // Announce list (list of lists)
@@ -22,13 +28,11 @@ fn main() {
             make_node("udp://tracker.example.com:80"),
             make_node("http://tracker.example.com/announce"),
         ]),
-        make_node(vec![
-            make_node("udp://backup-tracker.example.org:1337"),
-        ]),
+        make_node(vec![make_node("udp://backup-tracker.example.org:1337")]),
     ]);
     root.insert("announce-list".to_string(), announce_list);
 
-    // Info dictionary (nested)  
+    // Info dictionary (nested)
     root.insert("info".to_string(), build_info_dict());
 
     // Optional: top-level "url-list" as a list or single string
@@ -41,7 +45,10 @@ fn main() {
     );
 
     // Optional: top-level comment
-    root.insert("comment".to_string(), make_node("Multi-file torrent with complex structure"));
+    root.insert(
+        "comment".to_string(),
+        make_node("Multi-file torrent with complex structure"),
+    );
 
     // Wrap into the root Node
     let tree = Node::Dictionary(root);
@@ -85,10 +92,7 @@ fn build_files_list() -> Node {
         f.insert("length".to_string(), make_node(1_048_576)); // 1 MiB
         f.insert(
             "path".to_string(),
-            make_node(vec![
-                make_node("src"),
-                make_node("main.rs"),
-            ]),
+            make_node(vec![make_node("src"), make_node("main.rs")]),
         );
         f.insert(
             "md5sum".to_string(),
@@ -126,10 +130,7 @@ fn build_files_list() -> Node {
         f.insert("length".to_string(), make_node(512_000)); // ~500 KiB
         f.insert(
             "path".to_string(),
-            make_node(vec![
-                make_node("docs"),
-                make_node("guide.md"),
-            ]),
+            make_node(vec![make_node("docs"), make_node("guide.md")]),
         );
         Node::Dictionary(f)
     };
@@ -174,10 +175,7 @@ fn build_meta_dict() -> Node {
         );
         b.insert(
             "features".to_string(),
-            make_node(vec![
-                make_node("serde"),
-                make_node("cli"),
-            ]),
+            make_node(vec![make_node("serde"), make_node("cli")]),
         );
         b
     });

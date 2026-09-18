@@ -1,9 +1,9 @@
-﻿//! Example demonstrating the fluent API for building YAML nodes
+//! Example demonstrating the fluent API for building YAML nodes
 //!
 //! This example shows how to use the new builder pattern for constructing
 //! complex YAML structures with a clean, readable syntax.
 
-use babbel_yaml::{stringify, BufferDestination, Node};
+use babbel_yaml::{BufferDestination, Node, stringify};
 
 fn main() {
     println!("=== YAML Fluent API Example ===\n");

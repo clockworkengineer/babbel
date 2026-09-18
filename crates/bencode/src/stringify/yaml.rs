@@ -63,7 +63,9 @@ fn write_node(node: &Node, level: usize, destination: &mut (impl BencodeWrite + 
                 sorted.sort_by(|a, b| a.0.cmp(b.0));
                 for (key, value) in sorted {
                     write_indent(level + 1, destination);
-                    destination.write_bytes(format!("{}: ", String::from_utf8_lossy(key.as_ref())).as_bytes());
+                    destination.write_bytes(
+                        format!("{}: ", String::from_utf8_lossy(key.as_ref())).as_bytes(),
+                    );
                     write_node(value, level + 1, destination);
                     destination.write_bytes(b"\n");
                 }

@@ -1,9 +1,9 @@
-﻿//! Example demonstrating format conversions between bencode and various output formats.
+//! Example demonstrating format conversions between bencode and various output formats.
 //! This shows how to convert bencode data to JSON, TOML, XML, YAML and back to bencode.
 
 use babbel_bencode::{
-    make_node, parse_str, stringify_to_string, to_json, to_toml, to_xml, to_yaml,
-    BufferDestination, Node,
+    BufferDestination, Node, make_node, parse_str, stringify_to_string, to_json, to_toml, to_xml,
+    to_yaml,
 };
 use std::collections::HashMap;
 
@@ -64,18 +64,12 @@ fn print_all_formats(description: &str, node: &Node) {
     // JSON
     let mut json_dest = BufferDestination::new();
     let _ = to_json(node, &mut json_dest).expect("Failed to convert to JSON");
-    println!(
-        "  JSON:    {}",
-        String::from_utf8_lossy(&json_dest.buffer)
-    );
+    println!("  JSON:    {}", String::from_utf8_lossy(&json_dest.buffer));
 
     // TOML
     let mut toml_dest = BufferDestination::new();
     let _ = to_toml(node, &mut toml_dest).expect("Failed to convert to TOML");
-    println!(
-        "  TOML:    {}",
-        String::from_utf8_lossy(&toml_dest.buffer)
-    );
+    println!("  TOML:    {}", String::from_utf8_lossy(&toml_dest.buffer));
 
     // XML
     let mut xml_dest = BufferDestination::new();

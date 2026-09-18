@@ -1,4 +1,4 @@
-﻿//! Iterative (stack-based) parser example
+//! Iterative (stack-based) parser example
 //!
 //! **Best Practice:** Use `parse_iterative` and related functions for deeply nested bencode data or in embedded/stack-limited environments.
 //! This avoids stack overflows by using an explicit heap stack, making parsing robust and predictable for any nesting depth.
@@ -9,7 +9,7 @@
 //! The iterative parser uses an explicit heap-allocated stack instead of the call stack,
 //! preventing stack overflow when parsing deeply nested bencode structures.
 
-use babbel_bencode::{parse_iterative, stringify_to_bytes, BufferSource};
+use babbel_bencode::{BufferSource, parse_iterative, stringify_to_bytes};
 
 fn main() {
     println!("=== Iterative Parser Demo ===\n");

@@ -1,8 +1,8 @@
 //! Concrete implementations of output destinations adhering to SOLID principles.
 
-use super::traits::{IByteWriter, IClearable, IDestination, ITailInspectable};
 #[cfg(feature = "file-io")]
 use super::traits::IFlushable;
+use super::traits::{IByteWriter, IClearable, IDestination, ITailInspectable};
 use crate::error::ErrorCode;
 #[cfg(not(feature = "std"))]
 use alloc::string::String;
@@ -58,7 +58,9 @@ impl Buffer {
             if let Ok(s) = core::str::from_utf8(&self.buffer) {
                 alloc::string::ToString::to_string(s)
             } else {
-                alloc::string::ToString::to_string(&alloc::string::String::from_utf8_lossy(&self.buffer))
+                alloc::string::ToString::to_string(&alloc::string::String::from_utf8_lossy(
+                    &self.buffer,
+                ))
             }
         }
     }
@@ -341,7 +343,9 @@ impl Drop for FileDestination {
 impl IByteWriter for FileDestination {
     fn write_byte(&mut self, byte: u8) -> Result<(), ErrorCode> {
         use std::io::Write;
-        self.writer.write_all(&[byte]).map_err(|_| ErrorCode::IoError)?;
+        self.writer
+            .write_all(&[byte])
+            .map_err(|_| ErrorCode::IoError)?;
         self.last_byte = Some(byte);
         self.bytes_written += 1;
         Ok(())
@@ -349,7 +353,9 @@ impl IByteWriter for FileDestination {
 
     fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), ErrorCode> {
         use std::io::Write;
-        self.writer.write_all(bytes).map_err(|_| ErrorCode::IoError)?;
+        self.writer
+            .write_all(bytes)
+            .map_err(|_| ErrorCode::IoError)?;
         self.last_byte = bytes.last().copied();
         self.bytes_written += bytes.len();
         Ok(())

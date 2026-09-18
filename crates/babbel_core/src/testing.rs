@@ -10,8 +10,8 @@
 use std::fs;
 use std::panic::{self, PanicHookInfo};
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
 /// Guard that suppresses panic backtraces during malformed/fuzz conformance runs,
@@ -29,7 +29,7 @@ impl PanicHookGuard {
         let prev_hook = panic::take_hook();
         panic::set_hook(Box::new(move |info| {
             count_clone.fetch_add(1, Ordering::SeqCst);
-            let _ = prev_hook(info);
+            prev_hook(info);
         }));
         Self {
             panic_count,
@@ -111,7 +111,9 @@ pub fn find_test_suite_dir(
         }
     }
 
-    candidates.into_iter().find(|p| p.join(marker_file_or_dir).exists())
+    candidates
+        .into_iter()
+        .find(|p| p.join(marker_file_or_dir).exists())
 }
 
 /// Statistics accumulator for a specification conformance category.
@@ -220,14 +222,20 @@ impl ConformanceReport {
         let elapsed = self.start_time.elapsed();
         let totals = self.totals();
 
-        println!("\n=================================================================================");
+        println!(
+            "\n================================================================================="
+        );
         println!("{:^81}", self.title);
-        println!("=================================================================================");
+        println!(
+            "================================================================================="
+        );
         println!(
             " {:<38} | {:>7} | {:>7} | {:>7} | {:>8}",
             "Category", "Vectors", "Passed", "Panics", "Status"
         );
-        println!("---------------------------------------------------------------------------------");
+        println!(
+            "---------------------------------------------------------------------------------"
+        );
 
         for (name, stats) in &self.categories {
             if stats.total > 0 {
@@ -243,7 +251,9 @@ impl ConformanceReport {
             }
         }
 
-        println!("---------------------------------------------------------------------------------");
+        println!(
+            "---------------------------------------------------------------------------------"
+        );
         let overall_status = if totals.passed == totals.total && totals.panics == 0 {
             "100% OK"
         } else {
@@ -253,10 +263,14 @@ impl ConformanceReport {
             " {:<38} | {:>7} | {:>7} | {:>7} | {:>8}",
             "TOTAL", totals.total, totals.passed, totals.panics, overall_status
         );
-        println!("=================================================================================");
+        println!(
+            "================================================================================="
+        );
         println!("Execution Time: {:.2?}", elapsed);
         println!("Zero Panics Guarantee: {} panics recorded", totals.panics);
-        println!("=================================================================================\n");
+        println!(
+            "=================================================================================\n"
+        );
     }
 
     /// Asserts 0 panics and 0 failures, ensuring strict conformance.

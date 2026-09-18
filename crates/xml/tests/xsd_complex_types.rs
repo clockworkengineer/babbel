@@ -1,4 +1,4 @@
-﻿use babbel_xml::{parse, XsdValidator};
+use babbel_xml::{XsdValidator, parse};
 
 #[test]
 fn test_xsd_sequence_compositor_and_attributes() {
@@ -28,14 +28,22 @@ fn test_xsd_sequence_compositor_and_attributes() {
     let doc_missing_attr = parse(missing_attr_xml).unwrap();
     let res = validator.validate(&doc_missing_attr);
     assert!(res.is_err());
-    assert!(res.unwrap_err().to_string().contains("Required attribute 'id' missing"));
+    assert!(
+        res.unwrap_err()
+            .to_string()
+            .contains("Required attribute 'id' missing")
+    );
 
     // Missing sequence child <last>
     let missing_child_xml = r#"<person id="101"><first>John</first></person>"#;
     let doc_missing_child = parse(missing_child_xml).unwrap();
     let res2 = validator.validate(&doc_missing_child);
     assert!(res2.is_err());
-    assert!(res2.unwrap_err().to_string().contains("missing required sequence child <last>"));
+    assert!(
+        res2.unwrap_err()
+            .to_string()
+            .contains("missing required sequence child <last>")
+    );
 }
 
 #[test]
@@ -65,7 +73,11 @@ fn test_xsd_choice_compositor() {
     let doc_invalid = parse("<contact><fax>+123456789</fax></contact>").unwrap();
     let res = validator.validate(&doc_invalid);
     assert!(res.is_err());
-    assert!(res.unwrap_err().to_string().contains("not allowed in choice group"));
+    assert!(
+        res.unwrap_err()
+            .to_string()
+            .contains("not allowed in choice group")
+    );
 }
 
 #[test]
@@ -89,7 +101,8 @@ fn test_xsd_global_complex_type_reference() {
     let doc_valid = parse("<address><city>Boston</city><zip>02101</zip></address>").unwrap();
     assert!(validator.validate(&doc_valid).is_ok());
 
-    let doc_invalid = parse("<address><city>Boston</city><zip>not-a-number</zip></address>").unwrap();
+    let doc_invalid =
+        parse("<address><city>Boston</city><zip>not-a-number</zip></address>").unwrap();
     let res = validator.validate(&doc_invalid);
     assert!(res.is_err());
     assert!(res.unwrap_err().to_string().contains("not a valid integer"));
@@ -125,8 +138,13 @@ fn test_xsd_min_max_occurs() {
     assert!(validator.validate(&doc_zero).is_err());
 
     // 3 apples - err (maxOccurs = 2)
-    let doc_three = parse("<basket><apple>A</apple><apple>B</apple><apple>C</apple></basket>").unwrap();
+    let doc_three =
+        parse("<basket><apple>A</apple><apple>B</apple><apple>C</apple></basket>").unwrap();
     let res = validator.validate(&doc_three);
     assert!(res.is_err());
-    assert!(res.unwrap_err().to_string().contains("exceeds maxOccurs (2)"));
+    assert!(
+        res.unwrap_err()
+            .to_string()
+            .contains("exceeds maxOccurs (2)")
+    );
 }

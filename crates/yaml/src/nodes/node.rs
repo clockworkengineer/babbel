@@ -22,7 +22,6 @@ pub use crate::nodes::builders::{ArrayBuilder, MappingBuilder, SetBuilder};
 #[cfg(test)]
 use crate::nodes::util::{make_node, make_set};
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

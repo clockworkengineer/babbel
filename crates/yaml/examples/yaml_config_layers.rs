@@ -1,4 +1,4 @@
-﻿//! Example demonstrating layered configuration with YAML.
+//! Example demonstrating layered configuration with YAML.
 //!
 //! A common real-world pattern for 12-factor apps and microservices:
 //!
@@ -15,7 +15,7 @@
 //! layers winning on conflicts while preserving keys not present in
 //! the overlay.
 
-use babbel_yaml::{parse_string, stringify, BufferDestination, Node};
+use babbel_yaml::{BufferDestination, Node, parse_string, stringify};
 
 // ---------------------------------------------------------------------------
 // Config layers (in a real app these would come from files / env vars)
@@ -71,20 +71,16 @@ const LOCAL: &str = r#"app:
 fn deep_merge(base: &Node, overlay: &Node) -> Node {
     match (base, overlay) {
         // Merge two multi-document streams by merging the first document of each
-        (Node::Documents(bd), Node::Documents(od)) => {
-            match (bd.first(), od.first()) {
-                (Some(b), Some(o)) => Node::Documents(vec![deep_merge(b, o)]),
-                _ => overlay.clone(),
-            }
-        }
+        (Node::Documents(bd), Node::Documents(od)) => match (bd.first(), od.first()) {
+            (Some(b), Some(o)) => Node::Documents(vec![deep_merge(b, o)]),
+            _ => overlay.clone(),
+        },
 
         // Merge two document bodies
-        (Node::Document(bi), Node::Document(oi)) => {
-            match (bi.first(), oi.first()) {
-                (Some(b), Some(o)) => Node::Document(vec![deep_merge(b, o)]),
-                _ => overlay.clone(),
-            }
-        }
+        (Node::Document(bi), Node::Document(oi)) => match (bi.first(), oi.first()) {
+            (Some(b), Some(o)) => Node::Document(vec![deep_merge(b, o)]),
+            _ => overlay.clone(),
+        },
 
         // Core case: merge two mappings
         (Node::Mapping(base_pairs), Node::Mapping(over_pairs)) => {
@@ -217,11 +213,7 @@ fn main() {
     // Demonstrate: merging three or more layers generically
     // ------------------------------------------------------------------
     println!("--- Generic N-layer merge ---");
-    let layers: &[(&str, &Node)] = &[
-        ("base", &base),
-        ("dev", &dev),
-        ("local", &local),
-    ];
+    let layers: &[(&str, &Node)] = &[("base", &base), ("dev", &dev), ("local", &local)];
 
     let effective = layers
         .iter()

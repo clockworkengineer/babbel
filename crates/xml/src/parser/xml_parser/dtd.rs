@@ -205,7 +205,8 @@ impl<'a> XmlParser<'a> {
             }
         } else {
             Err(XmlError::SyntaxError {
-                message: "Invalid element contentspec, expected EMPTY, ANY, or parenthesized model".into(),
+                message: "Invalid element contentspec, expected EMPTY, ANY, or parenthesized model"
+                    .into(),
                 line: self.source.line(),
                 col: self.source.col(),
             })

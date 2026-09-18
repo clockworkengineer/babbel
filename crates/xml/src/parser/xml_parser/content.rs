@@ -23,11 +23,14 @@ impl<'a> XmlParser<'a> {
                     col: self.source.col(),
                 });
             }
-            let ch = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
-                message: "Unexpected EOF while reading text".into(),
-                line: self.source.line(),
-                col: self.source.col(),
-            })?;
+            let ch = self
+                .source
+                .next_char()
+                .ok_or_else(|| XmlError::SyntaxError {
+                    message: "Unexpected EOF while reading text".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                })?;
             raw_text.push(ch);
             self.options.check_text_node_size(raw_text.len())?;
         }
@@ -50,12 +53,19 @@ impl<'a> XmlParser<'a> {
                     if !ref_name.starts_with('#') {
                         if self.unparsed_entities.iter().any(|u| u == ref_name) {
                             return Err(XmlError::SyntaxError {
-                                message: format!("Unparsed entity '{ref_name}' cannot be referenced in content (WFC: Parsed Entity)"),
+                                message: format!(
+                                    "Unparsed entity '{ref_name}' cannot be referenced in content (WFC: Parsed Entity)"
+                                ),
                                 line: self.source.line(),
                                 col: self.source.col(),
                             });
                         }
-                        if ref_name != "lt" && ref_name != "gt" && ref_name != "amp" && ref_name != "quot" && ref_name != "apos" {
+                        if ref_name != "lt"
+                            && ref_name != "gt"
+                            && ref_name != "amp"
+                            && ref_name != "quot"
+                            && ref_name != "apos"
+                        {
                             if !self.external_entities.iter().any(|e| e == ref_name) {
                                 if let Some(val) = self.entity_mapper.get(ref_name) {
                                     self.validate_entity_replacement_text(ref_name, val)?;
@@ -86,11 +96,14 @@ impl<'a> XmlParser<'a> {
                 self.source.consume("]]>");
                 return Ok(doc.add_node(NodeKind::CData(content.into_boxed_str())));
             }
-            let ch = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
-                message: "Unterminated CDATA section".into(),
-                line: self.source.line(),
-                col: self.source.col(),
-            })?;
+            let ch = self
+                .source
+                .next_char()
+                .ok_or_else(|| XmlError::SyntaxError {
+                    message: "Unterminated CDATA section".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                })?;
             if !is_valid_xml_char(ch) {
                 return Err(XmlError::SyntaxError {
                     message: format!("Forbidden XML character '\\u{{{:x}}}' in CDATA", ch as u32),
@@ -126,14 +139,20 @@ impl<'a> XmlParser<'a> {
                 self.source.consume("-->");
                 return Ok(doc.add_node(NodeKind::Comment(comment.into_boxed_str())));
             }
-            let ch = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
-                message: "Unterminated XML comment".into(),
-                line: self.source.line(),
-                col: self.source.col(),
-            })?;
+            let ch = self
+                .source
+                .next_char()
+                .ok_or_else(|| XmlError::SyntaxError {
+                    message: "Unterminated XML comment".into(),
+                    line: self.source.line(),
+                    col: self.source.col(),
+                })?;
             if !is_valid_xml_char(ch) {
                 return Err(XmlError::SyntaxError {
-                    message: format!("Forbidden XML character '\\u{{{:x}}}' in comment", ch as u32),
+                    message: format!(
+                        "Forbidden XML character '\\u{{{:x}}}' in comment",
+                        ch as u32
+                    ),
                     line: self.source.line(),
                     col: self.source.col(),
                 });

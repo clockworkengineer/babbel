@@ -135,7 +135,8 @@ fn discover_test_cases(suite_dir: &Path) -> Vec<TestCase> {
                             .get("expect")
                             .and_then(|e| e.get("phase"))
                             .and_then(|v| v.as_str());
-                        let disputed = val.get("status").and_then(|v| v.as_str()) == Some("disputed");
+                        let disputed =
+                            val.get("status").and_then(|v| v.as_str()) == Some("disputed");
 
                         let input_filename = val
                             .get("input")
@@ -156,7 +157,9 @@ fn discover_test_cases(suite_dir: &Path) -> Vec<TestCase> {
                         // parses = valid || (op != "parse" && phase != Some("parse"))
                         let expected_to_parse = valid || (op != "parse" && phase != Some("parse"));
 
-                        let strict = std::env::var("HCL_STRICT").map(|v| v == "1" || v == "true").unwrap_or(false);
+                        let strict = std::env::var("HCL_STRICT")
+                            .map(|v| v == "1" || v == "true")
+                            .unwrap_or(false);
                         if input_path.exists() && (strict || !disputed) {
                             out.push(TestCase {
                                 id,
@@ -189,7 +192,9 @@ fn test_official_hcl_test_suite() {
             println!("\n============================================================");
             println!("  kmoneil/hcl-test-suite (HCL Conformance Suite) not found.");
             println!("  To download and install the official test suite, run:");
-            println!("    powershell -ExecutionPolicy Bypass -File scripts/fetch_hcl_test_suite.ps1");
+            println!(
+                "    powershell -ExecutionPolicy Bypass -File scripts/fetch_hcl_test_suite.ps1"
+            );
             println!("    (or ./scripts/fetch_hcl_test_suite.sh on Unix)");
             println!("============================================================\n");
             return;
@@ -207,7 +212,10 @@ fn test_official_hcl_test_suite() {
         return;
     }
 
-    println!("Discovered {} test cases across categories.\n", test_cases.len());
+    println!(
+        "Discovered {} test cases across categories.\n",
+        test_cases.len()
+    );
 
     let _panic_guard = PanicHookGuard::new_silent();
     let start_time = Instant::now();
@@ -226,9 +234,7 @@ fn test_official_hcl_test_suite() {
             Err(_) => continue,
         };
 
-        let parse_result = panic::catch_unwind(AssertUnwindSafe(|| {
-            babbel_hcl::from_bytes(&bytes)
-        }));
+        let parse_result = panic::catch_unwind(AssertUnwindSafe(|| babbel_hcl::from_bytes(&bytes)));
 
         match parse_result {
             Ok(Ok(_value)) => {
@@ -294,7 +300,11 @@ fn test_official_hcl_test_suite() {
         overall.pass_rate()
     );
     println!("+---------------------------------------+-------+--------+--------+---------+");
-    println!("Executed in {:.3}s with {} unhandled panics.\n", elapsed.as_secs_f64(), overall.panics);
+    println!(
+        "Executed in {:.3}s with {} unhandled panics.\n",
+        elapsed.as_secs_f64(),
+        overall.panics
+    );
 
     let mut accepted_invalid = Vec::new();
     let mut rejected_valid = Vec::new();
@@ -307,11 +317,18 @@ fn test_official_hcl_test_suite() {
         }
     }
 
-    println!("Total Failures: {} (Accepted Invalid: {}, Rejected Valid: {})", 
-        failures.len(), accepted_invalid.len(), rejected_valid.len());
+    println!(
+        "Total Failures: {} (Accepted Invalid: {}, Rejected Valid: {})",
+        failures.len(),
+        accepted_invalid.len(),
+        rejected_valid.len()
+    );
 
     let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let _ = fs::write(manifest_dir.join("tests").join("failures.txt"), failures.join("\n"));
+    let _ = fs::write(
+        manifest_dir.join("tests").join("failures.txt"),
+        failures.join("\n"),
+    );
 
     if overall.panics > 0 {
         for f in &failures {

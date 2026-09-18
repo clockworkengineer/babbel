@@ -3,9 +3,9 @@
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::String, string::ToString, vec::Vec};
 
-use babbel_core::Value;
 use crate::constants::*;
 use crate::error::CborError;
+use babbel_core::Value;
 
 /// Decoder configuration options.
 #[derive(Debug, Clone, Copy)]
@@ -115,8 +115,7 @@ impl<'a> Decoder<'a> {
     fn read_u64(&mut self) -> Result<u64, CborError> {
         let slice = self.read_slice(8)?;
         Ok(u64::from_be_bytes([
-            slice[0], slice[1], slice[2], slice[3],
-            slice[4], slice[5], slice[6], slice[7],
+            slice[0], slice[1], slice[2], slice[3], slice[4], slice[5], slice[6], slice[7],
         ]))
     }
 
@@ -317,37 +316,35 @@ impl<'a> Decoder<'a> {
                     _ => Ok(inner),
                 }
             }
-            MAJOR_SIMPLE => {
-                match info {
-                    SIMPLE_FALSE => Ok(Value::Bool(false)),
-                    SIMPLE_TRUE => Ok(Value::Bool(true)),
-                    SIMPLE_NULL | SIMPLE_UNDEFINED => Ok(Value::Null),
-                    0..=19 => Ok(Value::Integer(info as i128)),
-                    AI_1_BYTE => {
-                        let val = self.read_byte()?;
-                        match val {
-                            SIMPLE_FALSE => Ok(Value::Bool(false)),
-                            SIMPLE_TRUE => Ok(Value::Bool(true)),
-                            SIMPLE_NULL | SIMPLE_UNDEFINED => Ok(Value::Null),
-                            _ => Ok(Value::Integer(val as i128)),
-                        }
+            MAJOR_SIMPLE => match info {
+                SIMPLE_FALSE => Ok(Value::Bool(false)),
+                SIMPLE_TRUE => Ok(Value::Bool(true)),
+                SIMPLE_NULL | SIMPLE_UNDEFINED => Ok(Value::Null),
+                0..=19 => Ok(Value::Integer(info as i128)),
+                AI_1_BYTE => {
+                    let val = self.read_byte()?;
+                    match val {
+                        SIMPLE_FALSE => Ok(Value::Bool(false)),
+                        SIMPLE_TRUE => Ok(Value::Bool(true)),
+                        SIMPLE_NULL | SIMPLE_UNDEFINED => Ok(Value::Null),
+                        _ => Ok(Value::Integer(val as i128)),
                     }
-                    FLOAT_16 => {
-                        let bits = self.read_u16()?;
-                        Ok(Value::Float(decode_f16(bits)))
-                    }
-                    FLOAT_32 => {
-                        let bits = self.read_u32()?;
-                        Ok(Value::Float(f32::from_bits(bits) as f64))
-                    }
-                    FLOAT_64 => {
-                        let bits = self.read_u64()?;
-                        Ok(Value::Float(f64::from_bits(bits)))
-                    }
-                    BREAK_CODE => Err(CborError::UnexpectedBreak),
-                    _ => Err(CborError::InvalidInitialByte(initial_byte)),
                 }
-            }
+                FLOAT_16 => {
+                    let bits = self.read_u16()?;
+                    Ok(Value::Float(decode_f16(bits)))
+                }
+                FLOAT_32 => {
+                    let bits = self.read_u32()?;
+                    Ok(Value::Float(f32::from_bits(bits) as f64))
+                }
+                FLOAT_64 => {
+                    let bits = self.read_u64()?;
+                    Ok(Value::Float(f64::from_bits(bits)))
+                }
+                BREAK_CODE => Err(CborError::UnexpectedBreak),
+                _ => Err(CborError::InvalidInitialByte(initial_byte)),
+            },
             _ => Err(CborError::InvalidInitialByte(initial_byte)),
         }
     }
@@ -367,7 +364,11 @@ fn decode_f16(bits: u16) -> f64 {
         }
     } else if exp == 31 {
         if mant == 0 {
-            if sign == 1 { f64::NEG_INFINITY } else { f64::INFINITY }
+            if sign == 1 {
+                f64::NEG_INFINITY
+            } else {
+                f64::INFINITY
+            }
         } else {
             f64::NAN
         }

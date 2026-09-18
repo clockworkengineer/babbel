@@ -3,10 +3,10 @@
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::String, string::ToString, vec, vec::Vec};
 
-use crate::error::TomlError;
-use crate::nodes::Node;
 use super::lexer::Lexer;
 use super::tokens::{SpannedToken, Token};
+use crate::error::TomlError;
+use crate::nodes::Node;
 
 /// Parser for TOML documents.
 pub struct Parser {
@@ -66,7 +66,10 @@ impl Parser {
             _ => {
                 let tok = self.peek();
                 Err(TomlError::syntax(
-                    format!("Expected newline or EOF after statement, found {:?}", tok.token),
+                    format!(
+                        "Expected newline or EOF after statement, found {:?}",
+                        tok.token
+                    ),
                     tok.line,
                     tok.column,
                     tok.position,
@@ -152,7 +155,11 @@ impl Parser {
         if !path.is_empty() {
             let parent = &path[..path.len() - 1];
             let key = &path[path.len() - 1];
-            if self.static_keys.iter().any(|(p, k)| p == parent && k == key) {
+            if self
+                .static_keys
+                .iter()
+                .any(|(p, k)| p == parent && k == key)
+            {
                 return Err(TomlError::syntax(
                     format!("Table '{:?}' conflicts with statically defined key", path),
                     tok.line,
@@ -206,9 +213,16 @@ impl Parser {
         if !path.is_empty() {
             let parent = &path[..path.len() - 1];
             let key = &path[path.len() - 1];
-            if self.static_keys.iter().any(|(p, k)| p == parent && k == key) {
+            if self
+                .static_keys
+                .iter()
+                .any(|(p, k)| p == parent && k == key)
+            {
                 return Err(TomlError::syntax(
-                    format!("Array of tables '{:?}' conflicts with statically defined key", path),
+                    format!(
+                        "Array of tables '{:?}' conflicts with statically defined key",
+                        path
+                    ),
                     tok1.line,
                     tok1.column,
                     tok1.position,
@@ -264,7 +278,11 @@ impl Parser {
             Token::Key(k) => Ok(k.clone()),
             Token::String(s) => Ok(s.clone()),
             Token::Integer(i) => Ok(i.to_string()),
-            Token::Boolean(b) => Ok(if *b { "true".to_string() } else { "false".to_string() }),
+            Token::Boolean(b) => Ok(if *b {
+                "true".to_string()
+            } else {
+                "false".to_string()
+            }),
             _ => Err(TomlError::syntax(
                 format!("Expected key, found {:?}", tok.token),
                 tok.line,
@@ -299,12 +317,11 @@ impl Parser {
             value,
         )?;
 
-        self.static_keys.push((self.current_table_path.clone(), key_path[0].clone()));
+        self.static_keys
+            .push((self.current_table_path.clone(), key_path[0].clone()));
 
         Ok(())
     }
-
-
 
     fn parse_value(&mut self) -> Result<Node, TomlError> {
         let tok = self.peek().clone();
@@ -480,10 +497,7 @@ fn insert_nested_entry(
     Ok(())
 }
 
-fn navigate_table_mut<'a>(
-    node: &'a mut Node,
-    path: &[String],
-) -> Result<&'a mut Node, TomlError> {
+fn navigate_table_mut<'a>(node: &'a mut Node, path: &[String]) -> Result<&'a mut Node, TomlError> {
     if path.is_empty() {
         return Ok(node);
     }
@@ -557,13 +571,16 @@ fn insert_into_scope(
         let parent = navigate_table_mut(root, parent_path)?;
         match parent {
             Node::Table(entries) => {
-                let pos = entries.iter().position(|(k, _)| k == last_segment).ok_or_else(|| {
-                    TomlError::custom(format!("Array of tables '{}' not found", last_segment))
-                })?;
+                let pos = entries
+                    .iter()
+                    .position(|(k, _)| k == last_segment)
+                    .ok_or_else(|| {
+                        TomlError::custom(format!("Array of tables '{}' not found", last_segment))
+                    })?;
                 match &mut entries[pos].1 {
-                    Node::Array(items) => items.last_mut().ok_or_else(|| {
-                        TomlError::custom("Array of tables is empty")
-                    })?,
+                    Node::Array(items) => items
+                        .last_mut()
+                        .ok_or_else(|| TomlError::custom("Array of tables is empty"))?,
                     _ => return Err(TomlError::custom("Expected array of tables")),
                 }
             }

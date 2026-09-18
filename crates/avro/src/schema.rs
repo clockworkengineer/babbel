@@ -16,8 +16,8 @@ use alloc::{
 #[cfg(feature = "std")]
 use std::boxed::Box;
 
-use babbel_core::Value;
 use crate::error::AvroError;
+use babbel_core::Value;
 
 /// An Avro record field definition.
 #[derive(Debug, Clone, PartialEq)]
@@ -91,8 +91,8 @@ pub enum AvroSchema {
 impl AvroSchema {
     /// Parse an Avro schema JSON string into an [`AvroSchema`].
     pub fn parse_str(json: &str) -> Result<Self, AvroError> {
-        let node = babbel_json::from_str(json)
-            .map_err(|e| AvroError::InvalidSchema(format!("{}", e)))?;
+        let node =
+            babbel_json::from_str(json).map_err(|e| AvroError::InvalidSchema(format!("{}", e)))?;
         let val = Value::from(node);
         let mut env = Vec::new();
         let schema = Self::from_value_with_env(&val, None, &mut env)?;
@@ -131,43 +131,59 @@ impl AvroSchema {
                 Ok(AvroSchema::Union(schemas))
             }
             Value::Object(map) => {
-                let type_val = map.iter()
+                let type_val = map
+                    .iter()
                     .find(|(k, _)| k == "type")
                     .map(|(_, v)| v)
-                    .ok_or_else(|| AvroError::InvalidSchema("missing 'type' in schema object".into()))?;
+                    .ok_or_else(|| {
+                        AvroError::InvalidSchema("missing 'type' in schema object".into())
+                    })?;
 
                 match type_val {
                     Value::String(type_str) => match type_str.as_str() {
                         "record" => {
-                            let name = map.iter()
+                            let name = map
+                                .iter()
                                 .find(|(k, _)| k == "name")
                                 .and_then(|(_, v)| v.as_str())
                                 .unwrap_or("Record")
                                 .to_string();
 
-                            let ns = map.iter()
+                            let ns = map
+                                .iter()
                                 .find(|(k, _)| k == "namespace")
                                 .and_then(|(_, v)| v.as_str())
                                 .or(enclosing_ns);
 
                             let full_name = match ns {
-                                Some(n) if !n.is_empty() && !name.contains('.') => format!("{}.{}", n, name),
+                                Some(n) if !n.is_empty() && !name.contains('.') => {
+                                    format!("{}.{}", n, name)
+                                }
                                 _ => name.clone(),
                             };
 
-                            let fields_val = map.iter()
+                            let fields_val = map
+                                .iter()
                                 .find(|(k, _)| k == "fields")
                                 .and_then(|(_, v)| v.as_array())
-                                .ok_or_else(|| AvroError::InvalidSchema("record missing 'fields' array".into()))?;
+                                .ok_or_else(|| {
+                                    AvroError::InvalidSchema("record missing 'fields' array".into())
+                                })?;
 
                             let mut fields = Vec::with_capacity(fields_val.len());
                             for f_val in fields_val {
-                                let f_name = f_val.get("name")
+                                let f_name = f_val
+                                    .get("name")
                                     .and_then(|v| v.as_str())
-                                    .ok_or_else(|| AvroError::InvalidSchema("record field missing 'name'".into()))?
+                                    .ok_or_else(|| {
+                                        AvroError::InvalidSchema(
+                                            "record field missing 'name'".into(),
+                                        )
+                                    })?
                                     .to_string();
-                                let f_type_val = f_val.get("type")
-                                    .ok_or_else(|| AvroError::InvalidSchema("record field missing 'type'".into()))?;
+                                let f_type_val = f_val.get("type").ok_or_else(|| {
+                                    AvroError::InvalidSchema("record field missing 'type'".into())
+                                })?;
                                 let f_schema = Self::from_value_with_env(f_type_val, ns, env)?;
                                 let f_default = f_val.get("default").cloned();
                                 fields.push(AvroField {
@@ -187,52 +203,72 @@ impl AvroSchema {
                             Ok(schema)
                         }
                         "enum" => {
-                            let name = map.iter()
+                            let name = map
+                                .iter()
                                 .find(|(k, _)| k == "name")
                                 .and_then(|(_, v)| v.as_str())
                                 .unwrap_or("Enum")
                                 .to_string();
-                            let symbols_val = map.iter()
+                            let symbols_val = map
+                                .iter()
                                 .find(|(k, _)| k == "symbols")
                                 .and_then(|(_, v)| v.as_array())
-                                .ok_or_else(|| AvroError::InvalidSchema("enum missing 'symbols' array".into()))?;
+                                .ok_or_else(|| {
+                                    AvroError::InvalidSchema("enum missing 'symbols' array".into())
+                                })?;
                             let mut symbols = Vec::with_capacity(symbols_val.len());
                             for s in symbols_val {
                                 if let Some(str_val) = s.as_str() {
                                     symbols.push(str_val.to_string());
                                 }
                             }
-                            let schema = AvroSchema::Enum { name: name.clone(), symbols };
+                            let schema = AvroSchema::Enum {
+                                name: name.clone(),
+                                symbols,
+                            };
                             env.push((name, schema.clone()));
                             Ok(schema)
                         }
                         "array" => {
-                            let items_val = map.iter()
+                            let items_val = map
+                                .iter()
                                 .find(|(k, _)| k == "items")
                                 .map(|(_, v)| v)
-                                .ok_or_else(|| AvroError::InvalidSchema("array missing 'items'".into()))?;
-                            let items = Box::new(Self::from_value_with_env(items_val, enclosing_ns, env)?);
+                                .ok_or_else(|| {
+                                    AvroError::InvalidSchema("array missing 'items'".into())
+                                })?;
+                            let items =
+                                Box::new(Self::from_value_with_env(items_val, enclosing_ns, env)?);
                             Ok(AvroSchema::Array { items })
                         }
                         "map" => {
-                            let values_val = map.iter()
+                            let values_val = map
+                                .iter()
                                 .find(|(k, _)| k == "values")
                                 .map(|(_, v)| v)
-                                .ok_or_else(|| AvroError::InvalidSchema("map missing 'values'".into()))?;
-                            let values = Box::new(Self::from_value_with_env(values_val, enclosing_ns, env)?);
+                                .ok_or_else(|| {
+                                    AvroError::InvalidSchema("map missing 'values'".into())
+                                })?;
+                            let values =
+                                Box::new(Self::from_value_with_env(values_val, enclosing_ns, env)?);
                             Ok(AvroSchema::Map { values })
                         }
                         "fixed" => {
-                            let name = map.iter()
+                            let name = map
+                                .iter()
                                 .find(|(k, _)| k == "name")
                                 .and_then(|(_, v)| v.as_str())
                                 .unwrap_or("Fixed")
                                 .to_string();
-                            let size = map.iter()
+                            let size = map
+                                .iter()
                                 .find(|(k, _)| k == "size")
                                 .and_then(|(_, v)| v.as_i64())
                                 .unwrap_or(0) as usize;
-                            let schema = AvroSchema::Fixed { name: name.clone(), size };
+                            let schema = AvroSchema::Fixed {
+                                name: name.clone(),
+                                size,
+                            };
                             env.push((name, schema.clone()));
                             Ok(schema)
                         }
@@ -249,10 +285,14 @@ impl AvroSchema {
                     Value::Array(_) | Value::Object(_) => {
                         Self::from_value_with_env(type_val, enclosing_ns, env)
                     }
-                    _ => Err(AvroError::InvalidSchema("invalid 'type' format in schema".into())),
+                    _ => Err(AvroError::InvalidSchema(
+                        "invalid 'type' format in schema".into(),
+                    )),
                 }
             }
-            _ => Err(AvroError::InvalidSchema("schema must be string, array, or object".into())),
+            _ => Err(AvroError::InvalidSchema(
+                "schema must be string, array, or object".into(),
+            )),
         }
     }
 
@@ -272,9 +312,16 @@ impl AvroSchema {
                 values: Box::new(Self::resolve_named(*values, env)),
             },
             AvroSchema::Union(variants) => AvroSchema::Union(
-                variants.into_iter().map(|s| Self::resolve_named(s, env)).collect(),
+                variants
+                    .into_iter()
+                    .map(|s| Self::resolve_named(s, env))
+                    .collect(),
             ),
-            AvroSchema::Record { name, namespace, fields } => {
+            AvroSchema::Record {
+                name,
+                namespace,
+                fields,
+            } => {
                 let resolved_fields = fields
                     .into_iter()
                     .map(|f| AvroField {
@@ -313,7 +360,11 @@ mod tests {
 
         let schema = AvroSchema::parse_str(json).unwrap();
         match schema {
-            AvroSchema::Record { name, namespace, fields } => {
+            AvroSchema::Record {
+                name,
+                namespace,
+                fields,
+            } => {
                 assert_eq!(name, "example.avro.User");
                 assert_eq!(namespace.as_deref(), Some("example.avro"));
                 assert_eq!(fields.len(), 3);

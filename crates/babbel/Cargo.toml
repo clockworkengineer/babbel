@@ -1,14 +1,20 @@
 [package]
 name = "babbel"
-version = "0.2.1"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 description = "Fast, modular, multi-format serialization and document processing toolkit for Rust"
-license = "MIT"
-authors = ["ClockworkEngineer", "Babbel Contributors"]
+license.workspace = true
+authors.workspace = true
 readme = "README.md"
-repository = "https://github.com/clockworkengineer/babbel"
+repository.workspace = true
 documentation = "https://docs.rs/babbel"
-homepage = "https://github.com/clockworkengineer/babbel"
+homepage.workspace = true
+rust-version.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[lints]
+workspace = true
 
 [features]
 default = ["std", "json", "yaml", "xml", "bencode", "toml", "msgpack", "cbor", "bson", "ron", "kdl", "parquet", "hcl", "avro", "convert", "serde"]

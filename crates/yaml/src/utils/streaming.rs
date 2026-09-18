@@ -113,10 +113,10 @@ impl<'a> Iterator for NodeIterator<'a> {
 /// Extension trait for Node to provide iterator methods
 pub trait NodeIteratorExt {
     /// Create an iterator that traverses the node tree depth-first
-    fn iter_depth_first(&self) -> NodeIterator;
+    fn iter_depth_first(&self) -> NodeIterator<'_>;
 
     /// Create an iterator that traverses the node tree breadth-first
-    fn iter_breadth_first(&self) -> NodeIterator;
+    fn iter_breadth_first(&self) -> NodeIterator<'_>;
 
     /// Count nodes in the tree
     fn count_nodes(&self) -> usize;
@@ -139,11 +139,11 @@ pub trait NodeIteratorExt {
 }
 
 impl NodeIteratorExt for Node {
-    fn iter_depth_first(&self) -> NodeIterator {
+    fn iter_depth_first(&self) -> NodeIterator<'_> {
         NodeIterator::depth_first(self)
     }
 
-    fn iter_breadth_first(&self) -> NodeIterator {
+    fn iter_breadth_first(&self) -> NodeIterator<'_> {
         NodeIterator::breadth_first(self)
     }
 

@@ -1,5 +1,5 @@
-﻿use babbel_xml::{
-    io::{XmlSource, XmlDestination},
+use babbel_xml::{
+    io::{XmlDestination, XmlSource},
     parse, parse_bytes,
 };
 use std::io::Write;
@@ -23,7 +23,10 @@ fn test_xml_source_from_bytes_bom_handling() {
     let mut utf8_bom = vec![0xEF, 0xBB, 0xBF];
     utf8_bom.extend_from_slice(b"<root>UTF-8 BOM</root>");
     let doc_utf8 = parse_bytes(&utf8_bom).expect("UTF-8 BOM parse should succeed");
-    assert_eq!(doc_utf8.get_text_content(doc_utf8.root_element_id().unwrap()), "UTF-8 BOM");
+    assert_eq!(
+        doc_utf8.get_text_content(doc_utf8.root_element_id().unwrap()),
+        "UTF-8 BOM"
+    );
 
     // UTF-16 BE with BOM
     let mut utf16_be = vec![0xFE, 0xFF];
@@ -31,7 +34,10 @@ fn test_xml_source_from_bytes_bom_handling() {
         utf16_be.extend_from_slice(&ch.to_be_bytes());
     }
     let doc_utf16be = parse_bytes(&utf16_be).expect("UTF-16 BE BOM parse should succeed");
-    assert_eq!(doc_utf16be.get_text_content(doc_utf16be.root_element_id().unwrap()), "UTF-16 BE");
+    assert_eq!(
+        doc_utf16be.get_text_content(doc_utf16be.root_element_id().unwrap()),
+        "UTF-16 BE"
+    );
 
     // UTF-16 LE with BOM
     let mut utf16_le = vec![0xFF, 0xFE];
@@ -39,7 +45,10 @@ fn test_xml_source_from_bytes_bom_handling() {
         utf16_le.extend_from_slice(&ch.to_le_bytes());
     }
     let doc_utf16le = parse_bytes(&utf16_le).expect("UTF-16 LE BOM parse should succeed");
-    assert_eq!(doc_utf16le.get_text_content(doc_utf16le.root_element_id().unwrap()), "UTF-16 LE");
+    assert_eq!(
+        doc_utf16le.get_text_content(doc_utf16le.root_element_id().unwrap()),
+        "UTF-16 LE"
+    );
 }
 
 #[test]
@@ -50,14 +59,18 @@ fn test_xml_source_from_file() {
     let xml_content = "<library><book>The Iliad</book></library>";
     {
         let mut file = std::fs::File::create(&temp_file_path).expect("Create temp file");
-        file.write_all(xml_content.as_bytes()).expect("Write temp file");
+        file.write_all(xml_content.as_bytes())
+            .expect("Write temp file");
     }
 
     let source = XmlSource::from_file(&temp_file_path).expect("Open file source");
     let mut parser = babbel_xml::XmlParser::new(source, babbel_xml::ParseOptions::default());
     let doc = parser.parse().expect("Parse file source clean");
 
-    assert_eq!(doc.get_text_content(doc.root_element_id().unwrap()), "The Iliad");
+    assert_eq!(
+        doc.get_text_content(doc.root_element_id().unwrap()),
+        "The Iliad"
+    );
 
     let _ = std::fs::remove_file(temp_file_path);
 }
@@ -70,7 +83,8 @@ fn test_parse_file_convenience_function() {
     let xml_content = "<note><to>Tove</to></note>";
     std::fs::write(&temp_file_path, xml_content).expect("Write temp file");
 
-    let doc = babbel_xml::parse_file(&temp_file_path).expect("parse_file convenience function should succeed");
+    let doc = babbel_xml::parse_file(&temp_file_path)
+        .expect("parse_file convenience function should succeed");
     assert_eq!(doc.get_text_content(doc.root_element_id().unwrap()), "Tove");
 
     let _ = std::fs::remove_file(temp_file_path);

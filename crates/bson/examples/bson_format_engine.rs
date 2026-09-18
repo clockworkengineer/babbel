@@ -2,8 +2,8 @@
 //!
 //! Demonstrates using `BsonEngine` via Babbel's unified `FormatEngine` trait.
 
-use babbel_core::{FormatEngine, FormatOptions, Value};
 use babbel_bson::BsonEngine;
+use babbel_core::{FormatEngine, FormatOptions, Value};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Babbel BSON FormatEngine Example ===\n");

@@ -46,7 +46,7 @@ impl Drop for PanicHookGuard {
 struct W3cTestCase {
     id: String,
     uri: String,
-    test_type: String, // "valid", "invalid", "not-wf", "error"
+    test_type: String,      // "valid", "invalid", "not-wf", "error"
     recommendation: String, // "XML1.0", "XML1.1", etc.
     entities: String,
     suite_name: String,
@@ -92,7 +92,13 @@ fn find_xmlconf_dir() -> Option<PathBuf> {
     let mut candidates = vec![
         manifest_dir.join("tests").join("xmlconf"),
         manifest_dir.join("xmlconf"),
-        manifest_dir.join("..").join("..").join("crates").join("xml").join("tests").join("xmlconf"),
+        manifest_dir
+            .join("..")
+            .join("..")
+            .join("crates")
+            .join("xml")
+            .join("tests")
+            .join("xmlconf"),
         PathBuf::from("crates/xml/tests/xmlconf"),
         PathBuf::from("tests/xmlconf"),
         PathBuf::from("xmlconf"),
@@ -110,7 +116,9 @@ fn find_xmlconf_dir() -> Option<PathBuf> {
         }
     }
 
-    candidates.into_iter().find(|p| p.join("xmlconf.xml").exists() || p.join("xmltest").exists())
+    candidates
+        .into_iter()
+        .find(|p| p.join("xmlconf.xml").exists() || p.join("xmltest").exists())
 }
 
 /// Recursively finds all catalog XML files within the xmlconf directory.
@@ -147,7 +155,10 @@ fn find_catalogs(xmlconf_dir: &Path) -> Vec<PathBuf> {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_dir() {
-                    let sub_catalog = path.join(format!("{}.xml", path.file_name().unwrap_or_default().to_string_lossy()));
+                    let sub_catalog = path.join(format!(
+                        "{}.xml",
+                        path.file_name().unwrap_or_default().to_string_lossy()
+                    ));
                     if sub_catalog.exists() {
                         catalogs.push(sub_catalog);
                     }
@@ -181,11 +192,26 @@ fn parse_catalog(catalog_path: &Path, xmlconf_base: &Path) -> Vec<W3cTestCase> {
 
     let test_node_ids = doc.get_elements_by_tag_name("TEST");
     for node_id in test_node_ids {
-        let id = doc.get_attribute(node_id, "ID").unwrap_or_default().to_string();
-        let uri = doc.get_attribute(node_id, "URI").unwrap_or_default().to_string();
-        let test_type = doc.get_attribute(node_id, "TYPE").unwrap_or("valid").to_string();
-        let recommendation = doc.get_attribute(node_id, "RECOMMENDATION").unwrap_or("XML1.0").to_string();
-        let entities = doc.get_attribute(node_id, "ENTITIES").unwrap_or("none").to_string();
+        let id = doc
+            .get_attribute(node_id, "ID")
+            .unwrap_or_default()
+            .to_string();
+        let uri = doc
+            .get_attribute(node_id, "URI")
+            .unwrap_or_default()
+            .to_string();
+        let test_type = doc
+            .get_attribute(node_id, "TYPE")
+            .unwrap_or("valid")
+            .to_string();
+        let recommendation = doc
+            .get_attribute(node_id, "RECOMMENDATION")
+            .unwrap_or("XML1.0")
+            .to_string();
+        let entities = doc
+            .get_attribute(node_id, "ENTITIES")
+            .unwrap_or("none")
+            .to_string();
         let version = doc.get_attribute(node_id, "VERSION");
         let edition = doc.get_attribute(node_id, "EDITION");
 
@@ -266,7 +292,11 @@ fn test_w3c_xml_conformance_suite() {
         all_tests.extend(cases);
     }
 
-    println!("Discovered {} test cases across {} sub-catalogs.\n", all_tests.len(), catalogs.len());
+    println!(
+        "Discovered {} test cases across {} sub-catalogs.\n",
+        all_tests.len(),
+        catalogs.len()
+    );
 
     let _panic_guard = PanicHookGuard::new_silent();
     let start_time = Instant::now();
@@ -295,7 +325,9 @@ fn test_w3c_xml_conformance_suite() {
             Ok((cow_str, enc)) => (cow_str, enc),
             Err(_) => {
                 // Attempt ISO-8859-1 / Latin-1 decoding if declared in XML declaration
-                let decoded_fallback = if let Ok(s_raw) = std::str::from_utf8(&bytes[..bytes.len().min(128)]) {
+                let decoded_fallback = if let Ok(s_raw) =
+                    std::str::from_utf8(&bytes[..bytes.len().min(128)])
+                {
                     let s_lower = s_raw.to_ascii_lowercase();
                     if s_lower.contains("encoding=\"iso-8859-1\"")
                         || s_lower.contains("encoding='iso-8859-1'")
@@ -311,7 +343,10 @@ fn test_w3c_xml_conformance_suite() {
                 };
 
                 if let Some((s, _)) = decoded_fallback {
-                    (std::borrow::Cow::Owned(s), babbel_core::encoding::Encoding::Utf8)
+                    (
+                        std::borrow::Cow::Owned(s),
+                        babbel_core::encoding::Encoding::Utf8,
+                    )
                 } else if test.test_type == "not-wf" {
                     // Invalid byte stream or unsupported encoding without declaration is not well-formed
                     stats.not_wf_passed += 1;
@@ -334,10 +369,14 @@ fn test_w3c_xml_conformance_suite() {
             enc,
             babbel_core::encoding::Encoding::Utf16Le | babbel_core::encoding::Encoding::Utf16Be
         );
-        let is_namespace_suite = test.recommendation.contains("NS") || test.suite_name.contains("namespace");
+        let is_namespace_suite =
+            test.recommendation.contains("NS") || test.suite_name.contains("namespace");
         let options = babbel_xml::options::ParseOptions {
             allow_external_entities: true,
-            base_dir: test.file_path.parent().map(|p| p.to_string_lossy().to_string()),
+            base_dir: test
+                .file_path
+                .parent()
+                .map(|p| p.to_string_lossy().to_string()),
             is_utf16,
             namespace_aware: is_namespace_suite,
             ..babbel_xml::options::ParseOptions::default()
@@ -437,9 +476,15 @@ fn test_w3c_xml_conformance_suite() {
 
     let elapsed = start_time.elapsed();
 
-    println!("+---------------------------------------+-------+--------+--------+----------+---------+");
-    println!("| Suite Name                            | Total | Passed | Failed | Skipped* | Rate %  |");
-    println!("+---------------------------------------+-------+--------+--------+----------+---------+");
+    println!(
+        "+---------------------------------------+-------+--------+--------+----------+---------+"
+    );
+    println!(
+        "| Suite Name                            | Total | Passed | Failed | Skipped* | Rate %  |"
+    );
+    println!(
+        "+---------------------------------------+-------+--------+--------+----------+---------+"
+    );
     for (name, stats) in &suite_results {
         let passed = stats.total_passed();
         let failed = stats.total_tested().saturating_sub(passed);
@@ -453,7 +498,9 @@ fn test_w3c_xml_conformance_suite() {
             stats.pass_rate()
         );
     }
-    println!("+---------------------------------------+-------+--------+--------+----------+---------+");
+    println!(
+        "+---------------------------------------+-------+--------+--------+----------+---------+"
+    );
     let overall_passed = overall.total_passed();
     let overall_failed = overall.total_tested().saturating_sub(overall_passed);
     println!(
@@ -464,9 +511,14 @@ fn test_w3c_xml_conformance_suite() {
         overall.skipped_encoding,
         overall.pass_rate()
     );
-    println!("+---------------------------------------+-------+--------+--------+----------+---------+");
+    println!(
+        "+---------------------------------------+-------+--------+--------+----------+---------+"
+    );
     println!("* Skipped: non-UTF encodings (ISO-8859-1, Shift-JIS) without external iconv.");
-    println!("Executed in {:.2}s with 0 unhandled panics.\n", elapsed.as_secs_f64());
+    println!(
+        "Executed in {:.2}s with 0 unhandled panics.\n",
+        elapsed.as_secs_f64()
+    );
 
     // Restore standard panic hook before testing assertions
     drop(_panic_guard);
@@ -475,7 +527,12 @@ fn test_w3c_xml_conformance_suite() {
         failures.is_empty(),
         "W3C XML conformance suite had {} failure(s):\n  {}",
         failures.len(),
-        failures.iter().take(25).cloned().collect::<Vec<_>>().join("\n  ")
+        failures
+            .iter()
+            .take(25)
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("\n  ")
     );
 
     assert!(

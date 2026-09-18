@@ -2,9 +2,9 @@
 
 use babbel_core::io::traits::IDestination;
 
+use super::default::emit_to;
 use crate::error::TomlError;
 use crate::nodes::Node;
-use super::default::emit_to;
 
 /// Formatting options for pretty-printing TOML.
 #[derive(Debug, Clone)]

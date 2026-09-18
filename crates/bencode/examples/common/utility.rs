@@ -21,7 +21,7 @@ use std::io::Write;
 pub fn get_torrent_file_list(file_path: &str) -> Vec<String> {
     let files_dir = Path::new(file_path);
     if !files_dir.exists() {
-        fs::create_dir("files").expect("Failed to create files directory");
+        let _ = fs::create_dir_all(files_dir);
         return vec![];
     }
 
@@ -43,7 +43,8 @@ mod tests {
 
     fn create_test_file(path: &str) {
         let mut file = File::create(path).expect("Failed to create test file");
-        file.write_all(b"test content").expect("Failed to write to test file");
+        file.write_all(b"test content")
+            .expect("Failed to write to test file");
     }
 
     fn cleanup_test_dir(dir: &str) {
@@ -79,9 +80,11 @@ mod tests {
 
     #[test]
     fn test_nonexistent_directory() {
-        let files = get_torrent_file_list("nonexistent_dir");
+        let test_dir = "test_nonexistent_dir";
+        let _ = fs::remove_dir_all(test_dir);
+        let files = get_torrent_file_list(test_dir);
         assert!(files.is_empty());
-        assert!(Path::new("files").exists());
-        fs::remove_dir("files").expect("Failed to clean up files directory");
+        assert!(Path::new(test_dir).exists());
+        let _ = fs::remove_dir_all(test_dir);
     }
 }

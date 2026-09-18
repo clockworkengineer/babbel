@@ -1,6 +1,6 @@
-﻿use babbel_xml::{
-    parse, parse_with_options, Document, ParseOptions, XPathEngine, XPathValue, XmlError,
-    XmlPullParser,
+use babbel_xml::{
+    Document, ParseOptions, XPathEngine, XPathValue, XmlError, XmlPullParser, parse,
+    parse_with_options,
 };
 
 #[test]
@@ -203,7 +203,9 @@ fn test_xpath_substring_negative_and_nan_no_panic() {
     assert_eq!(res2, XPathValue::String("".into()));
 
     // Out of bound length
-    let res3 = engine.evaluate("substring(//val, 1, 999999)", None).unwrap();
+    let res3 = engine
+        .evaluate("substring(//val, 1, 999999)", None)
+        .unwrap();
     assert_eq!(res3, XPathValue::String("Hello World".into()));
 
     // Zero length
@@ -244,19 +246,34 @@ fn test_dom_hierarchy_cycle_prevention() {
     // 1. Cannot append node into itself
     let self_append = doc.append_child(root, root);
     assert!(self_append.is_err());
-    assert!(self_append.unwrap_err().to_string().contains("HierarchyRequestError"));
+    assert!(
+        self_append
+            .unwrap_err()
+            .to_string()
+            .contains("HierarchyRequestError")
+    );
 
     // 2. Cannot append ancestor as child of descendant (would create cycle)
     let cycle_append = doc.append_child(grandchild, root);
     assert!(cycle_append.is_err());
-    assert!(cycle_append.unwrap_err().to_string().contains("HierarchyRequestError"));
+    assert!(
+        cycle_append
+            .unwrap_err()
+            .to_string()
+            .contains("HierarchyRequestError")
+    );
 
     // 3. Cannot insert ancestor before reference child
     let leaf = doc.create_element("leaf");
     doc.append_child(grandchild, leaf).unwrap();
     let cycle_insert = doc.insert_before(grandchild, root, leaf);
     assert!(cycle_insert.is_err());
-    assert!(cycle_insert.unwrap_err().to_string().contains("HierarchyRequestError"));
+    assert!(
+        cycle_insert
+            .unwrap_err()
+            .to_string()
+            .contains("HierarchyRequestError")
+    );
 }
 
 #[test]
@@ -330,13 +347,12 @@ fn test_pull_parser_attribute_iteration_clean_termination() {
 #[test]
 fn test_validator_and_serializer_depth_constants() {
     use babbel_xml::dtd::validator::DtdValidator;
-    use babbel_xml::xsd::validator::XsdValidator;
-    use babbel_xml::stringify::serializer::XmlSerializer;
     use babbel_xml::stringify::canonical::CanonicalSerializer;
+    use babbel_xml::stringify::serializer::XmlSerializer;
+    use babbel_xml::xsd::validator::XsdValidator;
 
     assert_eq!(DtdValidator::MAX_VALIDATION_DEPTH, 512);
     assert_eq!(XsdValidator::MAX_VALIDATION_DEPTH, 512);
     assert_eq!(XmlSerializer::MAX_SERIALIZE_DEPTH, 512);
     assert_eq!(CanonicalSerializer::MAX_CANONICAL_DEPTH, 512);
 }
-

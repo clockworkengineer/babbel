@@ -3,8 +3,8 @@
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::String, vec::Vec};
 
-use babbel_core::Value;
 use crate::error::HclError;
+use babbel_core::Value;
 
 /// Serializer configuration for HCL emission.
 #[derive(Debug, Clone, Copy)]
@@ -27,7 +27,9 @@ pub fn to_string(value: &Value) -> Result<String, HclError> {
 /// Serialize a universal `Value` into an HCL formatted string with custom indentation.
 pub fn to_string_pretty(value: &Value, indent: usize) -> Result<String, HclError> {
     let mut out = String::new();
-    let config = HclSerializerConfig { indent_step: indent };
+    let config = HclSerializerConfig {
+        indent_step: indent,
+    };
     emit_value_root(value, &mut out, 0, config)?;
     Ok(out)
 }
@@ -159,7 +161,13 @@ mod tests {
         let val = Value::Object(vec![
             ("instance_type".into(), Value::String("t3.micro".into())),
             ("count".into(), Value::Integer(2)),
-            ("tags".into(), Value::Array(vec![Value::String("web".into()), Value::String("prod".into())])),
+            (
+                "tags".into(),
+                Value::Array(vec![
+                    Value::String("web".into()),
+                    Value::String("prod".into()),
+                ]),
+            ),
         ]);
 
         let hcl_str = to_string(&val).unwrap();

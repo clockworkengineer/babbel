@@ -46,7 +46,9 @@ impl<'a> XmlParser<'a> {
         }
         if self.external_entities.iter().any(|e| e == name) {
             return Err(XmlError::SyntaxError {
-                message: format!("Attribute values must not contain references to external entity '&{name};'"),
+                message: format!(
+                    "Attribute values must not contain references to external entity '&{name};'"
+                ),
                 line: self.source.line(),
                 col: self.source.col(),
             });
@@ -55,7 +57,9 @@ impl<'a> XmlParser<'a> {
             if let Some(val) = self.entity_mapper.get(name) {
                 if val.contains('<') {
                     return Err(XmlError::SyntaxError {
-                        message: format!("Replacement text of entity '{name}' in attribute contains '<' (WFC: No < in Attribute Values)"),
+                        message: format!(
+                            "Replacement text of entity '{name}' in attribute contains '<' (WFC: No < in Attribute Values)"
+                        ),
                         line: self.source.line(),
                         col: self.source.col(),
                     });
@@ -107,7 +111,9 @@ impl<'a> XmlParser<'a> {
                                 other => {
                                     if self.entity_mapper.get(other).is_none() {
                                         return Err(XmlError::SyntaxError {
-                                            message: format!("Entity '{other}' referenced in attribute default before it was declared"),
+                                            message: format!(
+                                                "Entity '{other}' referenced in attribute default before it was declared"
+                                            ),
                                             line: self.source.line(),
                                             col: self.source.col(),
                                         });
@@ -153,13 +159,16 @@ impl<'a> XmlParser<'a> {
                     if ref_content.starts_with('#') {
                         let code_str = &ref_content[1..];
                         let valid = if let Some(hex_digits) = code_str.strip_prefix('x') {
-                            !hex_digits.is_empty() && hex_digits.chars().all(|c| c.is_ascii_hexdigit())
+                            !hex_digits.is_empty()
+                                && hex_digits.chars().all(|c| c.is_ascii_hexdigit())
                         } else {
                             !code_str.is_empty() && code_str.chars().all(|c| c.is_ascii_digit())
                         };
                         if !valid {
                             return Err(XmlError::SyntaxError {
-                                message: format!("Invalid numeric character reference in entity '{name}'"),
+                                message: format!(
+                                    "Invalid numeric character reference in entity '{name}'"
+                                ),
                                 line: self.source.line(),
                                 col: self.source.col(),
                             });
@@ -172,7 +181,9 @@ impl<'a> XmlParser<'a> {
                         };
                         if !valid {
                             return Err(XmlError::SyntaxError {
-                                message: format!("Invalid entity reference name in entity '{name}'"),
+                                message: format!(
+                                    "Invalid entity reference name in entity '{name}'"
+                                ),
                                 line: self.source.line(),
                                 col: self.source.col(),
                             });
@@ -181,7 +192,9 @@ impl<'a> XmlParser<'a> {
                     i += semi_pos + 1;
                 } else {
                     return Err(XmlError::SyntaxError {
-                        message: format!("Unclosed '&' in entity '{name}' replacement text (WFC: Parsed Entity)"),
+                        message: format!(
+                            "Unclosed '&' in entity '{name}' replacement text (WFC: Parsed Entity)"
+                        ),
                         line: self.source.line(),
                         col: self.source.col(),
                     });
@@ -203,7 +216,9 @@ impl<'a> XmlParser<'a> {
                             continue;
                         } else {
                             return Err(XmlError::SyntaxError {
-                                message: format!("Unclosed comment in entity '{name}' (WFC: Parsed Entity)"),
+                                message: format!(
+                                    "Unclosed comment in entity '{name}' (WFC: Parsed Entity)"
+                                ),
                                 line: self.source.line(),
                                 col: self.source.col(),
                             });
@@ -214,7 +229,9 @@ impl<'a> XmlParser<'a> {
                             continue;
                         } else {
                             return Err(XmlError::SyntaxError {
-                                message: format!("Unclosed PI in entity '{name}' (WFC: Parsed Entity)"),
+                                message: format!(
+                                    "Unclosed PI in entity '{name}' (WFC: Parsed Entity)"
+                                ),
                                 line: self.source.line(),
                                 col: self.source.col(),
                             });
@@ -225,7 +242,9 @@ impl<'a> XmlParser<'a> {
                             continue;
                         } else {
                             return Err(XmlError::SyntaxError {
-                                message: format!("Unclosed CDATA in entity '{name}' (WFC: Parsed Entity)"),
+                                message: format!(
+                                    "Unclosed CDATA in entity '{name}' (WFC: Parsed Entity)"
+                                ),
                                 line: self.source.line(),
                                 col: self.source.col(),
                             });
@@ -236,14 +255,18 @@ impl<'a> XmlParser<'a> {
                             if let Some(expected) = tag_stack.pop() {
                                 if expected != tag_name {
                                     return Err(XmlError::SyntaxError {
-                                        message: format!("Mismatched end tag '</{tag_name}>' in entity '{name}', expected '</{expected}>'"),
+                                        message: format!(
+                                            "Mismatched end tag '</{tag_name}>' in entity '{name}', expected '</{expected}>'"
+                                        ),
                                         line: self.source.line(),
                                         col: self.source.col(),
                                     });
                                 }
                             } else {
                                 return Err(XmlError::SyntaxError {
-                                    message: format!("End tag '</{tag_name}>' in entity '{name}' has no matching start tag (WFC: Parsed Entity)"),
+                                    message: format!(
+                                        "End tag '</{tag_name}>' in entity '{name}' has no matching start tag (WFC: Parsed Entity)"
+                                    ),
                                     line: self.source.line(),
                                     col: self.source.col(),
                                 });
@@ -270,7 +293,9 @@ impl<'a> XmlParser<'a> {
                                 let attrs_part = &tag_body[first_space..];
                                 if attrs_part.contains('<') {
                                     return Err(XmlError::SyntaxError {
-                                        message: format!("Attribute value cannot contain '<' in entity '{name}'"),
+                                        message: format!(
+                                            "Attribute value cannot contain '<' in entity '{name}'"
+                                        ),
                                         line: self.source.line(),
                                         col: self.source.col(),
                                     });
@@ -283,7 +308,9 @@ impl<'a> XmlParser<'a> {
                                             a_pos += semi + 1;
                                         } else {
                                             return Err(XmlError::SyntaxError {
-                                                message: format!("Unescaped '&' in attribute in entity '{name}'"),
+                                                message: format!(
+                                                    "Unescaped '&' in attribute in entity '{name}'"
+                                                ),
                                                 line: self.source.line(),
                                                 col: self.source.col(),
                                             });
@@ -300,7 +327,9 @@ impl<'a> XmlParser<'a> {
                             continue;
                         } else {
                             return Err(XmlError::SyntaxError {
-                                message: format!("Unclosed start tag in entity '{name}' (WFC: Parsed Entity)"),
+                                message: format!(
+                                    "Unclosed start tag in entity '{name}' (WFC: Parsed Entity)"
+                                ),
                                 line: self.source.line(),
                                 col: self.source.col(),
                             });
@@ -311,7 +340,9 @@ impl<'a> XmlParser<'a> {
             }
             if !tag_stack.is_empty() {
                 return Err(XmlError::SyntaxError {
-                    message: format!("Unclosed element in entity '{name}' replacement text (WFC: Parsed Entity)"),
+                    message: format!(
+                        "Unclosed element in entity '{name}' replacement text (WFC: Parsed Entity)"
+                    ),
                     line: self.source.line(),
                     col: self.source.col(),
                 });

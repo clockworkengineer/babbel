@@ -1,4 +1,3 @@
-
 //! Enhanced Error Handling Module
 //!
 //! Provides advanced error handling for YAML parsing and processing, including:
@@ -577,7 +576,7 @@ mod tests {
         assert!(formatted.contains("Suggestions:"));
         assert!(formatted.contains("Note:"));
     }
-        #[test]
+    #[test]
     fn test_span_invalid() {
         let span = Span::new(2, 3, 1, 1); // end before start
         assert_eq!(span.start_line, 2);

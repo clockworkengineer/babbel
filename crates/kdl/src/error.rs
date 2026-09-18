@@ -1,8 +1,8 @@
 //! Error types for the KDL parser and serializer.
 
-use core::fmt;
 #[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
+use core::fmt;
 
 use babbel_core::{BabbelError, ErrorCode};
 
@@ -12,11 +12,7 @@ pub enum KdlError {
     /// Unexpected end of file / stream.
     UnexpectedEof,
     /// Unexpected character at a specific position.
-    UnexpectedChar {
-        ch: char,
-        line: usize,
-        col: usize,
-    },
+    UnexpectedChar { ch: char, line: usize, col: usize },
     /// Expected a specific token or syntax element.
     Expected {
         expected: &'static str,
@@ -43,10 +39,7 @@ pub enum KdlError {
         col: usize,
     },
     /// Recursion depth limit exceeded.
-    RecursionLimitExceeded {
-        depth: usize,
-        max: usize,
-    },
+    RecursionLimitExceeded { depth: usize, max: usize },
     /// Serialization error.
     Serialization(String),
     /// UTF-8 encoding error.
@@ -58,22 +51,55 @@ impl fmt::Display for KdlError {
         match self {
             KdlError::UnexpectedEof => write!(f, "Unexpected end of input in KDL document"),
             KdlError::UnexpectedChar { ch, line, col } => {
-                write!(f, "Unexpected character '{}' at line {}, column {}", ch, line, col)
+                write!(
+                    f,
+                    "Unexpected character '{}' at line {}, column {}",
+                    ch, line, col
+                )
             }
-            KdlError::Expected { expected, found, line, col } => {
-                write!(f, "Expected {} but found '{}' at line {}, column {}", expected, found, line, col)
+            KdlError::Expected {
+                expected,
+                found,
+                line,
+                col,
+            } => {
+                write!(
+                    f,
+                    "Expected {} but found '{}' at line {}, column {}",
+                    expected, found, line, col
+                )
             }
             KdlError::Syntax { message, line, col } => {
-                write!(f, "Syntax error at line {}, column {}: {}", line, col, message)
+                write!(
+                    f,
+                    "Syntax error at line {}, column {}: {}",
+                    line, col, message
+                )
             }
             KdlError::InvalidNumber { literal, line, col } => {
-                write!(f, "Invalid number '{}' at line {}, column {}", literal, line, col)
+                write!(
+                    f,
+                    "Invalid number '{}' at line {}, column {}",
+                    literal, line, col
+                )
             }
-            KdlError::InvalidEscape { sequence, line, col } => {
-                write!(f, "Invalid escape sequence '\\{}' at line {}, column {}", sequence, line, col)
+            KdlError::InvalidEscape {
+                sequence,
+                line,
+                col,
+            } => {
+                write!(
+                    f,
+                    "Invalid escape sequence '\\{}' at line {}, column {}",
+                    sequence, line, col
+                )
             }
             KdlError::RecursionLimitExceeded { depth, max } => {
-                write!(f, "Recursion depth {} exceeded maximum limit of {}", depth, max)
+                write!(
+                    f,
+                    "Recursion depth {} exceeded maximum limit of {}",
+                    depth, max
+                )
             }
             KdlError::Serialization(msg) => write!(f, "KDL serialization error: {}", msg),
             KdlError::InvalidUtf8 => write!(f, "Input is not valid UTF-8"),

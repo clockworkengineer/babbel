@@ -3,9 +3,9 @@
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::String, string::ToString, vec::Vec};
 
-use babbel_core::Value;
 use crate::constants::*;
 use crate::error::MsgPackError;
+use babbel_core::Value;
 
 /// Decoder configuration options.
 #[derive(Debug, Clone, Copy)]
@@ -108,8 +108,7 @@ impl<'a> Decoder<'a> {
     fn read_u64(&mut self) -> Result<u64, MsgPackError> {
         let slice = self.read_slice(8)?;
         Ok(u64::from_be_bytes([
-            slice[0], slice[1], slice[2], slice[3],
-            slice[4], slice[5], slice[6], slice[7],
+            slice[0], slice[1], slice[2], slice[3], slice[4], slice[5], slice[6], slice[7],
         ]))
     }
 
@@ -134,8 +133,7 @@ impl<'a> Decoder<'a> {
     fn read_i64(&mut self) -> Result<i64, MsgPackError> {
         let slice = self.read_slice(8)?;
         Ok(i64::from_be_bytes([
-            slice[0], slice[1], slice[2], slice[3],
-            slice[4], slice[5], slice[6], slice[7],
+            slice[0], slice[1], slice[2], slice[3], slice[4], slice[5], slice[6], slice[7],
         ]))
     }
 
@@ -149,8 +147,7 @@ impl<'a> Decoder<'a> {
     fn read_f64(&mut self) -> Result<f64, MsgPackError> {
         let slice = self.read_slice(8)?;
         Ok(f64::from_be_bytes([
-            slice[0], slice[1], slice[2], slice[3],
-            slice[4], slice[5], slice[6], slice[7],
+            slice[0], slice[1], slice[2], slice[3], slice[4], slice[5], slice[6], slice[7],
         ]))
     }
 

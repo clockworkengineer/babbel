@@ -2,11 +2,11 @@
 //!
 //! Generates minimal RFC 6902 JSON Patch operations or RFC 7396 Merge Patch documents.
 
+use crate::model::Value;
+use crate::patch::{Patch, PatchOp};
 use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use crate::model::Value;
-use crate::patch::{Patch, PatchOp};
 
 /// Computes an RFC 6902 [`Patch`] representing the delta from `source` to `target`.
 pub fn diff(source: &Value, target: &Value) -> Patch {
@@ -69,7 +69,11 @@ fn diff_recursive(source: &Value, target: &Value, path: &str, ops: &mut Vec<Patc
             }
         }
         _ => {
-            let p = if path.is_empty() { "".to_string() } else { path.to_string() };
+            let p = if path.is_empty() {
+                "".to_string()
+            } else {
+                path.to_string()
+            };
             ops.push(PatchOp::Replace {
                 path: p,
                 value: target.clone(),
@@ -173,21 +177,30 @@ mod tests {
     #[test]
     fn test_diff_merge_patch_roundtrip() {
         let source = Value::Object(vec![
-            ("author".to_string(), Value::Object(vec![
-                ("first".to_string(), Value::String("Alice".to_string())),
-                ("last".to_string(), Value::String("Smith".to_string())),
-            ])),
+            (
+                "author".to_string(),
+                Value::Object(vec![
+                    ("first".to_string(), Value::String("Alice".to_string())),
+                    ("last".to_string(), Value::String("Smith".to_string())),
+                ]),
+            ),
             ("old_key".to_string(), Value::Integer(123)),
             ("title".to_string(), Value::String("Hello".to_string())),
         ]);
 
         let target = Value::Object(vec![
-            ("author".to_string(), Value::Object(vec![
-                ("first".to_string(), Value::String("Alice".to_string())),
-                ("last".to_string(), Value::String("Jones".to_string())),
-            ])),
+            (
+                "author".to_string(),
+                Value::Object(vec![
+                    ("first".to_string(), Value::String("Alice".to_string())),
+                    ("last".to_string(), Value::String("Jones".to_string())),
+                ]),
+            ),
             ("new_key".to_string(), Value::Bool(true)),
-            ("title".to_string(), Value::String("Hello World".to_string())),
+            (
+                "title".to_string(),
+                Value::String("Hello World".to_string()),
+            ),
         ]);
 
         let merge_patch = diff_merge_patch(&source, &target);
@@ -196,4 +209,3 @@ mod tests {
         assert_eq!(source_copy, target);
     }
 }
-

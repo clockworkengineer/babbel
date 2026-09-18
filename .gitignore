@@ -32,3 +32,4 @@ target
 *.zip
 notes/
 **/failures.txt
+crates/files

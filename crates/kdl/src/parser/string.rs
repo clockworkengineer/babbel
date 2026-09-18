@@ -5,8 +5,8 @@ use alloc::{
     vec::Vec,
 };
 
+use super::{Parser, is_kdl_newline, is_kdl_whitespace};
 use crate::error::KdlError;
-use super::{is_kdl_newline, is_kdl_whitespace, Parser};
 
 impl<'a> Parser<'a> {
     pub(crate) fn is_multiline_string_start(&self) -> bool {
@@ -53,7 +53,8 @@ impl<'a> Parser<'a> {
                 self.advance();
             } else {
                 return Err(KdlError::Syntax {
-                    message: "Multiline string opening '\"\"\"' must be followed by a newline".to_string(),
+                    message: "Multiline string opening '\"\"\"' must be followed by a newline"
+                        .to_string(),
                     line: start_line,
                     col: start_col,
                 });
@@ -188,7 +189,8 @@ impl<'a> Parser<'a> {
                 dedented_lines.push(line[indent_prefix.len()..].to_string());
             } else {
                 return Err(KdlError::Syntax {
-                    message: "Multiline string line does not match closing indentation prefix".to_string(),
+                    message: "Multiline string line does not match closing indentation prefix"
+                        .to_string(),
                     line: start_line,
                     col: start_col,
                 });
@@ -296,11 +298,12 @@ impl<'a> Parser<'a> {
                                 col: start_col,
                             });
                         }
-                        let cp = u32::from_str_radix(&hex, 16).map_err(|_| KdlError::InvalidEscape {
-                            sequence: format!("u{{{}}}", hex),
-                            line: start_line,
-                            col: start_col,
-                        })?;
+                        let cp =
+                            u32::from_str_radix(&hex, 16).map_err(|_| KdlError::InvalidEscape {
+                                sequence: format!("u{{{}}}", hex),
+                                line: start_line,
+                                col: start_col,
+                            })?;
                         let c = char::from_u32(cp).ok_or_else(|| KdlError::InvalidEscape {
                             sequence: format!("u{{{}}}", hex),
                             line: start_line,
@@ -389,13 +392,12 @@ impl<'a> Parser<'a> {
                                         col: start_col,
                                     }
                                 })?;
-                                let ch = char::from_u32(cp).ok_or_else(|| {
-                                    KdlError::InvalidEscape {
+                                let ch =
+                                    char::from_u32(cp).ok_or_else(|| KdlError::InvalidEscape {
                                         sequence: format!("u{{{}}}", hex),
                                         line: start_line,
                                         col: start_col,
-                                    }
-                                })?;
+                                    })?;
                                 s.push(ch);
                             } else {
                                 return Err(KdlError::InvalidEscape {
@@ -450,7 +452,8 @@ impl<'a> Parser<'a> {
             if let Some(ch) = self.peek() {
                 if ch == '\r' || ch == '\n' || is_kdl_newline(ch) {
                     return Err(KdlError::Syntax {
-                        message: "Literal newline not allowed in single-line raw string".to_string(),
+                        message: "Literal newline not allowed in single-line raw string"
+                            .to_string(),
                         line: start_line,
                         col: start_col,
                     });

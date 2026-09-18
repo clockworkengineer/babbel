@@ -1,4 +1,3 @@
-  
 //! YAML Error Recovery Strategies
 //!
 //! Provides error recovery mechanisms for YAML parsing, allowing parsing to continue
@@ -374,10 +373,13 @@ mod tests {
         ctx.enter_block_mapping();
         assert!(ctx.can_recover(RecoveryStrategy::SkipToNextMapping));
     }
-      #[test]
+    #[test]
     fn test_error_collection_clear() {
         let mut collection = ErrorCollection::new();
-        collection.add(EnhancedError::new(YamlError::new(ErrorKind::SyntaxError, "test")));
+        collection.add(EnhancedError::new(YamlError::new(
+            ErrorKind::SyntaxError,
+            "test",
+        )));
         assert!(!collection.is_empty());
         collection.clear();
         assert!(collection.is_empty());
@@ -390,7 +392,10 @@ mod tests {
         assert_eq!(result.unwrap(), 42);
 
         let mut collection = ErrorCollection::new();
-        collection.add(EnhancedError::new(YamlError::new(ErrorKind::SyntaxError, "fail")));
+        collection.add(EnhancedError::new(YamlError::new(
+            ErrorKind::SyntaxError,
+            "fail",
+        )));
         let result: Result<i32, EnhancedError> = collection.into_result(42);
         assert!(result.is_err());
     }

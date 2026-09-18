@@ -147,10 +147,11 @@ impl<'a> XPathParser<'a> {
 
     fn parse_multiplicative_expr(&mut self) -> Result<XPathExpr> {
         let mut left = self.parse_unary_expr()?;
-        while matches!(
-            self.current,
-            Token::Star | Token::Name(_)
-        ) && (self.current == Token::Star || self.current == Token::Name("div".into()) || self.current == Token::Name("mod".into())) {
+        while matches!(self.current, Token::Star | Token::Name(_))
+            && (self.current == Token::Star
+                || self.current == Token::Name("div".into())
+                || self.current == Token::Name("mod".into()))
+        {
             let token = self.advance()?;
             let op = match token {
                 Token::Star => XPathOperator::Multiply,
@@ -205,7 +206,11 @@ impl<'a> XPathParser<'a> {
             });
         }
 
-        if is_absolute && (self.current == Token::Eof || self.current == Token::RightParen || self.current == Token::RightBracket) {
+        if is_absolute
+            && (self.current == Token::Eof
+                || self.current == Token::RightParen
+                || self.current == Token::RightBracket)
+        {
             return Ok(XPathExpr::Path(steps));
         }
 
@@ -255,7 +260,9 @@ impl<'a> XPathParser<'a> {
                 self.advance()?;
                 let expr = self.parse_expression()?;
                 if self.advance()? != Token::RightParen {
-                    return Err(XmlError::XPathError("Expected ')' closing parenthesized expression".into()));
+                    return Err(XmlError::XPathError(
+                        "Expected ')' closing parenthesized expression".into(),
+                    ));
                 }
                 Ok(expr)
             }
@@ -275,7 +282,9 @@ impl<'a> XPathParser<'a> {
                     }
                 }
                 if self.advance()? != Token::RightParen {
-                    return Err(XmlError::XPathError(format!("Expected ')' in function call '{fname}'")));
+                    return Err(XmlError::XPathError(format!(
+                        "Expected ')' in function call '{fname}'"
+                    )));
                 }
                 Ok(XPathExpr::FunctionCall { name: fname, args })
             }
@@ -339,7 +348,9 @@ impl<'a> XPathParser<'a> {
             self.advance()?;
             let pred_expr = self.parse_expression()?;
             if self.advance()? != Token::RightBracket {
-                return Err(XmlError::XPathError("Expected ']' closing predicate".into()));
+                return Err(XmlError::XPathError(
+                    "Expected ']' closing predicate".into(),
+                ));
             }
             predicates.push(pred_expr);
         }
@@ -363,7 +374,9 @@ impl<'a> XPathParser<'a> {
             self.advance()?;
             let pred_expr = self.parse_expression()?;
             if self.advance()? != Token::RightBracket {
-                return Err(XmlError::XPathError("Expected ']' closing predicate".into()));
+                return Err(XmlError::XPathError(
+                    "Expected ']' closing predicate".into(),
+                ));
             }
             predicates.push(pred_expr);
         }
@@ -406,7 +419,9 @@ impl<'a> XPathParser<'a> {
                     Ok(NodeTest::Name(name))
                 }
             }
-            _ => Err(XmlError::XPathError("Expected node test in XPath step".into())),
+            _ => Err(XmlError::XPathError(
+                "Expected node test in XPath step".into(),
+            )),
         }
     }
 }

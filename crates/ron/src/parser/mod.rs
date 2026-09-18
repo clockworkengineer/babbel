@@ -9,8 +9,8 @@ use alloc::{
     vec::Vec,
 };
 
-use babbel_core::Value;
 use crate::error::RonError;
+use babbel_core::Value;
 
 pub mod container;
 pub mod number;
@@ -226,7 +226,9 @@ impl<'a> RonParser<'a> {
         if i < self.chars.len() && is_ident_start(self.chars[i].1) {
             while i < self.chars.len()
                 && (is_ident_part(self.chars[i].1)
-                    || (self.chars[i].1 == ':' && i + 1 < self.chars.len() && self.chars[i + 1].1 == ':'))
+                    || (self.chars[i].1 == ':'
+                        && i + 1 < self.chars.len()
+                        && self.chars[i + 1].1 == ':'))
             {
                 if self.chars[i].1 == ':' {
                     i += 2;
@@ -251,7 +253,11 @@ impl<'a> RonParser<'a> {
         }
         if i < self.chars.len() {
             let c = self.chars[i].1;
-            let next = if i + 1 < self.chars.len() { Some(self.chars[i + 1].1) } else { None };
+            let next = if i + 1 < self.chars.len() {
+                Some(self.chars[i + 1].1)
+            } else {
+                None
+            };
             if c == 'r' && (next == Some('"') || next == Some('#')) {
                 return true;
             }
@@ -288,7 +294,9 @@ impl<'a> RonParser<'a> {
             {
                 self.parse_byte_literal()
             }
-            Some('+') | Some('-') | Some('.') | Some('0'..='9') => self.parse_number_or_bare_token(),
+            Some('+') | Some('-') | Some('.') | Some('0'..='9') => {
+                self.parse_number_or_bare_token()
+            }
             Some(c) if !c.is_whitespace() && !is_structural_delimiter(c) => self.parse_bare_value(),
             Some(ch) => Err(RonError::UnexpectedChar { ch, line, col }),
             None => Err(RonError::UnexpectedEof),

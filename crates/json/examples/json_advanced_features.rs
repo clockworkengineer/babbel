@@ -1,6 +1,6 @@
-﻿use babbel_json::{
-    parse, pointer_get, pointer_remove, pointer_set, stringify, BufferDestination, BufferSource,
-    Node, Numeric,
+use babbel_json::{
+    BufferDestination, BufferSource, Node, Numeric, parse, pointer_get, pointer_remove,
+    pointer_set, stringify,
 };
 use std::collections::HashMap;
 

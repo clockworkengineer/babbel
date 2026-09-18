@@ -401,7 +401,10 @@ mod additional_schema_tests {
     fn test_property_schema_with_enum() {
         let schema = PropertySchema::new(SchemaType::String)
             .with_enum(vec!["A".to_string(), "B".to_string()]);
-        assert_eq!(schema.enum_values, Some(vec!["A".to_string(), "B".to_string()]));
+        assert_eq!(
+            schema.enum_values,
+            Some(vec!["A".to_string(), "B".to_string()])
+        );
     }
 
     #[test]
@@ -409,7 +412,10 @@ mod additional_schema_tests {
         let item_schema = PropertySchema::new(SchemaType::Integer);
         let schema = PropertySchema::new(SchemaType::Array).with_items(item_schema.clone());
         assert!(schema.items.is_some());
-        assert_eq!(schema.items.as_ref().unwrap().schema_type, SchemaType::Integer);
+        assert_eq!(
+            schema.items.as_ref().unwrap().schema_type,
+            SchemaType::Integer
+        );
     }
 
     #[test]
@@ -444,7 +450,9 @@ mod additional_schema_tests {
             .with_title("Null type")
             .with_description("A schema for null values");
         assert_eq!(schema.title, Some("Null type".to_string()));
-        assert_eq!(schema.description, Some("A schema for null values".to_string()));
+        assert_eq!(
+            schema.description,
+            Some("A schema for null values".to_string())
+        );
     }
 }
-    

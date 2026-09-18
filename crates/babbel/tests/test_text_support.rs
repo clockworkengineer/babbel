@@ -3,8 +3,8 @@
 use babbel::core::io::SliceSource;
 use babbel::core::model::Value;
 use babbel::core::{
-    dedent, indent, parse_csv, parse_ini, sniff_delimiter, split_frontmatter, CsvOptions,
-    FrontmatterFormat, IniOptions,
+    CsvOptions, FrontmatterFormat, IniOptions, dedent, indent, parse_csv, parse_ini,
+    sniff_delimiter, split_frontmatter,
 };
 
 #[test]
@@ -13,7 +13,10 @@ fn test_frontmatter_and_text_utils() {
     let parsed = split_frontmatter(doc);
     assert_eq!(parsed.format, Some(FrontmatterFormat::Yaml));
     assert!(parsed.frontmatter.unwrap().contains("version: 2.0"));
-    assert_eq!(parsed.content, "# Babbel Core\n\nHigh speed polyglot processing.");
+    assert_eq!(
+        parsed.content,
+        "# Babbel Core\n\nHigh speed polyglot processing."
+    );
 
     let toml_doc = "+++\napp = \"babbel\"\n+++\nBody";
     let parsed_toml = split_frontmatter(toml_doc);
@@ -39,7 +42,8 @@ fn test_line_reader_streaming() {
 
 #[test]
 fn test_csv_tsv_parsing_and_emission() {
-    let csv_data = "name,department,salary,active\nAlice,Engineering,125000,true\nBob,Design,95000.50,false\n";
+    let csv_data =
+        "name,department,salary,active\nAlice,Engineering,125000,true\nBob,Design,95000.50,false\n";
     let parsed = parse_csv(csv_data, &CsvOptions::default()).expect("CSV parse");
     let rows = parsed.as_array().expect("rows array");
     assert_eq!(rows.len(), 2);
@@ -104,7 +108,9 @@ fn test_conversions_csv_tsv_ini_jsonlines() {
     let tsv = "col1\tcol2\nx\t10\ny\t20\n";
     let json_tsv = babbel::convert::tsv_to_json(tsv).expect("TSV -> JSON");
     let tsv_out = babbel::convert::json_to_tsv(&json_tsv).expect("JSON -> TSV");
-    assert!(tsv_out.contains("x\t10") || tsv_out.contains("x\t 10") || tsv_out.contains("col1\tcol2"));
+    assert!(
+        tsv_out.contains("x\t10") || tsv_out.contains("x\t 10") || tsv_out.contains("col1\tcol2")
+    );
 
     // 4. INI -> JSON & JSON -> INI
     let ini_src = "[app]\nname = Babbel\nversion = 1\n";
@@ -121,5 +127,8 @@ fn test_conversions_csv_tsv_ini_jsonlines() {
 
     // 6. CSV -> JSON Lines
     let jsonl_from_csv = babbel::convert::csv_to_jsonlines(csv).expect("CSV -> JSONL");
-    assert!(jsonl_from_csv.contains("\"name\":\"Alice\"") || jsonl_from_csv.contains("\"name\": \"Alice\""));
+    assert!(
+        jsonl_from_csv.contains("\"name\":\"Alice\"")
+            || jsonl_from_csv.contains("\"name\": \"Alice\"")
+    );
 }

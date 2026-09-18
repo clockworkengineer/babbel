@@ -96,21 +96,21 @@ pub use babbel_hcl as hcl;
 pub use babbel_avro as avro;
 
 // Backwards-compatible aliases (prefer babbel::json, babbel::yaml, babbel::xml, babbel::bencode, babbel::toml)
-#[cfg(feature = "json")]
-#[deprecated(since = "0.2.0", note = "Use `babbel::json` instead")]
-pub use babbel_json as json_lib;
-#[cfg(feature = "yaml")]
-#[deprecated(since = "0.2.0", note = "Use `babbel::yaml` instead")]
-pub use babbel_yaml as yaml_lib;
-#[cfg(feature = "xml")]
-#[deprecated(since = "0.2.0", note = "Use `babbel::xml` instead")]
-pub use babbel_xml as xml_lib;
 #[cfg(feature = "bencode")]
 #[deprecated(since = "0.2.0", note = "Use `babbel::bencode` instead")]
 pub use babbel_bencode as bencode_lib;
+#[cfg(feature = "json")]
+#[deprecated(since = "0.2.0", note = "Use `babbel::json` instead")]
+pub use babbel_json as json_lib;
 #[cfg(feature = "toml")]
 #[deprecated(since = "0.2.0", note = "Use `babbel::toml` instead")]
 pub use babbel_toml as toml_lib;
+#[cfg(feature = "xml")]
+#[deprecated(since = "0.2.0", note = "Use `babbel::xml` instead")]
+pub use babbel_xml as xml_lib;
+#[cfg(feature = "yaml")]
+#[deprecated(since = "0.2.0", note = "Use `babbel::yaml` instead")]
+pub use babbel_yaml as yaml_lib;
 
 #[cfg(feature = "convert")]
 pub mod convert;
@@ -118,65 +118,65 @@ pub mod convert;
 /// Unified embedded systems module aggregating zero-allocation streaming parsers,
 /// stack-allocated destinations, and memory limits for microcontrollers.
 pub mod embedded {
-    pub use babbel_core::embedded::*;
-    pub use babbel_core::io::{ArrayVecDestination, SliceDestination};
-    pub use babbel_core::csv::{CsvFieldsIter, CsvPullParser, CsvRecord};
-    pub use babbel_core::ini::{IniEvent, IniPullParser};
-    #[cfg(feature = "json")]
-    pub use babbel_json::parser::pull_parser::{JsonPullEvent, JsonPullParser, JsonScalar};
-    #[cfg(feature = "xml")]
-    pub use babbel_xml::parser::{XmlPullAttribute, XmlPullEvent, XmlPullParser};
-    #[cfg(feature = "toml")]
-    pub use babbel_toml::parser::{TomlPullEvent, TomlPullParser};
-    #[cfg(feature = "cbor")]
-    pub use babbel_cbor::pull::{CborPullEvent, CborPullParser};
-    #[cfg(feature = "msgpack")]
-    pub use babbel_msgpack::pull::{MsgPackPullEvent, MsgPackPullParser};
     #[cfg(feature = "bson")]
     pub use babbel_bson::pull::{BsonPullEvent, BsonPullParser};
+    #[cfg(feature = "cbor")]
+    pub use babbel_cbor::pull::{CborPullEvent, CborPullParser};
+    pub use babbel_core::csv::{CsvFieldsIter, CsvPullParser, CsvRecord};
+    pub use babbel_core::embedded::*;
+    pub use babbel_core::ini::{IniEvent, IniPullParser};
+    pub use babbel_core::io::{ArrayVecDestination, SliceDestination};
+    #[cfg(feature = "json")]
+    pub use babbel_json::parser::pull_parser::{JsonPullEvent, JsonPullParser, JsonScalar};
+    #[cfg(feature = "msgpack")]
+    pub use babbel_msgpack::pull::{MsgPackPullEvent, MsgPackPullParser};
+    #[cfg(feature = "toml")]
+    pub use babbel_toml::parser::{TomlPullEvent, TomlPullParser};
+    #[cfg(feature = "xml")]
+    pub use babbel_xml::parser::{XmlPullAttribute, XmlPullEvent, XmlPullParser};
 }
 
 // Re-export text, CSV, and INI processing from core
 pub use babbel_core::{
+    ArrayVecDestination, BabbelError, CompactError, CsvFieldsIter, CsvOptions, CsvPullParser,
+    CsvRecord, DocumentWithFrontmatter, EmbeddedLimits, ErrorCode, FrontmatterFormat, IniEvent,
+    IniOptions, IniPullParser, Location, MemoryTracker, SliceDestination, Span, StackBuffer, Value,
     csv, emit_csv, emit_ini, ini, parse_csv, parse_ini, sniff_delimiter, split_frontmatter, text,
-    ArrayVecDestination, BabbelError, CompactError, CsvFieldsIter, CsvOptions, CsvPullParser, CsvRecord,
-    DocumentWithFrontmatter, EmbeddedLimits, ErrorCode, FrontmatterFormat, IniEvent, IniOptions, IniPullParser,
-    Location, MemoryTracker, SliceDestination, Span, StackBuffer, Value,
 };
 
 // Re-export FormatEngine architecture (OCP & DIP)
-#[cfg(feature = "json")]
-pub use babbel_json::{JsonEngine, JsonLinesEngine, Json5Engine};
-#[cfg(feature = "yaml")]
-pub use babbel_yaml::YamlEngine;
-#[cfg(feature = "xml")]
-pub use babbel_xml::XmlEngine;
-#[cfg(feature = "bencode")]
-pub use babbel_bencode::BencodeEngine;
-#[cfg(feature = "toml")]
-pub use babbel_toml::TomlEngine;
-#[cfg(feature = "msgpack")]
-pub use babbel_msgpack::MsgPackEngine;
-#[cfg(feature = "cbor")]
-pub use babbel_cbor::CborEngine;
-#[cfg(feature = "bson")]
-pub use babbel_bson::BsonEngine;
-#[cfg(feature = "ron")]
-pub use babbel_ron::RonEngine;
-#[cfg(feature = "kdl")]
-pub use babbel_kdl::KdlEngine;
-#[cfg(feature = "parquet")]
-pub use babbel_parquet::ParquetEngine;
-#[cfg(feature = "hcl")]
-pub use babbel_hcl::HclEngine;
 #[cfg(feature = "avro")]
 pub use babbel_avro::AvroEngine;
+#[cfg(feature = "bencode")]
+pub use babbel_bencode::BencodeEngine;
+#[cfg(feature = "bson")]
+pub use babbel_bson::BsonEngine;
+#[cfg(feature = "cbor")]
+pub use babbel_cbor::CborEngine;
+#[cfg(feature = "hcl")]
+pub use babbel_hcl::HclEngine;
+#[cfg(feature = "json")]
+pub use babbel_json::{Json5Engine, JsonEngine, JsonLinesEngine};
+#[cfg(feature = "kdl")]
+pub use babbel_kdl::KdlEngine;
+#[cfg(feature = "msgpack")]
+pub use babbel_msgpack::MsgPackEngine;
+#[cfg(feature = "parquet")]
+pub use babbel_parquet::ParquetEngine;
+#[cfg(feature = "ron")]
+pub use babbel_ron::RonEngine;
+#[cfg(feature = "toml")]
+pub use babbel_toml::TomlEngine;
+#[cfg(feature = "xml")]
+pub use babbel_xml::XmlEngine;
+#[cfg(feature = "yaml")]
+pub use babbel_yaml::YamlEngine;
 
 pub use babbel_core::{
+    CompiledSchema, CsvEngine, FormatCodec, FormatEmitter, FormatEngine, FormatOptions,
+    FormatParser, IniEngine, JsonPath, Patch, PatchOp, SchemaValidationError, TsvEngine,
     apply_merge_patch, diff_merge_patch, find_engine, find_engine_by_extension,
-    find_engine_by_mime, CompiledSchema, CsvEngine, FormatCodec, FormatEmitter, FormatEngine,
-    FormatOptions, FormatParser, IniEngine, JsonPath, Patch, PatchOp, SchemaValidationError,
-    TsvEngine, jsonpath_query, jsonpath_query_mut, validate_schema,
+    find_engine_by_mime, jsonpath_query, jsonpath_query_mut, validate_schema,
 };
 pub mod diff {
     pub use babbel_core::diff::*;
@@ -237,28 +237,26 @@ pub mod macros;
 #[cfg(feature = "serde")]
 pub mod serde;
 #[cfg(feature = "serde")]
-pub use babbel_core::{from_value, to_value, SerdeError};
+pub use babbel_core::{SerdeError, from_value, to_value};
 
 /// Convenient prelude re-exporting key format engines, universal Value AST, I/O traits,
 /// the declarative `value!` macro, and conversion routines.
 pub mod prelude {
-    pub use babbel_core::{
-        apply_merge_patch, diff, diff_merge_patch, find_engine, find_engine_by_extension,
-        find_engine_by_mime, BabbelError, CompiledSchema, ErrorCode, FormatCodec, FormatEmitter,
-        FormatEngine, FormatOptions, FormatParser, JsonPath, Location, Patch, PatchOp,
-        SchemaValidationError, Span, Value, jsonpath_query, jsonpath_query_mut, validate_schema,
-    };
-    pub use babbel_core::io::{
-        Buffer, BufferDestination, BufferSource, IDestination, ISource,
-    };
-    #[cfg(feature = "alloc")]
-    pub use babbel_core::FormatRegistry;
+    #[cfg(feature = "convert")]
+    pub use crate::convert::*;
     #[cfg(feature = "alloc")]
     pub use crate::default_registry;
     pub use crate::value;
-    #[cfg(feature = "convert")]
-    pub use crate::convert::*;
+    #[cfg(feature = "alloc")]
+    pub use babbel_core::FormatRegistry;
+    pub use babbel_core::io::{Buffer, BufferDestination, BufferSource, IDestination, ISource};
+    pub use babbel_core::{
+        BabbelError, CompiledSchema, ErrorCode, FormatCodec, FormatEmitter, FormatEngine,
+        FormatOptions, FormatParser, JsonPath, Location, Patch, PatchOp, SchemaValidationError,
+        Span, Value, apply_merge_patch, diff, diff_merge_patch, find_engine,
+        find_engine_by_extension, find_engine_by_mime, jsonpath_query, jsonpath_query_mut,
+        validate_schema,
+    };
     #[cfg(feature = "serde")]
-    pub use babbel_core::{from_value, to_value, SerdeError};
+    pub use babbel_core::{SerdeError, from_value, to_value};
 }
-

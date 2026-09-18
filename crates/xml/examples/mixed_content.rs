@@ -1,14 +1,13 @@
-﻿//! # XML Mixed Content Example
+//! # XML Mixed Content Example
 //!
 //! Demonstrates parsing mixed content element tags containing interspersed text nodes,
 //! child element tags (`<b>`, `<i>`), and CDATA sections (`<![CDATA[...]]>`).
 
-use babbel_xml::{parse, NodeKind};
+use babbel_xml::{NodeKind, parse};
 
 fn main() {
     println!("--- XML Mixed Content Example ---");
-    let xml =
-        r#"<p>This is <b>bold</b> text with an <i>italic</i> word and <![CDATA[raw CDATA content]]>.</p>"#;
+    let xml = r#"<p>This is <b>bold</b> text with an <i>italic</i> word and <![CDATA[raw CDATA content]]>.</p>"#;
 
     // Parse XML string into DOM arena
     let doc = parse(xml).expect("Parse clean");

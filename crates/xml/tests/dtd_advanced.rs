@@ -1,4 +1,4 @@
-﻿use babbel_xml::{parse, DtdValidator};
+use babbel_xml::{DtdValidator, parse};
 
 #[test]
 fn test_dtd_default_attribute_injection() {
@@ -91,11 +91,14 @@ fn test_dtd_external_subset_resolver() {
     let mut validator = DtdValidator::new();
     validator.set_external_resolver(|system_id, _| {
         if system_id == "system_catalog.dtd" {
-            Some(r#"
+            Some(
+                r#"
                 <!ELEMENT root (item)*>
                 <!ELEMENT item (#PCDATA)>
                 <!ATTLIST item flag CDATA #REQUIRED>
-            "#.to_string())
+            "#
+                .to_string(),
+            )
         } else {
             None
         }
@@ -109,5 +112,8 @@ fn test_dtd_external_subset_resolver() {
     "#;
     let invalid_doc = parse(invalid_xml).unwrap();
     let res = validator.validate(&invalid_doc);
-    assert!(res.is_err(), "Missing required attribute resolved from external DTD must fail");
+    assert!(
+        res.is_err(),
+        "Missing required attribute resolved from external DTD must fail"
+    );
 }

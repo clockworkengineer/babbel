@@ -3,7 +3,7 @@
 //! Demonstrates navigating deeply nested TOML structures, safe query chains,
 //! recursive tree traversal (visitor pattern), node counting, and in-place transformations.
 
-use babbel_toml::{from_str, to_string_pretty, Node};
+use babbel_toml::{Node, from_str, to_string_pretty};
 
 /// Recursively inspects and counts the various types of nodes in a TOML DOM tree.
 #[derive(Default, Debug)]
@@ -120,13 +120,26 @@ tags = [ "orders", "checkout", "v2" ]
     println!("Rate Limit (req/min): {}", rate_limit);
 
     // Query dependency names
-    if let Some(deps) = doc.get("service").and_then(|s| s.get("dependencies")).and_then(|d| d.as_array()) {
+    if let Some(deps) = doc
+        .get("service")
+        .and_then(|s| s.get("dependencies"))
+        .and_then(|d| d.as_array())
+    {
         println!("Dependencies ({} total):", deps.len());
         for (i, dep) in deps.iter().enumerate() {
-            let name = dep.get("name").and_then(|n| n.as_str()).unwrap_or("unknown");
-            let endpoint = dep.get("endpoint").and_then(|n| n.as_str()).unwrap_or("none");
+            let name = dep
+                .get("name")
+                .and_then(|n| n.as_str())
+                .unwrap_or("unknown");
+            let endpoint = dep
+                .get("endpoint")
+                .and_then(|n| n.as_str())
+                .unwrap_or("none");
             let timeout = dep.get("timeout_ms").and_then(|n| n.as_i64()).unwrap_or(0);
-            println!("  [{}] {} -> {} (timeout: {}ms)", i, name, endpoint, timeout);
+            println!(
+                "  [{}] {} -> {} (timeout: {}ms)",
+                i, name, endpoint, timeout
+            );
         }
     }
 

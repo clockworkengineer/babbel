@@ -1,4 +1,4 @@
-﻿//! Zero-copy parser for bencode data.
+//! Zero-copy parser for bencode data.
 //! This parser creates BorrowedNode structures that reference the input buffer
 //! without allocating or copying data, making it suitable for embedded systems.
 
@@ -13,10 +13,11 @@ use alloc::{
     vec::Vec,
 };
 
+use crate::constants::{
+    BYTE_DICT_START, BYTE_END, BYTE_INTEGER_START, BYTE_LIST_START, BYTE_STRING_SEP,
+};
 use crate::error::messages::*;
-use crate::constants::{BYTE_DICT_START, BYTE_END, BYTE_INTEGER_START, BYTE_LIST_START, BYTE_STRING_SEP};
 use crate::nodes::borrowed::BorrowedNode;
-
 
 /// Parses bencode data from a byte slice without allocation, returning borrowed nodes.
 ///
@@ -39,7 +40,7 @@ use crate::nodes::borrowed::BorrowedNode;
 /// let node = parse_borrowed(data).unwrap();
 /// assert_eq!(node.as_integer(), Some(42));
 /// ```
-pub fn parse_borrowed(input: &[u8]) -> Result<BorrowedNode, String> {
+pub fn parse_borrowed(input: &[u8]) -> Result<BorrowedNode<'_>, String> {
     let mut position = 0;
     parse_node(input, &mut position)
 }

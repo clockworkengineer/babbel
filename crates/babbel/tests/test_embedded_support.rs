@@ -38,7 +38,10 @@ fn test_embedded_json_pull_parser() {
         Ok(Some(JsonPullEvent::Value(JsonScalar::String("bmp280"))))
     );
 
-    assert_eq!(parser.next_event(), Ok(Some(JsonPullEvent::Key("press_hpa"))));
+    assert_eq!(
+        parser.next_event(),
+        Ok(Some(JsonPullEvent::Key("press_hpa")))
+    );
     let num_ev = parser.next_event().unwrap().unwrap();
     match num_ev {
         JsonPullEvent::Value(s) => {
@@ -82,8 +85,20 @@ fn test_embedded_ini_pull_parser() {
     let mut parser = IniPullParser::new(ini);
 
     assert_eq!(parser.next_event(), Some(IniEvent::Section("network")));
-    assert_eq!(parser.next_event(), Some(IniEvent::Entry { key: "ip", val: "192.168.1.100" }));
-    assert_eq!(parser.next_event(), Some(IniEvent::Entry { key: "port", val: "80" }));
+    assert_eq!(
+        parser.next_event(),
+        Some(IniEvent::Entry {
+            key: "ip",
+            val: "192.168.1.100"
+        })
+    );
+    assert_eq!(
+        parser.next_event(),
+        Some(IniEvent::Entry {
+            key: "port",
+            val: "80"
+        })
+    );
     assert_eq!(parser.next_event(), None);
 }
 

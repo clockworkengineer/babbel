@@ -129,7 +129,6 @@ impl Node {
         }
     }
 
-
     /// Safely get a mapping value by key without panicking
     ///
     /// Returns None if the key doesn't exist or if the node is not a mapping.
@@ -160,7 +159,6 @@ impl Node {
             _ => None,
         }
     }
-
 
     /// Safely get a mutable mapping value by key without panicking
     ///
@@ -703,4 +701,3 @@ mod tests {
         assert_eq!(set.get(0), Some(&Node::from("gamma")));
     }
 }
-

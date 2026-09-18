@@ -2,11 +2,11 @@
 
 pub mod merge;
 
+use crate::error::BabbelError;
+use crate::model::Value;
 use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use crate::error::BabbelError;
-use crate::model::Value;
 
 pub use merge::apply_merge_patch;
 
@@ -43,26 +43,46 @@ impl Patch {
     pub fn from_value(val: &Value) -> Result<Self, BabbelError> {
         let items = match val {
             Value::Array(items) => items,
-            _ => return Err(BabbelError::syntax("JSON Patch must be an array of operation objects")),
+            _ => {
+                return Err(BabbelError::syntax(
+                    "JSON Patch must be an array of operation objects",
+                ));
+            }
         };
 
         let mut ops = Vec::with_capacity(items.len());
         for (idx, item) in items.iter().enumerate() {
             let obj = match item {
                 Value::Object(obj) => obj,
-                _ => return Err(BabbelError::syntax(format!("patch operation at index {} must be an object", idx))),
+                _ => {
+                    return Err(BabbelError::syntax(format!(
+                        "patch operation at index {} must be an object",
+                        idx
+                    )));
+                }
             };
 
-            let op_str = get_obj_str(obj, "op")
-                .ok_or_else(|| BabbelError::syntax(format!("missing 'op' in patch operation at index {}", idx)))?;
+            let op_str = get_obj_str(obj, "op").ok_or_else(|| {
+                BabbelError::syntax(format!("missing 'op' in patch operation at index {}", idx))
+            })?;
             let path = get_obj_str(obj, "path")
-                .ok_or_else(|| BabbelError::syntax(format!("missing 'path' in patch operation at index {}", idx)))?
+                .ok_or_else(|| {
+                    BabbelError::syntax(format!(
+                        "missing 'path' in patch operation at index {}",
+                        idx
+                    ))
+                })?
                 .to_string();
 
             match op_str {
                 "add" => {
                     let value = get_obj_val(obj, "value")
-                        .ok_or_else(|| BabbelError::syntax(format!("missing 'value' in add operation at index {}", idx)))?
+                        .ok_or_else(|| {
+                            BabbelError::syntax(format!(
+                                "missing 'value' in add operation at index {}",
+                                idx
+                            ))
+                        })?
                         .clone();
                     ops.push(PatchOp::Add { path, value });
                 }
@@ -71,30 +91,53 @@ impl Patch {
                 }
                 "replace" => {
                     let value = get_obj_val(obj, "value")
-                        .ok_or_else(|| BabbelError::syntax(format!("missing 'value' in replace operation at index {}", idx)))?
+                        .ok_or_else(|| {
+                            BabbelError::syntax(format!(
+                                "missing 'value' in replace operation at index {}",
+                                idx
+                            ))
+                        })?
                         .clone();
                     ops.push(PatchOp::Replace { path, value });
                 }
                 "move" => {
                     let from = get_obj_str(obj, "from")
-                        .ok_or_else(|| BabbelError::syntax(format!("missing 'from' in move operation at index {}", idx)))?
+                        .ok_or_else(|| {
+                            BabbelError::syntax(format!(
+                                "missing 'from' in move operation at index {}",
+                                idx
+                            ))
+                        })?
                         .to_string();
                     ops.push(PatchOp::Move { from, path });
                 }
                 "copy" => {
                     let from = get_obj_str(obj, "from")
-                        .ok_or_else(|| BabbelError::syntax(format!("missing 'from' in copy operation at index {}", idx)))?
+                        .ok_or_else(|| {
+                            BabbelError::syntax(format!(
+                                "missing 'from' in copy operation at index {}",
+                                idx
+                            ))
+                        })?
                         .to_string();
                     ops.push(PatchOp::Copy { from, path });
                 }
                 "test" => {
                     let value = get_obj_val(obj, "value")
-                        .ok_or_else(|| BabbelError::syntax(format!("missing 'value' in test operation at index {}", idx)))?
+                        .ok_or_else(|| {
+                            BabbelError::syntax(format!(
+                                "missing 'value' in test operation at index {}",
+                                idx
+                            ))
+                        })?
                         .clone();
                     ops.push(PatchOp::Test { path, value });
                 }
                 unknown => {
-                    return Err(BabbelError::syntax(format!("unrecognized patch op '{}' at index {}", unknown, idx)));
+                    return Err(BabbelError::syntax(format!(
+                        "unrecognized patch op '{}' at index {}",
+                        unknown, idx
+                    )));
                 }
             }
         }
@@ -161,7 +204,10 @@ impl Patch {
         for (idx, op) in self.ops.iter().enumerate() {
             if let Err(e) = apply_op(op, target) {
                 *target = snapshot; // Rollback
-                return Err(BabbelError::syntax(format!("patch op failed at index {}: {}", idx, e.message)));
+                return Err(BabbelError::syntax(format!(
+                    "patch op failed at index {}: {}",
+                    idx, e.message
+                )));
             }
         }
         Ok(())
@@ -313,17 +359,33 @@ fn apply_op(op: &PatchOp, doc: &mut Value) -> Result<(), BabbelError> {
             };
 
             // Add value to destination
-            apply_op(&PatchOp::Add { path: path.clone(), value: val }, doc)
+            apply_op(
+                &PatchOp::Add {
+                    path: path.clone(),
+                    value: val,
+                },
+                doc,
+            )
         }
         PatchOp::Copy { from, path } => {
             let val = {
-                let node = doc.pointer(from).ok_or_else(|| BabbelError::syntax("copy source not found"))?;
+                let node = doc
+                    .pointer(from)
+                    .ok_or_else(|| BabbelError::syntax("copy source not found"))?;
                 node.clone()
             };
-            apply_op(&PatchOp::Add { path: path.clone(), value: val }, doc)
+            apply_op(
+                &PatchOp::Add {
+                    path: path.clone(),
+                    value: val,
+                },
+                doc,
+            )
         }
         PatchOp::Test { path, value } => {
-            let current = doc.pointer(path).ok_or_else(|| BabbelError::syntax("test target not found"))?;
+            let current = doc
+                .pointer(path)
+                .ok_or_else(|| BabbelError::syntax("test target not found"))?;
             if current == value {
                 Ok(())
             } else {
@@ -361,7 +423,10 @@ fn navigate_mut<'a>(doc: &'a mut Value, tokens: &[String]) -> Result<&'a mut Val
                 if let Some(pos) = entries.iter().position(|(k, _)| k == token) {
                     current = &mut entries[pos].1;
                 } else {
-                    return Err(BabbelError::syntax(format!("property '{}' not found", token)));
+                    return Err(BabbelError::syntax(format!(
+                        "property '{}' not found",
+                        token
+                    )));
                 }
             }
             Value::Array(items) => {
@@ -400,14 +465,28 @@ mod tests {
     fn test_patch_add_replace_remove() {
         let mut doc = Value::Object(vec![
             ("foo".to_string(), Value::String("bar".to_string())),
-            ("numbers".to_string(), Value::Array(vec![Value::Integer(1), Value::Integer(2)])),
+            (
+                "numbers".to_string(),
+                Value::Array(vec![Value::Integer(1), Value::Integer(2)]),
+            ),
         ]);
 
         let patch = Patch::new(vec![
-            PatchOp::Add { path: "/baz".to_string(), value: Value::String("qux".to_string()) },
-            PatchOp::Replace { path: "/foo".to_string(), value: Value::String("updated".to_string()) },
-            PatchOp::Add { path: "/numbers/1".to_string(), value: Value::Integer(99) },
-            PatchOp::Remove { path: "/numbers/0".to_string() },
+            PatchOp::Add {
+                path: "/baz".to_string(),
+                value: Value::String("qux".to_string()),
+            },
+            PatchOp::Replace {
+                path: "/foo".to_string(),
+                value: Value::String("updated".to_string()),
+            },
+            PatchOp::Add {
+                path: "/numbers/1".to_string(),
+                value: Value::Integer(99),
+            },
+            PatchOp::Remove {
+                path: "/numbers/0".to_string(),
+            },
         ]);
 
         patch.apply_inplace(&mut doc).unwrap();
@@ -420,14 +499,21 @@ mod tests {
 
     #[test]
     fn test_patch_move_copy_test() {
-        let doc = Value::Object(vec![
-            ("foo".to_string(), Value::String("bar".to_string())),
-        ]);
+        let doc = Value::Object(vec![("foo".to_string(), Value::String("bar".to_string()))]);
 
         let patch = Patch::new(vec![
-            PatchOp::Test { path: "/foo".to_string(), value: Value::String("bar".to_string()) },
-            PatchOp::Copy { from: "/foo".to_string(), path: "/foo_copy".to_string() },
-            PatchOp::Move { from: "/foo".to_string(), path: "/foo_moved".to_string() },
+            PatchOp::Test {
+                path: "/foo".to_string(),
+                value: Value::String("bar".to_string()),
+            },
+            PatchOp::Copy {
+                from: "/foo".to_string(),
+                path: "/foo_copy".to_string(),
+            },
+            PatchOp::Move {
+                from: "/foo".to_string(),
+                path: "/foo_moved".to_string(),
+            },
         ]);
 
         let res = patch.apply(&doc).unwrap();
@@ -438,13 +524,17 @@ mod tests {
 
     #[test]
     fn test_patch_rollback_on_test_failure() {
-        let mut doc = Value::Object(vec![
-            ("count".to_string(), Value::Integer(42)),
-        ]);
+        let mut doc = Value::Object(vec![("count".to_string(), Value::Integer(42))]);
 
         let patch = Patch::new(vec![
-            PatchOp::Replace { path: "/count".to_string(), value: Value::Integer(100) },
-            PatchOp::Test { path: "/count".to_string(), value: Value::Integer(999) }, // Fails!
+            PatchOp::Replace {
+                path: "/count".to_string(),
+                value: Value::Integer(100),
+            },
+            PatchOp::Test {
+                path: "/count".to_string(),
+                value: Value::Integer(999),
+            }, // Fails!
         ]);
 
         assert!(patch.apply_inplace(&mut doc).is_err());
@@ -456,27 +546,41 @@ mod tests {
     fn test_merge_patch() {
         let mut target = Value::Object(vec![
             ("title".to_string(), Value::String("Goodbye!".to_string())),
-            ("author".to_string(), Value::Object(vec![
-                ("givenName".to_string(), Value::String("John".to_string())),
-                ("familyName".to_string(), Value::String("Doe".to_string())),
-            ])),
-            ("tags".to_string(), Value::Array(vec![Value::String("example".to_string())])),
+            (
+                "author".to_string(),
+                Value::Object(vec![
+                    ("givenName".to_string(), Value::String("John".to_string())),
+                    ("familyName".to_string(), Value::String("Doe".to_string())),
+                ]),
+            ),
+            (
+                "tags".to_string(),
+                Value::Array(vec![Value::String("example".to_string())]),
+            ),
         ]);
 
         let patch = Value::Object(vec![
             ("title".to_string(), Value::String("Hello!".to_string())),
-            ("author".to_string(), Value::Object(vec![
-                ("familyName".to_string(), Value::Null), // Delete familyName
-            ])),
-            ("tags".to_string(), Value::Array(vec![Value::String("rust".to_string())])),
+            (
+                "author".to_string(),
+                Value::Object(vec![
+                    ("familyName".to_string(), Value::Null), // Delete familyName
+                ]),
+            ),
+            (
+                "tags".to_string(),
+                Value::Array(vec![Value::String("rust".to_string())]),
+            ),
         ]);
 
         target.merge_patch(&patch);
 
         assert_eq!(target.pointer("/title").unwrap().as_str(), Some("Hello!"));
-        assert_eq!(target.pointer("/author/givenName").unwrap().as_str(), Some("John"));
+        assert_eq!(
+            target.pointer("/author/givenName").unwrap().as_str(),
+            Some("John")
+        );
         assert!(target.pointer("/author/familyName").is_none());
         assert_eq!(target.pointer("/tags/0").unwrap().as_str(), Some("rust"));
     }
 }
-

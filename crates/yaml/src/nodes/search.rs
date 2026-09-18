@@ -1,4 +1,4 @@
-﻿//! Tree search, visitor, and traversal methods for YAML AST nodes.
+//! Tree search, visitor, and traversal methods for YAML AST nodes.
 //!
 //! Provides depth-first pre-order tree traversal, counting, depth calculation,
 //! predicate-based node filtering, and immediate child iteration.
@@ -89,7 +89,7 @@ impl Node {
     /// let children: Vec<_> = array.children().collect();
     /// assert_eq!(children.len(), 2);
     /// ```
-    pub fn children(&self) -> NodeChildIterator {
+    pub fn children(&self) -> NodeChildIterator<'_> {
         NodeChildIterator::new(self)
     }
 

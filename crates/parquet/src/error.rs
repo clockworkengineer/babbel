@@ -1,8 +1,8 @@
 //! Error types for Parquet columnar decoding and encoding.
 
-use core::fmt;
 #[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
+use core::fmt;
 
 use babbel_core::{BabbelError, ErrorCode};
 
@@ -32,12 +32,16 @@ pub enum ParquetError {
 impl fmt::Display for ParquetError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ParquetError::InvalidMagic => write!(f, "Invalid Parquet file: missing 'PAR1' magic bytes"),
+            ParquetError::InvalidMagic => {
+                write!(f, "Invalid Parquet file: missing 'PAR1' magic bytes")
+            }
             ParquetError::UnexpectedEof => write!(f, "Unexpected end of input in Parquet stream"),
             ParquetError::ThriftError(msg) => write!(f, "Thrift metadata error: {}", msg),
             ParquetError::CorruptedPage(msg) => write!(f, "Corrupted Parquet page: {}", msg),
             ParquetError::UnsupportedType(msg) => write!(f, "Unsupported Parquet type: {}", msg),
-            ParquetError::UnsupportedEncoding(msg) => write!(f, "Unsupported Parquet encoding: {}", msg),
+            ParquetError::UnsupportedEncoding(msg) => {
+                write!(f, "Unsupported Parquet encoding: {}", msg)
+            }
             ParquetError::SchemaMismatch(msg) => write!(f, "Parquet schema mismatch: {}", msg),
             ParquetError::InvalidUtf8 => write!(f, "Parquet string column contains invalid UTF-8"),
             ParquetError::General(msg) => write!(f, "Parquet error: {}", msg),
@@ -52,8 +56,12 @@ impl From<ParquetError> for BabbelError {
     fn from(err: ParquetError) -> Self {
         match &err {
             ParquetError::UnexpectedEof => BabbelError::eof(err.to_string()).with_format("parquet"),
-            ParquetError::InvalidUtf8 => BabbelError::encoding(err.to_string()).with_format("parquet"),
-            ParquetError::InvalidMagic => BabbelError::syntax(err.to_string()).with_format("parquet"),
+            ParquetError::InvalidUtf8 => {
+                BabbelError::encoding(err.to_string()).with_format("parquet")
+            }
+            ParquetError::InvalidMagic => {
+                BabbelError::syntax(err.to_string()).with_format("parquet")
+            }
             _ => BabbelError::new(ErrorCode::Custom, err.to_string()).with_format("parquet"),
         }
     }

@@ -11,14 +11,24 @@ use super::XmlParser;
 
 impl<'a> XmlParser<'a> {
     /// Parses a single XML element tag, its attributes, and child content recursively.
-    pub(crate) fn parse_element(&mut self, doc: &mut Document, parent_id: NodeId, depth: usize) -> Result<()> {
+    pub(crate) fn parse_element(
+        &mut self,
+        doc: &mut Document,
+        parent_id: NodeId,
+        depth: usize,
+    ) -> Result<()> {
         self.namespace_scope.push_scope();
         let res = self.parse_element_internal(doc, parent_id, depth);
         self.namespace_scope.pop_scope();
         res
     }
 
-    fn parse_element_internal(&mut self, doc: &mut Document, parent_id: NodeId, depth: usize) -> Result<()> {
+    fn parse_element_internal(
+        &mut self,
+        doc: &mut Document,
+        parent_id: NodeId,
+        depth: usize,
+    ) -> Result<()> {
         self.options.check_nesting_depth(depth)?;
 
         self.element_count += 1;
@@ -53,9 +63,12 @@ impl<'a> XmlParser<'a> {
         self.source.skip_whitespace();
         let mut attributes = Vec::new();
 
-        while !self.source.is_eof() && !self.source.starts_with(">") && !self.source.starts_with("/>") {
+        while !self.source.is_eof()
+            && !self.source.starts_with(">")
+            && !self.source.starts_with("/>")
+        {
             let (attr_name, attr_value) = self.parse_attribute()?;
-            
+
             // Check duplicate attribute error
             if attributes.iter().any(|a: &Attribute| *a.name == attr_name) {
                 return Err(XmlError::SyntaxError {
@@ -70,7 +83,8 @@ impl<'a> XmlParser<'a> {
                 if attr_name == "xmlns" {
                     self.namespace_scope.declare(None, attr_value.trim());
                 } else if let Some(prefix) = attr_name.strip_prefix("xmlns:") {
-                    self.namespace_scope.declare(Some(prefix), attr_value.trim());
+                    self.namespace_scope
+                        .declare(Some(prefix), attr_value.trim());
                 }
             }
 
@@ -78,7 +92,8 @@ impl<'a> XmlParser<'a> {
 
             self.total_attribute_count += 1;
             self.options.check_attribute_count(attributes.len())?;
-            self.options.check_total_attribute_count(self.total_attribute_count)?;
+            self.options
+                .check_total_attribute_count(self.total_attribute_count)?;
 
             let ws = self.source.skip_whitespace();
             if self.source.starts_with(">") || self.source.starts_with("/>") {
@@ -119,7 +134,9 @@ impl<'a> XmlParser<'a> {
                             Some(u) => Some(u.to_string()),
                             None => {
                                 return Err(XmlError::SyntaxError {
-                                    message: format!("Undeclared attribute namespace prefix '{pfx}'"),
+                                    message: format!(
+                                        "Undeclared attribute namespace prefix '{pfx}'"
+                                    ),
                                     line: self.source.line(),
                                     col: self.source.col(),
                                 });
@@ -131,9 +148,14 @@ impl<'a> XmlParser<'a> {
                 };
 
                 if let Some(uri) = &uri_opt {
-                    if resolved_attrs.iter().any(|(u, l)| u.as_deref() == Some(uri.as_str()) && l == local) {
+                    if resolved_attrs
+                        .iter()
+                        .any(|(u, l)| u.as_deref() == Some(uri.as_str()) && l == local)
+                    {
                         return Err(XmlError::SyntaxError {
-                            message: format!("Attribute collision: multiple attributes with namespace '{uri}' and local name '{local}'"),
+                            message: format!(
+                                "Attribute collision: multiple attributes with namespace '{uri}' and local name '{local}'"
+                            ),
                             line: self.source.line(),
                             col: self.source.col(),
                         });
@@ -178,7 +200,9 @@ impl<'a> XmlParser<'a> {
 
                 if end_name != name {
                     return Err(XmlError::SyntaxError {
-                        message: format!("Mismatched closing tag: expected </{name}>, found </{end_name}>"),
+                        message: format!(
+                            "Mismatched closing tag: expected </{name}>, found </{end_name}>"
+                        ),
                         line: self.source.line(),
                         col: self.source.col(),
                     });
@@ -240,11 +264,14 @@ impl<'a> XmlParser<'a> {
         }
 
         self.source.skip_whitespace();
-        let quote = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
-            message: format!("Expected quote after '=' for attribute '{key}'"),
-            line: self.source.line(),
-            col: self.source.col(),
-        })?;
+        let quote = self
+            .source
+            .next_char()
+            .ok_or_else(|| XmlError::SyntaxError {
+                message: format!("Expected quote after '=' for attribute '{key}'"),
+                line: self.source.line(),
+                col: self.source.col(),
+            })?;
 
         if quote != '"' && quote != '\'' {
             return Err(XmlError::SyntaxError {
@@ -265,7 +292,10 @@ impl<'a> XmlParser<'a> {
             }
             if !is_valid_xml_char(ch) {
                 return Err(XmlError::SyntaxError {
-                    message: format!("Forbidden XML character '\\u{{{:x}}}' in attribute value", ch as u32),
+                    message: format!(
+                        "Forbidden XML character '\\u{{{:x}}}' in attribute value",
+                        ch as u32
+                    ),
                     line: self.source.line(),
                     col: self.source.col(),
                 });
@@ -278,14 +308,17 @@ impl<'a> XmlParser<'a> {
                 if key == "xmlns" {
                     if expanded_val == "http://www.w3.org/XML/1998/namespace" {
                         return Err(XmlError::SyntaxError {
-                            message: "The xml namespace must not be declared as the default namespace".into(),
+                            message:
+                                "The xml namespace must not be declared as the default namespace"
+                                    .into(),
                             line: self.source.line(),
                             col: self.source.col(),
                         });
                     }
                     if expanded_val == "http://www.w3.org/2000/xmlns/" {
                         return Err(XmlError::SyntaxError {
-                            message: "The xmlns namespace must not be declared as a namespace".into(),
+                            message: "The xmlns namespace must not be declared as a namespace"
+                                .into(),
                             line: self.source.line(),
                             col: self.source.col(),
                         });
@@ -307,7 +340,8 @@ impl<'a> XmlParser<'a> {
                 } else if key.starts_with("xmlns:") {
                     if expanded_val == "http://www.w3.org/XML/1998/namespace" {
                         return Err(XmlError::SyntaxError {
-                            message: "The xml namespace must not be bound to any other prefix".into(),
+                            message: "The xml namespace must not be bound to any other prefix"
+                                .into(),
                             line: self.source.line(),
                             col: self.source.col(),
                         });
@@ -321,7 +355,9 @@ impl<'a> XmlParser<'a> {
                     }
                     if expanded_val.is_empty() {
                         return Err(XmlError::SyntaxError {
-                            message: "Empty namespace URI is illegal for prefixed namespace in XML 1.0".into(),
+                            message:
+                                "Empty namespace URI is illegal for prefixed namespace in XML 1.0"
+                                    .into(),
                             line: self.source.line(),
                             col: self.source.col(),
                         });
@@ -388,11 +424,14 @@ impl<'a> XmlParser<'a> {
 
     /// Helper parsing a single- or double-quoted string.
     pub(crate) fn parse_quoted_string(&mut self) -> Result<String> {
-        let quote = self.source.next_char().ok_or_else(|| XmlError::SyntaxError {
-            message: "Expected quote for string literal".into(),
-            line: self.source.line(),
-            col: self.source.col(),
-        })?;
+        let quote = self
+            .source
+            .next_char()
+            .ok_or_else(|| XmlError::SyntaxError {
+                message: "Expected quote for string literal".into(),
+                line: self.source.line(),
+                col: self.source.col(),
+            })?;
 
         let mut s = String::new();
         while let Some(ch) = self.source.next_char() {
@@ -401,7 +440,10 @@ impl<'a> XmlParser<'a> {
             }
             if !is_valid_xml_char(ch) {
                 return Err(XmlError::SyntaxError {
-                    message: format!("Forbidden XML character '\\u{{{:x}}}' in string literal", ch as u32),
+                    message: format!(
+                        "Forbidden XML character '\\u{{{:x}}}' in string literal",
+                        ch as u32
+                    ),
                     line: self.source.line(),
                     col: self.source.col(),
                 });

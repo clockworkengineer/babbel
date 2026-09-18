@@ -87,6 +87,8 @@ fn test_default_registry_includes_cbor() {
     let engine = registry.get_by_id("cbor").expect("should get cbor by id");
     assert_eq!(engine.mime_type(), "application/cbor");
 
-    let engine_ext = registry.get_by_extension("cbor").expect("should get by ext");
+    let engine_ext = registry
+        .get_by_extension("cbor")
+        .expect("should get by ext");
     assert_eq!(engine_ext.format_id(), "cbor");
 }

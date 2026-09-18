@@ -1,4 +1,3 @@
-
 /*
  * Block Scalar Error Helpers
  *

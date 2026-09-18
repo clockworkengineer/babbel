@@ -3,9 +3,9 @@
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::String, string::ToString, vec::Vec};
 
-use babbel_core::Value;
 use crate::constants::*;
 use crate::error::BsonError;
+use babbel_core::Value;
 
 /// Decoder configuration options.
 #[derive(Debug, Clone, Copy)]
@@ -97,8 +97,7 @@ impl<'a> Decoder<'a> {
     fn read_i64(&mut self) -> Result<i64, BsonError> {
         let slice = self.read_slice(8)?;
         Ok(i64::from_le_bytes([
-            slice[0], slice[1], slice[2], slice[3],
-            slice[4], slice[5], slice[6], slice[7],
+            slice[0], slice[1], slice[2], slice[3], slice[4], slice[5], slice[6], slice[7],
         ]))
     }
 
@@ -106,8 +105,7 @@ impl<'a> Decoder<'a> {
     fn read_u64(&mut self) -> Result<u64, BsonError> {
         let slice = self.read_slice(8)?;
         Ok(u64::from_le_bytes([
-            slice[0], slice[1], slice[2], slice[3],
-            slice[4], slice[5], slice[6], slice[7],
+            slice[0], slice[1], slice[2], slice[3], slice[4], slice[5], slice[6], slice[7],
         ]))
     }
 
@@ -115,8 +113,7 @@ impl<'a> Decoder<'a> {
     fn read_f64(&mut self) -> Result<f64, BsonError> {
         let slice = self.read_slice(8)?;
         Ok(f64::from_le_bytes([
-            slice[0], slice[1], slice[2], slice[3],
-            slice[4], slice[5], slice[6], slice[7],
+            slice[0], slice[1], slice[2], slice[3], slice[4], slice[5], slice[6], slice[7],
         ]))
     }
 
@@ -213,7 +210,13 @@ impl<'a> Decoder<'a> {
             return Err(BsonError::InvalidCString);
         }
 
-        if depth == 0 && !entries.is_empty() && entries.iter().enumerate().all(|(i, (k, _))| k == &i.to_string()) {
+        if depth == 0
+            && !entries.is_empty()
+            && entries
+                .iter()
+                .enumerate()
+                .all(|(i, (k, _))| k == &i.to_string())
+        {
             return Ok(Value::Array(entries.into_iter().map(|(_, v)| v).collect()));
         }
 

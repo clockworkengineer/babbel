@@ -1,13 +1,20 @@
 [package]
 name = "babbel_xml"
-version = "0.2.1"
-edition = "2024"
-authors = ["ClockworkEngineer", "Rust Port Team"]
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
 description = "Full-featured XML parser, validator, stringifier, and XPath 1.0 engine in pure Rust"
-license = "MIT"
-repository = "https://github.com/clockworkengineer/babbel"
+license.workspace = true
+repository.workspace = true
 documentation = "https://docs.rs/babbel_xml"
+homepage.workspace = true
+rust-version.workspace = true
 readme = "README.md"
+keywords = ["xml", "xpath", "xsd", "dtd", "parser"]
+categories = ["parser-implementations", "encoding"]
+
+[lints]
+workspace = true
 
 [features]
 default = ["std", "dtd", "xsd", "xpath", "stringify", "format-converters"]

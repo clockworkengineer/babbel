@@ -4,7 +4,7 @@
 //! loading a base default configuration, merging environment-specific overrides,
 //! and resolving the final active configuration document.
 
-use babbel_toml::{from_str, to_string_pretty, Node};
+use babbel_toml::{Node, from_str, to_string_pretty};
 
 /// Deep merges `overrides` table into `base` table.
 fn deep_merge_tables(base: &mut Node, overrides: &Node) {
@@ -85,18 +85,30 @@ destination = "/var/log/babbel.log"
     println!("{}", resolved);
 
     // Verify overridden fields
-    assert_eq!(config.get("environment").and_then(|n| n.as_str()), Some("production"));
+    assert_eq!(
+        config.get("environment").and_then(|n| n.as_str()),
+        Some("production")
+    );
     assert_eq!(config.get("debug").and_then(|n| n.as_bool()), Some(false));
     assert_eq!(
-        config.get("server").and_then(|s| s.get("port")).and_then(|n| n.as_i64()),
+        config
+            .get("server")
+            .and_then(|s| s.get("port"))
+            .and_then(|n| n.as_i64()),
         Some(8080)
     );
     assert_eq!(
-        config.get("server").and_then(|s| s.get("timeout_sec")).and_then(|n| n.as_i64()),
+        config
+            .get("server")
+            .and_then(|s| s.get("timeout_sec"))
+            .and_then(|n| n.as_i64()),
         Some(60) // Preserved from default!
     );
     assert_eq!(
-        config.get("logging").and_then(|l| l.get("destination")).and_then(|n| n.as_str()),
+        config
+            .get("logging")
+            .and_then(|l| l.get("destination"))
+            .and_then(|n| n.as_str()),
         Some("/var/log/babbel.log") // Added from production!
     );
 

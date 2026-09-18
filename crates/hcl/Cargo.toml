@@ -1,14 +1,20 @@
 [package]
 name = "babbel_hcl"
-version = "0.2.1"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 description = "Fast, pure-Rust HCL (HashiCorp Configuration Language v2) parser, serializer, and FormatEngine"
-license = "MIT"
-authors = ["ClockworkEngineer", "Babbel Contributors"]
-repository = "https://github.com/clockworkengineer/babbel"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
 documentation = "https://docs.rs/babbel_hcl"
-homepage = "https://github.com/clockworkengineer/babbel"
+homepage.workspace = true
+rust-version.workspace = true
+keywords = ["hcl", "terraform", "hashicorp", "parser", "serializer"]
+categories = ["parser-implementations", "encoding"]
 readme = "README.md"
+
+[lints]
+workspace = true
 
 [features]
 default = ["std"]

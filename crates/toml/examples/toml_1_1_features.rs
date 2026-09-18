@@ -6,7 +6,7 @@
 //! 3. Multiline inline tables with trailing commas and interior comments
 //! 4. CRLF newline normalization in multi-line strings
 
-use babbel_toml::{from_str, to_string_pretty, DatetimeKind};
+use babbel_toml::{DatetimeKind, from_str, to_string_pretty};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== TOML v1.1.0 Feature Showcase ===\n");

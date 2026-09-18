@@ -37,13 +37,13 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+pub mod engine;
 pub mod error;
 pub mod parser;
 pub mod serializer;
-pub mod engine;
 
-pub use error::RonError;
-pub use parser::{from_bytes, from_str, RonParser};
-pub use serializer::{serialize_to_dest, to_string, to_string_pretty, to_vec, RonSerializerConfig};
-pub use engine::RonEngine;
 pub use babbel_core::Value;
+pub use engine::RonEngine;
+pub use error::RonError;
+pub use parser::{RonParser, from_bytes, from_str};
+pub use serializer::{RonSerializerConfig, serialize_to_dest, to_string, to_string_pretty, to_vec};

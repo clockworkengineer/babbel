@@ -109,10 +109,7 @@ pub enum XPathExpr {
         right: Box<XPathExpr>,
     },
     /// Function call expression (`count(//book)`, `contains(title, 'XML')`).
-    FunctionCall {
-        name: String,
-        args: Vec<XPathExpr>,
-    },
+    FunctionCall { name: String, args: Vec<XPathExpr> },
     /// Variable reference (`$var`).
     VariableRef(String),
 }

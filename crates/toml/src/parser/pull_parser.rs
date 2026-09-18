@@ -3,9 +3,9 @@
 #[cfg(not(feature = "std"))]
 use alloc::string::String;
 
-use crate::error::TomlError;
 use super::lexer::Lexer;
 use super::tokens::Token;
+use crate::error::TomlError;
 
 /// Event emitted by the streaming `TomlPullParser`.
 #[derive(Debug, Clone, PartialEq)]

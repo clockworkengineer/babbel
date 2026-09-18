@@ -4,7 +4,9 @@
 #[cfg(not(feature = "std"))]
 use alloc::{string::String, vec::Vec};
 
-use crate::constants::{BYTE_DICT_START, BYTE_END, BYTE_INTEGER_START, BYTE_LIST_START, BYTE_STRING_SEP};
+use crate::constants::{
+    BYTE_DICT_START, BYTE_END, BYTE_INTEGER_START, BYTE_LIST_START, BYTE_STRING_SEP,
+};
 use crate::io::traits::{BencodeWrite, IDestination};
 use crate::nodes::node::*;
 use crate::stringify::visitor::{BencodeVisitable, BencodeVisitor};

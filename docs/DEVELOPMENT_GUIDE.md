@@ -30,15 +30,28 @@ babbel/
 ├── crates/
 │   ├── babbel/         # Tier 2: Master facade & conversion pipeline
 │   ├── babbel_core/    # Tier 0: Kernel (I/O, AST, CSV, INI, embedded)
+│   ├── cli/            # Tier 3: babbel-cli universal executable
 │   ├── json/           # Tier 1: babbel_json (DOM, pointer, patch, lines)
 │   ├── yaml/           # Tier 1: babbel_yaml (YAML 1.2, anchors, tags)
 │   ├── bencode/        # Tier 1: babbel_bencode (BitTorrent, borrowed DOM)
-│   └── xml/            # Tier 1: babbel_xml (W3C DOM, C14N, DTD, XSD, XPath)
-└── docs/               # Technical specifications, guides, and plans
+│   ├── xml/            # Tier 1: babbel_xml (W3C DOM, C14N, DTD, XSD, XPath)
+│   ├── toml/           # Tier 1: babbel_toml (TOML v1.1.0 DOM, serializer)
+│   ├── msgpack/        # Tier 1: babbel_msgpack (MessagePack binary codec)
+│   ├── cbor/           # Tier 1: babbel_cbor (RFC 8949 CBOR codec)
+│   ├── bson/           # Tier 1: babbel_bson (BSON binary JSON codec)
+│   ├── ron/            # Tier 1: babbel_ron (Rusty Object Notation)
+│   ├── kdl/            # Tier 1: babbel_kdl (KDL Document Language v2)
+│   ├── parquet/        # Tier 1: babbel_parquet (Apache Parquet columnar)
+│   ├── hcl/            # Tier 1: babbel_hcl (HashiCorp HCL v2 & Terraform)
+│   └── avro/           # Tier 1: babbel_avro (Apache Avro binary & OCF)
+├── tests/
+│   └── fixtures/       # Shared multi-format test documents & datasets
+├── scripts/            # Conformance fetch scripts and local check runners
+└── docs/               # Technical specifications, guides, and reports
 ```
 
 ### Architectural Dependency Invariant:
-1. `babbel_core` must **never** depend on any format crate (`json`, `yaml`, `xml`, `bencode`).
+1. `babbel_core` must **never** depend on any format crate (`json`, `yaml`, `xml`, etc.).
 2. Domain format crates must **never** depend on each other.
 3. Cross-format conversions must flow through `babbel::convert` via `babbel_core::model::Value` or codecs.
 
@@ -53,7 +66,7 @@ cargo check --workspace --all-targets
 ```
 
 ### 3.2 Running the Full Test Suite
-Babbel features over 3,500 tests across its crates:
+Babbel features over 6,500 tests across its crates:
 
 ```bash
 # Run all unit and integration tests

@@ -1,8 +1,8 @@
 //! `FormatEngine` implementation for Apache Avro.
 
-use babbel_core::{BabbelError, FormatEngine, FormatOptions, Value};
-use babbel_core::io::IDestination;
 use crate::{from_bytes, to_vec};
+use babbel_core::io::IDestination;
+use babbel_core::{BabbelError, FormatEngine, FormatOptions, Value};
 
 /// Format engine for Apache Avro binary payloads (`.avro`).
 #[derive(Debug, Clone, Copy, Default)]

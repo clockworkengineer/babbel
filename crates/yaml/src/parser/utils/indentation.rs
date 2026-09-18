@@ -4,8 +4,8 @@
 //! used by the document parser. This is the canonical home for
 //! indentation rules; document helpers should delegate here.
 
-use crate::parser::utils::context::ParsingContext;
 use crate::parser::token_stream::TokenStream;
+use crate::parser::utils::context::ParsingContext;
 
 /// Token-based indentation validation using `TokenStream`.
 ///

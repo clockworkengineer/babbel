@@ -16,5 +16,3 @@ macro_rules! lexer_debug {
  *
  * Copyright (c) 2026 YAML Library Developers
  */
-
-

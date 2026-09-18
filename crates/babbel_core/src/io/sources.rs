@@ -146,7 +146,6 @@ impl<'a> SliceSource<'a> {
     }
 }
 
-
 impl<'a> ISource for SliceSource<'a> {
     fn next(&mut self) {
         self.next();
@@ -324,7 +323,6 @@ impl IPositionAware for StringSource {
     }
 }
 
-
 impl ISource for StringSource {
     fn next(&mut self) {
         self.next();
@@ -446,7 +444,6 @@ impl<'a> ICharStream for ByteSliceSource<'a> {
     }
 }
 
-
 impl<'a> IRewindable for ByteSliceSource<'a> {
     fn reset(&mut self) {
         self.pos = 0;
@@ -476,7 +473,6 @@ impl<'a> ISource for ByteSliceSource<'a> {
         true
     }
 }
-
 
 /// In-memory byte vector input source supporting both binary byte streaming
 /// and Unicode UTF-8 character streaming.
@@ -517,7 +513,8 @@ impl BufferSource {
                 self.line += 1;
                 self.column = 0;
             } else if current_byte == b'\r' {
-                if self.position + 1 < self.buffer.len() && self.buffer[self.position + 1] == b'\n' {
+                if self.position + 1 < self.buffer.len() && self.buffer[self.position + 1] == b'\n'
+                {
                     // CRLF: newline will handle line increment
                 } else {
                     self.line += 1;
@@ -547,7 +544,11 @@ impl BufferSource {
             Ok(s) => s.chars().next(),
             Err(e) => {
                 if e.valid_up_to() > 0 {
-                    let valid = unsafe { core::str::from_utf8_unchecked(&self.buffer[self.position..self.position + e.valid_up_to()]) };
+                    let valid = unsafe {
+                        core::str::from_utf8_unchecked(
+                            &self.buffer[self.position..self.position + e.valid_up_to()],
+                        )
+                    };
                     valid.chars().next()
                 } else {
                     Some(self.buffer[self.position] as char)
@@ -577,7 +578,9 @@ impl BufferSource {
             if let Ok(s) = core::str::from_utf8(&self.buffer) {
                 alloc::string::ToString::to_string(s)
             } else {
-                alloc::string::ToString::to_string(&alloc::string::String::from_utf8_lossy(&self.buffer))
+                alloc::string::ToString::to_string(&alloc::string::String::from_utf8_lossy(
+                    &self.buffer,
+                ))
             }
         }
     }
@@ -657,7 +660,6 @@ impl IPositionAware for BufferSource {
         self.position
     }
 }
-
 
 impl ISource for BufferSource {
     fn next(&mut self) {
@@ -749,7 +751,6 @@ impl IPeekable for BufferSource {
     }
 }
 
-
 #[cfg(feature = "file-io")]
 /// File input source reading binary or text data from disk.
 #[derive(Debug, Clone)]
@@ -774,7 +775,10 @@ impl FileSource {
     }
 
     /// Opens and reads a file into memory with a configurable maximum byte limit.
-    pub fn open_with_limit(path: impl AsRef<std::path::Path>, max_bytes: u64) -> std::io::Result<Self> {
+    pub fn open_with_limit(
+        path: impl AsRef<std::path::Path>,
+        max_bytes: u64,
+    ) -> std::io::Result<Self> {
         let p = path.as_ref().to_path_buf();
         let metadata = std::fs::metadata(&p)?;
         if metadata.len() > max_bytes {
@@ -909,7 +913,6 @@ impl IPeekable for FileSource {
         self.peek_byte()
     }
 }
-
 
 #[cfg(feature = "file-io")]
 impl IRewindable for FileSource {
@@ -1140,7 +1143,6 @@ impl<T: IByteReader + IPeekable + IRewindable> ISource for ByteSourceAdapter<T> 
     }
 }
 
-
 impl<T: IPositionAware> IPositionAware for ByteSourceAdapter<T> {
     fn position(&self) -> usize {
         self.inner.position()
@@ -1240,7 +1242,10 @@ mod tests {
 
         let mut buf_src = BufferSource::new(text.as_bytes());
         let lines: Vec<String> = buf_src.lines().collect();
-        assert_eq!(lines, vec!["First line", "Second line", "Third line", "Fourth line"]);
+        assert_eq!(
+            lines,
+            vec!["First line", "Second line", "Third line", "Fourth line"]
+        );
 
         let mut slice_src = SliceSource::new(text);
         assert_eq!(slice_src.read_line_slice(), Some("First line"));
@@ -1349,5 +1354,3 @@ mod tests {
         assert!(buf.can_rewind());
     }
 }
-
-

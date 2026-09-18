@@ -57,4 +57,3 @@ pub trait IDestination: BencodeWrite + BufferedWrite {
         self.last_byte()
     }
 }
-

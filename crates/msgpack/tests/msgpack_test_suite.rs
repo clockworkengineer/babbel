@@ -100,7 +100,13 @@ fn find_msgpack_test_suite_dir() -> Option<PathBuf> {
     let mut candidates = vec![
         manifest_dir.join("tests").join("msgpack-test-suite"),
         manifest_dir.join("msgpack-test-suite"),
-        manifest_dir.join("..").join("..").join("crates").join("msgpack").join("tests").join("msgpack-test-suite"),
+        manifest_dir
+            .join("..")
+            .join("..")
+            .join("crates")
+            .join("msgpack")
+            .join("tests")
+            .join("msgpack-test-suite"),
         PathBuf::from("crates/msgpack/tests/msgpack-test-suite"),
         PathBuf::from("tests/msgpack-test-suite"),
         PathBuf::from("msgpack-test-suite"),
@@ -119,9 +125,9 @@ fn find_msgpack_test_suite_dir() -> Option<PathBuf> {
         }
     }
 
-    candidates.into_iter().find(|p| {
-        p.join("dist").join("msgpack-test-suite.json").exists() || p.join("src").exists()
-    })
+    candidates
+        .into_iter()
+        .find(|p| p.join("dist").join("msgpack-test-suite.json").exists() || p.join("src").exists())
 }
 
 /// Compares decoded Value with expected JSON value representation.
@@ -264,7 +270,11 @@ fn run_embedded_conformance_suite() -> (usize, usize, usize) {
         ("uint16-256", "cd-01-00", Value::Integer(256)),
         ("uint16-65535", "cd-ff-ff", Value::Integer(65535)),
         ("uint32-65536", "ce-00-01-00-00", Value::Integer(65536)),
-        ("uint64-4294967296", "cf-00-00-00-01-00-00-00-00", Value::Integer(4294967296)),
+        (
+            "uint64-4294967296",
+            "cf-00-00-00-01-00-00-00-00",
+            Value::Integer(4294967296),
+        ),
         ("neg-fixint--1", "ff", Value::Integer(-1)),
         ("neg-fixint--32", "e0", Value::Integer(-32)),
         ("int8--33", "d0-df", Value::Integer(-33)),
@@ -272,17 +282,33 @@ fn run_embedded_conformance_suite() -> (usize, usize, usize) {
         ("int16--129", "d1-ff-7f", Value::Integer(-129)),
         ("int16--32768", "d1-80-00", Value::Integer(-32768)),
         ("int32--32769", "d2-ff-ff-7f-ff", Value::Integer(-32769)),
-        ("int32--2147483648", "d2-80-00-00-00", Value::Integer(-2147483648)),
-        ("int64--2147483649", "d3-ff-ff-ff-ff-7f-ff-ff-ff", Value::Integer(-2147483649)),
+        (
+            "int32--2147483648",
+            "d2-80-00-00-00",
+            Value::Integer(-2147483648),
+        ),
+        (
+            "int64--2147483649",
+            "d3-ff-ff-ff-ff-7f-ff-ff-ff",
+            Value::Integer(-2147483649),
+        ),
         ("str-empty", "a0", Value::String(String::new())),
         ("str-a", "a1-61", Value::String("a".to_string())),
         ("bin-empty", "c4-00", Value::Bytes(vec![])),
         ("bin-1byte", "c4-01-01", Value::Bytes(vec![1])),
         ("bin-2bytes", "c4-02-00-ff", Value::Bytes(vec![0x00, 0xff])),
         ("array-empty", "90", Value::Array(vec![])),
-        ("array-1-item", "91-01", Value::Array(vec![Value::Integer(1)])),
+        (
+            "array-1-item",
+            "91-01",
+            Value::Array(vec![Value::Integer(1)]),
+        ),
         ("map-empty", "80", Value::Object(vec![])),
-        ("map-simple", "81-a1-61-01", Value::Object(vec![("a".to_string(), Value::Integer(1))])),
+        (
+            "map-simple",
+            "81-a1-61-01",
+            Value::Object(vec![("a".to_string(), Value::Integer(1))]),
+        ),
     ];
 
     let mut passed = 0;
@@ -306,7 +332,10 @@ fn run_embedded_conformance_suite() -> (usize, usize, usize) {
                     }
                     passed += 1;
                 } else {
-                    println!("Embedded test '{}' failed: expected {:?}, got {:?}", name, expected, val);
+                    println!(
+                        "Embedded test '{}' failed: expected {:?}, got {:?}",
+                        name, expected, val
+                    );
                     failed += 1;
                 }
             }
@@ -342,11 +371,12 @@ fn node_to_value(node: babbel_json::Node) -> Value {
             babbel_json::Numeric::UInt8(u) => Value::Integer(u as i128),
         },
         babbel_json::Node::Str(s) => Value::String(s),
-        babbel_json::Node::Array(arr) => {
-            Value::Array(arr.into_iter().map(node_to_value).collect())
-        }
+        babbel_json::Node::Array(arr) => Value::Array(arr.into_iter().map(node_to_value).collect()),
         babbel_json::Node::Object(map) => {
-            let mut entries: Vec<_> = map.into_iter().map(|(k, v)| (k, node_to_value(v))).collect();
+            let mut entries: Vec<_> = map
+                .into_iter()
+                .map(|(k, v)| (k, node_to_value(v)))
+                .collect();
             entries.sort_by(|a, b| a.0.cmp(&b.0));
             Value::Object(entries)
         }
@@ -358,7 +388,10 @@ fn test_embedded_conformance_vectors() {
     let (passed, failed, panics) = run_embedded_conformance_suite();
     assert_eq!(panics, 0, "No panics in embedded conformance vectors");
     assert_eq!(failed, 0, "All embedded conformance vectors must pass");
-    assert!(passed >= 30, "Expected at least 30 embedded test vectors to pass");
+    assert!(
+        passed >= 30,
+        "Expected at least 30 embedded test vectors to pass"
+    );
 }
 
 #[test]
@@ -370,12 +403,17 @@ fn test_official_msgpack_conformance_suite() {
             println!("  kawanet/msgpack-test-suite directory not found.");
             println!("  Running embedded conformance test vectors instead...");
             println!("  To download and install the official suite, run:");
-            println!("    powershell -ExecutionPolicy Bypass -File scripts/fetch_msgpack_test_suite.ps1");
+            println!(
+                "    powershell -ExecutionPolicy Bypass -File scripts/fetch_msgpack_test_suite.ps1"
+            );
             println!("    (or ./scripts/fetch_msgpack_test_suite.sh on Unix)");
             println!("============================================================\n");
 
             let (passed, failed, panics) = run_embedded_conformance_suite();
-            println!("Embedded conformance suite: {} passed, {} failed, {} panics", passed, failed, panics);
+            println!(
+                "Embedded conformance suite: {} passed, {} failed, {} panics",
+                passed, failed, panics
+            );
             assert_eq!(panics, 0, "No panics allowed in embedded conformance suite");
             assert_eq!(failed, 0, "All embedded conformance tests must pass");
             return;
@@ -389,12 +427,16 @@ fn test_official_msgpack_conformance_suite() {
 
     let json_file = suite_dir.join("dist").join("msgpack-test-suite.json");
     if !json_file.exists() {
-        println!("dist/msgpack-test-suite.json not found in {}", suite_dir.display());
+        println!(
+            "dist/msgpack-test-suite.json not found in {}",
+            suite_dir.display()
+        );
         return;
     }
 
     let raw_json_bytes = fs::read(&json_file).expect("Failed to read dist/msgpack-test-suite.json");
-    let suite_node = babbel_json::from_bytes(&raw_json_bytes).expect("Failed to parse dist/msgpack-test-suite.json with babbel_json");
+    let suite_node = babbel_json::from_bytes(&raw_json_bytes)
+        .expect("Failed to parse dist/msgpack-test-suite.json with babbel_json");
     let suite_value = node_to_value(suite_node);
 
     let suite_obj = match suite_value {
@@ -446,7 +488,10 @@ fn test_official_msgpack_conformance_suite() {
                     Err(e) => {
                         stats.failed += 1;
                         overall.failed += 1;
-                        failures.push(format!("[{}:{}.{}] Failed to parse hex '{}': {}", file_name, case_idx, hex_idx, hex_str, e));
+                        failures.push(format!(
+                            "[{}:{}.{}] Failed to parse hex '{}': {}",
+                            file_name, case_idx, hex_idx, hex_str, e
+                        ));
                         continue;
                     }
                 };
@@ -528,7 +573,11 @@ fn test_official_msgpack_conformance_suite() {
         overall.pass_rate()
     );
     println!("+---------------------------------------+-------+--------+--------+---------+");
-    println!("Executed in {:.3}s with {} unhandled panics.\n", elapsed.as_secs_f64(), overall.panics);
+    println!(
+        "Executed in {:.3}s with {} unhandled panics.\n",
+        elapsed.as_secs_f64(),
+        overall.panics
+    );
 
     drop(_panic_guard);
 
@@ -539,8 +588,14 @@ fn test_official_msgpack_conformance_suite() {
     );
 
     if !failures.is_empty() {
-        println!("MessagePack conformance failures (showing first 25):\n  {}",
-            failures.iter().take(25).cloned().collect::<Vec<_>>().join("\n  ")
+        println!(
+            "MessagePack conformance failures (showing first 25):\n  {}",
+            failures
+                .iter()
+                .take(25)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join("\n  ")
         );
     }
 

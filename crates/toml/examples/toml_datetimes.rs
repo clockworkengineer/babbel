@@ -6,7 +6,7 @@
 //! 3. Local Date (calendar date only)
 //! 4. Local Time (wall clock time with optional seconds)
 
-use babbel_toml::{from_str, to_string_pretty, DatetimeKind, Node, TomlDatetime};
+use babbel_toml::{DatetimeKind, Node, TomlDatetime, from_str, to_string_pretty};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== TOML Date & Time Showcase ===\n");

@@ -2,8 +2,8 @@
 
 #[cfg(not(feature = "std"))]
 use alloc::string::ToString;
-use core::fmt;
 use babbel_core::{BabbelError, ErrorCode};
+use core::fmt;
 
 /// Detailed error encountered during BSON serialization or deserialization.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,8 +29,15 @@ pub enum BsonError {
 impl fmt::Display for BsonError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::UnexpectedEof { expected, available } => {
-                write!(f, "unexpected end of input: expected {} bytes, but only {} available", expected, available)
+            Self::UnexpectedEof {
+                expected,
+                available,
+            } => {
+                write!(
+                    f,
+                    "unexpected end of input: expected {} bytes, but only {} available",
+                    expected, available
+                )
             }
             Self::InvalidTypeMarker(byte) => {
                 write!(f, "invalid BSON element type marker: 0x{:02x}", byte)
@@ -42,7 +49,11 @@ impl fmt::Display for BsonError {
                 write!(f, "invalid null-terminated CString in BSON element key")
             }
             Self::InvalidDocumentLength { length, available } => {
-                write!(f, "invalid BSON document length: header specified {} bytes, but only {} available", length, available)
+                write!(
+                    f,
+                    "invalid BSON document length: header specified {} bytes, but only {} available",
+                    length, available
+                )
             }
             Self::RecursionLimitExceeded(depth) => {
                 write!(f, "recursion depth limit exceeded: {}", depth)
@@ -63,18 +74,14 @@ impl std::error::Error for BsonError {}
 impl From<BsonError> for BabbelError {
     fn from(err: BsonError) -> Self {
         match err {
-            BsonError::InvalidUtf8 => {
-                BabbelError::encoding(err.to_string()).with_format("bson")
-            }
+            BsonError::InvalidUtf8 => BabbelError::encoding(err.to_string()).with_format("bson"),
             BsonError::UnexpectedEof { .. } => {
                 BabbelError::eof(err.to_string()).with_format("bson")
             }
             BsonError::RecursionLimitExceeded(_) | BsonError::SizeLimitExceeded { .. } => {
                 BabbelError::new(ErrorCode::Custom, err.to_string()).with_format("bson")
             }
-            _ => {
-                BabbelError::syntax(err.to_string()).with_format("bson")
-            }
+            _ => BabbelError::syntax(err.to_string()).with_format("bson"),
         }
     }
 }

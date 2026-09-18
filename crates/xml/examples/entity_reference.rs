@@ -1,9 +1,9 @@
-﻿//! # XML Entity Reference & Mapper Example
+//! # XML Entity Reference & Mapper Example
 //!
 //! Demonstrates parsing entity references (`&amp;`, `&lt;`, `&quot;`), numeric character references
 //! (`&#65;`, `&#x42;`), and registering custom entity mappings via `EntityMapper`.
 
-use babbel_xml::{parse, EntityMapper};
+use babbel_xml::{EntityMapper, parse};
 
 fn main() {
     println!("--- XML Entity Reference Example ---");

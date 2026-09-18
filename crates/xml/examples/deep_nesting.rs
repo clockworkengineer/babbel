@@ -1,9 +1,9 @@
-﻿//! # XML Deep Nesting & Security Limit Example
+//! # XML Deep Nesting & Security Limit Example
 //!
 //! Demonstrates configuring `ParseOptions::max_nesting_depth` to protect applications
 //! against stack overflow and DoS attacks from deeply nested element structures.
 
-use babbel_xml::{parse_with_options, ParseOptions};
+use babbel_xml::{ParseOptions, parse_with_options};
 
 fn main() {
     println!("--- XML Deep Nesting Example ---");

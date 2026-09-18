@@ -1,4 +1,3 @@
-
 //! Mapping Parsing Logic
 //!
 //! Implements parsing logic for YAML mappings (dictionaries), handling key-value pairs,
@@ -116,7 +115,11 @@ mod tests {
         let directives = DirectiveContext::new();
         let node = parse_mapping(&mut source, 0, &directives).unwrap();
         if let Node::Mapping(pairs) = node {
-            assert!(pairs.iter().any(|(k, v)| matches!(k, Node::Str(_, _, _)) && matches!(v, Node::Str(_, _, _))));
+            assert!(
+                pairs.iter().any(
+                    |(k, v)| matches!(k, Node::Str(_, _, _)) && matches!(v, Node::Str(_, _, _))
+                )
+            );
         } else {
             panic!("Expected Mapping node");
         }
@@ -138,7 +141,12 @@ mod tests {
         let directives = DirectiveContext::new();
         let node = parse_mapping(&mut source, 0, &directives).unwrap();
         if let Node::Mapping(pairs) = node {
-            assert!(pairs.iter().any(|(k, v)| matches!(k, Node::Str(s, _, _) if s.contains('@')) && matches!(v, Node::Str(s, _, _) if s.contains('@'))));
+            assert!(
+                pairs
+                    .iter()
+                    .any(|(k, v)| matches!(k, Node::Str(s, _, _) if s.contains('@'))
+                        && matches!(v, Node::Str(s, _, _) if s.contains('@')))
+            );
         } else {
             panic!("Expected Mapping node");
         }
@@ -160,7 +168,10 @@ mod tests {
         let directives = DirectiveContext::new();
         let node = parse_mapping(&mut source, 0, &directives).unwrap();
         if let Node::Mapping(pairs) = node {
-            let key_count = pairs.iter().filter(|(k, _)| matches!(k, Node::Str(s, _, _) if s == "key")).count();
+            let key_count = pairs
+                .iter()
+                .filter(|(k, _)| matches!(k, Node::Str(s, _, _) if s == "key"))
+                .count();
             assert!(key_count >= 2);
         } else {
             panic!("Expected Mapping node");

@@ -172,7 +172,9 @@ impl<'a> XmlPullParser<'a> {
             if let Some(end_idx) = remaining.find("?>") {
                 let content = &remaining[2..end_idx];
                 self.pos += end_idx + 2;
-                let (target, data) = content.split_once(char::is_whitespace).unwrap_or((content, ""));
+                let (target, data) = content
+                    .split_once(char::is_whitespace)
+                    .unwrap_or((content, ""));
                 return Ok(Some(XmlPullEvent::ProcessingInstruction {
                     target: target.trim(),
                     data: data.trim(),
@@ -200,7 +202,9 @@ impl<'a> XmlPullParser<'a> {
             if let Some(end_idx) = remaining.find('>') {
                 let content = remaining[9..end_idx].trim();
                 self.pos += end_idx + 1;
-                let (name, _rest) = content.split_once(char::is_whitespace).unwrap_or((content, ""));
+                let (name, _rest) = content
+                    .split_once(char::is_whitespace)
+                    .unwrap_or((content, ""));
                 return Ok(Some(XmlPullEvent::DocType {
                     name: name.trim(),
                     public_id: None,

@@ -1,7 +1,7 @@
+use crate::codec::FormatEmitter;
 use crate::error::BabbelError;
 use crate::io::traits::IDestination;
 use crate::model::Value;
-use crate::codec::FormatEmitter;
 
 /// Standard built-in XML format emitter delegating to universal Value serialization.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -9,7 +9,12 @@ pub struct XmlEmitter;
 
 impl XmlEmitter {
     /// Serializes value to XML representation into `dest` with an optional root tag.
-    pub fn emit_with_tag(&self, value: &Value, dest: &mut dyn IDestination, root_tag: Option<&str>) {
+    pub fn emit_with_tag(
+        &self,
+        value: &Value,
+        dest: &mut dyn IDestination,
+        root_tag: Option<&str>,
+    ) {
         let tag = root_tag.unwrap_or("root");
         match value {
             Value::Null => {
@@ -59,7 +64,10 @@ impl XmlEmitter {
                 dest.add_bytes("<");
                 dest.add_bytes(tag);
                 dest.add_bytes(">");
-                crate::escape::write_xml_escaped_string(&alloc::string::String::from_utf8_lossy(b), dest);
+                crate::escape::write_xml_escaped_string(
+                    &alloc::string::String::from_utf8_lossy(b),
+                    dest,
+                );
                 dest.add_bytes("</");
                 dest.add_bytes(tag);
                 dest.add_bytes(">");

@@ -1,11 +1,11 @@
-﻿//! # Canonical XML (W3C C14N) Example
+//! # Canonical XML (W3C C14N) Example
 //!
 //! Demonstrates standard W3C Canonical XML 1.0/1.1 transformation:
 //! - Sorting attribute declarations (with `xmlns` declarations first)
 //! - Expanding empty elements (`<item/>` -> `<item></item>`)
 //! - Standardizing line breaks and character escaping for digital signatures (XMLDSig)
 
-use babbel_xml::{canonicalize, parse, CanonicalOptions, CanonicalSerializer};
+use babbel_xml::{CanonicalOptions, CanonicalSerializer, canonicalize, parse};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("--- Canonical XML (C14N) Example ---");

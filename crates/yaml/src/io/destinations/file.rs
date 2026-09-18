@@ -6,7 +6,6 @@
 
 pub use babbel_core::io::FileDestination as File;
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

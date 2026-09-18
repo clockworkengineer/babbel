@@ -35,7 +35,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]),
     ]);
 
-    println!("--- 1. Input Tabular Dataset ({} rows) ---", dataset.as_array().unwrap().len());
+    println!(
+        "--- 1. Input Tabular Dataset ({} rows) ---",
+        dataset.as_array().unwrap().len()
+    );
     for (i, row) in dataset.as_array().unwrap().iter().enumerate() {
         println!("Row {}: {:?}", i, row);
     }
@@ -45,7 +48,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parquet_bytes = write_parquet(&dataset)?;
     println!("Generated Parquet binary: {} bytes", parquet_bytes.len());
     println!("Header Magic: {:?}", &parquet_bytes[0..4]);
-    println!("Footer Magic: {:?}", &parquet_bytes[parquet_bytes.len() - 4..]);
+    println!(
+        "Footer Magic: {:?}",
+        &parquet_bytes[parquet_bytes.len() - 4..]
+    );
 
     assert_eq!(&parquet_bytes[0..4], b"PAR1");
     assert_eq!(&parquet_bytes[parquet_bytes.len() - 4..], b"PAR1");

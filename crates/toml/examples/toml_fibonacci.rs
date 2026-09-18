@@ -4,8 +4,10 @@
 //! Demonstrates file reading (`FileSource`), DOM parsing, array manipulation,
 //! checked arithmetic, and file writing (`FileDestination`).
 
+use babbel_toml::{
+    DatetimeKind, FileDestination, FileSource, Node, TomlDatetime, from_str, to_string_pretty,
+};
 use std::path::Path;
-use babbel_toml::{from_str, to_string_pretty, DatetimeKind, FileDestination, FileSource, Node, TomlDatetime};
 
 /// Reads a Fibonacci document from a TOML file or initializes a default sequence.
 fn read_or_init_sequence(path: &Path) -> Result<Node, Box<dyn std::error::Error>> {
@@ -15,11 +17,17 @@ fn read_or_init_sequence(path: &Path) -> Result<Node, Box<dyn std::error::Error>
 
         let mut meta = Node::new_table();
         meta.insert("name".to_string(), Node::from("Fibonacci Sequence"));
-        meta.insert("algorithm".to_string(), Node::from("Babbel Checked Arithmetic"));
-        meta.insert("created_at".to_string(), Node::Datetime(TomlDatetime::new(
-            DatetimeKind::OffsetDateTime,
-            "2026-09-09T15:00:00Z",
-        )));
+        meta.insert(
+            "algorithm".to_string(),
+            Node::from("Babbel Checked Arithmetic"),
+        );
+        meta.insert(
+            "created_at".to_string(),
+            Node::Datetime(TomlDatetime::new(
+                DatetimeKind::OffsetDateTime,
+                "2026-09-09T15:00:00Z",
+            )),
+        );
         root.insert("metadata".to_string(), meta);
 
         let mut numbers = Node::new_array();
@@ -108,7 +116,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let reloaded = read_or_init_sequence(temp_file)?;
     if let Some(numbers) = reloaded.get("numbers").and_then(|n| n.as_array()) {
         println!("Total sequence length: {}", numbers.len());
-        let vals: Vec<String> = numbers.iter().filter_map(|n| n.as_i64().map(|i| i.to_string())).collect();
+        let vals: Vec<String> = numbers
+            .iter()
+            .filter_map(|n| n.as_i64().map(|i| i.to_string()))
+            .collect();
         println!("Sequence: [{}]", vals.join(", "));
     }
 

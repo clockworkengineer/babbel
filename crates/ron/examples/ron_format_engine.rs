@@ -8,7 +8,7 @@ use babbel_ron::RonEngine;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Babbel RON FormatEngine Example ===\n");
 
-    let engine = RonEngine::default();
+    let engine = RonEngine;
 
     // Inspect engine metadata
     println!("Engine format ID:   {}", engine.format_id());
@@ -20,11 +20,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("format".into(), Value::String("RON".into())),
         ("engine".into(), Value::String("babbel_ron".into())),
         ("version".into(), Value::String("0.2.1".into())),
-        ("features".into(), Value::Array(vec![
-            Value::String("structs".into()),
-            Value::String("raw_strings".into()),
-            Value::String("nested_comments".into()),
-        ])),
+        (
+            "features".into(),
+            Value::Array(vec![
+                Value::String("structs".into()),
+                Value::String("raw_strings".into()),
+                Value::String("nested_comments".into()),
+            ]),
+        ),
     ]);
 
     // Serialize using the FormatEngine trait

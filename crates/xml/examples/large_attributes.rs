@@ -1,9 +1,9 @@
-﻿//! # Large Tag Attributes & Security Policy Example
+//! # Large Tag Attributes & Security Policy Example
 //!
 //! Demonstrates parsing tags with numerous attributes while configuring
 //! `ParseOptions::max_attribute_count` threshold protection.
 
-use babbel_xml::{parse_with_options, NodeKind, ParseOptions};
+use babbel_xml::{NodeKind, ParseOptions, parse_with_options};
 
 fn main() {
     println!("--- XML Large Attributes Example ---");

@@ -1,9 +1,9 @@
 //! Format converters serializing TOML `Node` to other data formats (JSON, YAML, XML, Bencode).
 
-use babbel_core::io::traits::IDestination;
-use babbel_core::model::Value;
 use crate::error::TomlError;
 use crate::nodes::node::Node;
+use babbel_core::io::traits::IDestination;
+use babbel_core::model::Value;
 
 /// Converts a TOML Node tree to JSON format.
 pub fn to_json(node: &Node, dest: &mut dyn IDestination) -> Result<(), TomlError> {

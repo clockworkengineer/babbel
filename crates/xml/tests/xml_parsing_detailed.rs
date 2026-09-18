@@ -1,6 +1,4 @@
-﻿use babbel_xml::{
-    parse, stringify, NodeKind,
-};
+use babbel_xml::{NodeKind, parse, stringify};
 
 // --- Parse Attributes Tests ---
 
@@ -65,13 +63,22 @@ fn test_parse_attributes_quotes_and_entities() {
 #[test]
 fn test_parse_attributes_errors() {
     let duplicate = r#"<AddressBook number='15' colour='red' number='16'></AddressBook>"#;
-    assert!(parse(duplicate).is_err(), "Duplicate attributes should fail");
+    assert!(
+        parse(duplicate).is_err(),
+        "Duplicate attributes should fail"
+    );
 
     let no_val = r#"<AddressBook number=></AddressBook>"#;
-    assert!(parse(no_val).is_err(), "Attribute without value should fail");
+    assert!(
+        parse(no_val).is_err(),
+        "Attribute without value should fail"
+    );
 
     let unquoted = r#"<AddressBook number=15></AddressBook>"#;
-    assert!(parse(unquoted).is_err(), "Unquoted attribute value should fail");
+    assert!(
+        parse(unquoted).is_err(),
+        "Unquoted attribute value should fail"
+    );
 }
 
 // --- Parse Namespaces & QName Tests ---
@@ -94,13 +101,21 @@ fn test_parse_namespaces_declarations() {
 
     let doc = parse(xml).expect("Namespace parsing should succeed");
     let root_id = doc.root_element_id().unwrap();
-    let elem_children: Vec<_> = doc.get_children(root_id).into_iter().filter(|&id| {
-        matches!(doc.get_node(id).unwrap().kind, NodeKind::Element { .. })
-    }).collect();
+    let elem_children: Vec<_> = doc
+        .get_children(root_id)
+        .into_iter()
+        .filter(|&id| matches!(doc.get_node(id).unwrap().kind, NodeKind::Element { .. }))
+        .collect();
 
     assert_eq!(elem_children.len(), 2);
-    assert_eq!(doc.get_node(elem_children[0]).unwrap().kind.name(), "h:table");
-    assert_eq!(doc.get_node(elem_children[1]).unwrap().kind.name(), "f:table");
+    assert_eq!(
+        doc.get_node(elem_children[0]).unwrap().kind.name(),
+        "h:table"
+    );
+    assert_eq!(
+        doc.get_node(elem_children[1]).unwrap().kind.name(),
+        "f:table"
+    );
 }
 
 #[test]
@@ -116,13 +131,21 @@ fn test_parse_namespaces_root_declaration() {
 
     let doc = parse(xml).expect("Root namespace declaration should succeed");
     let root_id = doc.root_element_id().unwrap();
-    let elem_children: Vec<_> = doc.get_children(root_id).into_iter().filter(|&id| {
-        matches!(doc.get_node(id).unwrap().kind, NodeKind::Element { .. })
-    }).collect();
+    let elem_children: Vec<_> = doc
+        .get_children(root_id)
+        .into_iter()
+        .filter(|&id| matches!(doc.get_node(id).unwrap().kind, NodeKind::Element { .. }))
+        .collect();
 
     assert_eq!(elem_children.len(), 2);
-    assert_eq!(doc.get_node(elem_children[0]).unwrap().kind.name(), "h:table");
-    assert_eq!(doc.get_node(elem_children[1]).unwrap().kind.name(), "f:table");
+    assert_eq!(
+        doc.get_node(elem_children[0]).unwrap().kind.name(),
+        "h:table"
+    );
+    assert_eq!(
+        doc.get_node(elem_children[1]).unwrap().kind.name(),
+        "f:table"
+    );
 }
 
 #[test]
@@ -135,9 +158,11 @@ fn test_parse_namespaces_default_and_override() {
 
     let doc = parse(xml).expect("Default namespace override should succeed");
     let root_id = doc.root_element_id().unwrap();
-    let elem_children: Vec<_> = doc.get_children(root_id).into_iter().filter(|&id| {
-        matches!(doc.get_node(id).unwrap().kind, NodeKind::Element { .. })
-    }).collect();
+    let elem_children: Vec<_> = doc
+        .get_children(root_id)
+        .into_iter()
+        .filter(|&id| matches!(doc.get_node(id).unwrap().kind, NodeKind::Element { .. }))
+        .collect();
 
     assert_eq!(elem_children.len(), 1);
     assert_eq!(doc.get_node(elem_children[0]).unwrap().kind.name(), "table");
@@ -154,8 +179,14 @@ fn test_stringify_roundtrip_basic() {
     let doc2 = parse(&out).expect("Reparsing stringified XML should succeed");
 
     assert_eq!(
-        doc.get_node(doc.root_element_id().unwrap()).unwrap().kind.name(),
-        doc2.get_node(doc2.root_element_id().unwrap()).unwrap().kind.name()
+        doc.get_node(doc.root_element_id().unwrap())
+            .unwrap()
+            .kind
+            .name(),
+        doc2.get_node(doc2.root_element_id().unwrap())
+            .unwrap()
+            .kind
+            .name()
     );
 }
 
@@ -183,7 +214,7 @@ fn test_unicode_character_parsing() {
 
 #[test]
 fn test_security_depth_limits() {
-    use babbel_xml::{parse_with_options, ParseOptions};
+    use babbel_xml::{ParseOptions, parse_with_options};
 
     let mut options = ParseOptions::default();
     options.max_nesting_depth = 20;
@@ -198,5 +229,8 @@ fn test_security_depth_limits() {
     }
 
     let res = parse_with_options(&deep_xml, options);
-    assert!(res.is_err(), "Deeply nested XML exceeding depth limit should fail cleanly");
+    assert!(
+        res.is_err(),
+        "Deeply nested XML exceeding depth limit should fail cleanly"
+    );
 }

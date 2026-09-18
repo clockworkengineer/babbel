@@ -1,14 +1,20 @@
 [package]
 name = "babbel_yaml"
-version = "0.2.1"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 description = "Fast, modular YAML 1.2 parser and emitter with anchors, aliases, and tags"
-license = "MIT"
-authors = ["ClockworkEngineer", "Babbel Contributors"]
-repository = "https://github.com/clockworkengineer/babbel"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
 documentation = "https://docs.rs/babbel_yaml"
-homepage = "https://github.com/clockworkengineer/babbel"
+homepage.workspace = true
+rust-version.workspace = true
+keywords = ["yaml", "parser", "emitter", "serialization"]
+categories = ["parser-implementations", "encoding"]
 readme = "README.md"
+
+[lints]
+workspace = true
 
 [features]
 default = [

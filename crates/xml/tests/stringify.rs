@@ -1,8 +1,9 @@
-﻿use babbel_xml::{parse, stringify, SerializeOptions, XmlSerializer};
+use babbel_xml::{SerializeOptions, XmlSerializer, parse, stringify};
 
 #[test]
 fn test_roundtrip_stringify() {
-    let xml = r#"<data attr="value &amp; &quot;quote&quot;"><item>Text &lt;content&gt;</item></data>"#;
+    let xml =
+        r#"<data attr="value &amp; &quot;quote&quot;"><item>Text &lt;content&gt;</item></data>"#;
     let doc = parse(xml).expect("Should parse XML");
     let output = stringify(&doc);
     assert!(output.contains("attr=\"value &amp; &quot;quote&quot;\""));
@@ -32,5 +33,8 @@ fn test_parse_stringify_reparse_equivalence() {
     let serialized = stringify(&doc1);
     let doc2 = parse(&serialized).expect("Reparse should succeed");
 
-    assert_eq!(doc1.root_element_id().is_some(), doc2.root_element_id().is_some());
+    assert_eq!(
+        doc1.root_element_id().is_some(),
+        doc2.root_element_id().is_some()
+    );
 }

@@ -9,7 +9,7 @@
 extern crate alloc;
 
 #[cfg(feature = "std")]
-use babbel_yaml::{parse, BufferSource, Node};
+use babbel_yaml::{BufferSource, Node, parse};
 
 #[cfg(feature = "std")]
 use babbel_yaml::embedded::{

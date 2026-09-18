@@ -21,10 +21,7 @@ pub enum BsonPullEvent<'a> {
     /// Embedded array start
     ArrayStart(usize),
     /// Binary data payload with subtype
-    Binary {
-        subtype: u8,
-        data: &'a [u8],
-    },
+    Binary { subtype: u8, data: &'a [u8] },
     /// 12-byte BSON ObjectId
     ObjectId(&'a [u8]),
     /// Boolean value
@@ -34,10 +31,7 @@ pub enum BsonPullEvent<'a> {
     /// Null or undefined value
     Null,
     /// Regular expression pattern and options
-    Regex {
-        pattern: &'a str,
-        options: &'a str,
-    },
+    Regex { pattern: &'a str, options: &'a str },
     /// 32-bit signed integer
     Int32(i32),
     /// 64-bit BSON replication timestamp
@@ -102,8 +96,7 @@ impl<'a> BsonPullParser<'a> {
             TYPE_DOUBLE => {
                 let bytes = self.read_bytes(8)?;
                 let f = f64::from_le_bytes([
-                    bytes[0], bytes[1], bytes[2], bytes[3],
-                    bytes[4], bytes[5], bytes[6], bytes[7],
+                    bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
                 ]);
                 Ok(BsonPullEvent::Double(f))
             }
@@ -216,7 +209,10 @@ impl<'a> BsonPullParser<'a> {
 
     fn read_u8(&mut self) -> Result<u8, BsonError> {
         if self.cursor >= self.input.len() {
-            return Err(BsonError::UnexpectedEof { expected: 1, available: 0 });
+            return Err(BsonError::UnexpectedEof {
+                expected: 1,
+                available: 0,
+            });
         }
         let b = self.input[self.cursor];
         self.cursor += 1;
@@ -226,7 +222,10 @@ impl<'a> BsonPullParser<'a> {
     fn read_bytes(&mut self, len: usize) -> Result<&'a [u8], BsonError> {
         let avail = self.remaining();
         if avail < len {
-            return Err(BsonError::UnexpectedEof { expected: len, available: avail });
+            return Err(BsonError::UnexpectedEof {
+                expected: len,
+                available: avail,
+            });
         }
         let slice = &self.input[self.cursor..self.cursor + len];
         self.cursor += len;
@@ -254,16 +253,14 @@ impl<'a> BsonPullParser<'a> {
     fn read_i64(&mut self) -> Result<i64, BsonError> {
         let bytes = self.read_bytes(8)?;
         Ok(i64::from_le_bytes([
-            bytes[0], bytes[1], bytes[2], bytes[3],
-            bytes[4], bytes[5], bytes[6], bytes[7],
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
         ]))
     }
 
     fn read_u64(&mut self) -> Result<u64, BsonError> {
         let bytes = self.read_bytes(8)?;
         Ok(u64::from_le_bytes([
-            bytes[0], bytes[1], bytes[2], bytes[3],
-            bytes[4], bytes[5], bytes[6], bytes[7],
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
         ]))
     }
 }
@@ -284,7 +281,10 @@ mod tests {
         data.push(0x00);
 
         let mut parser = BsonPullParser::new(&data);
-        assert_eq!(parser.next_event().unwrap(), BsonPullEvent::DocumentStart(12));
+        assert_eq!(
+            parser.next_event().unwrap(),
+            BsonPullEvent::DocumentStart(12)
+        );
         assert_eq!(parser.next_event().unwrap(), BsonPullEvent::Key("x"));
         assert_eq!(parser.next_event().unwrap(), BsonPullEvent::Int32(42));
         assert_eq!(parser.next_event().unwrap(), BsonPullEvent::DocumentEnd);
