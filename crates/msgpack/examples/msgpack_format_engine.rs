@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Build sample AST
     let original = Value::Object(vec![
         ("engine".into(), Value::String("babbel_msgpack".into())),
-        ("version".into(), Value::String("0.2.1".into())),
+        ("version".into(), Value::String("0.2.2".into())),
         ("speed_rank".into(), Value::Integer(1)),
     ]);
 

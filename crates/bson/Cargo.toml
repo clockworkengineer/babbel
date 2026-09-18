@@ -22,4 +22,4 @@ std = ["alloc", "babbel_core/std", "babbel_core/file-io"]
 alloc = ["babbel_core/alloc"]
 
 [dependencies]
-babbel_core = { path = "../babbel_core", version = "0.2.1", default-features = false }
+babbel_core = { path = "../babbel_core", version = "0.2.2", default-features = false }

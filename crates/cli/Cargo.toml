@@ -21,8 +21,8 @@ path = "src/main.rs"
 workspace = true
 
 [dependencies]
-babbel = { path = "../babbel", version = "0.2.1" }
-babbel_core = { path = "../babbel_core", version = "0.2.1" }
+babbel = { path = "../babbel", version = "0.2.2" }
+babbel_core = { path = "../babbel_core", version = "0.2.2" }
 clap = { version = "4.5", features = ["derive"] }
 clap_complete = "4.5"
 

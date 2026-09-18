@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Value::Object(vec![
         ("format".into(), Value::String("KDL".into())),
         ("engine".into(), Value::String("babbel_kdl".into())),
-        ("version".into(), Value::String("0.2.1".into())),
+        ("version".into(), Value::String("0.2.2".into())),
         (
             "features".into(),
             Value::Array(vec![

@@ -39,8 +39,8 @@ Add `babbel_avro` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-babbel_avro = "0.2.1"
-babbel_core = "0.2.1"
+babbel_avro = "0.2.2"
+babbel_core = "0.2.2"
 ```
 
 ### 1. Schema-Driven Encoding and Decoding

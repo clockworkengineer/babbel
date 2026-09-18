@@ -22,7 +22,7 @@ fn test_cli_version_and_help() {
     let out = Command::new(&bin).arg("--version").output().unwrap();
     assert!(out.status.success());
     let stdout = String::from_utf8(out.stdout).unwrap();
-    assert!(stdout.contains("babbel 0.2.1"));
+    assert!(stdout.contains("babbel 0.2.2"));
 
     let out_help = Command::new(&bin).arg("--help").output().unwrap();
     assert!(out_help.status.success());
@@ -38,7 +38,7 @@ fn test_cli_convert_subcommand() {
 
     let json_file = temp_dir.join("input.json");
     let yaml_file = temp_dir.join("output.yaml");
-    fs::write(&json_file, r#"{"name": "babbel", "version": "0.2.1"}"#).unwrap();
+    fs::write(&json_file, r#"{"name": "babbel", "version": "0.2.2"}"#).unwrap();
 
     let status = Command::new(&bin)
         .arg("convert")
@@ -53,7 +53,7 @@ fn test_cli_convert_subcommand() {
     assert!(status.success());
     let yaml_content = fs::read_to_string(&yaml_file).unwrap();
     assert!(yaml_content.contains("name: babbel"));
-    assert!(yaml_content.contains("version: 0.2.1"));
+    assert!(yaml_content.contains("version: 0.2.2"));
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

@@ -11,7 +11,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Initial document in JSON format
     let original_json = r#"{
   "project": "Babbel",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "active": true,
   "metrics": {
     "speed": 100,

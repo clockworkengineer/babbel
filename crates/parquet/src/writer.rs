@@ -118,7 +118,7 @@ pub fn write_parquet(value: &Value) -> Result<Vec<u8>, ParquetError> {
         schema: schema_elements,
         num_rows,
         row_groups: alloc::vec![row_group],
-        created_by: Some("babbel_parquet 0.2.1".to_string()),
+        created_by: Some(concat!("babbel_parquet ", env!("CARGO_PKG_VERSION")).to_string()),
     };
 
     // 5. Serialize FileMetaData with Thrift

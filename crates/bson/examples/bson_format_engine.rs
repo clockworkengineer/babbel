@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let original = Value::Object(vec![
         ("format".into(), Value::String("BSON".into())),
         ("engine".into(), Value::String("babbel_bson".into())),
-        ("version".into(), Value::String("0.2.1".into())),
+        ("version".into(), Value::String("0.2.2".into())),
         ("compatible_mongo".into(), Value::Bool(true)),
     ]);
 

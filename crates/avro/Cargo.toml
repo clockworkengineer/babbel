@@ -22,5 +22,5 @@ std = ["alloc", "babbel_core/std", "babbel_core/file-io", "babbel_json/std"]
 alloc = ["babbel_core/alloc", "babbel_json/alloc"]
 
 [dependencies]
-babbel_core = { path = "../babbel_core", version = "0.2.1", default-features = false }
-babbel_json = { path = "../json", version = "0.2.1", default-features = false }
+babbel_core = { path = "../babbel_core", version = "0.2.2", default-features = false }
+babbel_json = { path = "../json", version = "0.2.2", default-features = false }

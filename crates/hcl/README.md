@@ -44,8 +44,8 @@ Add `babbel_hcl` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-babbel_hcl = "0.2.1"
-babbel_core = "0.2.1"
+babbel_hcl = "0.2.2"
+babbel_core = "0.2.2"
 ```
 
 ### 1. Parsing HCL / Terraform into Universal `Value` AST

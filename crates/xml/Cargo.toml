@@ -30,7 +30,7 @@ small_nodes = []
 serde = ["dep:serde"]
 
 [dependencies]
-babbel_core = { path = "../babbel_core", version = "0.2.1", default-features = false }
+babbel_core = { path = "../babbel_core", version = "0.2.2", default-features = false }
 thiserror = "1.0"
 serde = { version = "1.0", default-features = false, features = ["alloc", "derive"], optional = true }
 

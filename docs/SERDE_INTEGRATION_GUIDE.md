@@ -12,7 +12,7 @@ Add `babbel` to your `Cargo.toml` with the `serde` feature enabled:
 
 ```toml
 [dependencies]
-babbel = { version = "0.2.1", features = ["serde"] }
+babbel = { version = "0.2.2", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
 ```
 

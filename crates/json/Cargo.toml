@@ -43,7 +43,7 @@ format-toml = []
 json-pointer = []
 
 [dependencies]
-babbel_core = { path = "../babbel_core", version = "0.2.1", default-features = false }
+babbel_core = { path = "../babbel_core", version = "0.2.2", default-features = false }
 arrayvec = "0.7.6"
 dtoa = "1.0.11"
 itoa = "1.0.17"

@@ -20,24 +20,24 @@ members = [
 ]
 
 [workspace.dependencies]
-babbel_core = { path = "crates/babbel_core", version = "0.2.1" }
-babbel_xml = { path = "crates/xml", version = "0.2.1" }
-babbel_json = { path = "crates/json", version = "0.2.1" }
-babbel_yaml = { path = "crates/yaml", version = "0.2.1" }
-babbel_bencode = { path = "crates/bencode", version = "0.2.1" }
-babbel_toml = { path = "crates/toml", version = "0.2.1" }
-babbel_msgpack = { path = "crates/msgpack", version = "0.2.1" }
-babbel_cbor = { path = "crates/cbor", version = "0.2.1" }
-babbel_bson = { path = "crates/bson", version = "0.2.1" }
-babbel_ron = { path = "crates/ron", version = "0.2.1" }
-babbel_kdl = { path = "crates/kdl", version = "0.2.1" }
-babbel_parquet = { path = "crates/parquet", version = "0.2.1" }
-babbel_hcl = { path = "crates/hcl", version = "0.2.1" }
-babbel_avro = { path = "crates/avro", version = "0.2.1" }
-babbel = { path = "crates/babbel", version = "0.2.1" }
+babbel_core = { path = "crates/babbel_core", version = "0.2.2" }
+babbel_xml = { path = "crates/xml", version = "0.2.2" }
+babbel_json = { path = "crates/json", version = "0.2.2" }
+babbel_yaml = { path = "crates/yaml", version = "0.2.2" }
+babbel_bencode = { path = "crates/bencode", version = "0.2.2" }
+babbel_toml = { path = "crates/toml", version = "0.2.2" }
+babbel_msgpack = { path = "crates/msgpack", version = "0.2.2" }
+babbel_cbor = { path = "crates/cbor", version = "0.2.2" }
+babbel_bson = { path = "crates/bson", version = "0.2.2" }
+babbel_ron = { path = "crates/ron", version = "0.2.2" }
+babbel_kdl = { path = "crates/kdl", version = "0.2.2" }
+babbel_parquet = { path = "crates/parquet", version = "0.2.2" }
+babbel_hcl = { path = "crates/hcl", version = "0.2.2" }
+babbel_avro = { path = "crates/avro", version = "0.2.2" }
+babbel = { path = "crates/babbel", version = "0.2.2" }
 
 [workspace.package]
-version = "0.2.1"
+version = "0.2.2"
 authors = ["ClockworkEngineer", "Babbel Contributors"]
 edition = "2024"
 license = "MIT"
