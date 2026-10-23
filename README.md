@@ -1,5 +1,6 @@
 # Babbel
 
+[![CI](https://github.com/clockworkengineer/babbel/actions/workflows/ci.yml/badge.svg)](https://github.com/clockworkengineer/babbel/actions/workflows/ci.yml)
 [![Rust](https://img.shields.io/badge/rust-2024%20edition-orange.svg)](https://www.rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-6500%2B%20passing-brightgreen.svg)]()

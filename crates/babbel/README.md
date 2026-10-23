@@ -1,5 +1,6 @@
 # babbel
 
+[![CI](https://github.com/clockworkengineer/babbel/actions/workflows/ci.yml/badge.svg)](https://github.com/clockworkengineer/babbel/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Rust Edition](https://img.shields.io/badge/edition-2024-orange)](Cargo.toml)
 
