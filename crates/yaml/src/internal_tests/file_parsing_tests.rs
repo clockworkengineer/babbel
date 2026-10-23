@@ -24,17 +24,20 @@
 mod tests {
     use crate::{FileSource, parse};
     use std::fs;
+    use std::path::{Path, PathBuf};
 
-    fn get_json_file_paths(directory: &str) -> Vec<String> {
+    fn get_files_dir() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("files")
+    }
+
+    fn get_yaml_file_paths(directory: impl AsRef<Path>) -> Vec<String> {
         let mut paths = Vec::new();
         if let Ok(entries) = fs::read_dir(directory) {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    let path = entry.path();
-                    if path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                        if let Some(path_str) = path.to_str() {
-                            paths.push(path_str.to_string());
-                        }
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                    if let Some(path_str) = path.to_str() {
+                        paths.push(path_str.to_string());
                     }
                 }
             }
@@ -44,9 +47,9 @@ mod tests {
 
     #[test]
     fn test_parse_yaml_files() {
-        let files_dir = "../files";
-        let json_files = get_json_file_paths(files_dir);
-        for file_path in json_files {
+        let files_dir = get_files_dir();
+        let yaml_files = get_yaml_file_paths(&files_dir);
+        for file_path in yaml_files {
             // Skip testfile038.yaml - uses unsupported block format with tags
             if file_path.contains("testfile038") {
                 continue;
@@ -69,9 +72,9 @@ mod tests {
 
     #[test]
     fn test_parse_files_in_formats_directory() {
-        let formats_dir = "../files/formats";
-        if std::path::Path::new(formats_dir).exists() {
-            let format_files = get_json_file_paths(formats_dir);
+        let formats_dir = get_files_dir().join("formats");
+        if formats_dir.exists() {
+            let format_files = get_yaml_file_paths(&formats_dir);
             for file_path in format_files {
                 match FileSource::new(&file_path) {
                     Ok(mut source) => {
@@ -106,32 +109,38 @@ mod tests {
     #[test]
     fn test_file_source_with_directory_path() {
         // Test with directory instead of file
-        let result = FileSource::new("../files");
+        let files_dir = get_files_dir();
+        let result = FileSource::new(&files_dir);
         assert!(result.is_err(), "Should fail when path is a directory");
     }
 
     #[test]
     fn test_parse_specific_test_files() {
         // Test specific known files if they exist
+        let files_dir = get_files_dir();
         let test_files = vec![
-            "../files/testfile000.yaml",
-            "../files/testfile001.yaml",
-            "../files/testfile002.yaml",
+            files_dir.join("testfile000.yaml"),
+            files_dir.join("testfile001.yaml"),
+            files_dir.join("testfile002.yaml"),
         ];
 
         for file_path in test_files {
-            if std::path::Path::new(file_path).exists() {
-                match FileSource::new(file_path) {
+            if file_path.exists() {
+                match FileSource::new(&file_path) {
                     Ok(mut source) => {
                         let result = parse(&mut source);
                         assert!(
                             result.is_ok(),
                             "Failed to parse specific test file {}: {:?}",
-                            file_path,
+                            file_path.display(),
                             result.err()
                         );
                     }
-                    Err(e) => panic!("Failed to open specific test file {}: {}", file_path, e),
+                    Err(e) => panic!(
+                        "Failed to open specific test file {}: {}",
+                        file_path.display(),
+                        e
+                    ),
                 }
             }
         }
@@ -139,8 +148,8 @@ mod tests {
 
     #[test]
     fn test_file_parsing_with_different_encodings() {
-        let files_dir = "../files";
-        let yaml_files = get_json_file_paths(files_dir);
+        let files_dir = get_files_dir();
+        let yaml_files = get_yaml_file_paths(&files_dir);
 
         for file_path in yaml_files.iter().take(3) {
             // Test first 3 files
@@ -178,8 +187,8 @@ mod tests {
 
     #[test]
     fn test_large_file_parsing() {
-        let files_dir = "../files";
-        let yaml_files = get_json_file_paths(files_dir);
+        let files_dir = get_files_dir();
+        let yaml_files = get_yaml_file_paths(&files_dir);
 
         // Test parsing larger files if available
         for file_path in yaml_files
@@ -210,8 +219,8 @@ mod tests {
     #[test]
     fn test_empty_file_parsing() {
         // Test if any empty files exist
-        let files_dir = "../files";
-        let yaml_files = get_json_file_paths(files_dir);
+        let files_dir = get_files_dir();
+        let yaml_files = get_yaml_file_paths(&files_dir);
 
         for file_path in yaml_files
             .iter()
@@ -236,8 +245,8 @@ mod tests {
     #[test]
     fn test_file_with_bom() {
         // Test files that might contain BOM (Byte Order Mark)
-        let files_dir = "../files";
-        let yaml_files = get_json_file_paths(files_dir);
+        let files_dir = get_files_dir();
+        let yaml_files = get_yaml_file_paths(&files_dir);
 
         for file_path in yaml_files.iter().take(5) {
             // Test first 5 files for BOM
@@ -267,8 +276,8 @@ mod tests {
 
     #[test]
     fn test_file_parsing_performance() {
-        let files_dir = "../files";
-        let yaml_files = get_json_file_paths(files_dir);
+        let files_dir = get_files_dir();
+        let yaml_files = get_yaml_file_paths(&files_dir);
 
         let start_time = std::time::Instant::now();
         let mut parsed_count = 0;
@@ -298,8 +307,8 @@ mod tests {
 
     #[test]
     fn test_file_content_validation() {
-        let files_dir = "../files";
-        let yaml_files = get_json_file_paths(files_dir);
+        let files_dir = get_files_dir();
+        let yaml_files = get_yaml_file_paths(&files_dir);
 
         for file_path in yaml_files.iter().take(3) {
             // Test first 3 files
@@ -401,8 +410,8 @@ mod tests {
 
     #[test]
     fn test_relative_vs_absolute_paths() {
-        let files_dir = "../files";
-        let yaml_files = get_json_file_paths(files_dir);
+        let files_dir = get_files_dir();
+        let yaml_files = get_yaml_file_paths(&files_dir);
 
         if let Some(first_file) = yaml_files.first() {
             // Test relative path
@@ -432,8 +441,8 @@ mod tests {
 
     #[test]
     fn test_concurrent_file_parsing() {
-        let files_dir = "../files";
-        let yaml_files = get_json_file_paths(files_dir);
+        let files_dir = get_files_dir();
+        let yaml_files = get_yaml_file_paths(&files_dir);
 
         // Test parsing multiple files in sequence (simulating concurrent access)
         let mut results = Vec::new();
