@@ -119,8 +119,8 @@ impl<'a> RonParser<'a> {
                 "true" => return Ok(Value::Bool(true)),
                 "false" => return Ok(Value::Bool(false)),
                 "null" | "None" => return Ok(Value::Null),
-                "inf" => return Ok(Value::Float(core::f64::INFINITY)),
-                "NaN" => return Ok(Value::Float(core::f64::NAN)),
+                "inf" => return Ok(Value::Float(f64::INFINITY)),
+                "NaN" => return Ok(Value::Float(f64::NAN)),
                 _ => {}
             }
         }

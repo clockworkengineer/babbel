@@ -463,7 +463,7 @@ impl Json5Parser {
         if self.consume_str("null") {
             Ok(Node::None)
         } else if self.consume_str("NaN") {
-            Ok(Node::Number(Numeric::Float(core::f64::NAN)))
+            Ok(Node::Number(Numeric::Float(f64::NAN)))
         } else {
             Err(format!("Unexpected token at byte {}", self.cursor))
         }
@@ -485,14 +485,14 @@ impl Json5Parser {
         if self.consume_str("Infinity") {
             let is_neg = token.starts_with('-');
             let val = if is_neg {
-                -core::f64::INFINITY
+                -f64::INFINITY
             } else {
-                core::f64::INFINITY
+                f64::INFINITY
             };
             return Ok(Node::Number(Numeric::Float(val)));
         }
         if self.consume_str("NaN") {
-            return Ok(Node::Number(Numeric::Float(core::f64::NAN)));
+            return Ok(Node::Number(Numeric::Float(f64::NAN)));
         }
 
         // Check for Hexadecimal: 0x or 0X

@@ -23,14 +23,14 @@ impl<'a> RonParser<'a> {
         if self.consume_str("inf") {
             let is_neg = token.starts_with('-');
             let f = if is_neg {
-                -core::f64::INFINITY
+                -f64::INFINITY
             } else {
-                core::f64::INFINITY
+                f64::INFINITY
             };
             return Ok(Value::Float(f));
         }
         if self.consume_str("NaN") {
-            return Ok(Value::Float(core::f64::NAN));
+            return Ok(Value::Float(f64::NAN));
         }
 
         if self.peek() == Some('0') {
