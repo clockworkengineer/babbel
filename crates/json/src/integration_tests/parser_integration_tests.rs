@@ -6,19 +6,22 @@ mod tests {
 
     use crate::{FileSource, parse};
     use std::fs;
+    use std::path::{Path, PathBuf};
+
+    fn test_file(relative: &str) -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("files")
+            .join(relative)
+    }
 
     /// Helper function to get all JSON file paths from a directory
-    fn get_json_file_paths(directory: &str) -> Vec<String> {
+    fn get_json_file_paths(directory: impl AsRef<Path>) -> Vec<PathBuf> {
         let mut paths = Vec::new();
         if let Ok(entries) = fs::read_dir(directory) {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    let path = entry.path();
-                    if path.extension().and_then(|s| s.to_str()) == Some("json") {
-                        if let Some(path_str) = path.to_str() {
-                            paths.push(path_str.to_string());
-                        }
-                    }
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().and_then(|s| s.to_str()) == Some("json") {
+                    paths.push(path);
                 }
             }
         }
@@ -27,8 +30,12 @@ mod tests {
 
     #[test]
     fn test_parse_json_files() {
-        let files_dir = "../files";
+        let files_dir = test_file("");
         let json_files = get_json_file_paths(files_dir);
+        assert!(
+            !json_files.is_empty(),
+            "No JSON files found in files directory"
+        );
         for file_path in json_files {
             match FileSource::new(&file_path) {
                 Ok(mut source) => {
@@ -36,11 +43,11 @@ mod tests {
                     assert!(
                         result.is_ok(),
                         "Failed to parse {}: {:?}",
-                        file_path,
+                        file_path.display(),
                         result.err()
                     );
                 }
-                Err(e) => panic!("Failed to open {}: {}", file_path, e),
+                Err(e) => panic!("Failed to open {}: {}", file_path.display(), e),
             }
         }
     }

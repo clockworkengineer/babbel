@@ -13,17 +13,22 @@ mod tests {
         parse_with_config, strip_whitespace, validate_json,
     };
     use std::fs;
+    use std::path::PathBuf;
+
+    fn test_file(relative: &str) -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("files")
+            .join(relative)
+    }
 
     /// Collect all .json file paths in a directory (non-recursive).
-    fn json_files_in(directory: &str) -> Vec<String> {
+    fn json_files_in(directory: impl AsRef<std::path::Path>) -> Vec<PathBuf> {
         let mut paths = Vec::new();
         if let Ok(entries) = fs::read_dir(directory) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.extension().and_then(|s| s.to_str()) == Some("json") {
-                    if let Some(p) = path.to_str() {
-                        paths.push(p.to_string());
-                    }
+                    paths.push(path);
                 }
             }
         }
@@ -34,19 +39,19 @@ mod tests {
 
     #[test]
     fn test_validate_all_test_files_pass() {
-        let files = json_files_in("../files");
+        let files = json_files_in(test_file(""));
         assert!(
             !files.is_empty(),
-            "No JSON files found in ../files – check working directory"
+            "No JSON files found in files – check working directory"
         );
         let config = ParserConfig::new();
         for file_path in &files {
             let mut source = FileSource::new(file_path)
-                .unwrap_or_else(|e| panic!("Failed to open {}: {}", file_path, e));
+                .unwrap_or_else(|e| panic!("Failed to open {}: {}", file_path.display(), e));
             assert!(
                 validate_json(&mut source, &config).is_ok(),
                 "validate_json failed for {}",
-                file_path
+                file_path.display()
             );
         }
     }
@@ -311,7 +316,7 @@ mod tests {
     #[test]
     fn test_strip_whitespace_on_file_produces_valid_json() {
         let mut source =
-            FileSource::new("../files/testfile004.json").expect("open testfile004.json");
+            FileSource::new(test_file("testfile004.json")).expect("open testfile004.json");
         let mut dest = BufferDestination::new();
         strip_whitespace(&mut source, &mut dest);
         let stripped = dest.to_string();
