@@ -11,6 +11,7 @@ use alloc::{string::String, string::ToString, vec::Vec};
 
 use crate::codec::{AvroDecoder, AvroEncoder};
 use crate::error::AvroError;
+use crate::schema::AvroSchema;
 use babbel_core::Value;
 
 /// 4-byte magic header identifying an Avro Object Container File.
@@ -21,18 +22,33 @@ pub const DEFAULT_SYNC_MARKER: [u8; 16] = [
     0x42, 0x61, 0x62, 0x62, 0x65, 0x6c, 0x41, 0x76, 0x72, 0x6f, 0x53, 0x79, 0x6e, 0x63, 0x30, 0x31,
 ];
 
-/// Encodes an array of records into a complete Avro Object Container File (OCF).
+/// Encodes an array of records into a complete Avro Object Container File (OCF) using `"null"` codec.
 pub fn to_vec_ocf(value: &Value, schema_json: &str) -> Result<Vec<u8>, AvroError> {
+    to_vec_ocf_with_codec(value, schema_json, "null")
+}
+
+/// Encodes an array of records into a complete Avro Object Container File (OCF) with the specified codec (`"null"` or `"snappy"`).
+pub fn to_vec_ocf_with_codec(
+    value: &Value,
+    schema_json: &str,
+    codec: &str,
+) -> Result<Vec<u8>, AvroError> {
+    if codec != "null" && codec != "snappy" {
+        return Err(AvroError::Custom(
+            "unsupported compression codec in Avro OCF",
+        ));
+    }
+
     let mut out = Vec::new();
     out.extend_from_slice(&OCF_MAGIC);
 
-    // Write file metadata map: {"avro.schema": bytes(schema_json), "avro.codec": bytes("null")}
+    // Write file metadata map: {"avro.schema": bytes(schema_json), "avro.codec": bytes(codec)}
     let mut meta_encoder = AvroEncoder::new();
     meta_encoder.write_long(2); // 2 entries
     meta_encoder.write_string("avro.schema");
     meta_encoder.write_bytes(schema_json.as_bytes());
     meta_encoder.write_string("avro.codec");
-    meta_encoder.write_bytes(b"null");
+    meta_encoder.write_bytes(codec.as_bytes());
     meta_encoder.write_long(0); // end map
 
     out.extend_from_slice(&meta_encoder.into_vec());
@@ -63,8 +79,17 @@ pub fn to_vec_ocf(value: &Value, schema_json: &str) -> Result<Vec<u8>, AvroError
         }
     };
 
-    let block_bytes = data_encoder.into_vec();
+    let uncompressed_bytes = data_encoder.into_vec();
     if count > 0 {
+        let block_bytes = if codec == "snappy" {
+            let mut compressed = babbel_core::snappy_compress(&uncompressed_bytes);
+            let crc = babbel_core::crc32_ieee(&uncompressed_bytes);
+            compressed.extend_from_slice(&crc.to_be_bytes());
+            compressed
+        } else {
+            uncompressed_bytes
+        };
+
         let mut block_header = AvroEncoder::new();
         block_header.write_long(count);
         block_header.write_long(block_bytes.len() as i64);
@@ -78,6 +103,14 @@ pub fn to_vec_ocf(value: &Value, schema_json: &str) -> Result<Vec<u8>, AvroError
 
 /// Decodes an Avro Object Container File (OCF) into a universal `Value`.
 pub fn from_bytes_ocf(bytes: &[u8]) -> Result<Value, AvroError> {
+    from_bytes_ocf_with_reader_schema(bytes, None)
+}
+
+/// Decodes an Avro Object Container File (OCF) using an optional `reader_schema` for schema evolution.
+pub fn from_bytes_ocf_with_reader_schema(
+    bytes: &[u8],
+    reader_schema: Option<&AvroSchema>,
+) -> Result<Value, AvroError> {
     if bytes.len() < 24 {
         return Err(AvroError::UnexpectedEof {
             expected: 24,
@@ -122,12 +155,11 @@ pub fn from_bytes_ocf(bytes: &[u8]) -> Result<Value, AvroError> {
         meta_count = decoder.read_long()?;
     }
 
-    if let Some(codec) = codec_str {
-        if codec != "null" {
-            return Err(AvroError::Custom(
-                "unsupported compression codec in Avro OCF",
-            ));
-        }
+    let active_codec = codec_str.as_deref().unwrap_or("null");
+    if active_codec != "null" && active_codec != "snappy" {
+        return Err(AvroError::Custom(
+            "unsupported compression codec in Avro OCF",
+        ));
     }
 
     let parsed_schema = if let Some(ref s) = schema_str {
@@ -175,12 +207,46 @@ pub fn from_bytes_ocf(bytes: &[u8]) -> Result<Value, AvroError> {
         }
         current_pos += 16;
 
-        let mut payload_dec = AvroDecoder::new(block_payload);
+        let decompressed_buf: Vec<u8>;
+        let decoded_slice: &[u8] = if active_codec == "snappy" {
+            if block_payload.len() < 4 {
+                return Err(AvroError::Custom(
+                    "Snappy Avro OCF block missing 4-byte CRC32 trailer",
+                ));
+            }
+            let snappy_slice = &block_payload[..block_payload.len() - 4];
+            let crc_bytes = &block_payload[block_payload.len() - 4..];
+            let expected_crc = u32::from_be_bytes([
+                crc_bytes[0],
+                crc_bytes[1],
+                crc_bytes[2],
+                crc_bytes[3],
+            ]);
+            decompressed_buf = babbel_core::snappy_decompress(snappy_slice)
+                .map_err(|_| AvroError::Custom("failed to decompress Snappy Avro OCF block"))?;
+            let actual_crc = babbel_core::crc32_ieee(&decompressed_buf);
+            if actual_crc != expected_crc {
+                return Err(AvroError::Custom(
+                    "Avro OCF Snappy block CRC32 checksum mismatch",
+                ));
+            }
+            &decompressed_buf
+        } else {
+            block_payload
+        };
+
+        let mut payload_dec = AvroDecoder::new(decoded_slice);
         for _ in 0..count {
-            if let Some(ref s) = parsed_schema {
-                records.push(payload_dec.decode_with_schema(s)?);
-            } else {
-                records.push(payload_dec.decode_value()?);
+            match (&parsed_schema, reader_schema) {
+                (Some(w_schema), Some(r_schema)) => {
+                    records.push(payload_dec.decode_with_schemas(w_schema, r_schema)?);
+                }
+                (Some(w_schema), None) => {
+                    records.push(payload_dec.decode_with_schema(w_schema)?);
+                }
+                _ => {
+                    records.push(payload_dec.decode_value()?);
+                }
             }
         }
     }
@@ -191,6 +257,7 @@ pub fn from_bytes_ocf(bytes: &[u8]) -> Result<Value, AvroError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec;
 
     #[test]
     fn test_ocf_roundtrip() {
@@ -215,5 +282,50 @@ mod tests {
         assert_eq!(items.len(), 2);
         assert_eq!(items[0].get("name").and_then(|v| v.as_str()), Some("Alice"));
         assert_eq!(items[1].get("name").and_then(|v| v.as_str()), Some("Bob"));
+    }
+
+    #[test]
+    fn test_ocf_snappy_and_schema_evolution() {
+        let records = Value::Array(vec![
+            Value::Object(vec![
+                ("old_id".into(), Value::Integer(10)),
+                ("name".into(), Value::String("Alice".into())),
+                ("obsolete".into(), Value::String("drop_me".into())),
+            ]),
+            Value::Object(vec![
+                ("old_id".into(), Value::Integer(20)),
+                ("name".into(), Value::String("Bob".into())),
+                ("obsolete".into(), Value::String("drop_me_too".into())),
+            ]),
+        ]);
+
+        let writer_schema = r#"{
+            "type": "record",
+            "name": "User",
+            "fields": [
+                {"name": "old_id", "type": "int"},
+                {"name": "name", "type": "string"},
+                {"name": "obsolete", "type": "string"}
+            ]
+        }"#;
+
+        let reader_schema_json = r#"{
+            "type": "record",
+            "name": "User",
+            "fields": [
+                {"name": "id", "type": "double", "aliases": ["old_id"]},
+                {"name": "name", "type": "string"},
+                {"name": "role", "type": "string", "default": "member"}
+            ]
+        }"#;
+        let reader_schema = AvroSchema::parse_str(reader_schema_json).unwrap();
+
+        let ocf_snappy = to_vec_ocf_with_codec(&records, writer_schema, "snappy").unwrap();
+        let evolved = from_bytes_ocf_with_reader_schema(&ocf_snappy, Some(&reader_schema)).unwrap();
+        let items = evolved.as_array().unwrap();
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0].get("id").and_then(|v| v.as_f64()), Some(10.0));
+        assert_eq!(items[0].get("role").and_then(|v| v.as_str()), Some("member"));
+        assert!(items[0].get("obsolete").is_none());
     }
 }

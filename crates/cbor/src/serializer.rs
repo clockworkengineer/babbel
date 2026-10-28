@@ -88,3 +88,69 @@ pub fn to_vec(value: &Value) -> Result<Vec<u8>, CborError> {
     serialize_to_dest(value, &mut dest)?;
     Ok(dest.into_vec())
 }
+
+/// Configuration for CBOR encoding.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct EncoderConfig {
+    /// Whether to apply RFC 8949 Section 4.2 Deterministic / Canonical CBOR encoding
+    /// (sorting map keys by bytewise lexicographic order of their encoded representations).
+    pub canonical: bool,
+}
+
+impl EncoderConfig {
+    /// Creates an encoder configuration with RFC 8949 Canonical / Deterministic encoding enabled.
+    pub fn canonical() -> Self {
+        Self { canonical: true }
+    }
+}
+
+/// Serializes a universal `Value` into RFC 8949 Deterministic / Canonical CBOR bytes.
+pub fn serialize_to_dest_canonical(
+    value: &Value,
+    dest: &mut dyn IDestination,
+) -> Result<(), CborError> {
+    match value {
+        Value::Array(items) => {
+            write_header(MAJOR_ARRAY, items.len() as u64, dest);
+            for item in items {
+                serialize_to_dest_canonical(item, dest)?;
+            }
+        }
+        Value::Object(entries) => {
+            write_header(MAJOR_MAP, entries.len() as u64, dest);
+            // RFC 8949 §4.2.1: sort map keys by bytewise lexicographic order of their deterministic CBOR encodings.
+            // For major type 3 (text string), the length header is encoded before the UTF-8 payload,
+            // so shorter byte-length keys sort before longer keys, with ties broken by UTF-8 byte order.
+            let mut sorted: Vec<(&str, &Value, Vec<u8>)> = Vec::with_capacity(entries.len());
+            for (k, v) in entries {
+                let mut key_buf = babbel_core::io::BufferDestination::new();
+                write_header(MAJOR_TEXT_STRING, k.len() as u64, &mut key_buf);
+                key_buf.add_bytes(k);
+                sorted.push((k.as_str(), v, key_buf.into_vec()));
+            }
+            sorted.sort_by(|a, b| a.2.cmp(&b.2));
+            for (_, val, encoded_key) in sorted {
+                write_raw_bytes(dest, &encoded_key);
+                serialize_to_dest_canonical(val, dest)?;
+            }
+        }
+        other => serialize_to_dest(other, dest)?,
+    }
+    Ok(())
+}
+
+/// Serializes a universal `Value` into an RFC 8949 Deterministic / Canonical CBOR byte vector.
+pub fn to_vec_canonical(value: &Value) -> Result<Vec<u8>, CborError> {
+    let mut dest = babbel_core::io::BufferDestination::new();
+    serialize_to_dest_canonical(value, &mut dest)?;
+    Ok(dest.into_vec())
+}
+
+/// Serializes a slice of `Value` items into an RFC 8742 CBOR Sequence (`application/cbor-seq`).
+pub fn to_vec_seq(values: &[Value]) -> Result<Vec<u8>, CborError> {
+    let mut dest = babbel_core::io::BufferDestination::new();
+    for val in values {
+        serialize_to_dest(val, &mut dest)?;
+    }
+    Ok(dest.into_vec())
+}

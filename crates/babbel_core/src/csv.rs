@@ -209,38 +209,33 @@ fn parse_raw_records(input: &str, options: &CsvOptions) -> Result<Vec<Vec<RawFie
     let mut was_quoted = false;
     let mut in_quotes = false;
 
-    let chars: Vec<char> = input.chars().collect();
-    let len = chars.len();
-    let mut idx = 0;
+    let mut chars = input.chars().peekable();
     let mut line = 1;
     let mut col = 1;
 
-    while idx < len {
-        let c = chars[idx];
-
+    while let Some(c) = chars.next() {
         if in_quotes {
             // Check for escape character or doubled quote
             if let Some(esc) = options.escape {
-                if c == esc && idx + 1 < len {
-                    let next = chars[idx + 1];
-                    current_field.push(next);
-                    idx += 2;
-                    col += 2;
-                    continue;
+                if c == esc {
+                    if let Some(next) = chars.next() {
+                        current_field.push(next);
+                        col += 2;
+                        continue;
+                    }
                 }
             }
 
             if c == options.quote {
-                if idx + 1 < len && chars[idx + 1] == options.quote && options.escape.is_none() {
+                if chars.peek() == Some(&options.quote) && options.escape.is_none() {
                     // RFC 4180 doubled quote: "" -> "
+                    chars.next();
                     current_field.push(options.quote);
-                    idx += 2;
                     col += 2;
                     continue;
                 } else {
                     // Closing quote
                     in_quotes = false;
-                    idx += 1;
                     col += 1;
                     continue;
                 }
@@ -252,7 +247,6 @@ fn parse_raw_records(input: &str, options: &CsvOptions) -> Result<Vec<Vec<RawFie
                 } else {
                     col += 1;
                 }
-                idx += 1;
                 continue;
             }
         } else {
@@ -260,13 +254,12 @@ fn parse_raw_records(input: &str, options: &CsvOptions) -> Result<Vec<Vec<RawFie
             if let Some(comment_char) = options.comment {
                 if current_row.is_empty() && current_field.is_empty() && c == comment_char {
                     // Skip till end of line
-                    while idx < len && chars[idx] != '\n' {
-                        idx += 1;
-                    }
-                    if idx < len && chars[idx] == '\n' {
-                        idx += 1;
-                        line += 1;
-                        col = 1;
+                    for ch in chars.by_ref() {
+                        if ch == '\n' {
+                            line += 1;
+                            col = 1;
+                            break;
+                        }
                     }
                     continue;
                 }
@@ -277,7 +270,6 @@ fn parse_raw_records(input: &str, options: &CsvOptions) -> Result<Vec<Vec<RawFie
                 in_quotes = true;
                 was_quoted = true;
                 current_field.clear();
-                idx += 1;
                 col += 1;
                 continue;
             } else if c == options.delimiter {
@@ -293,7 +285,6 @@ fn parse_raw_records(input: &str, options: &CsvOptions) -> Result<Vec<Vec<RawFie
                 });
                 current_field.clear();
                 was_quoted = false;
-                idx += 1;
                 col += 1;
                 continue;
             } else if c == '\r' || c == '\n' {
@@ -312,17 +303,14 @@ fn parse_raw_records(input: &str, options: &CsvOptions) -> Result<Vec<Vec<RawFie
 
                 rows.push(core::mem::take(&mut current_row));
 
-                if c == '\r' && idx + 1 < len && chars[idx + 1] == '\n' {
-                    idx += 2;
-                } else {
-                    idx += 1;
+                if c == '\r' && chars.peek() == Some(&'\n') {
+                    chars.next();
                 }
                 line += 1;
                 col = 1;
                 continue;
             } else {
                 current_field.push(c);
-                idx += 1;
                 col += 1;
                 continue;
             }
@@ -330,7 +318,7 @@ fn parse_raw_records(input: &str, options: &CsvOptions) -> Result<Vec<Vec<RawFie
     }
 
     if in_quotes {
-        let loc = Location::new(line, col, idx);
+        let loc = Location::new(line, col, input.len());
         return Err(BabbelError::eof("Unclosed quote in CSV input")
             .with_span(crate::error::Span::new(loc, loc)));
     }

@@ -5,6 +5,18 @@ use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+/// A matched node paired with its RFC 9535 normalized path (`$['store']['books'][0]`)
+/// and RFC 6901 JSON Pointer (`"/store/books/0"`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct LocatedNode<'a> {
+    /// RFC 9535 normalized path (e.g. `$['store']['books'][0]['title']`).
+    pub path: String,
+    /// RFC 6901 JSON Pointer (e.g. `"/store/books/0/title"`).
+    pub pointer: String,
+    /// Reference to the matched value.
+    pub value: &'a Value,
+}
+
 /// A compiled RFC 9535 JSONPath query expression.
 #[derive(Debug, Clone, PartialEq)]
 pub struct QueryPath {
@@ -26,6 +38,8 @@ pub enum Segment {
         end: Option<i64>,
         step: Option<i64>,
     },
+    /// Union of multiple selectors inside brackets: `['a', 'b']` or `[0, 2]`
+    Union(Vec<Segment>),
     /// Recursive descent into all descendants: `..`
     Descendant(Box<Segment>),
     /// Filter expression: `[?(<expr>)]`
@@ -71,10 +85,10 @@ pub enum FilterOperand {
     RootPath(PathQuery),
     /// Literal constant value (string, number, bool, null)
     Literal(Value),
-    /// Built-in function call, e.g. `length(@.items)`
+    /// Built-in function call, e.g. `length(@.items)` or `match(@.name, "^A.*")`
     FunctionCall {
         name: String,
-        arg: Box<FilterOperand>,
+        args: Vec<FilterOperand>,
     },
 }
 

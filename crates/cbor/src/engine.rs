@@ -35,6 +35,12 @@ impl FormatEngine for CborEngine {
         crate::parser::from_bytes(input).map_err(|err| BabbelError::from(err).with_format("cbor"))
     }
 
+    #[cfg(feature = "alloc")]
+    fn parse_documents_bytes(&self, input: &[u8]) -> Result<alloc::vec::Vec<Value>, BabbelError> {
+        crate::parser::from_bytes_seq(input)
+            .map_err(|err| BabbelError::from(err).with_format("cbor"))
+    }
+
     fn serialize(
         &self,
         value: &Value,

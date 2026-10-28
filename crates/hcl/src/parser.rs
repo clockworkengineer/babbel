@@ -24,6 +24,7 @@ pub struct HclParser<'a> {
     has_unterminated_comment: bool,
     heredoc_saw_newline: bool,
     last_was_heredoc: bool,
+    eval_ctx: Option<crate::eval::HclEvalContext>,
 }
 
 impl<'a> HclParser<'a> {
@@ -99,7 +100,15 @@ impl<'a> HclParser<'a> {
             has_unterminated_comment: false,
             heredoc_saw_newline: false,
             last_was_heredoc: false,
+            eval_ctx: None,
         }
+    }
+
+    /// Create a new HCL parser with an evaluation context for variables and built-in functions.
+    pub fn with_context(input: &'a str, ctx: &crate::eval::HclEvalContext) -> Self {
+        let mut p = Self::new(input);
+        p.eval_ctx = Some(ctx.clone());
+        p
     }
 
     /// Parse the entire HCL input into a top-level `Value::Object`.
@@ -567,10 +576,12 @@ impl<'a> HclParser<'a> {
                     self.skip_expr_whitespace();
                     if self.peek_char() == Some('*') {
                         self.bump();
-                        base = Value::String(alloc::format!(
-                            "{}.*",
-                            Self::value_to_expr_string(&base)
-                        ));
+                        if !(self.eval_ctx.is_some() && base.is_array()) {
+                            base = Value::String(alloc::format!(
+                                "{}.*",
+                                Self::value_to_expr_string(&base)
+                            ));
+                        }
                         saw_legacy_index = false;
                     } else if self.peek_char().map_or(false, |c| c.is_ascii_digit()) {
                         if saw_legacy_index {
@@ -585,19 +596,53 @@ impl<'a> HclParser<'a> {
                                 break;
                             }
                         }
-                        base = Value::String(alloc::format!(
-                            "{}.{}",
-                            Self::value_to_expr_string(&base),
-                            num
-                        ));
+                        if self.eval_ctx.is_some() {
+                            if let (Value::Array(items), Ok(i)) = (&base, num.parse::<usize>()) {
+                                base = items.get(i).cloned().unwrap_or(Value::Null);
+                            } else {
+                                base = Value::String(alloc::format!(
+                                    "{}.{}",
+                                    Self::value_to_expr_string(&base),
+                                    num
+                                ));
+                            }
+                        } else {
+                            base = Value::String(alloc::format!(
+                                "{}.{}",
+                                Self::value_to_expr_string(&base),
+                                num
+                            ));
+                        }
                         saw_legacy_index = true;
                     } else {
                         let member = self.parse_identifier()?;
-                        base = Value::String(alloc::format!(
-                            "{}.{}",
-                            Self::value_to_expr_string(&base),
-                            member
-                        ));
+                        if self.eval_ctx.is_some() {
+                            match &base {
+                                Value::Object(_) => {
+                                    base = base.get(&member).cloned().unwrap_or(Value::Null);
+                                }
+                                Value::Array(items) => {
+                                    let mapped: Vec<Value> = items
+                                        .iter()
+                                        .map(|it| it.get(&member).cloned().unwrap_or(Value::Null))
+                                        .collect();
+                                    base = Value::Array(mapped);
+                                }
+                                _ => {
+                                    base = Value::String(alloc::format!(
+                                        "{}.{}",
+                                        Self::value_to_expr_string(&base),
+                                        member
+                                    ));
+                                }
+                            }
+                        } else {
+                            base = Value::String(alloc::format!(
+                                "{}.{}",
+                                Self::value_to_expr_string(&base),
+                                member
+                            ));
+                        }
                         saw_legacy_index = false;
                     }
                 }
@@ -654,10 +699,12 @@ impl<'a> HclParser<'a> {
                     if is_splat {
                         self.advance_by(advance_to);
                         self.paren_depth -= 1;
-                        base = Value::String(alloc::format!(
-                            "{}[*]",
-                            Self::value_to_expr_string(&base)
-                        ));
+                        if !(self.eval_ctx.is_some() && base.is_array()) {
+                            base = Value::String(alloc::format!(
+                                "{}[*]",
+                                Self::value_to_expr_string(&base)
+                            ));
+                        }
                         saw_legacy_index = false;
                         continue;
                     }
@@ -672,11 +719,29 @@ impl<'a> HclParser<'a> {
                         self.paren_depth -= 1;
                         return Err(self.error("expected ']' after index".into()));
                     }
-                    base = Value::String(alloc::format!(
-                        "{}[{}]",
-                        Self::value_to_expr_string(&base),
-                        Self::value_to_expr_string(&idx)
-                    ));
+                    if self.eval_ctx.is_some() {
+                        match (&base, &idx) {
+                            (Value::Array(items), Value::Integer(i)) if *i >= 0 => {
+                                base = items.get(*i as usize).cloned().unwrap_or(Value::Null);
+                            }
+                            (Value::Object(_), Value::String(k)) => {
+                                base = base.get(k).cloned().unwrap_or(Value::Null);
+                            }
+                            _ => {
+                                base = Value::String(alloc::format!(
+                                    "{}[{}]",
+                                    Self::value_to_expr_string(&base),
+                                    Self::value_to_expr_string(&idx)
+                                ));
+                            }
+                        }
+                    } else {
+                        base = Value::String(alloc::format!(
+                            "{}[{}]",
+                            Self::value_to_expr_string(&base),
+                            Self::value_to_expr_string(&idx)
+                        ));
+                    }
                     saw_legacy_index = false;
                 }
                 _ => break,
@@ -790,6 +855,11 @@ impl<'a> HclParser<'a> {
                         self.paren_depth -= 1;
                         return Err(self.error("expected ')' closing function call".into()));
                     }
+                    if let Some(ref ctx) = self.eval_ctx {
+                        if let Some(evaluated) = ctx.call_function(&id, &args)? {
+                            return Ok(evaluated);
+                        }
+                    }
                     let args_str = args
                         .iter()
                         .map(Self::value_to_expr_string)
@@ -805,6 +875,11 @@ impl<'a> HclParser<'a> {
                 } else if id == "null" {
                     Ok(Value::Null)
                 } else {
+                    if let Some(ref ctx) = self.eval_ctx {
+                        if let Some(val) = ctx.get_var(&id) {
+                            return Ok(val.clone());
+                        }
+                    }
                     Ok(Value::String(id))
                 }
             }
@@ -837,19 +912,48 @@ impl<'a> HclParser<'a> {
         }
         self.bump(); // consume ':'
         self.skip_whitespace_and_newlines();
+        let elem_start = self.idx;
         let elem = self.parse_expr()?;
+        let elem_end = self.idx;
         self.skip_whitespace_and_newlines();
         let mut if_cond = None;
+        let mut cond_range = None;
         if self.check_keyword("if") {
             self.advance_by(2);
             self.skip_whitespace_and_newlines();
+            let c_start = self.idx;
             if_cond = Some(self.parse_expr()?);
+            cond_range = Some((c_start, self.idx));
             self.skip_whitespace_and_newlines();
         }
         if self.peek_char() != Some(']') {
             return Err(self.error("expected ']' closing for expression".into()));
         }
         self.bump(); // consume ']'
+
+        if let (Some(ctx), Value::Array(items)) = (&self.eval_ctx, &coll) {
+            let elem_src = self.get_slice(elem_start, elem_end);
+            let cond_src = cond_range.map(|(cs, ce)| self.get_slice(cs, ce));
+            let mut out = Vec::new();
+            for (idx, item) in items.iter().enumerate() {
+                let mut child_ctx = ctx.clone();
+                if let Some(ref v2) = var2 {
+                    child_ctx.set_var(var1.clone(), Value::Integer(idx as i128));
+                    child_ctx.set_var(v2.clone(), item.clone());
+                } else {
+                    child_ctx.set_var(var1.clone(), item.clone());
+                }
+                if let Some(c_src) = cond_src {
+                    let mut cp = HclParser::with_context(c_src, &child_ctx);
+                    if cp.parse_expr()?.as_bool() != Some(true) {
+                        continue;
+                    }
+                }
+                let mut ep = HclParser::with_context(elem_src, &child_ctx);
+                out.push(ep.parse_expr()?);
+            }
+            return Ok(Value::Array(out));
+        }
 
         let vars = if let Some(v2) = var2 {
             alloc::format!("{}, {}", var1, v2)
@@ -1213,7 +1317,11 @@ impl<'a> HclParser<'a> {
         if self.peek_char() == Some('}') {
             self.bump();
             self.paren_depth -= 1;
-            Ok(alloc::format!("${{{}}}", Self::value_to_expr_string(&expr)))
+            if self.eval_ctx.is_some() {
+                Ok(Self::value_to_expr_string(&expr))
+            } else {
+                Ok(alloc::format!("${{{}}}", Self::value_to_expr_string(&expr)))
+            }
         } else {
             self.paren_depth -= 1;
             Err(self.error("expected '}' closing interpolation".into()))
@@ -1826,6 +1934,16 @@ impl<'a> HclParser<'a> {
 /// Convenience function parsing HCL text into a universal `Value`.
 pub fn from_str(input: &str) -> Result<Value, HclError> {
     let mut parser = HclParser::new(input);
+    parser.parse()
+}
+
+/// Parses HCL text into a universal `Value`, evaluating variables, built-in functions,
+/// splats, `for` comprehensions, and template interpolations against `ctx`.
+pub fn from_str_with_context(
+    input: &str,
+    ctx: &crate::eval::HclEvalContext,
+) -> Result<Value, HclError> {
+    let mut parser = HclParser::with_context(input, ctx);
     parser.parse()
 }
 

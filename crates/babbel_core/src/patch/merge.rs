@@ -34,7 +34,6 @@ pub fn apply_merge_patch(target: &mut Value, patch: &Value) {
                             let mut new_val = Value::Null;
                             apply_merge_patch(&mut new_val, val);
                             target_entries.push((name.clone(), new_val));
-                            target_entries.sort_by(|a, b| a.0.cmp(&b.0));
                         }
                     }
                 }

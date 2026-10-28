@@ -1,7 +1,6 @@
 //! Error types for HCL (HashiCorp Configuration Language) operations.
 
-#[cfg(not(feature = "std"))]
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use babbel_core::BabbelError;
 use core::fmt;
 
@@ -19,7 +18,7 @@ pub enum HclError {
     /// UTF-8 validation error
     InvalidUtf8,
     /// Custom error message
-    Custom(&'static str),
+    Custom(String),
 }
 
 impl fmt::Display for HclError {
@@ -50,7 +49,7 @@ impl From<HclError> for BabbelError {
             HclError::InvalidUtf8 => {
                 BabbelError::encoding("invalid UTF-8 in HCL input").with_format("hcl")
             }
-            HclError::Custom(msg) => BabbelError::custom(*msg).with_format("hcl"),
+            HclError::Custom(msg) => BabbelError::custom(msg.clone()).with_format("hcl"),
         }
     }
 }

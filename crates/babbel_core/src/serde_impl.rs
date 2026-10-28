@@ -1,7 +1,8 @@
 //! Bidirectional Serde integration for [`Value`].
 //!
-//! Provides [`to_value`] and [`from_value`] along with [`serde::Serialize`] and
-//! [`serde::Deserialize`] implementations for [`Value`].
+//! Provides [`to_value`], [`from_value`], and [`from_value_owned`] along with [`serde::Serialize`]
+//! and [`serde::Deserialize`] implementations for [`Value`], plus streaming direct serialization
+//! to [`FormatVisitor`] via [`FormatVisitorSerializer`].
 
 use alloc::borrow::ToOwned;
 use alloc::string::{String, ToString};
@@ -18,7 +19,7 @@ use serde::ser::{
 };
 
 use crate::error::BabbelError;
-use crate::model::Value;
+use crate::model::{FormatVisitor, Value};
 
 /// Error type for Serde conversions with [`Value`].
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,6 +60,23 @@ pub fn to_value<T: Serialize>(value: &T) -> Result<Value, SerdeError> {
 /// Deserializes a [`Value`] into an instance of type `T`.
 pub fn from_value<'de, T: Deserialize<'de>>(value: &'de Value) -> Result<T, SerdeError> {
     T::deserialize(ValueDeserializer { value })
+}
+
+/// Deserializes an owned [`Value`] into an instance of type `T`, consuming strings, bytes,
+/// arrays, and maps without unnecessary cloning.
+pub fn from_value_owned<T: de::DeserializeOwned>(value: Value) -> Result<T, SerdeError> {
+    T::deserialize(OwnedValueDeserializer { value })
+}
+
+/// Serializes a Rust value directly into a [`FormatVisitor`] without constructing an intermediate [`Value`] AST.
+pub fn serialize_to_visitor<T: Serialize, V: FormatVisitor>(
+    value: &T,
+    visitor: &mut V,
+) -> Result<(), SerdeError>
+where
+    V::Error: fmt::Display,
+{
+    value.serialize(FormatVisitorSerializer::new(visitor))
 }
 
 // ============================================================================
@@ -918,6 +936,1003 @@ impl<'de> VariantAccess<'de> for VariantAccessHelper<'de> {
     }
 }
 
+// ============================================================================
+// OwnedValueDeserializer: Value -> T
+// ============================================================================
+
+pub struct OwnedValueDeserializer {
+    value: Value,
+}
+
+impl<'de> Deserializer<'de> for OwnedValueDeserializer {
+    type Error = SerdeError;
+
+    fn deserialize_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Null => visitor.visit_unit(),
+            Value::Bool(b) => visitor.visit_bool(b),
+            Value::Integer(i) => {
+                if let Ok(i64_val) = i64::try_from(i) {
+                    visitor.visit_i64(i64_val)
+                } else {
+                    visitor.visit_i128(i)
+                }
+            }
+            Value::Float(f) => visitor.visit_f64(f),
+            Value::String(s) => visitor.visit_string(s),
+            Value::Bytes(b) => visitor.visit_byte_buf(b),
+            Value::Array(arr) => visitor.visit_seq(OwnedSeqAccessHelper {
+                iter: arr.into_iter(),
+            }),
+            Value::Object(map) => visitor.visit_map(OwnedMapAccessHelper {
+                iter: map.into_iter(),
+                next_value: None,
+            }),
+        }
+    }
+
+    fn deserialize_bool<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Bool(b) => visitor.visit_bool(b),
+            _ => Err(SerdeError("Expected boolean".into())),
+        }
+    }
+
+    fn deserialize_i8<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.deserialize_i64(visitor)
+    }
+
+    fn deserialize_i16<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.deserialize_i64(visitor)
+    }
+
+    fn deserialize_i32<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.deserialize_i64(visitor)
+    }
+
+    fn deserialize_i64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Integer(i) => {
+                let v: i64 = i
+                    .try_into()
+                    .map_err(|_| SerdeError("Integer does not fit in i64".into()))?;
+                visitor.visit_i64(v)
+            }
+            Value::Float(f) => visitor.visit_i64(f as i64),
+            _ => Err(SerdeError("Expected integer".into())),
+        }
+    }
+
+    fn deserialize_i128<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Integer(i) => visitor.visit_i128(i),
+            Value::Float(f) => visitor.visit_i128(f as i128),
+            _ => Err(SerdeError("Expected 128-bit integer".into())),
+        }
+    }
+
+    fn deserialize_u8<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.deserialize_u64(visitor)
+    }
+
+    fn deserialize_u16<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.deserialize_u64(visitor)
+    }
+
+    fn deserialize_u32<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.deserialize_u64(visitor)
+    }
+
+    fn deserialize_u64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Integer(i) if i >= 0 => {
+                let v: u64 = i
+                    .try_into()
+                    .map_err(|_| SerdeError("Integer does not fit in u64".into()))?;
+                visitor.visit_u64(v)
+            }
+            Value::Float(f) if f >= 0.0 => visitor.visit_u64(f as u64),
+            _ => Err(SerdeError("Expected unsigned integer".into())),
+        }
+    }
+
+    fn deserialize_u128<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Integer(i) if i >= 0 => visitor.visit_u128(i as u128),
+            Value::Float(f) if f >= 0.0 => visitor.visit_u128(f as u128),
+            _ => Err(SerdeError("Expected unsigned 128-bit integer".into())),
+        }
+    }
+
+    fn deserialize_f32<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.deserialize_f64(visitor)
+    }
+
+    fn deserialize_f64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Float(f) => visitor.visit_f64(f),
+            Value::Integer(i) => visitor.visit_f64(i as f64),
+            _ => Err(SerdeError("Expected float".into())),
+        }
+    }
+
+    fn deserialize_char<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::String(s) if s.chars().count() == 1 => {
+                visitor.visit_char(s.chars().next().unwrap())
+            }
+            _ => Err(SerdeError("Expected single char string".into())),
+        }
+    }
+
+    fn deserialize_str<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::String(s) => visitor.visit_string(s),
+            _ => Err(SerdeError("Expected string".into())),
+        }
+    }
+
+    fn deserialize_string<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::String(s) => visitor.visit_string(s),
+            _ => Err(SerdeError("Expected string".into())),
+        }
+    }
+
+    fn deserialize_bytes<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Bytes(b) => visitor.visit_byte_buf(b),
+            Value::String(s) => visitor.visit_byte_buf(s.into_bytes()),
+            _ => Err(SerdeError("Expected bytes".into())),
+        }
+    }
+
+    fn deserialize_byte_buf<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Bytes(b) => visitor.visit_byte_buf(b),
+            Value::String(s) => visitor.visit_byte_buf(s.into_bytes()),
+            _ => Err(SerdeError("Expected bytes".into())),
+        }
+    }
+
+    fn deserialize_option<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Null => visitor.visit_none(),
+            _ => visitor.visit_some(self),
+        }
+    }
+
+    fn deserialize_unit<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Null => visitor.visit_unit(),
+            _ => Err(SerdeError("Expected null / unit".into())),
+        }
+    }
+
+    fn deserialize_unit_struct<V: Visitor<'de>>(
+        self,
+        _name: &'static str,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error> {
+        self.deserialize_unit(visitor)
+    }
+
+    fn deserialize_newtype_struct<V: Visitor<'de>>(
+        self,
+        _name: &'static str,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error> {
+        visitor.visit_newtype_struct(self)
+    }
+
+    fn deserialize_seq<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Array(arr) => visitor.visit_seq(OwnedSeqAccessHelper {
+                iter: arr.into_iter(),
+            }),
+            _ => Err(SerdeError("Expected array".into())),
+        }
+    }
+
+    fn deserialize_tuple<V: Visitor<'de>>(
+        self,
+        _len: usize,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error> {
+        self.deserialize_seq(visitor)
+    }
+
+    fn deserialize_tuple_struct<V: Visitor<'de>>(
+        self,
+        _name: &'static str,
+        _len: usize,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error> {
+        self.deserialize_seq(visitor)
+    }
+
+    fn deserialize_map<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Object(map) => visitor.visit_map(OwnedMapAccessHelper {
+                iter: map.into_iter(),
+                next_value: None,
+            }),
+            _ => Err(SerdeError("Expected object / map".into())),
+        }
+    }
+
+    fn deserialize_struct<V: Visitor<'de>>(
+        self,
+        _name: &'static str,
+        _fields: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error> {
+        self.deserialize_map(visitor)
+    }
+
+    fn deserialize_enum<V: Visitor<'de>>(
+        self,
+        _name: &'static str,
+        _variants: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::String(s) => visitor.visit_enum(s.into_deserializer()),
+            Value::Object(mut entries) if entries.len() == 1 => {
+                let (variant, val) = entries.pop().unwrap();
+                visitor.visit_enum(OwnedEnumAccessHelper {
+                    variant,
+                    value: val,
+                })
+            }
+            _ => Err(SerdeError(
+                "Expected string or single-key object for enum".into(),
+            )),
+        }
+    }
+
+    fn deserialize_identifier<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.deserialize_string(visitor)
+    }
+
+    fn deserialize_ignored_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        visitor.visit_unit()
+    }
+}
+
+struct OwnedSeqAccessHelper {
+    iter: alloc::vec::IntoIter<Value>,
+}
+
+impl<'de> SeqAccess<'de> for OwnedSeqAccessHelper {
+    type Error = SerdeError;
+
+    fn next_element_seed<T: DeserializeSeed<'de>>(
+        &mut self,
+        seed: T,
+    ) -> Result<Option<T::Value>, Self::Error> {
+        match self.iter.next() {
+            Some(v) => seed.deserialize(OwnedValueDeserializer { value: v }).map(Some),
+            None => Ok(None),
+        }
+    }
+}
+
+struct OwnedMapAccessHelper {
+    iter: alloc::vec::IntoIter<(String, Value)>,
+    next_value: Option<Value>,
+}
+
+impl<'de> MapAccess<'de> for OwnedMapAccessHelper {
+    type Error = SerdeError;
+
+    fn next_key_seed<K: DeserializeSeed<'de>>(
+        &mut self,
+        seed: K,
+    ) -> Result<Option<K::Value>, Self::Error> {
+        match self.iter.next() {
+            Some((k, v)) => {
+                self.next_value = Some(v);
+                seed.deserialize(k.into_deserializer()).map(Some)
+            }
+            None => Ok(None),
+        }
+    }
+
+    fn next_value_seed<V: DeserializeSeed<'de>>(
+        &mut self,
+        seed: V,
+    ) -> Result<V::Value, Self::Error> {
+        let val = self
+            .next_value
+            .take()
+            .ok_or_else(|| SerdeError("next_value called before next_key".into()))?;
+        seed.deserialize(OwnedValueDeserializer { value: val })
+    }
+}
+
+struct OwnedEnumAccessHelper {
+    variant: String,
+    value: Value,
+}
+
+impl<'de> EnumAccess<'de> for OwnedEnumAccessHelper {
+    type Error = SerdeError;
+    type Variant = OwnedVariantAccessHelper;
+
+    fn variant_seed<V: DeserializeSeed<'de>>(
+        self,
+        seed: V,
+    ) -> Result<(V::Value, Self::Variant), Self::Error> {
+        let variant = seed.deserialize(self.variant.into_deserializer())?;
+        Ok((variant, OwnedVariantAccessHelper { value: self.value }))
+    }
+}
+
+struct OwnedVariantAccessHelper {
+    value: Value,
+}
+
+impl<'de> VariantAccess<'de> for OwnedVariantAccessHelper {
+    type Error = SerdeError;
+
+    fn unit_variant(self) -> Result<(), Self::Error> {
+        Deserialize::deserialize(OwnedValueDeserializer { value: self.value })
+    }
+
+    fn newtype_variant_seed<T: DeserializeSeed<'de>>(
+        self,
+        seed: T,
+    ) -> Result<T::Value, Self::Error> {
+        seed.deserialize(OwnedValueDeserializer { value: self.value })
+    }
+
+    fn tuple_variant<V: Visitor<'de>>(
+        self,
+        _len: usize,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Array(arr) => visitor.visit_seq(OwnedSeqAccessHelper {
+                iter: arr.into_iter(),
+            }),
+            _ => Err(SerdeError("Expected tuple variant array".into())),
+        }
+    }
+
+    fn struct_variant<V: Visitor<'de>>(
+        self,
+        _fields: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error> {
+        match self.value {
+            Value::Object(entries) => visitor.visit_map(OwnedMapAccessHelper {
+                iter: entries.into_iter(),
+                next_value: None,
+            }),
+            _ => Err(SerdeError("Expected struct variant object".into())),
+        }
+    }
+}
+
+// ============================================================================
+// FormatVisitorSerializer: Direct Serde -> FormatVisitor streaming
+// ============================================================================
+
+/// Serializer that drives a [`FormatVisitor`] directly from any Serde-serializable type.
+pub struct FormatVisitorSerializer<'a, V> {
+    visitor: &'a mut V,
+}
+
+impl<'a, V: FormatVisitor> FormatVisitorSerializer<'a, V> {
+    /// Creates a new streaming visitor serializer.
+    pub fn new(visitor: &'a mut V) -> Self {
+        Self { visitor }
+    }
+}
+
+impl<'a, V: FormatVisitor> Serializer for FormatVisitorSerializer<'a, V>
+where
+    V::Error: fmt::Display,
+{
+    type Ok = ();
+    type Error = SerdeError;
+
+    type SerializeSeq = FormatVisitorSeqSerializer<'a, V>;
+    type SerializeTuple = FormatVisitorSeqSerializer<'a, V>;
+    type SerializeTupleStruct = FormatVisitorSeqSerializer<'a, V>;
+    type SerializeTupleVariant = FormatVisitorTupleVariantSerializer<'a, V>;
+    type SerializeMap = FormatVisitorMapSerializer<'a, V>;
+    type SerializeStruct = FormatVisitorStructSerializer<'a, V>;
+    type SerializeStructVariant = FormatVisitorStructVariantSerializer<'a, V>;
+
+    fn serialize_bool(self, v: bool) -> Result<(), Self::Error> {
+        self.visitor.visit_bool(v).map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_i8(self, v: i8) -> Result<(), Self::Error> {
+        self.serialize_i64(v as i64)
+    }
+
+    fn serialize_i16(self, v: i16) -> Result<(), Self::Error> {
+        self.serialize_i64(v as i64)
+    }
+
+    fn serialize_i32(self, v: i32) -> Result<(), Self::Error> {
+        self.serialize_i64(v as i64)
+    }
+
+    fn serialize_i64(self, v: i64) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_integer(v as i128)
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_i128(self, v: i128) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_integer(v)
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_u8(self, v: u8) -> Result<(), Self::Error> {
+        self.serialize_u64(v as u64)
+    }
+
+    fn serialize_u16(self, v: u16) -> Result<(), Self::Error> {
+        self.serialize_u64(v as u64)
+    }
+
+    fn serialize_u32(self, v: u32) -> Result<(), Self::Error> {
+        self.serialize_u64(v as u64)
+    }
+
+    fn serialize_u64(self, v: u64) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_integer(v as i128)
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_u128(self, v: u128) -> Result<(), Self::Error> {
+        if v <= i128::MAX as u128 {
+            self.visitor
+                .visit_integer(v as i128)
+                .map_err(|e| SerdeError(e.to_string()))
+        } else {
+            self.visitor
+                .visit_float(v as f64)
+                .map_err(|e| SerdeError(e.to_string()))
+        }
+    }
+
+    fn serialize_f32(self, v: f32) -> Result<(), Self::Error> {
+        self.serialize_f64(v as f64)
+    }
+
+    fn serialize_f64(self, v: f64) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_float(v)
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_char(self, v: char) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_str(&v.to_string())
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_str(self, v: &str) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_str(v)
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_bytes(self, v: &[u8]) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_bytes(v)
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_none(self) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_null()
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_some<T: ?Sized + Serialize>(self, value: &T) -> Result<(), Self::Error> {
+        value.serialize(self)
+    }
+
+    fn serialize_unit(self) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_null()
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_unit_struct(self, _name: &'static str) -> Result<(), Self::Error> {
+        self.serialize_unit()
+    }
+
+    fn serialize_unit_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+    ) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_str(variant)
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_newtype_struct<T: ?Sized + Serialize>(
+        self,
+        _name: &'static str,
+        value: &T,
+    ) -> Result<(), Self::Error> {
+        value.serialize(self)
+    }
+
+    fn serialize_newtype_variant<T: ?Sized + Serialize>(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+        value: &T,
+    ) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_object_start()
+            .map_err(|e| SerdeError(e.to_string()))?;
+        self.visitor
+            .visit_key(variant)
+            .map_err(|e| SerdeError(e.to_string()))?;
+        value.serialize(FormatVisitorSerializer::new(self.visitor))?;
+        self.visitor
+            .visit_object_end()
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+        self.visitor
+            .visit_array_start()
+            .map_err(|e| SerdeError(e.to_string()))?;
+        Ok(FormatVisitorSeqSerializer { visitor: self.visitor })
+    }
+
+    fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
+        self.serialize_seq(Some(len))
+    }
+
+    fn serialize_tuple_struct(
+        self,
+        _name: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeTupleStruct, Self::Error> {
+        self.serialize_seq(Some(len))
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleVariant, Self::Error> {
+        self.visitor
+            .visit_object_start()
+            .map_err(|e| SerdeError(e.to_string()))?;
+        self.visitor
+            .visit_key(variant)
+            .map_err(|e| SerdeError(e.to_string()))?;
+        self.visitor
+            .visit_array_start()
+            .map_err(|e| SerdeError(e.to_string()))?;
+        Ok(FormatVisitorTupleVariantSerializer { visitor: self.visitor })
+    }
+
+    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+        self.visitor
+            .visit_object_start()
+            .map_err(|e| SerdeError(e.to_string()))?;
+        Ok(FormatVisitorMapSerializer { visitor: self.visitor })
+    }
+
+    fn serialize_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStruct, Self::Error> {
+        self.visitor
+            .visit_object_start()
+            .map_err(|e| SerdeError(e.to_string()))?;
+        Ok(FormatVisitorStructSerializer { visitor: self.visitor })
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStructVariant, Self::Error> {
+        self.visitor
+            .visit_object_start()
+            .map_err(|e| SerdeError(e.to_string()))?;
+        self.visitor
+            .visit_key(variant)
+            .map_err(|e| SerdeError(e.to_string()))?;
+        self.visitor
+            .visit_object_start()
+            .map_err(|e| SerdeError(e.to_string()))?;
+        Ok(FormatVisitorStructVariantSerializer { visitor: self.visitor })
+    }
+}
+
+pub struct FormatVisitorSeqSerializer<'a, V> {
+    visitor: &'a mut V,
+}
+
+impl<'a, V: FormatVisitor> SerializeSeq for FormatVisitorSeqSerializer<'a, V>
+where
+    V::Error: fmt::Display,
+{
+    type Ok = ();
+    type Error = SerdeError;
+
+    fn serialize_element<T: ?Sized + Serialize>(&mut self, value: &T) -> Result<(), Self::Error> {
+        value.serialize(FormatVisitorSerializer::new(self.visitor))
+    }
+
+    fn end(self) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_array_end()
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+}
+
+impl<'a, V: FormatVisitor> SerializeTuple for FormatVisitorSeqSerializer<'a, V>
+where
+    V::Error: fmt::Display,
+{
+    type Ok = ();
+    type Error = SerdeError;
+
+    fn serialize_element<T: ?Sized + Serialize>(&mut self, value: &T) -> Result<(), Self::Error> {
+        value.serialize(FormatVisitorSerializer::new(self.visitor))
+    }
+
+    fn end(self) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_array_end()
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+}
+
+impl<'a, V: FormatVisitor> SerializeTupleStruct for FormatVisitorSeqSerializer<'a, V>
+where
+    V::Error: fmt::Display,
+{
+    type Ok = ();
+    type Error = SerdeError;
+
+    fn serialize_field<T: ?Sized + Serialize>(&mut self, value: &T) -> Result<(), Self::Error> {
+        value.serialize(FormatVisitorSerializer::new(self.visitor))
+    }
+
+    fn end(self) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_array_end()
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+}
+
+pub struct FormatVisitorTupleVariantSerializer<'a, V> {
+    visitor: &'a mut V,
+}
+
+impl<'a, V: FormatVisitor> SerializeTupleVariant for FormatVisitorTupleVariantSerializer<'a, V>
+where
+    V::Error: fmt::Display,
+{
+    type Ok = ();
+    type Error = SerdeError;
+
+    fn serialize_field<T: ?Sized + Serialize>(&mut self, value: &T) -> Result<(), Self::Error> {
+        value.serialize(FormatVisitorSerializer::new(self.visitor))
+    }
+
+    fn end(self) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_array_end()
+            .map_err(|e| SerdeError(e.to_string()))?;
+        self.visitor
+            .visit_object_end()
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+}
+
+pub struct FormatVisitorMapSerializer<'a, V> {
+    visitor: &'a mut V,
+}
+
+impl<'a, V: FormatVisitor> SerializeMap for FormatVisitorMapSerializer<'a, V>
+where
+    V::Error: fmt::Display,
+{
+    type Ok = ();
+    type Error = SerdeError;
+
+    fn serialize_key<T: ?Sized + Serialize>(&mut self, key: &T) -> Result<(), Self::Error> {
+        key.serialize(KeySerializer(self.visitor))
+    }
+
+    fn serialize_value<T: ?Sized + Serialize>(&mut self, value: &T) -> Result<(), Self::Error> {
+        value.serialize(FormatVisitorSerializer::new(self.visitor))
+    }
+
+    fn serialize_entry<K: ?Sized + Serialize, V2: ?Sized + Serialize>(
+        &mut self,
+        key: &K,
+        value: &V2,
+    ) -> Result<(), Self::Error> {
+        key.serialize(KeySerializer(self.visitor))?;
+        value.serialize(FormatVisitorSerializer::new(self.visitor))
+    }
+
+    fn end(self) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_object_end()
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+}
+
+pub struct FormatVisitorStructSerializer<'a, V> {
+    visitor: &'a mut V,
+}
+
+impl<'a, V: FormatVisitor> SerializeStruct for FormatVisitorStructSerializer<'a, V>
+where
+    V::Error: fmt::Display,
+{
+    type Ok = ();
+    type Error = SerdeError;
+
+    fn serialize_field<T: ?Sized + Serialize>(
+        &mut self,
+        key: &'static str,
+        value: &T,
+    ) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_key(key)
+            .map_err(|e| SerdeError(e.to_string()))?;
+        value.serialize(FormatVisitorSerializer::new(self.visitor))
+    }
+
+    fn end(self) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_object_end()
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+}
+
+pub struct FormatVisitorStructVariantSerializer<'a, V> {
+    visitor: &'a mut V,
+}
+
+impl<'a, V: FormatVisitor> SerializeStructVariant for FormatVisitorStructVariantSerializer<'a, V>
+where
+    V::Error: fmt::Display,
+{
+    type Ok = ();
+    type Error = SerdeError;
+
+    fn serialize_field<T: ?Sized + Serialize>(
+        &mut self,
+        key: &'static str,
+        value: &T,
+    ) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_key(key)
+            .map_err(|e| SerdeError(e.to_string()))?;
+        value.serialize(FormatVisitorSerializer::new(self.visitor))
+    }
+
+    fn end(self) -> Result<(), Self::Error> {
+        self.visitor
+            .visit_object_end()
+            .map_err(|e| SerdeError(e.to_string()))?;
+        self.visitor
+            .visit_object_end()
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+}
+
+struct KeySerializer<'a, V>(&'a mut V);
+
+impl<'a, V: FormatVisitor> Serializer for KeySerializer<'a, V>
+where
+    V::Error: fmt::Display,
+{
+    type Ok = ();
+    type Error = SerdeError;
+
+    type SerializeSeq = ser::Impossible<(), SerdeError>;
+    type SerializeTuple = ser::Impossible<(), SerdeError>;
+    type SerializeTupleStruct = ser::Impossible<(), SerdeError>;
+    type SerializeTupleVariant = ser::Impossible<(), SerdeError>;
+    type SerializeMap = ser::Impossible<(), SerdeError>;
+    type SerializeStruct = ser::Impossible<(), SerdeError>;
+    type SerializeStructVariant = ser::Impossible<(), SerdeError>;
+
+    fn serialize_str(self, v: &str) -> Result<(), Self::Error> {
+        self.0.visit_key(v).map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_bool(self, v: bool) -> Result<(), Self::Error> {
+        let s = if v { "true" } else { "false" };
+        self.0.visit_key(s).map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_i8(self, v: i8) -> Result<(), Self::Error> {
+        self.serialize_i64(v as i64)
+    }
+
+    fn serialize_i16(self, v: i16) -> Result<(), Self::Error> {
+        self.serialize_i64(v as i64)
+    }
+
+    fn serialize_i32(self, v: i32) -> Result<(), Self::Error> {
+        self.serialize_i64(v as i64)
+    }
+
+    fn serialize_i64(self, v: i64) -> Result<(), Self::Error> {
+        self.0
+            .visit_key(&v.to_string())
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_i128(self, v: i128) -> Result<(), Self::Error> {
+        self.0
+            .visit_key(&v.to_string())
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_u8(self, v: u8) -> Result<(), Self::Error> {
+        self.serialize_u64(v as u64)
+    }
+
+    fn serialize_u16(self, v: u16) -> Result<(), Self::Error> {
+        self.serialize_u64(v as u64)
+    }
+
+    fn serialize_u32(self, v: u32) -> Result<(), Self::Error> {
+        self.serialize_u64(v as u64)
+    }
+
+    fn serialize_u64(self, v: u64) -> Result<(), Self::Error> {
+        self.0
+            .visit_key(&v.to_string())
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_u128(self, v: u128) -> Result<(), Self::Error> {
+        self.0
+            .visit_key(&v.to_string())
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_f32(self, v: f32) -> Result<(), Self::Error> {
+        self.serialize_f64(v as f64)
+    }
+
+    fn serialize_f64(self, v: f64) -> Result<(), Self::Error> {
+        self.0
+            .visit_key(&v.to_string())
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_char(self, v: char) -> Result<(), Self::Error> {
+        self.0
+            .visit_key(&v.to_string())
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_bytes(self, _v: &[u8]) -> Result<(), Self::Error> {
+        Err(SerdeError("Cannot use byte slice as map key".into()))
+    }
+
+    fn serialize_none(self) -> Result<(), Self::Error> {
+        Err(SerdeError("Cannot use none as map key".into()))
+    }
+
+    fn serialize_some<T: ?Sized + Serialize>(self, value: &T) -> Result<(), Self::Error> {
+        value.serialize(self)
+    }
+
+    fn serialize_unit(self) -> Result<(), Self::Error> {
+        Err(SerdeError("Cannot use unit as map key".into()))
+    }
+
+    fn serialize_unit_struct(self, _name: &'static str) -> Result<(), Self::Error> {
+        Err(SerdeError("Cannot use unit struct as map key".into()))
+    }
+
+    fn serialize_unit_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+    ) -> Result<(), Self::Error> {
+        self.0
+            .visit_key(variant)
+            .map_err(|e| SerdeError(e.to_string()))
+    }
+
+    fn serialize_newtype_struct<T: ?Sized + Serialize>(
+        self,
+        _name: &'static str,
+        value: &T,
+    ) -> Result<(), Self::Error> {
+        value.serialize(self)
+    }
+
+    fn serialize_newtype_variant<T: ?Sized + Serialize>(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _value: &T,
+    ) -> Result<(), Self::Error> {
+        Err(SerdeError("Cannot use newtype variant as map key".into()))
+    }
+
+    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+        Err(SerdeError("Cannot use seq as map key".into()))
+    }
+
+    fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, Self::Error> {
+        Err(SerdeError("Cannot use tuple as map key".into()))
+    }
+
+    fn serialize_tuple_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleStruct, Self::Error> {
+        Err(SerdeError("Cannot use tuple struct as map key".into()))
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleVariant, Self::Error> {
+        Err(SerdeError("Cannot use tuple variant as map key".into()))
+    }
+
+    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+        Err(SerdeError("Cannot use map as map key".into()))
+    }
+
+    fn serialize_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStruct, Self::Error> {
+        Err(SerdeError("Cannot use struct as map key".into()))
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStructVariant, Self::Error> {
+        Err(SerdeError("Cannot use struct variant as map key".into()))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -979,5 +1994,122 @@ mod tests {
         let val3 = to_value(&role3).unwrap();
         let de3: Role = from_value(&val3).unwrap();
         assert_eq!(role3, de3);
+    }
+
+    #[test]
+    fn test_from_value_owned() {
+        let user = User {
+            name: "Bob".into(),
+            age: 28,
+            active: false,
+            tags: alloc::vec!["dev".into()],
+            optional: None,
+        };
+
+        let val = to_value(&user).unwrap();
+        let owned_user: User = from_value_owned(val).expect("from_value_owned");
+        assert_eq!(user, owned_user);
+
+        let role = Role::Member("Tester".into());
+        let rval = to_value(&role).unwrap();
+        let owned_role: Role = from_value_owned(rval).expect("from_value_owned");
+        assert_eq!(role, owned_role);
+    }
+
+    #[derive(Default, Debug, PartialEq)]
+    struct EventLogVisitor {
+        events: Vec<String>,
+    }
+
+    impl FormatVisitor for EventLogVisitor {
+        type Error = String;
+
+        fn visit_null(&mut self) -> Result<(), Self::Error> {
+            self.events.push("null".into());
+            Ok(())
+        }
+
+        fn visit_bool(&mut self, val: bool) -> Result<(), Self::Error> {
+            self.events.push(format!("bool({})", val));
+            Ok(())
+        }
+
+        fn visit_integer(&mut self, val: i128) -> Result<(), Self::Error> {
+            self.events.push(format!("int({})", val));
+            Ok(())
+        }
+
+        fn visit_float(&mut self, val: f64) -> Result<(), Self::Error> {
+            self.events.push(format!("float({})", val));
+            Ok(())
+        }
+
+        fn visit_str(&mut self, val: &str) -> Result<(), Self::Error> {
+            self.events.push(format!("str({})", val));
+            Ok(())
+        }
+
+        fn visit_bytes(&mut self, val: &[u8]) -> Result<(), Self::Error> {
+            self.events.push(format!("bytes({:?})", val));
+            Ok(())
+        }
+
+        fn visit_array_start(&mut self) -> Result<(), Self::Error> {
+            self.events.push("[".into());
+            Ok(())
+        }
+
+        fn visit_array_end(&mut self) -> Result<(), Self::Error> {
+            self.events.push("]".into());
+            Ok(())
+        }
+
+        fn visit_object_start(&mut self) -> Result<(), Self::Error> {
+            self.events.push("{".into());
+            Ok(())
+        }
+
+        fn visit_key(&mut self, key: &str) -> Result<(), Self::Error> {
+            self.events.push(format!("key({})", key));
+            Ok(())
+        }
+
+        fn visit_object_end(&mut self) -> Result<(), Self::Error> {
+            self.events.push("}".into());
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn test_format_visitor_serializer_streaming() {
+        let mut visitor = EventLogVisitor::default();
+        let user = User {
+            name: "Alice".into(),
+            age: 30,
+            active: true,
+            tags: alloc::vec!["tag1".into()],
+            optional: None,
+        };
+
+        serialize_to_visitor(&user, &mut visitor).expect("serialize_to_visitor");
+        assert_eq!(
+            visitor.events,
+            alloc::vec![
+                "{",
+                "key(name)",
+                "str(Alice)",
+                "key(age)",
+                "int(30)",
+                "key(active)",
+                "bool(true)",
+                "key(tags)",
+                "[",
+                "str(tag1)",
+                "]",
+                "key(optional)",
+                "null",
+                "}"
+            ]
+        );
     }
 }

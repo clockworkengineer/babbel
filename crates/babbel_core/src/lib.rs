@@ -22,6 +22,7 @@ extern crate alloc;
 
 pub mod chars;
 pub mod codec;
+pub mod compression;
 pub mod csv;
 pub mod diff;
 pub mod embedded;
@@ -53,11 +54,14 @@ pub use codec::{
     FormatParser, IniEngine, JsonEmitter, TomlEmitter, TsvEngine, XmlEmitter, YamlEmitter,
     find_engine, find_engine_by_extension, find_engine_by_mime,
 };
+pub use compression::{
+    crc32_ieee, lz4_compress, lz4_decompress, snappy_compress, snappy_decompress,
+};
 pub use csv::{
     CsvFieldsIter, CsvOptions, CsvPullParser, CsvRecord, emit_csv, emit_csv_to, parse_csv,
     sniff_delimiter,
 };
-pub use diff::{diff, diff_merge_patch};
+pub use diff::{diff, diff_merge_patch, format_unified_diff};
 pub use embedded::{CompactError, EmbeddedLimits, MemoryTracker, StackBuffer};
 pub use encoding::{Encoding, detect_encoding_and_strip_bom, normalize_newlines};
 pub use error::{BabbelError, ErrorCode, Location, Span, format_error_snippet};
@@ -82,10 +86,19 @@ pub use io::{FileDestination, FileSource};
 pub use model::{FormatVisitor, Value};
 pub use num::{Numeric, format_float, format_integer};
 pub use patch::{Patch, PatchOp, apply_merge_patch};
-pub use query::{JsonPath, query as jsonpath_query, query_mut as jsonpath_query_mut};
-pub use schema::{CompiledSchema, SchemaValidationError, validate as validate_schema};
+pub use query::{
+    JsonPath, LocatedNode, query as jsonpath_query, query_located as jsonpath_query_located,
+    query_mut as jsonpath_query_mut, transform,
+};
+pub use schema::{
+    CompiledSchema, Regex, SchemaValidationError, infer_schema, regex_is_full_match,
+    regex_is_match, validate as validate_schema,
+};
 #[cfg(feature = "serde")]
-pub use serde_impl::{SerdeError, from_value, to_value};
+pub use serde_impl::{
+    FormatVisitorSerializer, SerdeError, from_value, from_value_owned, serialize_to_visitor,
+    to_value,
+};
 pub use text::{
     DocumentWithFrontmatter, FrontmatterFormat, decode_hex, dedent, encode_hex, encode_hex_upper,
     indent, line_count, split_frontmatter, trim_lines,

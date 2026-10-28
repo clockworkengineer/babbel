@@ -14,7 +14,7 @@ use clap_complete::{Shell, generate};
 use babbel::core::io::Buffer;
 use babbel::core::{
     CompiledSchema, FormatOptions, Patch, Value, apply_merge_patch, diff, diff_merge_patch,
-    jsonpath_query,
+    infer_schema, jsonpath_query, transform,
 };
 use babbel::{FormatEmitter, default_registry};
 
@@ -52,6 +52,15 @@ enum Commands {
 
     /// Inspect format, structure, size, and depth of a document
     Inspect(InspectArgs),
+
+    /// Set key or path values in documents (e.g. 'server.port=8080')
+    Set(SetArgs),
+
+    /// Sequentially merge multiple documents using RFC 7396 Merge Patch
+    Merge(MergeArgs),
+
+    /// Generate JSON Schema Draft 2020-12 from document structure
+    Schema(SchemaArgs),
 
     /// Generate shell autocompletions (bash, zsh, fish, powershell, elvish)
     Completions(CompletionsArgs),
@@ -93,12 +102,20 @@ struct QueryArgs {
     input: String,
 
     /// RFC 9535 JSONPath query expression (e.g. '$.store.book[*].title')
-    #[arg(short = 'q', long = "query")]
+    #[arg(short = 'q', long = "query", default_value = "$")]
     query: String,
 
     /// Input document format (inferred from extension if omitted)
     #[arg(short = 'f', long = "from")]
     from: Option<String>,
+
+    /// Transform pipeline expression (e.g. 'map(.name) | sort | unique')
+    #[arg(long = "transform")]
+    transform: Option<String>,
+
+    /// Target output format (default: json)
+    #[arg(short = 't', long = "to", default_value = "json")]
+    to: String,
 
     /// Return only the first matching element instead of an array
     #[arg(long = "first")]
@@ -107,6 +124,10 @@ struct QueryArgs {
     /// Output file path (defaults to stdout)
     #[arg(short = 'o', long = "output")]
     output: Option<String>,
+
+    /// Indentation spaces (default: 2)
+    #[arg(long = "indent", default_value_t = 2)]
+    indent: usize,
 }
 
 #[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq)]
@@ -194,6 +215,81 @@ struct CompletionsArgs {
     shell: Shell,
 }
 
+#[derive(Args, Debug)]
+struct SetArgs {
+    /// Path to input file (use '-' for stdin)
+    input: String,
+
+    /// Key-value assignment pairs (e.g. 'foo.bar=123', 'active=true')
+    #[arg(required = true, num_args = 1..)]
+    assignments: Vec<String>,
+
+    /// Source format (auto-detected from file extension if omitted)
+    #[arg(short = 'f', long = "from")]
+    from: Option<String>,
+
+    /// Target format (auto-detected from input format if omitted)
+    #[arg(short = 't', long = "to")]
+    to: Option<String>,
+
+    /// Overwrite input file in-place
+    #[arg(short = 'i', long = "in-place")]
+    in_place: bool,
+
+    /// Output file path (defaults to stdout)
+    #[arg(short = 'o', long = "output")]
+    output: Option<String>,
+
+    /// Indentation spaces (default: 2)
+    #[arg(long = "indent", default_value_t = 2)]
+    indent: usize,
+}
+
+#[derive(Args, Debug)]
+struct MergeArgs {
+    /// Paths to input files to merge sequentially (left-to-right)
+    #[arg(required = true, num_args = 1..)]
+    inputs: Vec<String>,
+
+    /// Output target format (defaults to format of first input file)
+    #[arg(short = 't', long = "to")]
+    to: Option<String>,
+
+    /// Output file path (defaults to stdout)
+    #[arg(short = 'o', long = "output")]
+    output: Option<String>,
+
+    /// Emit compact output without indentation
+    #[arg(long = "compact")]
+    compact: bool,
+
+    /// Indentation spaces (default: 2)
+    #[arg(long = "indent", default_value_t = 2)]
+    indent: usize,
+}
+
+#[derive(Args, Debug)]
+struct SchemaArgs {
+    /// Path to input file (use '-' for stdin)
+    input: String,
+
+    /// Input document format (inferred from extension if omitted)
+    #[arg(short = 'f', long = "from")]
+    from: Option<String>,
+
+    /// Target schema output format (default: json)
+    #[arg(short = 't', long = "to", default_value = "json")]
+    to: String,
+
+    /// Output file path (defaults to stdout)
+    #[arg(short = 'o', long = "output")]
+    output: Option<String>,
+
+    /// Indentation spaces (default: 2)
+    #[arg(long = "indent", default_value_t = 2)]
+    indent: usize,
+}
+
 #[derive(Debug)]
 enum CliError {
     Io(String),
@@ -232,25 +328,38 @@ fn run(cli: Cli) -> Result<(), CliError> {
         Commands::Fmt(args) => cmd_fmt(args),
         Commands::Inspect(args) => cmd_inspect(args),
         Commands::Completions(args) => cmd_completions(args),
+        Commands::Set(args) => cmd_set(args),
+        Commands::Merge(args) => cmd_merge(args),
+        Commands::Schema(args) => cmd_schema(args),
     }
 }
 
 fn read_input(path: &str) -> Result<(Vec<u8>, Option<String>), CliError> {
-    if path == "-" {
+    let mut bytes = if path == "-" {
         let mut buffer = Vec::new();
         io::stdin()
             .read_to_end(&mut buffer)
             .map_err(|e| CliError::Io(format!("failed to read from stdin: {}", e)))?;
-        Ok((buffer, None))
+        buffer
     } else {
-        let bytes = fs::read(path)
-            .map_err(|e| CliError::Io(format!("failed to read file '{}': {}", path, e)))?;
-        let ext = Path::new(path)
+        fs::read(path)
+            .map_err(|e| CliError::Io(format!("failed to read file '{}': {}", path, e)))?
+    };
+
+    if bytes.starts_with(&[0xef, 0xbb, 0xbf]) {
+        bytes.drain(0..3);
+    }
+
+    let ext = if path == "-" {
+        None
+    } else {
+        Path::new(path)
             .extension()
             .and_then(|s| s.to_str())
-            .map(|s| s.to_lowercase());
-        Ok((bytes, ext))
-    }
+            .map(|s| s.to_lowercase())
+    };
+
+    Ok((bytes, ext))
 }
 
 fn write_output(bytes: &[u8], path: Option<&str>, is_binary: bool) -> Result<(), CliError> {
@@ -324,25 +433,262 @@ fn cmd_query(args: QueryArgs) -> Result<(), CliError> {
         .parse_bytes(&input_bytes)
         .map_err(|e| CliError::Format(format!("parse error: {}", e)))?;
 
-    let results = jsonpath_query(&val, &args.query)
-        .map_err(|e| CliError::Format(format!("query evaluation error: {}", e)))?;
-
-    let output_val = if args.first {
-        results.into_iter().next().cloned().unwrap_or(Value::Null)
+    let mut output_val = if args.query.trim() == "$" || args.query.trim().is_empty() {
+        val
     } else {
-        Value::Array(results.into_iter().cloned().collect())
+        let results = jsonpath_query(&val, &args.query)
+            .map_err(|e| CliError::Format(format!("query evaluation error: {}", e)))?;
+        if args.first {
+            results.into_iter().next().cloned().unwrap_or(Value::Null)
+        } else {
+            Value::Array(results.into_iter().cloned().collect())
+        }
     };
 
+    if let Some(ref expr) = args.transform {
+        output_val = transform(&output_val, expr)
+            .map_err(|e| CliError::Format(format!("transform error: {}", e)))?;
+    }
+
+    let dst_engine = detect_engine(Some(&args.to), None)?;
     let mut dest = Buffer::new();
-    let json_engine = default_registry()
-        .get("json")
-        .ok_or_else(|| CliError::Format("json engine missing".to_string()))?;
-    json_engine
-        .emit_pretty(&output_val, &mut dest, 2)
+    let options = FormatOptions {
+        pretty: true,
+        indent: args.indent,
+    };
+    dst_engine
+        .serialize(&output_val, &mut dest, &options)
         .map_err(|e| CliError::Format(format!("failed to format query output: {}", e)))?;
 
     let out_bytes = dest.into_vec();
-    write_output(&out_bytes, args.output.as_deref(), false)
+    write_output(&out_bytes, args.output.as_deref(), dst_engine.is_binary())
+}
+
+fn parse_literal_value(s: &str) -> Value {
+    let trimmed = s.trim();
+    if trimmed == "null" {
+        Value::Null
+    } else if trimmed == "true" {
+        Value::Bool(true)
+    } else if trimmed == "false" {
+        Value::Bool(false)
+    } else if let Ok(i) = trimmed.parse::<i128>() {
+        Value::Integer(i)
+    } else if let Ok(f) = trimmed.parse::<f64>() {
+        Value::Float(f)
+    } else if (trimmed.starts_with('{') && trimmed.ends_with('}'))
+        || (trimmed.starts_with('[') && trimmed.ends_with(']'))
+        || (trimmed.starts_with('"') && trimmed.ends_with('"'))
+    {
+        if let Some(json_engine) = default_registry().get("json") {
+            if let Ok(v) = json_engine.parse_str(trimmed) {
+                return v;
+            }
+        }
+        Value::String(trimmed.to_string())
+    } else {
+        Value::String(trimmed.to_string())
+    }
+}
+
+fn set_value_at_path(val: &mut Value, path: &str, new_val: Value) -> Result<(), CliError> {
+    let clean = path.trim_start_matches('$').trim_start_matches('.');
+    let parts: Vec<&str> = clean.split('.').filter(|s| !s.is_empty()).collect();
+    if parts.is_empty() {
+        *val = new_val;
+        return Ok(());
+    }
+
+    let mut current = val;
+    for (i, part) in parts.iter().enumerate() {
+        let is_last = i == parts.len() - 1;
+        if let Some(bracket_idx) = part.find('[') {
+            if !part.ends_with(']') {
+                return Err(CliError::Usage(format!("invalid path segment '{}'", part)));
+            }
+            let field_name = &part[..bracket_idx];
+            let idx_str = &part[bracket_idx + 1..part.len() - 1];
+            let idx: usize = idx_str.parse().map_err(|_| {
+                CliError::Usage(format!(
+                    "invalid array index '{}' in path '{}'",
+                    idx_str, part
+                ))
+            })?;
+
+            if !field_name.is_empty() {
+                if !matches!(current, Value::Object(_)) {
+                    *current = Value::Object(Vec::new());
+                }
+                if let Value::Object(entries) = current {
+                    let pos = entries.iter().position(|(k, _)| k == field_name);
+                    let idx_entry = match pos {
+                        Some(p) => p,
+                        None => {
+                            entries.push((field_name.to_string(), Value::Array(Vec::new())));
+                            entries.len() - 1
+                        }
+                    };
+                    current = &mut entries[idx_entry].1;
+                }
+            }
+
+            if !matches!(current, Value::Array(_)) {
+                *current = Value::Array(Vec::new());
+            }
+
+            if let Value::Array(items) = current {
+                while items.len() <= idx {
+                    items.push(Value::Null);
+                }
+                if is_last {
+                    items[idx] = new_val;
+                    return Ok(());
+                } else {
+                    current = &mut items[idx];
+                }
+            }
+        } else if is_last {
+            if !matches!(current, Value::Object(_)) {
+                *current = Value::Object(Vec::new());
+            }
+            if let Value::Object(entries) = current {
+                if let Some((_, v)) = entries.iter_mut().find(|(k, _)| k == *part) {
+                    *v = new_val;
+                } else {
+                    entries.push((part.to_string(), new_val));
+                }
+            }
+            return Ok(());
+        } else {
+            if !matches!(current, Value::Object(_)) {
+                *current = Value::Object(Vec::new());
+            }
+            if let Value::Object(entries) = current {
+                let pos = entries.iter().position(|(k, _)| k == *part);
+                let entry_idx = match pos {
+                    Some(p) => p,
+                    None => {
+                        entries.push((part.to_string(), Value::Object(Vec::new())));
+                        entries.len() - 1
+                    }
+                };
+                current = &mut entries[entry_idx].1;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn cmd_set(args: SetArgs) -> Result<(), CliError> {
+    let (input_bytes, ext) = read_input(&args.input)?;
+    let src_engine = detect_engine(args.from.as_deref(), ext.as_deref())?;
+    let mut val = src_engine
+        .parse_bytes(&input_bytes)
+        .map_err(|e| CliError::Format(format!("failed to parse input: {}", e)))?;
+
+    for assignment in &args.assignments {
+        let (path, value_str) = assignment.split_once('=').ok_or_else(|| {
+            CliError::Usage(format!(
+                "invalid assignment '{}': expected format <path>=<value>",
+                assignment
+            ))
+        })?;
+        let parsed_val = parse_literal_value(value_str);
+        set_value_at_path(&mut val, path.trim(), parsed_val)?;
+    }
+
+    let dst_engine = if let Some(target_fmt) = &args.to {
+        detect_engine(Some(target_fmt), None)?
+    } else {
+        src_engine
+    };
+
+    let mut dest = Buffer::new();
+    let options = FormatOptions {
+        pretty: true,
+        indent: args.indent,
+    };
+    dst_engine
+        .serialize(&val, &mut dest, &options)
+        .map_err(|e| CliError::Format(format!("failed to format output: {}", e)))?;
+    let out_bytes = dest.into_vec();
+
+    if args.in_place && args.input != "-" {
+        fs::write(&args.input, &out_bytes).map_err(|e| {
+            CliError::Io(format!(
+                "failed to write in-place to '{}': {}",
+                args.input, e
+            ))
+        })?;
+        println!("Updated '{}'", args.input);
+        Ok(())
+    } else {
+        write_output(&out_bytes, args.output.as_deref(), dst_engine.is_binary())
+    }
+}
+
+fn cmd_merge(args: MergeArgs) -> Result<(), CliError> {
+    if args.inputs.is_empty() {
+        return Err(CliError::Usage(
+            "at least one input file required for merge".into(),
+        ));
+    }
+
+    let (first_bytes, first_ext) = read_input(&args.inputs[0])?;
+    let first_engine = detect_engine(None, first_ext.as_deref())?;
+    let mut base_val = first_engine
+        .parse_bytes(&first_bytes)
+        .map_err(|e| CliError::Format(format!("failed to parse '{}': {}", args.inputs[0], e)))?;
+
+    for input_path in &args.inputs[1..] {
+        let (bytes, ext) = read_input(input_path)?;
+        let engine = detect_engine(None, ext.as_deref())?;
+        let next_val = engine
+            .parse_bytes(&bytes)
+            .map_err(|e| CliError::Format(format!("failed to parse '{}': {}", input_path, e)))?;
+        apply_merge_patch(&mut base_val, &next_val);
+    }
+
+    let dst_engine = if let Some(target_fmt) = &args.to {
+        detect_engine(Some(target_fmt), None)?
+    } else {
+        first_engine
+    };
+
+    let mut dest = Buffer::new();
+    let options = FormatOptions {
+        pretty: !args.compact,
+        indent: args.indent,
+    };
+    dst_engine
+        .serialize(&base_val, &mut dest, &options)
+        .map_err(|e| CliError::Format(format!("failed to serialize merged document: {}", e)))?;
+    let out_bytes = dest.into_vec();
+
+    write_output(&out_bytes, args.output.as_deref(), dst_engine.is_binary())
+}
+
+fn cmd_schema(args: SchemaArgs) -> Result<(), CliError> {
+    let (input_bytes, ext) = read_input(&args.input)?;
+    let src_engine = detect_engine(args.from.as_deref(), ext.as_deref())?;
+    let val = src_engine
+        .parse_bytes(&input_bytes)
+        .map_err(|e| CliError::Format(format!("failed to parse input: {}", e)))?;
+
+    let schema_val = infer_schema(&val);
+    let dst_engine = detect_engine(Some(&args.to), None)?;
+
+    let mut dest = Buffer::new();
+    let options = FormatOptions {
+        pretty: true,
+        indent: args.indent,
+    };
+    dst_engine
+        .serialize(&schema_val, &mut dest, &options)
+        .map_err(|e| CliError::Format(format!("failed to format schema: {}", e)))?;
+    let out_bytes = dest.into_vec();
+
+    write_output(&out_bytes, args.output.as_deref(), dst_engine.is_binary())
 }
 
 fn cmd_diff(args: DiffArgs) -> Result<(), CliError> {

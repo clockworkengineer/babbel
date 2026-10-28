@@ -13,6 +13,8 @@ use babbel_core::encoding::varint;
 pub const TYPE_STOP: u8 = 0;
 pub const TYPE_BOOLEAN_TRUE: u8 = 1;
 pub const TYPE_BOOLEAN_FALSE: u8 = 2;
+pub const TYPE_TRUE: u8 = TYPE_BOOLEAN_TRUE;
+pub const TYPE_FALSE: u8 = TYPE_BOOLEAN_FALSE;
 pub const TYPE_BYTE: u8 = 3;
 pub const TYPE_I16: u8 = 4;
 pub const TYPE_I32: u8 = 5;
@@ -40,6 +42,10 @@ impl ThriftWriter {
     }
 
     pub fn into_bytes(self) -> Vec<u8> {
+        self.buf
+    }
+
+    pub fn into_vec(self) -> Vec<u8> {
         self.buf
     }
 
@@ -141,6 +147,10 @@ impl<'a> ThriftReader<'a> {
 
     pub fn remaining(&self) -> usize {
         self.buf.len().saturating_sub(self.pos)
+    }
+
+    pub fn position(&self) -> usize {
+        self.pos
     }
 
     pub fn read_byte(&mut self) -> Result<u8, ParquetError> {

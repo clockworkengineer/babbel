@@ -28,6 +28,7 @@ pub mod codec;
 pub mod engine;
 pub mod error;
 pub mod ocf;
+pub mod resolution;
 pub mod schema;
 
 pub use babbel_core::Value;
@@ -36,5 +37,9 @@ pub use codec::{
 };
 pub use engine::AvroEngine;
 pub use error::AvroError;
-pub use ocf::{OCF_MAGIC, from_bytes_ocf, to_vec_ocf};
+pub use ocf::{
+    OCF_MAGIC, from_bytes_ocf, from_bytes_ocf_with_reader_schema, to_vec_ocf,
+    to_vec_ocf_with_codec,
+};
+pub use resolution::from_bytes_with_schemas;
 pub use schema::{AvroField, AvroSchema};

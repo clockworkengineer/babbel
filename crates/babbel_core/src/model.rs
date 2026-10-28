@@ -6,7 +6,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 /// Universal hierarchical data value across XML, JSON, YAML, and Bencode representations.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Value {
     /// Null / empty / none value
     Null,
@@ -24,6 +24,37 @@ pub enum Value {
     Array(Vec<Value>),
     /// Map / Object / Dictionary of key-value pairs (ordered to preserve deterministic serialization)
     Object(Vec<(String, Value)>),
+}
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Null, Value::Null) => true,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Integer(a), Value::Integer(b)) => a == b,
+            (Value::Float(a), Value::Float(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Bytes(a), Value::Bytes(b)) => a == b,
+            (Value::Array(a), Value::Array(b)) => a == b,
+            (Value::Object(a), Value::Object(b)) => {
+                if a.len() != b.len() {
+                    return false;
+                }
+                if a.iter()
+                    .zip(b.iter())
+                    .all(|((ka, va), (kb, vb))| ka == kb && va == vb)
+                {
+                    return true;
+                }
+                a.iter().all(|(k, va)| {
+                    b.iter()
+                        .find(|(kb, _)| kb == k)
+                        .is_some_and(|(_, vb)| va == vb)
+                }) && b.iter().all(|(k, _)| a.iter().any(|(ka, _)| ka == k))
+            }
+            _ => false,
+        }
+    }
 }
 
 impl Value {
@@ -240,6 +271,19 @@ impl Value {
         expr: &str,
     ) -> Result<alloc::vec::Vec<&'a mut Value>, crate::error::BabbelError> {
         crate::query::query_mut(self, expr)
+    }
+
+    /// Evaluates an RFC 9535 JSONPath expression on this value, returning matched nodes with their normalized paths and JSON pointers.
+    pub fn jsonpath_located<'a>(
+        &'a self,
+        expr: &str,
+    ) -> Result<alloc::vec::Vec<crate::query::LocatedNode<'a>>, crate::error::BabbelError> {
+        crate::query::query_located(self, expr)
+    }
+
+    /// Evaluates a transformation pipeline expression (`stage1 | stage2 | ...`) on this value.
+    pub fn transform(&self, expr: &str) -> Result<Value, crate::error::BabbelError> {
+        crate::query::transform(self, expr)
     }
 
     /// Applies an RFC 6902 JSON Patch to this value, returning a new transformed `Value`.

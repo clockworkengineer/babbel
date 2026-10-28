@@ -6,12 +6,16 @@
 #[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};
 
+#[cfg(feature = "avro")]
+use babbel_avro::AvroEngine;
 #[cfg(feature = "bencode")]
 use babbel_bencode::BencodeEngine;
 #[cfg(feature = "bson")]
 use babbel_bson::BsonEngine;
 #[cfg(feature = "cbor")]
 use babbel_cbor::CborEngine;
+#[cfg(feature = "hcl")]
+use babbel_hcl::HclEngine;
 #[cfg(feature = "json")]
 use babbel_json::{Json5Engine, JsonEngine, JsonLinesEngine};
 #[cfg(feature = "kdl")]
@@ -50,6 +54,8 @@ pub enum Format {
     Ron,
     Kdl,
     Parquet,
+    Hcl,
+    Avro,
     Json5,
     Csv,
     Tsv,
@@ -72,6 +78,8 @@ impl Format {
             Self::Ron => "ron",
             Self::Kdl => "kdl",
             Self::Parquet => "parquet",
+            Self::Hcl => "hcl",
+            Self::Avro => "avro",
             Self::Json5 => "json5",
             Self::Csv => "csv",
             Self::Tsv => "tsv",
@@ -1641,6 +1649,93 @@ define_format_adapters!(
     ParquetEmitter,
     ParquetEngine,
     (feature = "parquet")
+);
+define_format_adapters!(HclParser, HclEmitter, HclEngine, (feature = "hcl"));
+define_format_adapters!(AvroParser, AvroEmitter, AvroEngine, (feature = "avro"));
+
+text_to_text!(
+    hcl_to_json,
+    (all(feature = "hcl", feature = "json")),
+    HclEngine,
+    JsonEngine,
+    "Convert HCL string to JSON string."
+);
+text_to_text!(
+    json_to_hcl,
+    (all(feature = "json", feature = "hcl")),
+    JsonEngine,
+    HclEngine,
+    "Convert JSON string to HCL string."
+);
+text_to_text!(
+    hcl_to_yaml,
+    (all(feature = "hcl", feature = "yaml")),
+    HclEngine,
+    YamlEngine,
+    "Convert HCL string to YAML string."
+);
+text_to_text!(
+    yaml_to_hcl,
+    (all(feature = "yaml", feature = "hcl")),
+    YamlEngine,
+    HclEngine,
+    "Convert YAML string to HCL string."
+);
+text_to_text!(
+    hcl_to_toml,
+    (all(feature = "hcl", feature = "toml")),
+    HclEngine,
+    TomlEngine,
+    "Convert HCL string to TOML string."
+);
+text_to_text!(
+    toml_to_hcl,
+    (all(feature = "toml", feature = "hcl")),
+    TomlEngine,
+    HclEngine,
+    "Convert TOML string to HCL string."
+);
+bytes_to_text!(
+    avro_to_json,
+    (all(feature = "avro", feature = "json")),
+    AvroEngine,
+    JsonEngine,
+    "Convert Avro Object Container File bytes to JSON string."
+);
+text_to_bytes!(
+    json_to_avro,
+    (all(feature = "json", feature = "avro")),
+    JsonEngine,
+    AvroEngine,
+    "Convert JSON string to Avro Object Container File bytes."
+);
+bytes_to_text!(
+    avro_to_yaml,
+    (all(feature = "avro", feature = "yaml")),
+    AvroEngine,
+    YamlEngine,
+    "Convert Avro Object Container File bytes to YAML string."
+);
+text_to_bytes!(
+    yaml_to_avro,
+    (all(feature = "yaml", feature = "avro")),
+    YamlEngine,
+    AvroEngine,
+    "Convert YAML string to Avro Object Container File bytes."
+);
+bytes_to_bytes!(
+    avro_to_parquet,
+    (all(feature = "avro", feature = "parquet")),
+    AvroEngine,
+    ParquetEngine,
+    "Convert Avro Object Container File bytes to Apache Parquet bytes."
+);
+bytes_to_bytes!(
+    parquet_to_avro,
+    (all(feature = "parquet", feature = "avro")),
+    ParquetEngine,
+    AvroEngine,
+    "Convert Apache Parquet bytes to Avro Object Container File bytes."
 );
 
 /// CSV parser implementing `FormatParser`.

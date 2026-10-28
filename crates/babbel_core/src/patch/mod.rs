@@ -232,7 +232,6 @@ fn apply_op(op: &PatchOp, doc: &mut Value) -> Result<(), BabbelError> {
                         entries[pos].1 = value.clone();
                     } else {
                         entries.push((key.clone(), value.clone()));
-                        entries.sort_by(|a, b| a.0.cmp(&b.0));
                     }
                     Ok(())
                 }
@@ -576,11 +575,28 @@ mod tests {
         target.merge_patch(&patch);
 
         assert_eq!(target.pointer("/title").unwrap().as_str(), Some("Hello!"));
-        assert_eq!(
-            target.pointer("/author/givenName").unwrap().as_str(),
-            Some("John")
-        );
+        assert_eq!(target.pointer("/author/givenName").unwrap().as_str(), Some("John"));
         assert!(target.pointer("/author/familyName").is_none());
         assert_eq!(target.pointer("/tags/0").unwrap().as_str(), Some("rust"));
+    }
+
+    #[test]
+    fn test_patch_add_preserves_insertion_order() {
+        let mut doc = Value::Object(vec![
+            ("zeta".to_string(), Value::Integer(1)),
+            ("alpha".to_string(), Value::Integer(2)),
+        ]);
+        let patch = Patch::new(vec![PatchOp::Add {
+            path: "/middle".to_string(),
+            value: Value::Integer(3),
+        }]);
+        patch.apply_inplace(&mut doc).unwrap();
+        let keys: Vec<&str> = doc
+            .as_object()
+            .unwrap()
+            .iter()
+            .map(|(k, _)| k.as_str())
+            .collect();
+        assert_eq!(keys, vec!["zeta", "alpha", "middle"]);
     }
 }

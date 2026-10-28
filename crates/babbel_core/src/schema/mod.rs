@@ -1,7 +1,10 @@
-//! Universal Zero-Dependency JSON Schema Validator (Draft 7 / Draft 2020-12 core).
+//! Universal Zero-Dependency JSON Schema Validator & Inference Engine (Draft 7 / Draft 2020-12).
 //!
 //! Validates universal [`Value`] documents from any format (JSON, YAML, TOML, KDL, CBOR, BSON, etc.)
-//! against standard JSON Schema definitions.
+//! against standard JSON Schema definitions, and infers schemas from sample documents.
+
+pub mod infer;
+pub mod regex;
 
 use crate::error::BabbelError;
 use crate::model::Value;
@@ -9,6 +12,9 @@ use alloc::boxed::Box;
 use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+
+pub use infer::infer_schema;
+pub use regex::{Regex, regex_is_full_match, regex_is_match};
 
 /// Structured validation error containing pointer location, failed keyword, and error description.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -39,18 +45,39 @@ enum ValidationRule {
     MultipleOf(f64),
     MinLength(usize),
     MaxLength(usize),
-    Pattern(String),
+    Pattern {
+        raw: String,
+        compiled: Option<Regex>,
+    },
     Format(String),
     Required(Vec<String>),
     Properties(Vec<(String, CompiledSchema)>),
+    PatternProperties(Vec<(String, Option<Regex>, CompiledSchema)>),
+    PropertyNames(Box<CompiledSchema>),
     AdditionalPropertiesBool(bool),
     AdditionalPropertiesSchema(Box<CompiledSchema>),
+    DependentRequired(Vec<(String, Vec<String>)>),
+    DependentSchemas(Vec<(String, CompiledSchema)>),
     MinProperties(usize),
     MaxProperties(usize),
-    Items(Box<CompiledSchema>),
+    PrefixItems(Vec<CompiledSchema>),
+    Items {
+        start_index: usize,
+        schema: Box<CompiledSchema>,
+    },
+    Contains {
+        schema: Box<CompiledSchema>,
+        min: usize,
+        max: Option<usize>,
+    },
     MinItems(usize),
     MaxItems(usize),
     UniqueItems(bool),
+    IfThenElse {
+        cond: Box<CompiledSchema>,
+        then_schema: Option<Box<CompiledSchema>>,
+        else_schema: Option<Box<CompiledSchema>>,
+    },
     AllOf(Vec<CompiledSchema>),
     AnyOf(Vec<CompiledSchema>),
     OneOf(Vec<CompiledSchema>),
@@ -98,6 +125,25 @@ impl TypeName {
 impl CompiledSchema {
     /// Compile a JSON Schema definition represented as a [`Value`] into an executable validator.
     pub fn compile(schema: &Value) -> Result<Self, BabbelError> {
+        Self::compile_with_root(schema, schema, 0)
+    }
+
+    /// Infer a Draft 2020-12 JSON Schema [`Value`] from a sample [`Value`].
+    pub fn infer(sample: &Value) -> Value {
+        infer::infer_schema(sample)
+    }
+
+    fn compile_with_root(
+        schema: &Value,
+        root: &Value,
+        ref_depth: usize,
+    ) -> Result<Self, BabbelError> {
+        if ref_depth > 32 {
+            return Err(BabbelError::syntax(
+                "JSON Schema $ref recursion depth limit exceeded",
+            ));
+        }
+
         match schema {
             Value::Bool(true) => Ok(Self { rules: Vec::new() }),
             Value::Bool(false) => Ok(Self {
@@ -105,6 +151,24 @@ impl CompiledSchema {
             }),
             Value::Object(entries) => {
                 let mut rules = Vec::new();
+
+                // '$ref' resolution against root schema
+                if let Some(ref_str) = get_val(entries, "$ref").and_then(|v| v.as_str()) {
+                    if ref_str == "#" {
+                        let resolved = Self::compile_with_root(root, root, ref_depth + 1)?;
+                        rules.extend(resolved.rules);
+                    } else if let Some(ptr) = ref_str.strip_prefix('#') {
+                        if let Some(target) = root.pointer(ptr) {
+                            let resolved = Self::compile_with_root(target, root, ref_depth + 1)?;
+                            rules.extend(resolved.rules);
+                        } else {
+                            return Err(BabbelError::syntax(format!(
+                                "unresolved JSON Schema $ref '{}'",
+                                ref_str
+                            )));
+                        }
+                    }
+                }
 
                 // 'type'
                 if let Some(type_val) = get_val(entries, "type") {
@@ -155,7 +219,9 @@ impl CompiledSchema {
                     rules.push(ValidationRule::ExclusiveMaximum(v));
                 }
                 if let Some(v) = get_val(entries, "multipleOf").and_then(|v| v.as_f64()) {
-                    rules.push(ValidationRule::MultipleOf(v));
+                    if v > 0.0 {
+                        rules.push(ValidationRule::MultipleOf(v));
+                    }
                 }
 
                 // String constraints
@@ -166,7 +232,11 @@ impl CompiledSchema {
                     rules.push(ValidationRule::MaxLength(v as usize));
                 }
                 if let Some(s) = get_val(entries, "pattern").and_then(|v| v.as_str()) {
-                    rules.push(ValidationRule::Pattern(s.to_string()));
+                    let compiled = Regex::compile(s).ok();
+                    rules.push(ValidationRule::Pattern {
+                        raw: s.to_string(),
+                        compiled,
+                    });
                 }
                 if let Some(s) = get_val(entries, "format").and_then(|v| v.as_str()) {
                     rules.push(ValidationRule::Format(s.to_string()));
@@ -184,23 +254,61 @@ impl CompiledSchema {
                 if let Some(Value::Object(props)) = get_val(entries, "properties") {
                     let mut prop_rules = Vec::new();
                     for (k, sub) in props {
-                        let compiled = Self::compile(sub)?;
+                        let compiled = Self::compile_with_root(sub, root, ref_depth)?;
                         prop_rules.push((k.clone(), compiled));
                     }
                     rules.push(ValidationRule::Properties(prop_rules));
+                }
+
+                if let Some(Value::Object(pat_props)) = get_val(entries, "patternProperties") {
+                    let mut pat_rules = Vec::new();
+                    for (pat, sub) in pat_props {
+                        let re = Regex::compile(pat).ok();
+                        let compiled = Self::compile_with_root(sub, root, ref_depth)?;
+                        pat_rules.push((pat.clone(), re, compiled));
+                    }
+                    rules.push(ValidationRule::PatternProperties(pat_rules));
+                }
+
+                if let Some(prop_names) = get_val(entries, "propertyNames") {
+                    let compiled = Self::compile_with_root(prop_names, root, ref_depth)?;
+                    rules.push(ValidationRule::PropertyNames(Box::new(compiled)));
                 }
 
                 if let Some(add_prop) = get_val(entries, "additionalProperties") {
                     match add_prop {
                         Value::Bool(b) => rules.push(ValidationRule::AdditionalPropertiesBool(*b)),
                         sub @ Value::Object(_) => {
-                            let compiled = Self::compile(sub)?;
+                            let compiled = Self::compile_with_root(sub, root, ref_depth)?;
                             rules.push(ValidationRule::AdditionalPropertiesSchema(Box::new(
                                 compiled,
                             )));
                         }
                         _ => {}
                     }
+                }
+
+                if let Some(Value::Object(dep_req)) = get_val(entries, "dependentRequired") {
+                    let mut list = Vec::new();
+                    for (k, arr_val) in dep_req {
+                        if let Value::Array(arr) = arr_val {
+                            let req_keys: Vec<String> = arr
+                                .iter()
+                                .filter_map(|x| x.as_str().map(|s| s.to_string()))
+                                .collect();
+                            list.push((k.clone(), req_keys));
+                        }
+                    }
+                    rules.push(ValidationRule::DependentRequired(list));
+                }
+
+                if let Some(Value::Object(dep_schemas)) = get_val(entries, "dependentSchemas") {
+                    let mut list = Vec::new();
+                    for (k, sub) in dep_schemas {
+                        let compiled = Self::compile_with_root(sub, root, ref_depth)?;
+                        list.push((k.clone(), compiled));
+                    }
+                    rules.push(ValidationRule::DependentSchemas(list));
                 }
 
                 if let Some(v) = get_val(entries, "minProperties").and_then(|v| v.as_u64()) {
@@ -210,10 +318,39 @@ impl CompiledSchema {
                     rules.push(ValidationRule::MaxProperties(v as usize));
                 }
 
-                // Array constraints
+                // Array constraints: prefixItems & items
+                let mut prefix_len = 0usize;
+                if let Some(Value::Array(prefix_arr)) = get_val(entries, "prefixItems") {
+                    let mut prefixes = Vec::with_capacity(prefix_arr.len());
+                    for sub in prefix_arr {
+                        prefixes.push(Self::compile_with_root(sub, root, ref_depth)?);
+                    }
+                    prefix_len = prefixes.len();
+                    rules.push(ValidationRule::PrefixItems(prefixes));
+                }
+
                 if let Some(items_val) = get_val(entries, "items") {
-                    let compiled = Self::compile(items_val)?;
-                    rules.push(ValidationRule::Items(Box::new(compiled)));
+                    let compiled = Self::compile_with_root(items_val, root, ref_depth)?;
+                    rules.push(ValidationRule::Items {
+                        start_index: prefix_len,
+                        schema: Box::new(compiled),
+                    });
+                }
+
+                if let Some(contains_val) = get_val(entries, "contains") {
+                    let compiled = Self::compile_with_root(contains_val, root, ref_depth)?;
+                    let min = get_val(entries, "minContains")
+                        .and_then(|v| v.as_u64())
+                        .map(|u| u as usize)
+                        .unwrap_or(1);
+                    let max = get_val(entries, "maxContains")
+                        .and_then(|v| v.as_u64())
+                        .map(|u| u as usize);
+                    rules.push(ValidationRule::Contains {
+                        schema: Box::new(compiled),
+                        min,
+                        max,
+                    });
                 }
 
                 if let Some(v) = get_val(entries, "minItems").and_then(|v| v.as_u64()) {
@@ -226,30 +363,48 @@ impl CompiledSchema {
                     rules.push(ValidationRule::UniqueItems(b));
                 }
 
+                // Conditional applicators: if / then / else
+                if let Some(if_val) = get_val(entries, "if") {
+                    let cond = Box::new(Self::compile_with_root(if_val, root, ref_depth)?);
+                    let then_schema = match get_val(entries, "then") {
+                        Some(t) => Some(Box::new(Self::compile_with_root(t, root, ref_depth)?)),
+                        None => None,
+                    };
+                    let else_schema = match get_val(entries, "else") {
+                        Some(e) => Some(Box::new(Self::compile_with_root(e, root, ref_depth)?)),
+                        None => None,
+                    };
+                    rules.push(ValidationRule::IfThenElse {
+                        cond,
+                        then_schema,
+                        else_schema,
+                    });
+                }
+
                 // Combinators
                 if let Some(Value::Array(items)) = get_val(entries, "allOf") {
                     let mut schemas = Vec::new();
                     for item in items {
-                        schemas.push(Self::compile(item)?);
+                        schemas.push(Self::compile_with_root(item, root, ref_depth)?);
                     }
                     rules.push(ValidationRule::AllOf(schemas));
                 }
                 if let Some(Value::Array(items)) = get_val(entries, "anyOf") {
                     let mut schemas = Vec::new();
                     for item in items {
-                        schemas.push(Self::compile(item)?);
+                        schemas.push(Self::compile_with_root(item, root, ref_depth)?);
                     }
                     rules.push(ValidationRule::AnyOf(schemas));
                 }
                 if let Some(Value::Array(items)) = get_val(entries, "oneOf") {
                     let mut schemas = Vec::new();
                     for item in items {
-                        schemas.push(Self::compile(item)?);
+                        schemas.push(Self::compile_with_root(item, root, ref_depth)?);
                     }
                     rules.push(ValidationRule::OneOf(schemas));
                 }
                 if let Some(sub) = get_val(entries, "not") {
-                    let compiled = Self::compile(sub)?;
+                    let compiled = Self::compile_with_root(sub, root, ref_depth)?;
                     rules.push(ValidationRule::Not(Box::new(compiled)));
                 }
 
@@ -275,6 +430,31 @@ impl CompiledSchema {
     /// Fast boolean check whether the instance is valid according to this schema.
     pub fn is_valid(&self, instance: &Value) -> bool {
         self.validate(instance).is_ok()
+    }
+
+    fn is_property_matched_by_siblings(&self, key: &str) -> bool {
+        for r in &self.rules {
+            match r {
+                ValidationRule::Properties(props) => {
+                    if props.iter().any(|(k, _)| k == key) {
+                        return true;
+                    }
+                }
+                ValidationRule::PatternProperties(pat_props) => {
+                    for (raw, re, _) in pat_props {
+                        let matched = match re {
+                            Some(compiled) => compiled.is_match(key),
+                            None => key.contains(raw.as_str()),
+                        };
+                        if matched {
+                            return true;
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        false
     }
 
     fn validate_internal(
@@ -402,13 +582,17 @@ impl CompiledSchema {
                         }
                     }
                 }
-                ValidationRule::Pattern(pattern) => {
+                ValidationRule::Pattern { raw, compiled } => {
                     if let Some(s) = val.as_str() {
-                        if !simple_regex_match(pattern, s) {
+                        let matched = match compiled {
+                            Some(re) => re.is_match(s),
+                            None => s.contains(raw.as_str()),
+                        };
+                        if !matched {
                             errors.push(SchemaValidationError {
                                 pointer: pointer.to_string(),
                                 keyword: "pattern",
-                                message: format!("string does not match pattern '{}'", pattern),
+                                message: format!("string does not match pattern '{}'", raw),
                             });
                         }
                     }
@@ -447,25 +631,47 @@ impl CompiledSchema {
                         }
                     }
                 }
+                ValidationRule::PatternProperties(pat_props) => {
+                    if let Value::Object(entries) = val {
+                        for (k, v) in entries {
+                            for (raw, re, sub_schema) in pat_props {
+                                let matched = match re {
+                                    Some(compiled) => compiled.is_match(k),
+                                    None => k.contains(raw.as_str()),
+                                };
+                                if matched {
+                                    let sub_ptr = format!("{}/{}", pointer, k);
+                                    sub_schema.validate_internal(v, &sub_ptr, errors);
+                                }
+                            }
+                        }
+                    }
+                }
+                ValidationRule::PropertyNames(name_schema) => {
+                    if let Value::Object(entries) = val {
+                        for (k, _) in entries {
+                            let key_val = Value::String(k.clone());
+                            let sub_ptr = format!("{}/{}", pointer, k);
+                            let mut key_errors = Vec::new();
+                            name_schema.validate_internal(&key_val, &sub_ptr, &mut key_errors);
+                            if !key_errors.is_empty() {
+                                errors.push(SchemaValidationError {
+                                    pointer: sub_ptr,
+                                    keyword: "propertyNames",
+                                    message: format!(
+                                        "property name '{}' does not match propertyNames schema",
+                                        k
+                                    ),
+                                });
+                            }
+                        }
+                    }
+                }
                 ValidationRule::AdditionalPropertiesBool(allowed) => {
                     if !*allowed {
                         if let Value::Object(entries) = val {
-                            // Find declared properties in sibling rule
-                            let declared: Vec<&str> = self
-                                .rules
-                                .iter()
-                                .filter_map(|r| {
-                                    if let ValidationRule::Properties(p) = r {
-                                        Some(p.iter().map(|(k, _)| k.as_str()).collect::<Vec<_>>())
-                                    } else {
-                                        None
-                                    }
-                                })
-                                .flatten()
-                                .collect();
-
                             for (k, _) in entries {
-                                if !declared.contains(&k.as_str()) {
+                                if !self.is_property_matched_by_siblings(k) {
                                     errors.push(SchemaValidationError {
                                         pointer: format!("{}/{}", pointer, k),
                                         keyword: "additionalProperties",
@@ -478,23 +684,39 @@ impl CompiledSchema {
                 }
                 ValidationRule::AdditionalPropertiesSchema(sub_schema) => {
                     if let Value::Object(entries) = val {
-                        let declared: Vec<&str> = self
-                            .rules
-                            .iter()
-                            .filter_map(|r| {
-                                if let ValidationRule::Properties(p) = r {
-                                    Some(p.iter().map(|(k, _)| k.as_str()).collect::<Vec<_>>())
-                                } else {
-                                    None
-                                }
-                            })
-                            .flatten()
-                            .collect();
-
                         for (k, v) in entries {
-                            if !declared.contains(&k.as_str()) {
+                            if !self.is_property_matched_by_siblings(k) {
                                 let sub_ptr = format!("{}/{}", pointer, k);
                                 sub_schema.validate_internal(v, &sub_ptr, errors);
+                            }
+                        }
+                    }
+                }
+                ValidationRule::DependentRequired(deps) => {
+                    if let Value::Object(entries) = val {
+                        for (prop, required_list) in deps {
+                            if entries.iter().any(|(k, _)| k == prop) {
+                                for req in required_list {
+                                    if !entries.iter().any(|(k, _)| k == req) {
+                                        errors.push(SchemaValidationError {
+                                            pointer: pointer.to_string(),
+                                            keyword: "dependentRequired",
+                                            message: format!(
+                                                "property '{}' requires '{}' to be present",
+                                                prop, req
+                                            ),
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                ValidationRule::DependentSchemas(deps) => {
+                    if let Value::Object(entries) = val {
+                        for (prop, sub_schema) in deps {
+                            if entries.iter().any(|(k, _)| k == prop) {
+                                sub_schema.validate_internal(val, pointer, errors);
                             }
                         }
                     }
@@ -529,11 +751,49 @@ impl CompiledSchema {
                         }
                     }
                 }
-                ValidationRule::Items(item_schema) => {
+                ValidationRule::PrefixItems(prefixes) => {
                     if let Value::Array(items) = val {
-                        for (idx, item) in items.iter().enumerate() {
+                        for (idx, (item, schema)) in items.iter().zip(prefixes.iter()).enumerate() {
                             let sub_ptr = format!("{}/{}", pointer, idx);
-                            item_schema.validate_internal(item, &sub_ptr, errors);
+                            schema.validate_internal(item, &sub_ptr, errors);
+                        }
+                    }
+                }
+                ValidationRule::Items {
+                    start_index,
+                    schema,
+                } => {
+                    if let Value::Array(items) = val {
+                        for (idx, item) in items.iter().enumerate().skip(*start_index) {
+                            let sub_ptr = format!("{}/{}", pointer, idx);
+                            schema.validate_internal(item, &sub_ptr, errors);
+                        }
+                    }
+                }
+                ValidationRule::Contains { schema, min, max } => {
+                    if let Value::Array(items) = val {
+                        let matched_count = items.iter().filter(|item| schema.is_valid(item)).count();
+                        if matched_count < *min {
+                            errors.push(SchemaValidationError {
+                                pointer: pointer.to_string(),
+                                keyword: "contains",
+                                message: format!(
+                                    "array contains {} matching items (minimum required: {})",
+                                    matched_count, min
+                                ),
+                            });
+                        }
+                        if let Some(max_c) = max {
+                            if matched_count > *max_c {
+                                errors.push(SchemaValidationError {
+                                    pointer: pointer.to_string(),
+                                    keyword: "maxContains",
+                                    message: format!(
+                                        "array contains {} matching items (maximum allowed: {})",
+                                        matched_count, max_c
+                                    ),
+                                });
+                            }
                         }
                     }
                 }
@@ -588,6 +848,19 @@ impl CompiledSchema {
                         }
                     }
                 }
+                ValidationRule::IfThenElse {
+                    cond,
+                    then_schema,
+                    else_schema,
+                } => {
+                    if cond.is_valid(val) {
+                        if let Some(then_s) = then_schema {
+                            then_s.validate_internal(val, pointer, errors);
+                        }
+                    } else if let Some(else_s) = else_schema {
+                        else_s.validate_internal(val, pointer, errors);
+                    }
+                }
                 ValidationRule::AllOf(schemas) => {
                     for s in schemas {
                         s.validate_internal(val, pointer, errors);
@@ -640,29 +913,91 @@ fn get_val<'a>(entries: &'a [(String, Value)], key: &str) -> Option<&'a Value> {
     entries.iter().find(|(k, _)| k == key).map(|(_, v)| v)
 }
 
-fn simple_regex_match(pattern: &str, text: &str) -> bool {
-    if pattern.starts_with('^') && pattern.ends_with('$') {
-        let core = &pattern[1..pattern.len() - 1];
-        text == core
-    } else if pattern.starts_with('^') {
-        text.starts_with(&pattern[1..])
-    } else if pattern.ends_with('$') {
-        text.ends_with(&pattern[..pattern.len() - 1])
-    } else {
-        text.contains(pattern)
-    }
-}
-
 fn validate_format_string(format: &str, s: &str) -> bool {
     match format {
-        "email" => s.contains('@') && s.contains('.'),
-        "uuid" => s.len() == 36 && s.chars().filter(|&c| c == '-').count() == 4,
+        "email" => {
+            if let Some((local, domain)) = s.split_once('@') {
+                !local.is_empty()
+                    && !local.contains(' ')
+                    && domain.contains('.')
+                    && !domain.starts_with('.')
+                    && !domain.ends_with('.')
+            } else {
+                false
+            }
+        }
+        "uuid" => {
+            s.len() == 36
+                && s.bytes().enumerate().all(|(i, b)| {
+                    if i == 8 || i == 13 || i == 18 || i == 23 {
+                        b == b'-'
+                    } else {
+                        b.is_ascii_hexdigit()
+                    }
+                })
+        }
         "ipv4" => {
             let parts: Vec<&str> = s.split('.').collect();
-            parts.len() == 4 && parts.iter().all(|p| p.parse::<u8>().is_ok())
+            parts.len() == 4 && parts.iter().all(|p| !p.is_empty() && p.parse::<u8>().is_ok())
         }
-        "date-time" => s.contains('T') || s.contains('Z') || s.contains('-'),
-        "uri" => s.contains("://"),
+        "ipv6" => {
+            if !s.contains(':') {
+                return false;
+            }
+            let double_colons = s.matches("::").count();
+            if double_colons > 1 {
+                return false;
+            }
+            let groups: Vec<&str> = s.split(':').filter(|g| !g.is_empty()).collect();
+            if double_colons == 0 && groups.len() != 8 {
+                return false;
+            }
+            if groups.len() > 8 {
+                return false;
+            }
+            groups
+                .iter()
+                .all(|g| g.len() <= 4 && g.bytes().all(|b| b.is_ascii_hexdigit()))
+        }
+        "hostname" => {
+            !s.is_empty()
+                && s.len() <= 253
+                && s.split('.').all(|label| {
+                    !label.is_empty()
+                        && label.len() <= 63
+                        && !label.starts_with('-')
+                        && !label.ends_with('-')
+                        && label
+                            .bytes()
+                            .all(|b| b.is_ascii_alphanumeric() || b == b'-')
+                })
+        }
+        "date" => {
+            s.len() == 10
+                && s.as_bytes()[4] == b'-'
+                && s.as_bytes()[7] == b'-'
+                && s[0..4].parse::<u16>().is_ok()
+                && s[5..7].parse::<u8>().map_or(false, |m| (1..=12).contains(&m))
+                && s[8..10].parse::<u8>().map_or(false, |d| (1..=31).contains(&d))
+        }
+        "time" => {
+            s.len() >= 8
+                && s.as_bytes()[2] == b':'
+                && s.as_bytes()[5] == b':'
+                && s[0..2].parse::<u8>().map_or(false, |h| h <= 23)
+                && s[3..5].parse::<u8>().map_or(false, |m| m <= 59)
+                && s[6..8].parse::<u8>().map_or(false, |sec| sec <= 60)
+        }
+        "date-time" => {
+            s.len() >= 19
+                && validate_format_string("date", &s[0..10])
+                && matches!(s.as_bytes()[10], b'T' | b't' | b' ')
+                && validate_format_string("time", &s[11..])
+        }
+        "duration" => s.starts_with('P') && s.len() >= 2,
+        "uri" => s.contains("://") && !s.contains(' '),
+        "uri-reference" => !s.contains(' '),
+        "json-pointer" => s.is_empty() || s.starts_with('/'),
         _ => true,
     }
 }
@@ -757,5 +1092,147 @@ mod tests {
         assert!(compiled.is_valid(&Value::String("test".to_string())));
         assert!(compiled.is_valid(&Value::Integer(42)));
         assert!(!compiled.is_valid(&Value::Bool(true)));
+    }
+
+    #[test]
+    fn test_schema_defs_and_refs() {
+        let schema = Value::Object(vec![
+            (
+                "$defs".to_string(),
+                Value::Object(vec![(
+                    "positiveInt".to_string(),
+                    Value::Object(vec![
+                        ("type".to_string(), Value::String("integer".to_string())),
+                        ("minimum".to_string(), Value::Integer(1)),
+                    ]),
+                )]),
+            ),
+            ("type".to_string(), Value::String("object".to_string())),
+            (
+                "properties".to_string(),
+                Value::Object(vec![(
+                    "count".to_string(),
+                    Value::Object(vec![(
+                        "$ref".to_string(),
+                        Value::String("#/$defs/positiveInt".to_string()),
+                    )]),
+                )]),
+            ),
+        ]);
+
+        let compiled = CompiledSchema::compile(&schema).unwrap();
+        assert!(compiled.is_valid(&Value::Object(vec![(
+            "count".to_string(),
+            Value::Integer(5)
+        )])));
+        assert!(!compiled.is_valid(&Value::Object(vec![(
+            "count".to_string(),
+            Value::Integer(0)
+        )])));
+    }
+
+    #[test]
+    fn test_schema_if_then_else_and_prefix_items() {
+        let cond_schema = Value::Object(vec![
+            (
+                "if".to_string(),
+                Value::Object(vec![(
+                    "properties".to_string(),
+                    Value::Object(vec![(
+                        "country".to_string(),
+                        Value::Object(vec![(
+                            "const".to_string(),
+                            Value::String("US".to_string()),
+                        )]),
+                    )]),
+                )]),
+            ),
+            (
+                "then".to_string(),
+                Value::Object(vec![(
+                    "properties".to_string(),
+                    Value::Object(vec![(
+                        "zip".to_string(),
+                        Value::Object(vec![(
+                            "pattern".to_string(),
+                            Value::String(r"^\d{5}$".to_string()),
+                        )]),
+                    )]),
+                )]),
+            ),
+        ]);
+
+        let compiled = CompiledSchema::compile(&cond_schema).unwrap();
+        let valid_us = Value::Object(vec![
+            ("country".to_string(), Value::String("US".to_string())),
+            ("zip".to_string(), Value::String("90210".to_string())),
+        ]);
+        let invalid_us = Value::Object(vec![
+            ("country".to_string(), Value::String("US".to_string())),
+            ("zip".to_string(), Value::String("ABCDE".to_string())),
+        ]);
+        assert!(compiled.is_valid(&valid_us));
+        assert!(!compiled.is_valid(&invalid_us));
+
+        // prefixItems + items
+        let tuple_schema = Value::Object(vec![
+            ("type".to_string(), Value::String("array".to_string())),
+            (
+                "prefixItems".to_string(),
+                Value::Array(vec![
+                    Value::Object(vec![(
+                        "type".to_string(),
+                        Value::String("integer".to_string()),
+                    )]),
+                    Value::Object(vec![(
+                        "type".to_string(),
+                        Value::String("string".to_string()),
+                    )]),
+                ]),
+            ),
+            (
+                "items".to_string(),
+                Value::Object(vec![(
+                    "type".to_string(),
+                    Value::String("boolean".to_string()),
+                )]),
+            ),
+        ]);
+        let compiled_tuple = CompiledSchema::compile(&tuple_schema).unwrap();
+        assert!(compiled_tuple.is_valid(&Value::Array(vec![
+            Value::Integer(1),
+            Value::String("ok".to_string()),
+            Value::Bool(true),
+        ])));
+        assert!(!compiled_tuple.is_valid(&Value::Array(vec![
+            Value::Integer(1),
+            Value::String("ok".to_string()),
+            Value::Integer(2),
+        ])));
+    }
+
+    #[test]
+    fn test_schema_inference_roundtrip() {
+        let sample = Value::Array(vec![
+            Value::Object(vec![
+                ("id".to_string(), Value::Integer(1)),
+                (
+                    "email".to_string(),
+                    Value::String("alice@example.com".to_string()),
+                ),
+                ("nickname".to_string(), Value::String("ally".to_string())),
+            ]),
+            Value::Object(vec![
+                ("id".to_string(), Value::Integer(2)),
+                (
+                    "email".to_string(),
+                    Value::String("bob@example.org".to_string()),
+                ),
+            ]),
+        ]);
+
+        let inferred = CompiledSchema::infer(&sample);
+        let compiled = CompiledSchema::compile(&inferred).unwrap();
+        assert!(compiled.is_valid(&sample));
     }
 }

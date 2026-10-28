@@ -174,9 +174,10 @@ pub use babbel_yaml::YamlEngine;
 
 pub use babbel_core::{
     CompiledSchema, CsvEngine, FormatCodec, FormatEmitter, FormatEngine, FormatOptions,
-    FormatParser, IniEngine, JsonPath, Patch, PatchOp, SchemaValidationError, TsvEngine,
-    apply_merge_patch, diff_merge_patch, find_engine, find_engine_by_extension,
-    find_engine_by_mime, jsonpath_query, jsonpath_query_mut, validate_schema,
+    FormatParser, IniEngine, JsonPath, LocatedNode, Patch, PatchOp, Regex, SchemaValidationError,
+    TsvEngine, apply_merge_patch, compression, diff_merge_patch, find_engine,
+    find_engine_by_extension, find_engine_by_mime, format_unified_diff, infer_schema,
+    jsonpath_query, jsonpath_query_located, jsonpath_query_mut, transform, validate_schema,
 };
 pub mod diff {
     pub use babbel_core::diff::*;
@@ -237,7 +238,10 @@ pub mod macros;
 #[cfg(feature = "serde")]
 pub mod serde;
 #[cfg(feature = "serde")]
-pub use babbel_core::{SerdeError, from_value, to_value};
+pub use babbel_core::{
+    FormatVisitorSerializer, SerdeError, from_value, from_value_owned, serialize_to_visitor,
+    to_value,
+};
 
 /// Convenient prelude re-exporting key format engines, universal Value AST, I/O traits,
 /// the declarative `value!` macro, and conversion routines.
@@ -258,5 +262,8 @@ pub mod prelude {
         validate_schema,
     };
     #[cfg(feature = "serde")]
-    pub use babbel_core::{SerdeError, from_value, to_value};
+    pub use babbel_core::{
+        FormatVisitorSerializer, SerdeError, from_value, from_value_owned, serialize_to_visitor,
+        to_value,
+    };
 }

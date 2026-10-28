@@ -163,6 +163,18 @@ pub trait FormatEngine: Send + Sync {
         self.serialize(value, &mut dest, options)?;
         Ok(dest.into_vec())
     }
+
+    /// Parses one or more documents from a string stream (e.g. multi-doc YAML or JSON Lines).
+    #[cfg(feature = "alloc")]
+    fn parse_documents(&self, input: &str) -> Result<alloc::vec::Vec<Value>, BabbelError> {
+        Ok(alloc::vec![self.parse_str(input)?])
+    }
+
+    /// Parses one or more documents from a byte stream (e.g. RFC 8742 CBOR Sequences).
+    #[cfg(feature = "alloc")]
+    fn parse_documents_bytes(&self, input: &[u8]) -> Result<alloc::vec::Vec<Value>, BabbelError> {
+        Ok(alloc::vec![self.parse_bytes(input)?])
+    }
 }
 
 // Blanket trait implementations adhering to DIP and ISP

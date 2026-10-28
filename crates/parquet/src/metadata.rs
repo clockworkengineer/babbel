@@ -65,6 +65,11 @@ pub enum Encoding {
     Plain = 0,
     PlainDictionary = 2,
     Rle = 3,
+    BitPacked = 4,
+    DeltaBinaryPacked = 5,
+    DeltaLengthByteArray = 6,
+    DeltaByteArray = 7,
+    RleDictionary = 8,
 }
 
 impl Encoding {
@@ -73,6 +78,11 @@ impl Encoding {
             0 => Ok(Encoding::Plain),
             2 => Ok(Encoding::PlainDictionary),
             3 => Ok(Encoding::Rle),
+            4 => Ok(Encoding::BitPacked),
+            5 => Ok(Encoding::DeltaBinaryPacked),
+            6 => Ok(Encoding::DeltaLengthByteArray),
+            7 => Ok(Encoding::DeltaByteArray),
+            8 => Ok(Encoding::RleDictionary),
             _ => Ok(Encoding::Plain),
         }
     }
@@ -83,7 +93,11 @@ pub enum CompressionCodec {
     Uncompressed = 0,
     Snappy = 1,
     Gzip = 2,
+    Lzo = 3,
+    Brotli = 4,
+    Lz4 = 5,
     Zstd = 6,
+    Lz4Raw = 7,
 }
 
 impl CompressionCodec {
@@ -92,7 +106,11 @@ impl CompressionCodec {
             0 => Ok(CompressionCodec::Uncompressed),
             1 => Ok(CompressionCodec::Snappy),
             2 => Ok(CompressionCodec::Gzip),
+            3 => Ok(CompressionCodec::Lzo),
+            4 => Ok(CompressionCodec::Brotli),
+            5 => Ok(CompressionCodec::Lz4),
             6 => Ok(CompressionCodec::Zstd),
+            7 => Ok(CompressionCodec::Lz4Raw),
             _ => Ok(CompressionCodec::Uncompressed),
         }
     }
@@ -175,6 +193,7 @@ pub struct ColumnMetaData {
     pub total_uncompressed_size: i64,
     pub total_compressed_size: i64,
     pub data_page_offset: i64,
+    pub dictionary_page_offset: Option<i64>,
 }
 
 impl ColumnMetaData {
@@ -210,6 +229,11 @@ impl ColumnMetaData {
         w.write_field_header(9, TYPE_I64);
         w.write_i64(self.data_page_offset);
 
+        if let Some(dict_off) = self.dictionary_page_offset {
+            w.write_field_header(10, TYPE_I64);
+            w.write_i64(dict_off);
+        }
+
         w.write_struct_end();
     }
 
@@ -223,6 +247,7 @@ impl ColumnMetaData {
         let mut total_uncompressed_size = 0;
         let mut total_compressed_size = 0;
         let mut data_page_offset = 0;
+        let mut dictionary_page_offset = None;
 
         loop {
             let (field_id, field_type) = r.read_field_header()?;
@@ -248,6 +273,7 @@ impl ColumnMetaData {
                 6 => total_uncompressed_size = r.read_i64()?,
                 7 => total_compressed_size = r.read_i64()?,
                 9 => data_page_offset = r.read_i64()?,
+                10 => dictionary_page_offset = Some(r.read_i64()?),
                 _ => r.skip(field_type)?,
             }
         }
@@ -262,6 +288,7 @@ impl ColumnMetaData {
             total_uncompressed_size,
             total_compressed_size,
             data_page_offset,
+            dictionary_page_offset,
         })
     }
 }
@@ -500,11 +527,133 @@ impl DataPageHeader {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct DictionaryPageHeader {
+    pub num_values: i32,
+    pub encoding: Encoding,
+    pub is_sorted: Option<bool>,
+}
+
+impl DictionaryPageHeader {
+    pub fn encode(&self, w: &mut ThriftWriter) {
+        w.write_struct_begin();
+        w.write_field_header(1, TYPE_I32);
+        w.write_i32(self.num_values);
+        w.write_field_header(2, TYPE_I32);
+        w.write_i32(self.encoding as i32);
+        if let Some(sorted) = self.is_sorted {
+            w.write_field_header(3, if sorted { TYPE_TRUE } else { TYPE_FALSE });
+        }
+        w.write_struct_end();
+    }
+
+    pub fn decode(r: &mut ThriftReader) -> Result<Self, ParquetError> {
+        r.read_struct_begin();
+        let mut num_values = 0;
+        let mut encoding = Encoding::Plain;
+        let mut is_sorted = None;
+
+        loop {
+            let (field_id, field_type) = r.read_field_header()?;
+            if field_type == TYPE_STOP {
+                break;
+            }
+            match field_id {
+                1 => num_values = r.read_i32()?,
+                2 => encoding = Encoding::from_i32(r.read_i32()?)?,
+                3 => is_sorted = Some(field_type == TYPE_TRUE),
+                _ => r.skip(field_type)?,
+            }
+        }
+        r.read_struct_end();
+
+        Ok(Self {
+            num_values,
+            encoding,
+            is_sorted,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct DataPageHeaderV2 {
+    pub num_values: i32,
+    pub num_nulls: i32,
+    pub num_rows: i32,
+    pub encoding: Encoding,
+    pub definition_levels_byte_length: i32,
+    pub repetition_levels_byte_length: i32,
+    pub is_compressed: Option<bool>,
+}
+
+impl DataPageHeaderV2 {
+    pub fn encode(&self, w: &mut ThriftWriter) {
+        w.write_struct_begin();
+        w.write_field_header(1, TYPE_I32);
+        w.write_i32(self.num_values);
+        w.write_field_header(2, TYPE_I32);
+        w.write_i32(self.num_nulls);
+        w.write_field_header(3, TYPE_I32);
+        w.write_i32(self.num_rows);
+        w.write_field_header(4, TYPE_I32);
+        w.write_i32(self.encoding as i32);
+        w.write_field_header(5, TYPE_I32);
+        w.write_i32(self.definition_levels_byte_length);
+        w.write_field_header(6, TYPE_I32);
+        w.write_i32(self.repetition_levels_byte_length);
+        if let Some(comp) = self.is_compressed {
+            w.write_field_header(7, if comp { TYPE_TRUE } else { TYPE_FALSE });
+        }
+        w.write_struct_end();
+    }
+
+    pub fn decode(r: &mut ThriftReader) -> Result<Self, ParquetError> {
+        r.read_struct_begin();
+        let mut num_values = 0;
+        let mut num_nulls = 0;
+        let mut num_rows = 0;
+        let mut encoding = Encoding::Plain;
+        let mut def_len = 0;
+        let mut rep_len = 0;
+        let mut is_compressed = None;
+
+        loop {
+            let (field_id, field_type) = r.read_field_header()?;
+            if field_type == TYPE_STOP {
+                break;
+            }
+            match field_id {
+                1 => num_values = r.read_i32()?,
+                2 => num_nulls = r.read_i32()?,
+                3 => num_rows = r.read_i32()?,
+                4 => encoding = Encoding::from_i32(r.read_i32()?)?,
+                5 => def_len = r.read_i32()?,
+                6 => rep_len = r.read_i32()?,
+                7 => is_compressed = Some(field_type == TYPE_TRUE),
+                _ => r.skip(field_type)?,
+            }
+        }
+        r.read_struct_end();
+
+        Ok(Self {
+            num_values,
+            num_nulls,
+            num_rows,
+            encoding,
+            definition_levels_byte_length: def_len,
+            repetition_levels_byte_length: rep_len,
+            is_compressed,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct PageHeader {
-    pub type_: i32, // 0 = DATA_PAGE
+    pub type_: i32, // 0 = DATA_PAGE, 2 = DICTIONARY_PAGE, 3 = DATA_PAGE_V2
     pub uncompressed_page_size: i32,
     pub compressed_page_size: i32,
     pub data_page_header: Option<DataPageHeader>,
+    pub dictionary_page_header: Option<DictionaryPageHeader>,
+    pub data_page_header_v2: Option<DataPageHeaderV2>,
 }
 
 impl PageHeader {
@@ -520,6 +669,14 @@ impl PageHeader {
             w.write_field_header(5, TYPE_STRUCT);
             d.encode(w);
         }
+        if let Some(ref dict) = self.dictionary_page_header {
+            w.write_field_header(7, TYPE_STRUCT);
+            dict.encode(w);
+        }
+        if let Some(ref d2) = self.data_page_header_v2 {
+            w.write_field_header(8, TYPE_STRUCT);
+            d2.encode(w);
+        }
         w.write_struct_end();
     }
 
@@ -529,6 +686,8 @@ impl PageHeader {
         let mut uncompressed_page_size = 0;
         let mut compressed_page_size = 0;
         let mut data_page_header = None;
+        let mut dictionary_page_header = None;
+        let mut data_page_header_v2 = None;
 
         loop {
             let (field_id, field_type) = r.read_field_header()?;
@@ -540,6 +699,8 @@ impl PageHeader {
                 2 => uncompressed_page_size = r.read_i32()?,
                 3 => compressed_page_size = r.read_i32()?,
                 5 => data_page_header = Some(DataPageHeader::decode(r)?),
+                7 => dictionary_page_header = Some(DictionaryPageHeader::decode(r)?),
+                8 => data_page_header_v2 = Some(DataPageHeaderV2::decode(r)?),
                 _ => r.skip(field_type)?,
             }
         }
@@ -550,6 +711,8 @@ impl PageHeader {
             uncompressed_page_size,
             compressed_page_size,
             data_page_header,
+            dictionary_page_header,
+            data_page_header_v2,
         })
     }
 }

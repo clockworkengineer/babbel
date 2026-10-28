@@ -25,6 +25,18 @@ impl FormatEngine for YamlEngine {
         Ok(Value::from(&node))
     }
 
+    #[cfg(feature = "alloc")]
+    fn parse_documents(&self, input: &str) -> Result<alloc::vec::Vec<Value>, BabbelError> {
+        let mut yaml_src = crate::io::sources::buffer::Buffer::new(input.as_bytes());
+        let node = crate::parser::document::parse(&mut yaml_src)?;
+        match node {
+            crate::nodes::node::Node::Documents(docs) | crate::nodes::node::Node::Document(docs) => {
+                Ok(docs.iter().map(Value::from).collect())
+            }
+            single => Ok(alloc::vec![Value::from(&single)]),
+        }
+    }
+
     fn serialize(
         &self,
         value: &Value,

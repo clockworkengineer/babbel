@@ -384,3 +384,13 @@ pub fn from_bytes(bytes: &[u8]) -> Result<Value, CborError> {
     let val = decoder.decode_value()?;
     Ok(val)
 }
+
+/// Parses an RFC 8742 CBOR Sequence (concatenated top-level CBOR data items) into a `Vec<Value>`.
+pub fn from_bytes_seq(bytes: &[u8]) -> Result<Vec<Value>, CborError> {
+    let mut decoder = Decoder::new(bytes);
+    let mut items = Vec::new();
+    while decoder.remaining() > 0 {
+        items.push(decoder.decode_value()?);
+    }
+    Ok(items)
+}

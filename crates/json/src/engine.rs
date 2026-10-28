@@ -63,6 +63,13 @@ impl FormatEngine for JsonLinesEngine {
         Ok(Value::Array(values))
     }
 
+    #[cfg(feature = "alloc")]
+    fn parse_documents(&self, input: &str) -> Result<alloc::vec::Vec<Value>, BabbelError> {
+        let nodes = crate::lines::parse_json_lines(input)
+            .map_err(|err| BabbelError::syntax(err).with_format("jsonlines"))?;
+        Ok(nodes.into_iter().map(Value::from).collect())
+    }
+
     fn serialize(
         &self,
         value: &Value,

@@ -28,6 +28,10 @@ pub struct AvroField {
     pub schema: AvroSchema,
     /// Optional default value.
     pub default: Option<Value>,
+    /// Alternative names for this field during schema evolution.
+    pub aliases: Vec<String>,
+    /// Optional logicalType annotation (e.g. `"uuid"`, `"date"`, `"timestamp-millis"`).
+    pub logical_type: Option<String>,
 }
 
 /// Avro Schema AST representing either primitive or complex Avro data types.
@@ -186,10 +190,26 @@ impl AvroSchema {
                                 })?;
                                 let f_schema = Self::from_value_with_env(f_type_val, ns, env)?;
                                 let f_default = f_val.get("default").cloned();
+                                let f_aliases = f_val
+                                    .get("aliases")
+                                    .and_then(|v| v.as_array())
+                                    .map(|arr| {
+                                        arr.iter()
+                                            .filter_map(|x| x.as_str().map(String::from))
+                                            .collect()
+                                    })
+                                    .unwrap_or_default();
+                                let f_logical = f_val
+                                    .get("logicalType")
+                                    .or_else(|| f_type_val.get("logicalType"))
+                                    .and_then(|v| v.as_str())
+                                    .map(String::from);
                                 fields.push(AvroField {
                                     name: f_name,
                                     schema: f_schema,
                                     default: f_default,
+                                    aliases: f_aliases,
+                                    logical_type: f_logical,
                                 });
                             }
 
@@ -328,6 +348,8 @@ impl AvroSchema {
                         name: f.name,
                         schema: Self::resolve_named(f.schema, env),
                         default: f.default,
+                        aliases: f.aliases,
+                        logical_type: f.logical_type,
                     })
                     .collect();
                 AvroSchema::Record {

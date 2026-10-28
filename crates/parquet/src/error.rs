@@ -23,6 +23,10 @@ pub enum ParquetError {
     UnsupportedEncoding(String),
     /// Row object fields do not match column schema.
     SchemaMismatch(String),
+    /// Invalid Parquet footer length.
+    InvalidFooterLength(usize),
+    /// Compression codec is not supported.
+    UnsupportedCompression(String),
     /// String payload is not valid UTF-8.
     InvalidUtf8,
     /// General serialization/deserialization error.
@@ -43,6 +47,12 @@ impl fmt::Display for ParquetError {
                 write!(f, "Unsupported Parquet encoding: {}", msg)
             }
             ParquetError::SchemaMismatch(msg) => write!(f, "Parquet schema mismatch: {}", msg),
+            ParquetError::InvalidFooterLength(len) => {
+                write!(f, "Invalid Parquet footer length: {}", len)
+            }
+            ParquetError::UnsupportedCompression(msg) => {
+                write!(f, "Unsupported Parquet compression: {}", msg)
+            }
             ParquetError::InvalidUtf8 => write!(f, "Parquet string column contains invalid UTF-8"),
             ParquetError::General(msg) => write!(f, "Parquet error: {}", msg),
         }

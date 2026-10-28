@@ -58,7 +58,62 @@ pub mod writer;
 pub use column::ColumnData;
 pub use engine::ParquetEngine;
 pub use error::ParquetError;
-pub use reader::read_parquet;
-pub use writer::write_parquet;
+pub use metadata::CompressionCodec;
+pub use reader::{ParquetReadOptions, read_parquet, read_parquet_with_options};
+pub use writer::{ParquetWriteOptions, write_parquet, write_parquet_with_options};
 
 pub use babbel_core::Value;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloc::vec;
+
+    #[test]
+    fn test_parquet_snappy_and_lz4_roundtrip() {
+        let table = Value::Array(vec![
+            Value::Object(vec![
+                ("id".into(), Value::Integer(1)),
+                ("name".into(), Value::String("Alice".into())),
+                ("score".into(), Value::Float(98.5)),
+            ]),
+            Value::Object(vec![
+                ("id".into(), Value::Integer(2)),
+                ("name".into(), Value::String("Bob".into())),
+                ("score".into(), Value::Null),
+            ]),
+            Value::Object(vec![
+                ("id".into(), Value::Integer(3)),
+                ("name".into(), Value::String("Alice".into())),
+                ("score".into(), Value::Float(91.0)),
+            ]),
+        ]);
+
+        // Snappy compressed
+        let snappy_bytes =
+            write_parquet_with_options(&table, &ParquetWriteOptions::snappy()).unwrap();
+        let snappy_rt = read_parquet(&snappy_bytes).unwrap();
+        assert_eq!(snappy_rt, table);
+
+        // LZ4_RAW compressed
+        let lz4_bytes =
+            write_parquet_with_options(&table, &ParquetWriteOptions::lz4_raw()).unwrap();
+        let lz4_rt = read_parquet(&lz4_bytes).unwrap();
+        assert_eq!(lz4_rt, table);
+
+        // Column projection + offset + limit
+        let projected = read_parquet_with_options(
+            &snappy_bytes,
+            &ParquetReadOptions::new()
+                .with_columns(["name"])
+                .with_offset(1)
+                .with_limit(1),
+        )
+        .unwrap();
+        let expected_proj = Value::Array(vec![Value::Object(vec![(
+            "name".into(),
+            Value::String("Bob".into()),
+        )])]);
+        assert_eq!(projected, expected_proj);
+    }
+}

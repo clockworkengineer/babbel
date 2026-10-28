@@ -1,4 +1,4 @@
-//! RFC 9535 JSONPath parser.
+//! RFC 9535 JSONPath parser (zero-allocation byte-offset cursor over `&str`).
 
 use super::ast::{ComparisonOp, FilterExpr, FilterOperand, PathQuery, QueryPath, Segment};
 use crate::error::BabbelError;
@@ -11,18 +11,12 @@ use alloc::vec::Vec;
 /// Parser for RFC 9535 JSONPath expressions.
 pub struct JsonPathParser<'a> {
     input: &'a str,
-    chars: Vec<(usize, char)>,
     pos: usize,
 }
 
 impl<'a> JsonPathParser<'a> {
     pub fn new(input: &'a str) -> Self {
-        let chars: Vec<(usize, char)> = input.char_indices().collect();
-        Self {
-            input,
-            chars,
-            pos: 0,
-        }
+        Self { input, pos: 0 }
     }
 
     pub fn parse(&mut self) -> Result<QueryPath, BabbelError> {
@@ -126,13 +120,16 @@ impl<'a> JsonPathParser<'a> {
             return Ok(alloc::vec![slice]);
         }
 
-        // Bracket items (could be comma-separated keys or indices: ['a', 'b'])
+        // Bracket items (could be comma-separated keys or indices: ['a', 'b'] or [0, 2])
         let mut segments = Vec::new();
         loop {
             self.skip_whitespace();
             if self.peek_char() == Some('\'') || self.peek_char() == Some('"') {
                 let s = self.parse_quoted_string()?;
                 segments.push(Segment::Child(s));
+            } else if self.peek_char() == Some(':') || self.is_slice_lookahead() {
+                let slice = self.parse_slice()?;
+                segments.push(slice);
             } else if let Some(idx) = self.try_parse_integer() {
                 segments.push(Segment::Index(idx));
             } else {
@@ -149,21 +146,34 @@ impl<'a> JsonPathParser<'a> {
         }
 
         self.expect(']')?;
-        Ok(segments)
+        if segments.len() > 1 {
+            Ok(alloc::vec![Segment::Union(segments)])
+        } else {
+            Ok(segments)
+        }
     }
 
     fn is_slice_lookahead(&self) -> bool {
-        let mut i = self.pos;
-        if i < self.chars.len() && (self.chars[i].1 == '-' || self.chars[i].1.is_ascii_digit()) {
-            while i < self.chars.len()
-                && (self.chars[i].1.is_ascii_digit() || self.chars[i].1 == '-')
-            {
-                i += 1;
+        let rest = &self.input[self.pos..];
+        let mut chars = rest.chars().peekable();
+        if let Some(&first) = chars.peek() {
+            if first == '-' || first.is_ascii_digit() {
+                while let Some(&c) = chars.peek() {
+                    if c.is_ascii_digit() || c == '-' {
+                        chars.next();
+                    } else {
+                        break;
+                    }
+                }
+                while let Some(&c) = chars.peek() {
+                    if c.is_whitespace() {
+                        chars.next();
+                    } else {
+                        break;
+                    }
+                }
+                return chars.peek() == Some(&':');
             }
-            while i < self.chars.len() && self.chars[i].1.is_whitespace() {
-                i += 1;
-            }
-            return i < self.chars.len() && self.chars[i].1 == ':';
         }
         false
     }
@@ -181,7 +191,7 @@ impl<'a> JsonPathParser<'a> {
         let mut end = None;
         let mut step = None;
 
-        if self.peek_char() != Some(':') && self.peek_char() != Some(']') {
+        if self.peek_char() != Some(':') && self.peek_char() != Some(']') && self.peek_char() != Some(',') {
             end = Some(self.parse_integer()?);
             self.skip_whitespace();
         }
@@ -189,7 +199,7 @@ impl<'a> JsonPathParser<'a> {
         if self.peek_char() == Some(':') {
             self.advance();
             self.skip_whitespace();
-            if self.peek_char() != Some(']') {
+            if self.peek_char() != Some(']') && self.peek_char() != Some(',') {
                 step = Some(self.parse_integer()?);
             }
         }
@@ -201,9 +211,21 @@ impl<'a> JsonPathParser<'a> {
         self.skip_whitespace();
         let mut left_paren = false;
         if self.peek_char() == Some('(') {
+            let saved = self.pos;
             self.advance();
-            left_paren = true;
             self.skip_whitespace();
+            if let Ok(expr) = self.parse_or_expr() {
+                self.skip_whitespace();
+                if self.peek_char() == Some(')') {
+                    self.advance();
+                    self.skip_whitespace();
+                    if self.peek_char() == Some(']') {
+                        return Ok(expr);
+                    }
+                }
+            }
+            self.pos = saved;
+            left_paren = false;
         }
 
         let expr = self.parse_or_expr()?;
@@ -220,7 +242,7 @@ impl<'a> JsonPathParser<'a> {
         let mut left = self.parse_and_expr()?;
         self.skip_whitespace();
         while self.peek_str("||") {
-            self.advance_by(2);
+            self.advance_bytes(2);
             self.skip_whitespace();
             let right = self.parse_and_expr()?;
             left = FilterExpr::Or(Box::new(left), Box::new(right));
@@ -233,7 +255,7 @@ impl<'a> JsonPathParser<'a> {
         let mut left = self.parse_unary_expr()?;
         self.skip_whitespace();
         while self.peek_str("&&") {
-            self.advance_by(2);
+            self.advance_bytes(2);
             self.skip_whitespace();
             let right = self.parse_unary_expr()?;
             left = FilterExpr::And(Box::new(left), Box::new(right));
@@ -274,10 +296,15 @@ impl<'a> JsonPathParser<'a> {
                 right: right_op,
             })
         } else {
-            // Path existence check
+            // Path existence check or boolean function call (e.g. match/search)
             match left_op {
                 FilterOperand::RelativePath(path) => Ok(FilterExpr::Exists(path)),
                 FilterOperand::RootPath(path) => Ok(FilterExpr::Exists(path)),
+                FilterOperand::FunctionCall { .. } => Ok(FilterExpr::Comparison {
+                    op: ComparisonOp::Equal,
+                    left: left_op,
+                    right: FilterOperand::Literal(Value::Bool(true)),
+                }),
                 _ => Err(BabbelError::syntax(
                     "expected comparison operator or path existence check in filter",
                 )),
@@ -287,16 +314,16 @@ impl<'a> JsonPathParser<'a> {
 
     fn try_parse_comparison_op(&mut self) -> Option<ComparisonOp> {
         if self.peek_str("==") {
-            self.advance_by(2);
+            self.advance_bytes(2);
             Some(ComparisonOp::Equal)
         } else if self.peek_str("!=") {
-            self.advance_by(2);
+            self.advance_bytes(2);
             Some(ComparisonOp::NotEqual)
         } else if self.peek_str("<=") {
-            self.advance_by(2);
+            self.advance_bytes(2);
             Some(ComparisonOp::LessOrEqual)
         } else if self.peek_str(">=") {
-            self.advance_by(2);
+            self.advance_bytes(2);
             Some(ComparisonOp::GreaterOrEqual)
         } else if self.peek_char() == Some('<') {
             self.advance();
@@ -330,32 +357,42 @@ impl<'a> JsonPathParser<'a> {
                 let num = self.parse_number_literal()?;
                 Ok(FilterOperand::Literal(num))
             }
-            Some('t') if self.peek_str("true") => {
-                self.advance_by(4);
+            Some('t') if self.peek_keyword("true") => {
+                self.advance_bytes(4);
                 Ok(FilterOperand::Literal(Value::Bool(true)))
             }
-            Some('f') if self.peek_str("false") => {
-                self.advance_by(5);
+            Some('f') if self.peek_keyword("false") => {
+                self.advance_bytes(5);
                 Ok(FilterOperand::Literal(Value::Bool(false)))
             }
-            Some('n') if self.peek_str("null") => {
-                self.advance_by(4);
+            Some('n') if self.peek_keyword("null") => {
+                self.advance_bytes(4);
                 Ok(FilterOperand::Literal(Value::Null))
             }
             Some(c) if c.is_ascii_alphabetic() || c == '_' => {
                 let ident = self.parse_identifier()?;
                 self.skip_whitespace();
                 if self.peek_char() == Some('(') {
-                    // Function call, e.g. length(...)
+                    // Function call, e.g. length(@.x) or match(@.x, "^a.*")
                     self.advance();
                     self.skip_whitespace();
-                    let arg = self.parse_filter_operand()?;
+                    let mut args = Vec::new();
+                    if self.peek_char() != Some(')') {
+                        loop {
+                            self.skip_whitespace();
+                            let arg = self.parse_filter_operand()?;
+                            args.push(arg);
+                            self.skip_whitespace();
+                            if self.peek_char() == Some(',') {
+                                self.advance();
+                            } else {
+                                break;
+                            }
+                        }
+                    }
                     self.skip_whitespace();
                     self.expect(')')?;
-                    Ok(FilterOperand::FunctionCall {
-                        name: ident,
-                        arg: Box::new(arg),
-                    })
+                    Ok(FilterOperand::FunctionCall { name: ident, args })
                 } else {
                     Ok(FilterOperand::Literal(Value::String(ident)))
                 }
@@ -375,7 +412,11 @@ impl<'a> JsonPathParser<'a> {
             self.skip_whitespace();
             if self.peek_char() == Some('.') {
                 self.advance();
-                if self.peek_char() == Some('*') {
+                if self.peek_char() == Some('.') {
+                    self.advance();
+                    let target = self.parse_descendant_target()?;
+                    segments.push(Segment::Descendant(Box::new(target)));
+                } else if self.peek_char() == Some('*') {
                     self.advance();
                     segments.push(Segment::Wildcard);
                 } else {
@@ -393,39 +434,37 @@ impl<'a> JsonPathParser<'a> {
     }
 
     fn parse_identifier(&mut self) -> Result<String, BabbelError> {
-        let mut s = String::new();
+        let start = self.pos;
         while let Some(c) = self.peek_char() {
-            if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
-                s.push(c);
+            if c.is_ascii_alphanumeric() || c == '_' || c == '-' || (!c.is_ascii() && !c.is_whitespace()) {
                 self.advance();
             } else {
                 break;
             }
         }
-        if s.is_empty() {
+        if self.pos == start {
             Err(BabbelError::syntax(format!(
                 "expected identifier at offset {}",
                 self.current_offset()
             )))
         } else {
-            Ok(s)
+            Ok(String::from(&self.input[start..self.pos]))
         }
     }
 
     fn parse_unquoted_bracket_prop(&mut self) -> Result<String, BabbelError> {
-        let mut s = String::new();
+        let start = self.pos;
         while let Some(c) = self.peek_char() {
             if c != ']' && c != ',' && !c.is_whitespace() {
-                s.push(c);
                 self.advance();
             } else {
                 break;
             }
         }
-        if s.is_empty() {
+        if self.pos == start {
             Err(BabbelError::syntax("expected property in brackets"))
         } else {
-            Ok(s)
+            Ok(String::from(&self.input[start..self.pos]))
         }
     }
 
@@ -442,9 +481,27 @@ impl<'a> JsonPathParser<'a> {
                     'n' => s.push('\n'),
                     'r' => s.push('\r'),
                     't' => s.push('\t'),
+                    'b' => s.push('\u{0008}'),
+                    'f' => s.push('\u{000C}'),
                     '\\' => s.push('\\'),
+                    '/' => s.push('/'),
                     '\'' => s.push('\''),
                     '"' => s.push('"'),
+                    'u' => {
+                        let hex_start = self.pos;
+                        for _ in 0..4 {
+                            if self.peek_char().is_some_and(|ch| ch.is_ascii_hexdigit()) {
+                                self.advance();
+                            } else {
+                                return Err(BabbelError::syntax("invalid \\uXXXX escape in JSONPath"));
+                            }
+                        }
+                        let code = u32::from_str_radix(&self.input[hex_start..self.pos], 16)
+                            .map_err(|_| BabbelError::syntax("invalid \\uXXXX hex"))?;
+                        if let Some(ch) = char::from_u32(code) {
+                            s.push(ch);
+                        }
+                    }
                     _ => s.push(c),
                 }
                 escaped = false;
@@ -460,42 +517,37 @@ impl<'a> JsonPathParser<'a> {
     }
 
     fn parse_integer(&mut self) -> Result<i64, BabbelError> {
-        let mut s = String::new();
+        let start = self.pos;
         if self.peek_char() == Some('-') {
-            s.push('-');
             self.advance();
         }
         while let Some(c) = self.peek_char() {
             if c.is_ascii_digit() {
-                s.push(c);
                 self.advance();
             } else {
                 break;
             }
         }
-        s.parse::<i64>()
+        self.input[start..self.pos]
+            .parse::<i64>()
             .map_err(|_| BabbelError::syntax("invalid integer"))
     }
 
     fn try_parse_integer(&mut self) -> Option<i64> {
         let start = self.pos;
-        let mut s = String::new();
         if self.peek_char() == Some('-') {
-            s.push('-');
             self.advance();
         }
-        let mut found = false;
+        let digit_start = self.pos;
         while let Some(c) = self.peek_char() {
             if c.is_ascii_digit() {
-                s.push(c);
                 self.advance();
-                found = true;
             } else {
                 break;
             }
         }
-        if found {
-            if let Ok(i) = s.parse::<i64>() {
+        if self.pos > digit_start {
+            if let Ok(i) = self.input[start..self.pos].parse::<i64>() {
                 return Some(i);
             }
         }
@@ -504,35 +556,41 @@ impl<'a> JsonPathParser<'a> {
     }
 
     fn parse_number_literal(&mut self) -> Result<Value, BabbelError> {
-        let mut s = String::new();
+        let start = self.pos;
         let mut is_float = false;
         if self.peek_char() == Some('-') {
-            s.push('-');
             self.advance();
         }
         while let Some(c) = self.peek_char() {
             if c.is_ascii_digit() {
-                s.push(c);
                 self.advance();
             } else if c == '.' && !is_float {
-                // Check if next char is digit to avoid eating '..'
-                if self.pos + 1 < self.chars.len() && self.chars[self.pos + 1].1.is_ascii_digit() {
+                let rest = &self.input[self.pos + 1..];
+                if rest.chars().next().is_some_and(|ch| ch.is_ascii_digit()) {
                     is_float = true;
-                    s.push(c);
                     self.advance();
                 } else {
                     break;
+                }
+            } else if (c == 'e' || c == 'E') && !self.input[start..self.pos].is_empty() {
+                is_float = true;
+                self.advance();
+                if matches!(self.peek_char(), Some('+') | Some('-')) {
+                    self.advance();
                 }
             } else {
                 break;
             }
         }
+        let slice = &self.input[start..self.pos];
         if is_float {
-            s.parse::<f64>()
+            slice
+                .parse::<f64>()
                 .map(Value::Float)
                 .map_err(|_| BabbelError::syntax("invalid float literal"))
         } else {
-            s.parse::<i128>()
+            slice
+                .parse::<i128>()
                 .map(Value::Integer)
                 .map_err(|_| BabbelError::syntax("invalid integer literal"))
         }
@@ -548,31 +606,38 @@ impl<'a> JsonPathParser<'a> {
         }
     }
 
+    #[inline]
     fn peek_char(&self) -> Option<char> {
-        self.chars.get(self.pos).map(|&(_, c)| c)
+        self.input[self.pos..].chars().next()
     }
 
+    #[inline]
     fn peek_str(&self, s: &str) -> bool {
-        let chars: Vec<char> = s.chars().collect();
-        if self.pos + chars.len() > self.chars.len() {
+        self.input[self.pos..].starts_with(s)
+    }
+
+    #[inline]
+    fn peek_keyword(&self, kw: &str) -> bool {
+        let rest = &self.input[self.pos..];
+        if !rest.starts_with(kw) {
             return false;
         }
-        for (idx, &ch) in chars.iter().enumerate() {
-            if self.chars[self.pos + idx].1 != ch {
-                return false;
-            }
-        }
-        true
+        !rest[kw.len()..]
+            .chars()
+            .next()
+            .is_some_and(|c| c.is_ascii_alphanumeric() || c == '_')
     }
 
+    #[inline]
     fn advance(&mut self) {
-        if self.pos < self.chars.len() {
-            self.pos += 1;
+        if let Some(c) = self.peek_char() {
+            self.pos += c.len_utf8();
         }
     }
 
-    fn advance_by(&mut self, count: usize) {
-        self.pos = (self.pos + count).min(self.chars.len());
+    #[inline]
+    fn advance_bytes(&mut self, count: usize) {
+        self.pos = (self.pos + count).min(self.input.len());
     }
 
     fn expect(&mut self, expected: char) -> Result<(), BabbelError> {
@@ -594,14 +659,13 @@ impl<'a> JsonPathParser<'a> {
         }
     }
 
+    #[inline]
     fn is_eof(&self) -> bool {
-        self.pos >= self.chars.len()
+        self.pos >= self.input.len()
     }
 
+    #[inline]
     fn current_offset(&self) -> usize {
-        self.chars
-            .get(self.pos)
-            .map(|&(idx, _)| idx)
-            .unwrap_or(self.input.len())
+        self.pos
     }
 }

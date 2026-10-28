@@ -145,3 +145,87 @@ pub fn to_vec(value: &Value) -> Result<Vec<u8>, MsgPackError> {
     serialize_to_dest(value, &mut dest)?;
     Ok(dest.into_vec())
 }
+
+/// MessagePack official Timestamp extension type (`ext -1`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MsgPackTimestamp {
+    /// Seconds since the Unix epoch (`1970-01-01T00:00:00Z`).
+    pub seconds: i64,
+    /// Nanoseconds (`0..1_000_000_000`).
+    pub nanoseconds: u32,
+}
+
+impl MsgPackTimestamp {
+    pub const fn new(seconds: i64, nanoseconds: u32) -> Self {
+        Self {
+            seconds,
+            nanoseconds,
+        }
+    }
+}
+
+/// Encodes a [`MsgPackTimestamp`] into the compact MessagePack Timestamp (`ext -1`) wire format
+/// (`timestamp 32`, `timestamp 64`, or `timestamp 96`).
+pub fn encode_timestamp(ts: MsgPackTimestamp) -> Vec<u8> {
+    let mut out = Vec::with_capacity(15);
+    if ts.seconds >= 0 && (ts.seconds >> 34) == 0 && ts.nanoseconds < 1_000_000_000 {
+        let data64 = ((ts.nanoseconds as u64) << 34) | (ts.seconds as u64);
+        if (data64 & 0xFFFF_FFFF_0000_0000) == 0 {
+            // timestamp 32: fixext 4 (0xd6), type -1 (0xff), 32-bit seconds
+            out.push(FIXEXT4);
+            out.push(0xff);
+            out.extend_from_slice(&(data64 as u32).to_be_bytes());
+        } else {
+            // timestamp 64: fixext 8 (0xd7), type -1 (0xff), 30-bit ns + 34-bit sec
+            out.push(FIXEXT8);
+            out.push(0xff);
+            out.extend_from_slice(&data64.to_be_bytes());
+        }
+    } else {
+        // timestamp 96: ext 8 (0xc7), len 12, type -1 (0xff), 32-bit ns + 64-bit signed sec
+        out.push(EXT8);
+        out.push(12);
+        out.push(0xff);
+        out.extend_from_slice(&ts.nanoseconds.to_be_bytes());
+        out.extend_from_slice(&ts.seconds.to_be_bytes());
+    }
+    out
+}
+
+/// Decodes a [`MsgPackTimestamp`] from a MessagePack `ext -1` byte slice.
+pub fn decode_timestamp(bytes: &[u8]) -> Result<MsgPackTimestamp, MsgPackError> {
+    if bytes.len() < 6 {
+        return Err(MsgPackError::UnexpectedEof {
+            expected: 6,
+            available: bytes.len(),
+        });
+    }
+    match bytes[0] {
+        FIXEXT4 if bytes[1] == 0xff => {
+            let secs = u32::from_be_bytes([bytes[2], bytes[3], bytes[4], bytes[5]]) as i64;
+            Ok(MsgPackTimestamp::new(secs, 0))
+        }
+        FIXEXT8 if bytes[1] == 0xff => {
+            if bytes.len() < 10 {
+                return Err(MsgPackError::UnexpectedEof {
+                    expected: 10,
+                    available: bytes.len(),
+                });
+            }
+            let data64 = u64::from_be_bytes([
+                bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], bytes[8], bytes[9],
+            ]);
+            let ns = (data64 >> 34) as u32;
+            let secs = (data64 & 0x0000_0003_FFFF_FFFF) as i64;
+            Ok(MsgPackTimestamp::new(secs, ns))
+        }
+        EXT8 if bytes.len() >= 15 && bytes[1] == 12 && bytes[2] == 0xff => {
+            let ns = u32::from_be_bytes([bytes[3], bytes[4], bytes[5], bytes[6]]);
+            let secs = i64::from_be_bytes([
+                bytes[7], bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14],
+            ]);
+            Ok(MsgPackTimestamp::new(secs, ns))
+        }
+        _ => Err(MsgPackError::InvalidMarker(bytes[0])),
+    }
+}

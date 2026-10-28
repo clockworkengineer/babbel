@@ -5,13 +5,15 @@
 pub mod ast;
 pub mod eval;
 pub mod parser;
+pub mod transform;
 
 use crate::error::BabbelError;
 use crate::model::Value;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-pub use ast::{ComparisonOp, FilterExpr, FilterOperand, PathQuery, QueryPath, Segment};
+pub use ast::{ComparisonOp, FilterExpr, FilterOperand, LocatedNode, PathQuery, QueryPath, Segment};
 pub use parser::JsonPathParser;
+pub use transform::transform;
 
 /// A compiled RFC 9535 JSONPath expression.
 #[derive(Debug, Clone, PartialEq)]
@@ -37,6 +39,12 @@ impl JsonPath {
         eval::evaluate(&self.path, root)
     }
 
+    /// Query matched nodes alongside their RFC 9535 normalized paths and RFC 6901 JSON Pointers.
+    #[inline]
+    pub fn query_located<'a>(&self, root: &'a Value) -> Vec<LocatedNode<'a>> {
+        eval::evaluate_located(&self.path, root)
+    }
+
     /// Query mutable references from a mutable `Value` root node.
     #[inline]
     pub fn query_mut<'a>(&self, root: &'a mut Value) -> Vec<&'a mut Value> {
@@ -60,6 +68,15 @@ impl JsonPath {
 pub fn query<'a>(root: &'a Value, expr: &str) -> Result<Vec<&'a Value>, BabbelError> {
     let path = JsonPath::parse(expr)?;
     Ok(path.query(root))
+}
+
+/// Convenience function to compile and evaluate a JSONPath expression returning located nodes.
+pub fn query_located<'a>(
+    root: &'a Value,
+    expr: &str,
+) -> Result<Vec<LocatedNode<'a>>, BabbelError> {
+    let path = JsonPath::parse(expr)?;
+    Ok(path.query_located(root))
 }
 
 /// Convenience function to compile and evaluate a mutable JSONPath expression on a `Value` in one step.
@@ -252,5 +269,79 @@ mod tests {
 
         let updated_color = query(&root, "$.store.bicycle.color").unwrap();
         assert_eq!(updated_color[0].as_str(), Some("blue"));
+    }
+
+    #[test]
+    fn test_mutable_query_with_filter() {
+        let mut root = sample_bookstore();
+        {
+            let mut cheap = query_mut(&mut root, "$.store.books[?(@.price < 10.0)].price").unwrap();
+            assert_eq!(cheap.len(), 2);
+            for p in &mut cheap {
+                **p = Value::Float(5.0);
+            }
+        }
+        let still_under_6 = query(&root, "$.store.books[?(@.price < 6.0)].title").unwrap();
+        assert_eq!(still_under_6.len(), 2);
+    }
+
+    #[test]
+    fn test_rfc9535_functions_match_search_value() {
+        let root = sample_bookstore();
+        let matched = query(
+            &root,
+            "$.store.books[?match(@.author, '^Evelyn.*')].title",
+        )
+        .unwrap();
+        assert_eq!(matched.len(), 1);
+        assert_eq!(matched[0].as_str(), Some("Sword of Honour"));
+
+        let searched = query(
+            &root,
+            "$.store.books[?search(@.title, 'Lord|Dick')].author",
+        )
+        .unwrap();
+        assert_eq!(searched.len(), 2);
+        assert_eq!(searched[0].as_str(), Some("Herman Melville"));
+        assert_eq!(searched[1].as_str(), Some("J. R. R. Tolkien"));
+
+        let val_fn = query(
+            &root,
+            "$.store.books[?(value(@.category) == 'reference')].author",
+        )
+        .unwrap();
+        assert_eq!(val_fn.len(), 1);
+        assert_eq!(val_fn[0].as_str(), Some("Nigel Rees"));
+    }
+
+    #[test]
+    fn test_located_query_and_union() {
+        let root = sample_bookstore();
+        let located = query_located(&root, "$.store.books[0, 2].title").unwrap();
+        assert_eq!(located.len(), 2);
+        assert_eq!(located[0].path, "$['store']['books'][0]['title']");
+        assert_eq!(located[0].pointer, "/store/books/0/title");
+        assert_eq!(located[0].value.as_str(), Some("Sayings of the Century"));
+        assert_eq!(located[1].path, "$['store']['books'][2]['title']");
+        assert_eq!(located[1].pointer, "/store/books/2/title");
+        assert_eq!(located[1].value.as_str(), Some("Moby Dick"));
+    }
+
+    #[test]
+    fn test_transform_pipeline() {
+        let root = sample_bookstore();
+        let avg_price = transform(&root, "$.store.books[*].price | sum").unwrap();
+        assert!((avg_price.as_f64().unwrap() - 53.92).abs() < 1e-6);
+
+        let sorted_titles = transform(
+            &root,
+            "$.store.books[*] | select(.category == 'fiction') | sort_by(.price) | map(.title)",
+        )
+        .unwrap();
+        let arr = sorted_titles.as_array().unwrap();
+        assert_eq!(arr.len(), 3);
+        assert_eq!(arr[0].as_str(), Some("Moby Dick"));
+        assert_eq!(arr[1].as_str(), Some("Sword of Honour"));
+        assert_eq!(arr[2].as_str(), Some("The Lord of the Rings"));
     }
 }

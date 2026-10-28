@@ -162,9 +162,40 @@ pub fn from_extended_json(val: &Value) -> Result<Value, BsonError> {
                                     let bytes = hex_to_bytes(hex_str)?;
                                     return Ok(Value::Bytes(bytes));
                                 }
+                            } else if bk == "base64" {
+                                if let Value::String(b64_str) = bv {
+                                    let bytes = base64_to_bytes(b64_str)?;
+                                    return Ok(Value::Bytes(bytes));
+                                }
                             }
                         }
                     }
+                }
+                "$uuid" => {
+                    if let Value::String(uuid_str) = v {
+                        let clean: String = uuid_str.chars().filter(|&c| c != '-').collect();
+                        let bytes = hex_to_bytes(&clean)?;
+                        return Ok(Value::Bytes(bytes));
+                    }
+                }
+                "$timestamp" => {
+                    if let Value::Object(ts_entries) = v {
+                        let t = ts_entries
+                            .iter()
+                            .find(|(k, _)| k == "t")
+                            .and_then(|(_, v)| v.as_u64())
+                            .unwrap_or(0);
+                        let i = ts_entries
+                            .iter()
+                            .find(|(k, _)| k == "i")
+                            .and_then(|(_, v)| v.as_u64())
+                            .unwrap_or(0);
+                        let combined = ((t as i128) << 32) | (i as i128);
+                        return Ok(Value::Integer(combined));
+                    }
+                }
+                "$undefined" => {
+                    return Ok(Value::Null);
                 }
                 _ => {}
             }
@@ -211,6 +242,32 @@ fn hex_to_bytes(s: &str) -> Result<Vec<u8>, BsonError> {
     Ok(bytes)
 }
 
+fn base64_to_bytes(s: &str) -> Result<Vec<u8>, BsonError> {
+    let mut out = Vec::new();
+    let mut buf = 0u32;
+    let mut bits = 0u8;
+    for b in s.bytes() {
+        if b.is_ascii_whitespace() || b == b'=' {
+            continue;
+        }
+        let val = match b {
+            b'A'..=b'Z' => b - b'A',
+            b'a'..=b'z' => b - b'a' + 26,
+            b'0'..=b'9' => b - b'0' + 52,
+            b'+' | b'-' => 62,
+            b'/' | b'_' => 63,
+            _ => return Err(BsonError::Custom("invalid base64 character in extended json")),
+        };
+        buf = (buf << 6) | (val as u32);
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push(((buf >> bits) & 0xFF) as u8);
+        }
+    }
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -228,5 +285,15 @@ mod tests {
         );
         let back = from_extended_json(&ejson).unwrap();
         assert_eq!(back, val);
+
+        let b64_ejson = Value::Object(vec![(
+            "$binary".to_string(),
+            Value::Object(vec![
+                ("base64".to_string(), Value::String("SGVsbG8=".to_string())),
+                ("subType".to_string(), Value::String("00".to_string())),
+            ]),
+        )]);
+        let decoded_bin = from_extended_json(&b64_ejson).unwrap();
+        assert_eq!(decoded_bin, Value::Bytes(b"Hello".to_vec()));
     }
 }
