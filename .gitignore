@@ -30,6 +30,5 @@ target
 **/parquet-format/
 **/avro-test-suite/
 *.zip
-notes/
 **/failures.txt
 crates/files
