@@ -26,7 +26,7 @@ Fast, binary-safe BSON (Binary JSON) parser, serializer, and `FormatEngine` in p
 
 ```toml
 [dependencies]
-babbel_bson = "0.2.2"
+babbel_bson = "0.3.0"
 ```
 
 ### Parsing and Serializing

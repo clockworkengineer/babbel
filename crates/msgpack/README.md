@@ -22,7 +22,7 @@ Fast, binary-safe MessagePack parser, serializer, and `FormatEngine` in pure Rus
 
 ```toml
 [dependencies]
-babbel_msgpack = "0.2.2"
+babbel_msgpack = "0.3.0"
 ```
 
 ### Parsing and Serializing

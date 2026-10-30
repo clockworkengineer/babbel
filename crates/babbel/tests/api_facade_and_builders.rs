@@ -5,7 +5,7 @@ use babbel::prelude::*;
 
 #[test]
 fn test_universal_top_level_facade() {
-    let json_text = r#"{"name":"babbel","version":"0.2.2","ports":[8080,9090]}"#;
+    let json_text = r#"{"name":"babbel","version":"0.3.0","ports":[8080,9090]}"#;
 
     // from_str
     let val = from_str(Format::Json, json_text).expect("parse json via top-level from_str");

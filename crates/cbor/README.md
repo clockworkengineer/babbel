@@ -22,7 +22,7 @@ Fast, binary-safe RFC 8949 CBOR (Concise Binary Object Representation) parser, s
 
 ```toml
 [dependencies]
-babbel_cbor = "0.2.2"
+babbel_cbor = "0.3.0"
 ```
 
 ### Parsing and Serializing

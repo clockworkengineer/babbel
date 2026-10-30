@@ -22,7 +22,7 @@ Fast, lightweight, zero-dependency RON (Rusty Object Notation) parser, serialize
 
 ```toml
 [dependencies]
-babbel_ron = "0.2.2"
+babbel_ron = "0.3.0"
 ```
 
 ### Parsing and Serializing

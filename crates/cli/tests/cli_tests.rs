@@ -22,7 +22,7 @@ fn test_cli_version_and_help() {
     let out = Command::new(&bin).arg("--version").output().unwrap();
     assert!(out.status.success());
     let stdout = String::from_utf8(out.stdout).unwrap();
-    assert!(stdout.contains("babbel 0.2.2"));
+    assert!(stdout.contains("babbel 0.3.0"));
 
     let out_help = Command::new(&bin).arg("--help").output().unwrap();
     assert!(out_help.status.success());

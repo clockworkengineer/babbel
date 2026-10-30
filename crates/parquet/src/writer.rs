@@ -256,7 +256,7 @@ pub fn write_parquet_with_options(
         schema: schema_elements,
         num_rows: rows.len() as i64,
         row_groups,
-        created_by: Some("babbel_parquet 0.2.2".to_string()),
+        created_by: Some("babbel_parquet 0.3.0".to_string()),
     };
 
     let mut footer_thrift = ThriftWriter::new();
