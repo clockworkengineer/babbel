@@ -37,8 +37,7 @@ impl FormatEngine for JsonEngine {
         if options.pretty {
             let node = crate::Node::from(value.clone());
             let indent_spaces = options.indent.max(1);
-            let indent_str: alloc::string::String =
-                core::iter::repeat(' ').take(indent_spaces).collect();
+            let indent_str = " ".repeat(indent_spaces);
             crate::stringify::pretty::stringify_pretty(&node, destination, &indent_str)
                 .map_err(|e| BabbelError::syntax(e.to_string()).with_format("json"))?;
         } else {
@@ -132,8 +131,7 @@ impl FormatEngine for Json5Engine {
         if options.pretty {
             let node = crate::Node::from(value.clone());
             let indent_spaces = options.indent.max(1);
-            let indent_str: alloc::string::String =
-                core::iter::repeat(' ').take(indent_spaces).collect();
+            let indent_str = " ".repeat(indent_spaces);
             crate::stringify::pretty::stringify_pretty(&node, destination, &indent_str)
                 .map_err(|e| BabbelError::syntax(e.to_string()).with_format("json"))?;
         } else {
