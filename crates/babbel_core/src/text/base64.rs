@@ -7,8 +7,10 @@ use alloc::{string::String, vec::Vec};
 
 use crate::error::ErrorCode;
 
-const STANDARD_TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-const URL_SAFE_TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+const STANDARD_TABLE: &[u8; 64] =
+    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const URL_SAFE_TABLE: &[u8; 64] =
+    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 /// Encodes raw bytes into a standard RFC 4648 Base64 string with `=` padding.
 pub fn encode_base64(bytes: &[u8]) -> String {
@@ -115,7 +117,8 @@ pub fn is_valid_base64(s: &str) -> bool {
             // No characters allowed after padding
             return false;
         }
-        let valid = matches!(b, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'+' | b'/' | b'-' | b'_');
+        let valid =
+            matches!(b, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'+' | b'/' | b'-' | b'_');
         if !valid {
             return false;
         }
@@ -178,4 +181,3 @@ mod tests {
         assert!(decode_base64("Zm9v!@#").is_err());
     }
 }
-

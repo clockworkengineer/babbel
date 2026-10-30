@@ -216,12 +216,8 @@ pub fn from_bytes_ocf_with_reader_schema(
             }
             let snappy_slice = &block_payload[..block_payload.len() - 4];
             let crc_bytes = &block_payload[block_payload.len() - 4..];
-            let expected_crc = u32::from_be_bytes([
-                crc_bytes[0],
-                crc_bytes[1],
-                crc_bytes[2],
-                crc_bytes[3],
-            ]);
+            let expected_crc =
+                u32::from_be_bytes([crc_bytes[0], crc_bytes[1], crc_bytes[2], crc_bytes[3]]);
             decompressed_buf = babbel_core::snappy_decompress(snappy_slice)
                 .map_err(|_| AvroError::Custom("failed to decompress Snappy Avro OCF block"))?;
             let actual_crc = babbel_core::crc32_ieee(&decompressed_buf);
@@ -325,7 +321,10 @@ mod tests {
         let items = evolved.as_array().unwrap();
         assert_eq!(items.len(), 2);
         assert_eq!(items[0].get("id").and_then(|v| v.as_f64()), Some(10.0));
-        assert_eq!(items[0].get("role").and_then(|v| v.as_str()), Some("member"));
+        assert_eq!(
+            items[0].get("role").and_then(|v| v.as_str()),
+            Some("member")
+        );
         assert!(items[0].get("obsolete").is_none());
     }
 }

@@ -1,8 +1,8 @@
 //! Automated multi-format throughput (MB/s) and memory allocation benchmarking suite.
 
-use std::time::Instant;
 use babbel::prelude::*;
 use babbel_core::embedded::MemoryTracker;
+use std::time::Instant;
 
 struct BenchSample {
     name: &'static str,
@@ -101,7 +101,8 @@ fn main() {
             let _ = babbel::from_str(sample.format, sample.sample_text);
         }
         let parse_dur = t0.elapsed();
-        let parse_mb_s = (input_len * ITERATIONS) as f64 / (1024.0 * 1024.0) / parse_dur.as_secs_f64();
+        let parse_mb_s =
+            (input_len * ITERATIONS) as f64 / (1024.0 * 1024.0) / parse_dur.as_secs_f64();
 
         // 3. Serialize Benchmark
         let t1 = Instant::now();
@@ -109,7 +110,8 @@ fn main() {
             let _ = babbel::to_string(sample.format, &parsed_val);
         }
         let emit_dur = t1.elapsed();
-        let emit_mb_s = (input_len * ITERATIONS) as f64 / (1024.0 * 1024.0) / emit_dur.as_secs_f64();
+        let emit_mb_s =
+            (input_len * ITERATIONS) as f64 / (1024.0 * 1024.0) / emit_dur.as_secs_f64();
 
         // 4. Roundtrip Rate
         let total_secs = (parse_dur + emit_dur).as_secs_f64();
@@ -144,7 +146,8 @@ fn main() {
                 let _ = babbel::from_slice(fmt, &bytes);
             }
             let parse_dur = t0.elapsed();
-            let parse_mb_s = (len * ITERATIONS) as f64 / (1024.0 * 1024.0) / parse_dur.as_secs_f64();
+            let parse_mb_s =
+                (len * ITERATIONS) as f64 / (1024.0 * 1024.0) / parse_dur.as_secs_f64();
 
             let t1 = Instant::now();
             for _ in 0..ITERATIONS {
@@ -168,4 +171,3 @@ fn main() {
     println!(" All format benchmarks executed successfully.");
     println!("================================================================================");
 }
-

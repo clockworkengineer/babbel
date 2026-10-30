@@ -575,7 +575,10 @@ mod tests {
         target.merge_patch(&patch);
 
         assert_eq!(target.pointer("/title").unwrap().as_str(), Some("Hello!"));
-        assert_eq!(target.pointer("/author/givenName").unwrap().as_str(), Some("John"));
+        assert_eq!(
+            target.pointer("/author/givenName").unwrap().as_str(),
+            Some("John")
+        );
         assert!(target.pointer("/author/familyName").is_none());
         assert_eq!(target.pointer("/tags/0").unwrap().as_str(), Some("rust"));
     }

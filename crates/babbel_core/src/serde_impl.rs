@@ -1212,7 +1212,9 @@ impl<'de> SeqAccess<'de> for OwnedSeqAccessHelper {
         seed: T,
     ) -> Result<Option<T::Value>, Self::Error> {
         match self.iter.next() {
-            Some(v) => seed.deserialize(OwnedValueDeserializer { value: v }).map(Some),
+            Some(v) => seed
+                .deserialize(OwnedValueDeserializer { value: v })
+                .map(Some),
             None => Ok(None),
         }
     }
@@ -1347,7 +1349,9 @@ where
     type SerializeStructVariant = FormatVisitorStructVariantSerializer<'a, V>;
 
     fn serialize_bool(self, v: bool) -> Result<(), Self::Error> {
-        self.visitor.visit_bool(v).map_err(|e| SerdeError(e.to_string()))
+        self.visitor
+            .visit_bool(v)
+            .map_err(|e| SerdeError(e.to_string()))
     }
 
     fn serialize_i8(self, v: i8) -> Result<(), Self::Error> {
@@ -1494,7 +1498,9 @@ where
         self.visitor
             .visit_array_start()
             .map_err(|e| SerdeError(e.to_string()))?;
-        Ok(FormatVisitorSeqSerializer { visitor: self.visitor })
+        Ok(FormatVisitorSeqSerializer {
+            visitor: self.visitor,
+        })
     }
 
     fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
@@ -1525,14 +1531,18 @@ where
         self.visitor
             .visit_array_start()
             .map_err(|e| SerdeError(e.to_string()))?;
-        Ok(FormatVisitorTupleVariantSerializer { visitor: self.visitor })
+        Ok(FormatVisitorTupleVariantSerializer {
+            visitor: self.visitor,
+        })
     }
 
     fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
         self.visitor
             .visit_object_start()
             .map_err(|e| SerdeError(e.to_string()))?;
-        Ok(FormatVisitorMapSerializer { visitor: self.visitor })
+        Ok(FormatVisitorMapSerializer {
+            visitor: self.visitor,
+        })
     }
 
     fn serialize_struct(
@@ -1543,7 +1553,9 @@ where
         self.visitor
             .visit_object_start()
             .map_err(|e| SerdeError(e.to_string()))?;
-        Ok(FormatVisitorStructSerializer { visitor: self.visitor })
+        Ok(FormatVisitorStructSerializer {
+            visitor: self.visitor,
+        })
     }
 
     fn serialize_struct_variant(
@@ -1562,7 +1574,9 @@ where
         self.visitor
             .visit_object_start()
             .map_err(|e| SerdeError(e.to_string()))?;
-        Ok(FormatVisitorStructVariantSerializer { visitor: self.visitor })
+        Ok(FormatVisitorStructVariantSerializer {
+            visitor: self.visitor,
+        })
     }
 }
 

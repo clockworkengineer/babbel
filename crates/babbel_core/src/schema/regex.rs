@@ -23,11 +23,19 @@ enum RegexNode {
     Empty,
     AnchorStart,
     AnchorEnd,
-    WordBoundary { negated: bool },
+    WordBoundary {
+        negated: bool,
+    },
     Char(char),
     AnyChar,
-    BuiltinClass { kind: BuiltinClassKind, negated: bool },
-    BracketClass { items: Vec<ClassItem>, negated: bool },
+    BuiltinClass {
+        kind: BuiltinClassKind,
+        negated: bool,
+    },
+    BracketClass {
+        items: Vec<ClassItem>,
+        negated: bool,
+    },
     Seq(Vec<RegexNode>),
     Alt(Vec<RegexNode>),
     Repeat {
@@ -48,7 +56,10 @@ enum BuiltinClassKind {
 enum ClassItem {
     Single(char),
     Range(char, char),
-    Builtin { kind: BuiltinClassKind, negated: bool },
+    Builtin {
+        kind: BuiltinClassKind,
+        negated: bool,
+    },
 }
 
 impl BuiltinClassKind {
@@ -596,4 +607,3 @@ mod tests {
         assert!(!re.is_full_match(malicious_input));
     }
 }
-

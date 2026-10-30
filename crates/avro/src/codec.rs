@@ -36,14 +36,16 @@ impl<'a> AvroDecoder<'a> {
 
     /// Read zigzag-encoded variable-length 64-bit integer.
     pub fn read_long(&mut self) -> Result<i64, AvroError> {
-        let (val, consumed) = babbel_core::encoding::varint::read_zigzag_i64(self.input, self.cursor)
-            .map_err(|e| match e {
-                babbel_core::error::ErrorCode::UnexpectedEof => AvroError::UnexpectedEof {
-                    expected: 1,
-                    available: self.input.len().saturating_sub(self.cursor),
+        let (val, consumed) =
+            babbel_core::encoding::varint::read_zigzag_i64(self.input, self.cursor).map_err(
+                |e| match e {
+                    babbel_core::error::ErrorCode::UnexpectedEof => AvroError::UnexpectedEof {
+                        expected: 1,
+                        available: self.input.len().saturating_sub(self.cursor),
+                    },
+                    _ => AvroError::InvalidVarint,
                 },
-                _ => AvroError::InvalidVarint,
-            })?;
+            )?;
         self.cursor += consumed;
         Ok(val)
     }

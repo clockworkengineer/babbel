@@ -40,9 +40,20 @@ tags:
     let root_val = babbel::from_str(Format::Yaml, initial_yaml)
         .expect("Failed to parse initial YAML configuration");
 
-    assert_eq!(root_val.get_path("server.port").and_then(|v| v.as_i64()), Some(8080));
-    assert_eq!(root_val.get_path("server.tls_enabled").and_then(|v| v.as_bool()), Some(true));
-    assert_eq!(root_val.get_path("database.name").and_then(|v| v.as_str()), Some("production_db"));
+    assert_eq!(
+        root_val.get_path("server.port").and_then(|v| v.as_i64()),
+        Some(8080)
+    );
+    assert_eq!(
+        root_val
+            .get_path("server.tls_enabled")
+            .and_then(|v| v.as_bool()),
+        Some(true)
+    );
+    assert_eq!(
+        root_val.get_path("database.name").and_then(|v| v.as_str()),
+        Some("production_db")
+    );
 
     // 2. Perform cross-format translation cycle:
     // YAML -> JSON -> TOML -> CBOR -> MsgPack -> BSON -> RON -> KDL -> HCL -> JSON
@@ -57,19 +68,25 @@ tags:
 
         // Validate semantic invariant across every single format in the chain
         assert_eq!(
-            deserialized.get_path("server.port").and_then(|v| v.as_i64()),
+            deserialized
+                .get_path("server.port")
+                .and_then(|v| v.as_i64()),
             Some(8080),
             "Port lost or corrupted in {:?}",
             fmt
         );
         assert_eq!(
-            deserialized.get_path("server.tls_enabled").and_then(|v| v.as_bool()),
+            deserialized
+                .get_path("server.tls_enabled")
+                .and_then(|v| v.as_bool()),
             Some(true),
             "tls_enabled corrupted in {:?}",
             fmt
         );
         assert_eq!(
-            deserialized.get_path("database.name").and_then(|v| v.as_str()),
+            deserialized
+                .get_path("database.name")
+                .and_then(|v| v.as_str()),
             Some("production_db"),
             "database name corrupted in {:?}",
             fmt
@@ -79,7 +96,12 @@ tags:
     }
 
     // Verify final state matches original semantic structure
-    assert_eq!(current_val.get_path("database.connections").and_then(|v| v.as_i64()), Some(25));
+    assert_eq!(
+        current_val
+            .get_path("database.connections")
+            .and_then(|v| v.as_i64()),
+        Some(25)
+    );
 }
 
 #[test]
@@ -87,13 +109,16 @@ fn test_cross_format_tabular_metrics_matrix() {
     let initial_csv = "service,latency_ms,requests,error_rate\nauth,12,15000,0.01\npayment,45,3200,0.05\norders,28,8900,0.02\n";
 
     // Parse CSV
-    let val = babbel::from_str(Format::Csv, initial_csv)
-        .expect("Failed to parse initial CSV table");
+    let val =
+        babbel::from_str(Format::Csv, initial_csv).expect("Failed to parse initial CSV table");
 
     // CSV parses into an Array of row Objects
     if let Value::Array(rows) = &val {
         assert_eq!(rows.len(), 3);
-        assert_eq!(rows[0].get("service").and_then(|v| v.as_str()), Some("auth"));
+        assert_eq!(
+            rows[0].get("service").and_then(|v| v.as_str()),
+            Some("auth")
+        );
     } else {
         panic!("Expected Array of rows from CSV");
     }
@@ -110,13 +135,17 @@ fn test_cross_format_tabular_metrics_matrix() {
 
         let rows = roundtrip_val.as_array().expect("Expected array of rows");
         assert_eq!(rows.len(), 3);
-        assert_eq!(rows[1].get("service").and_then(|v| v.as_str()), Some("payment"));
+        assert_eq!(
+            rows[1].get("service").and_then(|v| v.as_str()),
+            Some("payment")
+        );
     }
 }
 
 #[test]
 fn test_direct_universal_convert_pairwise_matrix() {
-    let sample_json = r#"{"title":"Babbel Multi-Format","version":2,"features":["fast","modular","safe"]}"#;
+    let sample_json =
+        r#"{"title":"Babbel Multi-Format","version":2,"features":["fast","modular","safe"]}"#;
 
     let formats = [
         Format::Json,
@@ -158,4 +187,3 @@ fn test_direct_universal_convert_pairwise_matrix() {
         }
     }
 }
-

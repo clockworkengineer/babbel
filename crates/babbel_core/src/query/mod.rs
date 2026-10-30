@@ -11,7 +11,9 @@ use crate::error::BabbelError;
 use crate::model::Value;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-pub use ast::{ComparisonOp, FilterExpr, FilterOperand, LocatedNode, PathQuery, QueryPath, Segment};
+pub use ast::{
+    ComparisonOp, FilterExpr, FilterOperand, LocatedNode, PathQuery, QueryPath, Segment,
+};
 pub use parser::JsonPathParser;
 pub use transform::transform;
 
@@ -71,10 +73,7 @@ pub fn query<'a>(root: &'a Value, expr: &str) -> Result<Vec<&'a Value>, BabbelEr
 }
 
 /// Convenience function to compile and evaluate a JSONPath expression returning located nodes.
-pub fn query_located<'a>(
-    root: &'a Value,
-    expr: &str,
-) -> Result<Vec<LocatedNode<'a>>, BabbelError> {
+pub fn query_located<'a>(root: &'a Value, expr: &str) -> Result<Vec<LocatedNode<'a>>, BabbelError> {
     let path = JsonPath::parse(expr)?;
     Ok(path.query_located(root))
 }
@@ -288,19 +287,11 @@ mod tests {
     #[test]
     fn test_rfc9535_functions_match_search_value() {
         let root = sample_bookstore();
-        let matched = query(
-            &root,
-            "$.store.books[?match(@.author, '^Evelyn.*')].title",
-        )
-        .unwrap();
+        let matched = query(&root, "$.store.books[?match(@.author, '^Evelyn.*')].title").unwrap();
         assert_eq!(matched.len(), 1);
         assert_eq!(matched[0].as_str(), Some("Sword of Honour"));
 
-        let searched = query(
-            &root,
-            "$.store.books[?search(@.title, 'Lord|Dick')].author",
-        )
-        .unwrap();
+        let searched = query(&root, "$.store.books[?search(@.title, 'Lord|Dick')].author").unwrap();
         assert_eq!(searched.len(), 2);
         assert_eq!(searched[0].as_str(), Some("Herman Melville"));
         assert_eq!(searched[1].as_str(), Some("J. R. R. Tolkien"));

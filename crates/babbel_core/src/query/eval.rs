@@ -1,4 +1,6 @@
-use super::ast::{ComparisonOp, FilterExpr, FilterOperand, LocatedNode, PathQuery, QueryPath, Segment};
+use super::ast::{
+    ComparisonOp, FilterExpr, FilterOperand, LocatedNode, PathQuery, QueryPath, Segment,
+};
 use crate::model::Value;
 use alloc::format;
 use alloc::string::String;
@@ -614,9 +616,9 @@ fn resolve_operand(operand: &FilterOperand, current: &Value, root: &Value) -> Op
                 let target = resolve_operand(&args[0], current, root);
                 let pattern = resolve_operand(&args[1], current, root);
                 match (target, pattern) {
-                    (Some(Value::String(s)), Some(Value::String(pat))) => {
-                        Some(Value::Bool(crate::schema::regex::regex_is_full_match(&pat, &s)))
-                    }
+                    (Some(Value::String(s)), Some(Value::String(pat))) => Some(Value::Bool(
+                        crate::schema::regex::regex_is_full_match(&pat, &s),
+                    )),
                     _ => Some(Value::Bool(false)),
                 }
             }

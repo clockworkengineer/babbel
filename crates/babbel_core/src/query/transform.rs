@@ -296,7 +296,11 @@ fn eval_stage(current: &Value, stage: &str) -> Result<Value, BabbelError> {
             } else if let Some(arg) = extract_func_arg(stage, "pick") {
                 let wanted: Vec<String> = arg
                     .split(',')
-                    .map(|s| s.trim().trim_matches(|c| c == '\'' || c == '"' || c == '.').to_string())
+                    .map(|s| {
+                        s.trim()
+                            .trim_matches(|c| c == '\'' || c == '"' || c == '.')
+                            .to_string()
+                    })
                     .filter(|s| !s.is_empty())
                     .collect();
                 match current {
@@ -316,12 +320,18 @@ fn eval_stage(current: &Value, stage: &str) -> Result<Value, BabbelError> {
                         }
                         Ok(Value::Array(out))
                     }
-                    _ => Err(BabbelError::syntax("'pick' requires an object or array of objects")),
+                    _ => Err(BabbelError::syntax(
+                        "'pick' requires an object or array of objects",
+                    )),
                 }
             } else if let Some(arg) = extract_func_arg(stage, "omit") {
                 let excluded: Vec<String> = arg
                     .split(',')
-                    .map(|s| s.trim().trim_matches(|c| c == '\'' || c == '"' || c == '.').to_string())
+                    .map(|s| {
+                        s.trim()
+                            .trim_matches(|c| c == '\'' || c == '"' || c == '.')
+                            .to_string()
+                    })
                     .filter(|s| !s.is_empty())
                     .collect();
                 match current {
@@ -340,15 +350,18 @@ fn eval_stage(current: &Value, stage: &str) -> Result<Value, BabbelError> {
                         }
                         Ok(Value::Array(out))
                     }
-                    _ => Err(BabbelError::syntax("'omit' requires an object or array of objects")),
+                    _ => Err(BabbelError::syntax(
+                        "'omit' requires an object or array of objects",
+                    )),
                 }
             } else {
                 // Evaluate as a JSONPath expression
-                let jp = if stage.starts_with('$') || stage.starts_with('.') || stage.starts_with('[') {
-                    stage.to_string()
-                } else {
-                    format!("$.{}", stage)
-                };
+                let jp =
+                    if stage.starts_with('$') || stage.starts_with('.') || stage.starts_with('[') {
+                        stage.to_string()
+                    } else {
+                        format!("$.{}", stage)
+                    };
                 let path = super::JsonPath::parse(&jp)?;
                 let matches = path.query(current);
                 let produces_multi = path.ast().segments.iter().any(|s| {
@@ -444,4 +457,3 @@ pub(crate) fn compare_value_order(a: &Value, b: &Value) -> Ordering {
         _ => Ordering::Equal,
     }
 }
-

@@ -191,7 +191,10 @@ impl<'a> JsonPathParser<'a> {
         let mut end = None;
         let mut step = None;
 
-        if self.peek_char() != Some(':') && self.peek_char() != Some(']') && self.peek_char() != Some(',') {
+        if self.peek_char() != Some(':')
+            && self.peek_char() != Some(']')
+            && self.peek_char() != Some(',')
+        {
             end = Some(self.parse_integer()?);
             self.skip_whitespace();
         }
@@ -436,7 +439,11 @@ impl<'a> JsonPathParser<'a> {
     fn parse_identifier(&mut self) -> Result<String, BabbelError> {
         let start = self.pos;
         while let Some(c) = self.peek_char() {
-            if c.is_ascii_alphanumeric() || c == '_' || c == '-' || (!c.is_ascii() && !c.is_whitespace()) {
+            if c.is_ascii_alphanumeric()
+                || c == '_'
+                || c == '-'
+                || (!c.is_ascii() && !c.is_whitespace())
+            {
                 self.advance();
             } else {
                 break;
@@ -493,7 +500,9 @@ impl<'a> JsonPathParser<'a> {
                             if self.peek_char().is_some_and(|ch| ch.is_ascii_hexdigit()) {
                                 self.advance();
                             } else {
-                                return Err(BabbelError::syntax("invalid \\uXXXX escape in JSONPath"));
+                                return Err(BabbelError::syntax(
+                                    "invalid \\uXXXX escape in JSONPath",
+                                ));
                             }
                         }
                         let code = u32::from_str_radix(&self.input[hex_start..self.pos], 16)

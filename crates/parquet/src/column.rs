@@ -442,7 +442,9 @@ pub fn decode_rle_bit_packed_hybrid(
             let mut byte_idx = 0usize;
 
             for _ in 0..total_vals {
-                while bits_in_buf < bit_width && byte_idx < total_bytes && pos + byte_idx < data.len()
+                while bits_in_buf < bit_width
+                    && byte_idx < total_bytes
+                    && pos + byte_idx < data.len()
                 {
                     bit_buf |= (data[pos + byte_idx] as u64) << bits_in_buf;
                     bits_in_buf += 8;

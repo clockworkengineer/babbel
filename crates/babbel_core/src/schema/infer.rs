@@ -26,16 +26,22 @@ pub fn infer_schema(sample: &Value) -> Value {
 
 fn infer_value_schema(val: &Value) -> Value {
     match val {
-        Value::Null => Value::Object(vec![("type".to_string(), Value::String("null".to_string()))]),
-        Value::Bool(_) => {
-            Value::Object(vec![("type".to_string(), Value::String("boolean".to_string()))])
-        }
-        Value::Integer(_) => {
-            Value::Object(vec![("type".to_string(), Value::String("integer".to_string()))])
-        }
-        Value::Float(_) => {
-            Value::Object(vec![("type".to_string(), Value::String("number".to_string()))])
-        }
+        Value::Null => Value::Object(vec![(
+            "type".to_string(),
+            Value::String("null".to_string()),
+        )]),
+        Value::Bool(_) => Value::Object(vec![(
+            "type".to_string(),
+            Value::String("boolean".to_string()),
+        )]),
+        Value::Integer(_) => Value::Object(vec![(
+            "type".to_string(),
+            Value::String("integer".to_string()),
+        )]),
+        Value::Float(_) => Value::Object(vec![(
+            "type".to_string(),
+            Value::String("number".to_string()),
+        )]),
         Value::Bytes(_) => Value::Object(vec![
             ("type".to_string(), Value::String("string".to_string())),
             (
@@ -170,7 +176,10 @@ fn merge_object_samples(objects: &[Value]) -> Value {
         }
 
         let prop_schema = if field_schemas.is_empty() {
-            Value::Object(vec![("type".to_string(), Value::String("null".to_string()))])
+            Value::Object(vec![(
+                "type".to_string(),
+                Value::String("null".to_string()),
+            )])
         } else if field_schemas.len() == 1 {
             field_schemas.remove(0)
         } else {
@@ -229,7 +238,10 @@ fn is_uuid(s: &str) -> bool {
 
 fn is_ipv4(s: &str) -> bool {
     let parts: Vec<&str> = s.split('.').collect();
-    parts.len() == 4 && parts.iter().all(|p| !p.is_empty() && p.parse::<u8>().is_ok())
+    parts.len() == 4
+        && parts
+            .iter()
+            .all(|p| !p.is_empty() && p.parse::<u8>().is_ok())
 }
 
 fn is_date(s: &str) -> bool {
@@ -240,8 +252,12 @@ fn is_date(s: &str) -> bool {
     b[4] == b'-'
         && b[7] == b'-'
         && s[0..4].parse::<u16>().is_ok()
-        && s[5..7].parse::<u8>().map_or(false, |m| (1..=12).contains(&m))
-        && s[8..10].parse::<u8>().map_or(false, |d| (1..=31).contains(&d))
+        && s[5..7]
+            .parse::<u8>()
+            .map_or(false, |m| (1..=12).contains(&m))
+        && s[8..10]
+            .parse::<u8>()
+            .map_or(false, |d| (1..=31).contains(&d))
 }
 
 fn is_date_time(s: &str) -> bool {
@@ -266,4 +282,3 @@ fn is_email(s: &str) -> bool {
         false
     }
 }
-

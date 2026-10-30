@@ -174,8 +174,8 @@ pub use babbel_core::{
     ArrayBuilder, ArrayVecDestination, BabbelError, CompactError, CsvFieldsIter, CsvOptions,
     CsvPullParser, CsvRecord, DocumentWithFrontmatter, DuplicateKeyMode, EmbeddedLimits, ErrorCode,
     FormatOptionsBuilder, FrontmatterFormat, IniEvent, IniOptions, IniPullParser, Location,
-    MemoryTracker, ObjectBuilder, ParseOptions, SliceDestination, Span, StackBuffer, Value,
-    csv, emit_csv, emit_ini, ini, parse_csv, parse_ini, sniff_delimiter, split_frontmatter, text,
+    MemoryTracker, ObjectBuilder, ParseOptions, SliceDestination, Span, StackBuffer, Value, csv,
+    emit_csv, emit_ini, ini, parse_csv, parse_ini, sniff_delimiter, split_frontmatter, text,
 };
 
 // Re-export FormatEngine architecture (OCP & DIP)
@@ -273,9 +273,12 @@ pub use convert::Format;
 #[cfg(feature = "convert")]
 pub fn from_str(format: Format, input: &str) -> Result<Value, BabbelError> {
     let registry = default_registry();
-    let engine = registry
-        .get_by_id(format.as_str())
-        .ok_or_else(|| BabbelError::unsupported(alloc::format!("format '{}' is not registered", format.as_str())))?;
+    let engine = registry.get_by_id(format.as_str()).ok_or_else(|| {
+        BabbelError::unsupported(alloc::format!(
+            "format '{}' is not registered",
+            format.as_str()
+        ))
+    })?;
     engine.parse_str(input)
 }
 
@@ -283,9 +286,12 @@ pub fn from_str(format: Format, input: &str) -> Result<Value, BabbelError> {
 #[cfg(feature = "convert")]
 pub fn from_slice(format: Format, input: &[u8]) -> Result<Value, BabbelError> {
     let registry = default_registry();
-    let engine = registry
-        .get_by_id(format.as_str())
-        .ok_or_else(|| BabbelError::unsupported(alloc::format!("format '{}' is not registered", format.as_str())))?;
+    let engine = registry.get_by_id(format.as_str()).ok_or_else(|| {
+        BabbelError::unsupported(alloc::format!(
+            "format '{}' is not registered",
+            format.as_str()
+        ))
+    })?;
     engine.parse_bytes(input)
 }
 
@@ -293,19 +299,28 @@ pub fn from_slice(format: Format, input: &[u8]) -> Result<Value, BabbelError> {
 #[cfg(feature = "convert")]
 pub fn to_string(format: Format, value: &Value) -> Result<alloc::string::String, BabbelError> {
     let registry = default_registry();
-    let engine = registry
-        .get_by_id(format.as_str())
-        .ok_or_else(|| BabbelError::unsupported(alloc::format!("format '{}' is not registered", format.as_str())))?;
+    let engine = registry.get_by_id(format.as_str()).ok_or_else(|| {
+        BabbelError::unsupported(alloc::format!(
+            "format '{}' is not registered",
+            format.as_str()
+        ))
+    })?;
     engine.serialize_to_string(value, &FormatOptions::compact())
 }
 
 /// Universal serialize [`Value`] into pretty-printed UTF-8 string with default indentation.
 #[cfg(feature = "convert")]
-pub fn to_string_pretty(format: Format, value: &Value) -> Result<alloc::string::String, BabbelError> {
+pub fn to_string_pretty(
+    format: Format,
+    value: &Value,
+) -> Result<alloc::string::String, BabbelError> {
     let registry = default_registry();
-    let engine = registry
-        .get_by_id(format.as_str())
-        .ok_or_else(|| BabbelError::unsupported(alloc::format!("format '{}' is not registered", format.as_str())))?;
+    let engine = registry.get_by_id(format.as_str()).ok_or_else(|| {
+        BabbelError::unsupported(alloc::format!(
+            "format '{}' is not registered",
+            format.as_str()
+        ))
+    })?;
     engine.serialize_to_string(value, &FormatOptions::pretty())
 }
 
@@ -313,22 +328,33 @@ pub fn to_string_pretty(format: Format, value: &Value) -> Result<alloc::string::
 #[cfg(feature = "convert")]
 pub fn to_vec(format: Format, value: &Value) -> Result<alloc::vec::Vec<u8>, BabbelError> {
     let registry = default_registry();
-    let engine = registry
-        .get_by_id(format.as_str())
-        .ok_or_else(|| BabbelError::unsupported(alloc::format!("format '{}' is not registered", format.as_str())))?;
+    let engine = registry.get_by_id(format.as_str()).ok_or_else(|| {
+        BabbelError::unsupported(alloc::format!(
+            "format '{}' is not registered",
+            format.as_str()
+        ))
+    })?;
     engine.serialize_to_vec(value, &FormatOptions::compact())
 }
 
 /// Universal cross-format string conversion.
 #[cfg(feature = "convert")]
-pub fn convert(from: Format, to: Format, input: &str) -> Result<alloc::string::String, BabbelError> {
+pub fn convert(
+    from: Format,
+    to: Format,
+    input: &str,
+) -> Result<alloc::string::String, BabbelError> {
     let val = from_str(from, input)?;
     to_string(to, &val)
 }
 
 /// Universal cross-format byte conversion.
 #[cfg(feature = "convert")]
-pub fn convert_bytes(from: Format, to: Format, input: &[u8]) -> Result<alloc::vec::Vec<u8>, BabbelError> {
+pub fn convert_bytes(
+    from: Format,
+    to: Format,
+    input: &[u8],
+) -> Result<alloc::vec::Vec<u8>, BabbelError> {
     let val = from_slice(from, input)?;
     to_vec(to, &val)
 }
@@ -343,7 +369,10 @@ pub fn from_file_str(path: impl AsRef<std::path::Path>, input: &str) -> Result<V
 
 /// Parse input byte slice based on file path extension.
 #[cfg(all(feature = "convert", feature = "std"))]
-pub fn from_file_bytes(path: impl AsRef<std::path::Path>, input: &[u8]) -> Result<Value, BabbelError> {
+pub fn from_file_bytes(
+    path: impl AsRef<std::path::Path>,
+    input: &[u8],
+) -> Result<Value, BabbelError> {
     let format = Format::from_path(&path)
         .ok_or_else(|| BabbelError::unsupported("unrecognized or missing file extension"))?;
     from_slice(format, input)
@@ -365,15 +394,15 @@ pub use babbel_core::{
 pub mod prelude {
     #[cfg(feature = "convert")]
     pub use crate::convert::*;
+    #[cfg(feature = "alloc")]
+    pub use crate::default_registry;
+    pub use crate::value;
     #[cfg(feature = "convert")]
     pub use crate::{
         convert, convert_bytes, from_slice, from_str, to_string, to_string_pretty, to_vec,
     };
     #[cfg(all(feature = "convert", feature = "std"))]
     pub use crate::{from_file_bytes, from_file_str};
-    #[cfg(feature = "alloc")]
-    pub use crate::default_registry;
-    pub use crate::value;
     #[cfg(feature = "alloc")]
     pub use babbel_core::FormatRegistry;
     pub use babbel_core::io::{Buffer, BufferDestination, BufferSource, IDestination, ISource};

@@ -65,9 +65,9 @@ impl<'a> AvroDecoder<'a> {
             (AvroSchema::Float, AvroSchema::Double) => {
                 self.read_float().map(|f| Value::Float(f as f64))
             }
-            (AvroSchema::String, AvroSchema::Bytes) => {
-                self.read_string().map(|s| Value::Bytes(s.as_bytes().to_vec()))
-            }
+            (AvroSchema::String, AvroSchema::Bytes) => self
+                .read_string()
+                .map(|s| Value::Bytes(s.as_bytes().to_vec())),
             (AvroSchema::Bytes, AvroSchema::String) => {
                 let bytes = self.read_bytes()?;
                 let s = core::str::from_utf8(bytes).map_err(|_| AvroError::InvalidUtf8)?;
@@ -195,4 +195,3 @@ pub fn from_bytes_with_schemas(
     let mut decoder = AvroDecoder::new(bytes);
     decoder.decode_with_schemas(writer_schema, reader_schema)
 }
-

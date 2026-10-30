@@ -97,7 +97,8 @@ impl Format {
             Some(Self::Yaml)
         } else if trimmed.eq_ignore_ascii_case("xml") {
             Some(Self::Xml)
-        } else if trimmed.eq_ignore_ascii_case("bencode") || trimmed.eq_ignore_ascii_case("torrent") {
+        } else if trimmed.eq_ignore_ascii_case("bencode") || trimmed.eq_ignore_ascii_case("torrent")
+        {
             Some(Self::Bencode)
         } else if trimmed.eq_ignore_ascii_case("toml") {
             Some(Self::Toml)

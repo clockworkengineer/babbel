@@ -342,13 +342,14 @@ impl<'a> HclParser<'a> {
                 return Ok(Value::Object(entries));
             }
 
-            let (name, is_block, val, saw_nl) = match self.parse_attribute_or_block_item(is_one_line) {
-                Ok(item) => item,
-                Err(e) => {
-                    self.depth -= 1;
-                    return Err(e);
-                }
-            };
+            let (name, is_block, val, saw_nl) =
+                match self.parse_attribute_or_block_item(is_one_line) {
+                    Ok(item) => item,
+                    Err(e) => {
+                        self.depth -= 1;
+                        return Err(e);
+                    }
+                };
             if is_one_line {
                 if is_block {
                     self.depth -= 1;

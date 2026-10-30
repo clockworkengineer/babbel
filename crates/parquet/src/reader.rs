@@ -102,13 +102,12 @@ pub fn read_parquet_with_options(
         let mut decoded_columns: Vec<ColumnData> = Vec::new();
 
         for (col_idx, col_chunk) in rg.columns.iter().enumerate() {
-            let schema_elem =
-                leaf_schemas
-                    .get(col_idx)
-                    .ok_or_else(|| ParquetError::SchemaMismatch(alloc::format!(
-                        "Column index {} missing in schema",
-                        col_idx
-                    )))?;
+            let schema_elem = leaf_schemas.get(col_idx).ok_or_else(|| {
+                ParquetError::SchemaMismatch(alloc::format!(
+                    "Column index {} missing in schema",
+                    col_idx
+                ))
+            })?;
 
             // Column projection check: skip decoding columns not requested
             if let Some(ref proj_cols) = options.columns {
@@ -169,13 +168,12 @@ pub fn read_parquet_with_options(
                                 "Negative num_values in DictionaryPageHeader".into(),
                             ));
                         }
-                        let decompressed = decompress_page(
-                            raw_page_payload,
-                            uncompressed_size,
-                            meta.codec,
+                        let decompressed =
+                            decompress_page(raw_page_payload, uncompressed_size, meta.codec)?;
+                        let dict_vals = col_data.decode_dictionary_values(
+                            &decompressed,
+                            dict_hdr.num_values as usize,
                         )?;
-                        let dict_vals = col_data
-                            .decode_dictionary_values(&decompressed, dict_hdr.num_values as usize)?;
                         dictionary = Some(dict_vals);
                     }
                     0 => {
@@ -188,11 +186,8 @@ pub fn read_parquet_with_options(
                                 "Negative num_values in DataPageHeader".into(),
                             ));
                         }
-                        let decompressed = decompress_page(
-                            raw_page_payload,
-                            uncompressed_size,
-                            meta.codec,
-                        )?;
+                        let decompressed =
+                            decompress_page(raw_page_payload, uncompressed_size, meta.codec)?;
                         let page_num_values = dp_header.num_values as usize;
                         match dp_header.encoding {
                             Encoding::PlainDictionary | Encoding::RleDictionary => {
@@ -209,7 +204,11 @@ pub fn read_parquet_with_options(
                                 )?;
                             }
                             _ => {
-                                col_data.decode_plain(&decompressed, page_num_values, is_optional)?;
+                                col_data.decode_plain(
+                                    &decompressed,
+                                    page_num_values,
+                                    is_optional,
+                                )?;
                             }
                         }
                     }
@@ -301,8 +300,7 @@ fn decompress_page(
                 .map_err(|e| ParquetError::CorruptedPage(e.message))
         }
         other => Err(ParquetError::UnsupportedCompression(alloc::format!(
-            "{:?}",
-            other
+            "{:?}", other
         ))),
     }
 }

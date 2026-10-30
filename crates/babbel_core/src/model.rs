@@ -269,7 +269,11 @@ impl Value {
     }
 
     /// Sets or updates a key-value property on an object (converts to object if not already one).
-    pub fn set(&mut self, key: impl Into<alloc::string::String>, val: impl Into<Value>) -> &mut Self {
+    pub fn set(
+        &mut self,
+        key: impl Into<alloc::string::String>,
+        val: impl Into<Value>,
+    ) -> &mut Self {
         let key_str = key.into();
         let val_item = val.into();
         match self {
@@ -352,7 +356,10 @@ impl Value {
                 inner + 2
             }
             Value::Object(obj) => {
-                let inner: usize = obj.iter().map(|(k, v)| k.len() + v.estimated_size() + 4).sum();
+                let inner: usize = obj
+                    .iter()
+                    .map(|(k, v)| k.len() + v.estimated_size() + 4)
+                    .sum();
                 inner + 2
             }
         }
@@ -883,20 +890,35 @@ mod tests {
             )
             .build();
 
-        assert_eq!(obj.get_path("service").and_then(|v| v.as_str()), Some("babbel"));
-        assert_eq!(obj.get_path("tags.0").and_then(|v| v.as_str()), Some("fast"));
-        assert_eq!(obj.get_path("tags.1").and_then(|v| v.as_str()), Some("universal"));
+        assert_eq!(
+            obj.get_path("service").and_then(|v| v.as_str()),
+            Some("babbel")
+        );
+        assert_eq!(
+            obj.get_path("tags.0").and_then(|v| v.as_str()),
+            Some("fast")
+        );
+        assert_eq!(
+            obj.get_path("tags.1").and_then(|v| v.as_str()),
+            Some("universal")
+        );
 
         // Mutable path navigation and modification
         let mut modified = obj;
         if let Some(port) = modified.get_path_mut("port") {
             *port = Value::Integer(9090);
         }
-        assert_eq!(modified.get_path("port").and_then(|v| v.as_i64()), Some(9090));
+        assert_eq!(
+            modified.get_path("port").and_then(|v| v.as_i64()),
+            Some(9090)
+        );
 
         // set and push helpers
         modified.set("version", "0.3.0");
-        assert_eq!(modified.get_path("version").and_then(|v| v.as_str()), Some("0.3.0"));
+        assert_eq!(
+            modified.get_path("version").and_then(|v| v.as_str()),
+            Some("0.3.0")
+        );
 
         let mut arr = Value::array().push(1).push(2).build();
         arr.push(3);

@@ -226,8 +226,7 @@ pub fn from_extended_json(val: &Value) -> Result<Value, BsonError> {
 }
 
 fn hex_to_bytes(s: &str) -> Result<Vec<u8>, BsonError> {
-    babbel_core::text::decode_hex(s)
-        .map_err(|_| BsonError::Custom("invalid hex in extended json"))
+    babbel_core::text::decode_hex(s).map_err(|_| BsonError::Custom("invalid hex in extended json"))
 }
 
 fn base64_to_bytes(s: &str) -> Result<Vec<u8>, BsonError> {

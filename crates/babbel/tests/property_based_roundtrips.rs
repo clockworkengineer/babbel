@@ -33,7 +33,11 @@ impl Rng {
     }
 
     fn next_usize(&mut self, max: usize) -> usize {
-        if max == 0 { 0 } else { (self.next_u64() as usize) % max }
+        if max == 0 {
+            0
+        } else {
+            (self.next_u64() as usize) % max
+        }
     }
 
     fn next_bool(&mut self) -> bool {
@@ -51,7 +55,8 @@ impl Rng {
     }
 
     fn next_string(&mut self, max_len: usize) -> String {
-        const CHAR_POOL: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_- :;,.";
+        const CHAR_POOL: &[u8] =
+            b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_- :;,.";
         let len = self.next_usize(max_len) + 1;
         let mut s = String::with_capacity(len);
         for _ in 0..len {
@@ -161,21 +166,29 @@ fn test_property_json_roundtrip_and_idempotency() {
                 .build(),
         };
 
-        let json_str = babbel::to_string(Format::Json, &val)
-            .expect("Failed to serialize to JSON");
-        let parsed = babbel::from_str(Format::Json, &json_str)
-            .expect("Failed to parse JSON string");
-        assert_eq!(val, parsed, "Parsed JSON Value must semantically equal original Value");
+        let json_str = babbel::to_string(Format::Json, &val).expect("Failed to serialize to JSON");
+        let parsed =
+            babbel::from_str(Format::Json, &json_str).expect("Failed to parse JSON string");
+        assert_eq!(
+            val, parsed,
+            "Parsed JSON Value must semantically equal original Value"
+        );
 
         // Idempotency: re-serializing parsed value produces identical output
-        let json_str2 = babbel::to_string(Format::Json, &parsed)
-            .expect("Failed to re-serialize to JSON");
+        let json_str2 =
+            babbel::to_string(Format::Json, &parsed).expect("Failed to re-serialize to JSON");
         let parsed2 = babbel::from_str(Format::Json, &json_str2)
             .expect("Failed to re-parse re-serialized JSON");
-        assert_eq!(parsed, parsed2, "Re-parsed JSON must match first parsed Value");
-        let json_str3 = babbel::to_string(Format::Json, &parsed2)
-            .expect("Failed to re-serialize second time");
-        assert_eq!(json_str2, json_str3, "JSON serialization must be idempotent");
+        assert_eq!(
+            parsed, parsed2,
+            "Re-parsed JSON must match first parsed Value"
+        );
+        let json_str3 =
+            babbel::to_string(Format::Json, &parsed2).expect("Failed to re-serialize second time");
+        assert_eq!(
+            json_str2, json_str3,
+            "JSON serialization must be idempotent"
+        );
     }
 }
 
@@ -235,13 +248,23 @@ fn test_faulty_io_injection_resilience() {
     let guard = PanicHookGuard::new_silent();
 
     let val = Value::object()
-        .set("large_array", Value::Array((0..50).map(|i| Value::Integer(i as i128)).collect()))
-        .set("description", Value::String("A fairly long descriptive payload designed to test partial write boundaries".into()))
+        .set(
+            "large_array",
+            Value::Array((0..50).map(|i| Value::Integer(i as i128)).collect()),
+        )
+        .set(
+            "description",
+            Value::String(
+                "A fairly long descriptive payload designed to test partial write boundaries"
+                    .into(),
+            ),
+        )
         .build();
 
     // Test failing at every byte threshold from 1 to 100 bytes
     for threshold in 1..=100 {
-        let mut dest = FaultyDestination::fail_after(threshold, babbel_core::error::ErrorCode::IoError);
+        let mut dest =
+            FaultyDestination::fail_after(threshold, babbel_core::error::ErrorCode::IoError);
         let options = FormatOptions::default();
 
         // Blanket engine serialize should fail gracefully without panic
@@ -255,4 +278,3 @@ fn test_faulty_io_injection_resilience() {
         "Faulty I/O injection must never trigger a panic or unhandled abort"
     );
 }
-

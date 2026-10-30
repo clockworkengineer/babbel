@@ -192,8 +192,7 @@ pub fn write_parquet_with_options(
             }
             other => {
                 return Err(ParquetError::UnsupportedCompression(alloc::format!(
-                    "{:?}",
-                    other
+                    "{:?}", other
                 )));
             }
         };
@@ -221,7 +220,8 @@ pub fn write_parquet_with_options(
         out.extend_from_slice(&page_header_bytes);
         out.extend_from_slice(&compressed_payload);
 
-        let chunk_total_uncompressed = (page_header_bytes.len() as i64) + (uncompressed_size as i64);
+        let chunk_total_uncompressed =
+            (page_header_bytes.len() as i64) + (uncompressed_size as i64);
         let chunk_total_compressed = (page_header_bytes.len() as i64) + (compressed_size as i64);
         total_rg_bytes += chunk_total_uncompressed;
 

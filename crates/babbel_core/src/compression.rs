@@ -102,7 +102,9 @@ pub fn snappy_decompress(input: &[u8]) -> Result<Vec<u8>, BabbelError> {
             };
 
             if offset == 0 || offset > out.len() {
-                return Err(BabbelError::syntax("Snappy invalid copy back-reference offset"));
+                return Err(BabbelError::syntax(
+                    "Snappy invalid copy back-reference offset",
+                ));
             }
 
             copy_backref(&mut out, offset, length);
@@ -142,10 +144,7 @@ pub fn snappy_compress(input: &[u8]) -> Vec<u8> {
         table[h] = ip;
 
         let offset = ip.saturating_sub(candidate);
-        if offset > 0
-            && offset <= 65535
-            && input[candidate..candidate + 4] == input[ip..ip + 4]
-        {
+        if offset > 0 && offset <= 65535 && input[candidate..candidate + 4] == input[ip..ip + 4] {
             // Emit pending literals before match
             if next_emit < ip {
                 emit_snappy_literal(&mut out, &input[next_emit..ip]);
@@ -318,10 +317,7 @@ pub fn lz4_compress(input: &[u8]) -> Vec<u8> {
         table[h] = ip;
 
         let offset = ip.saturating_sub(candidate);
-        if offset > 0
-            && offset <= 65535
-            && input[candidate..candidate + 4] == input[ip..ip + 4]
-        {
+        if offset > 0 && offset <= 65535 && input[candidate..candidate + 4] == input[ip..ip + 4] {
             let lit_len = ip - anchor;
             let mut match_len = 4usize;
             while ip + match_len <= match_limit
@@ -463,4 +459,3 @@ mod tests {
         }
     }
 }
-

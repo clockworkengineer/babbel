@@ -9,7 +9,10 @@ fn test_universal_top_level_facade() {
 
     // from_str
     let val = from_str(Format::Json, json_text).expect("parse json via top-level from_str");
-    assert_eq!(val.get_path("name").and_then(|v| v.as_str()), Some("babbel"));
+    assert_eq!(
+        val.get_path("name").and_then(|v| v.as_str()),
+        Some("babbel")
+    );
     assert_eq!(val.get_path("ports.0").and_then(|v| v.as_i64()), Some(8080));
 
     // to_string (compact)
@@ -47,10 +50,15 @@ fn test_universal_converter() {
     assert!(toml_dest.contains("service = \"auth\""));
 
     // convert bytes
-    let msgpack_bytes = to_vec(Format::MsgPack, &from_str(Format::Json, json_src).unwrap()).unwrap();
-    let cbor_bytes = convert_bytes(Format::MsgPack, Format::Cbor, &msgpack_bytes).expect("convert_bytes msgpack to cbor");
+    let msgpack_bytes =
+        to_vec(Format::MsgPack, &from_str(Format::Json, json_src).unwrap()).unwrap();
+    let cbor_bytes = convert_bytes(Format::MsgPack, Format::Cbor, &msgpack_bytes)
+        .expect("convert_bytes msgpack to cbor");
     let decoded = from_slice(Format::Cbor, &cbor_bytes).expect("decode converted cbor");
-    assert_eq!(decoded.get_path("service").and_then(|v| v.as_str()), Some("auth"));
+    assert_eq!(
+        decoded.get_path("service").and_then(|v| v.as_str()),
+        Some("auth")
+    );
 }
 
 #[test]
@@ -66,25 +74,40 @@ fn test_fluent_value_builders_and_mutation() {
         )
         .build();
 
-    assert_eq!(config.get_path("server").and_then(|v| v.as_str()), Some("gateway"));
+    assert_eq!(
+        config.get_path("server").and_then(|v| v.as_str()),
+        Some("gateway")
+    );
     assert_eq!(config.get_path("port").and_then(|v| v.as_i64()), Some(443));
-    assert_eq!(config.get_path("endpoints.1").and_then(|v| v.as_str()), Some("/healthz"));
+    assert_eq!(
+        config.get_path("endpoints.1").and_then(|v| v.as_str()),
+        Some("/healthz")
+    );
 
     // Mutable path navigation and in-place updates
     let mut updated = config;
     if let Some(port) = updated.get_path_mut("port") {
         *port = Value::Integer(8443);
     }
-    assert_eq!(updated.get_path("port").and_then(|v| v.as_i64()), Some(8443));
+    assert_eq!(
+        updated.get_path("port").and_then(|v| v.as_i64()),
+        Some(8443)
+    );
 
     // set & push convenience helpers
     updated.set("env", "production");
-    assert_eq!(updated.get_path("env").and_then(|v| v.as_str()), Some("production"));
+    assert_eq!(
+        updated.get_path("env").and_then(|v| v.as_str()),
+        Some("production")
+    );
 
     if let Some(endpoints) = updated.get_path_mut("endpoints") {
         endpoints.push("/metrics");
     }
-    assert_eq!(updated.get_path("endpoints.2").and_then(|v| v.as_str()), Some("/metrics"));
+    assert_eq!(
+        updated.get_path("endpoints.2").and_then(|v| v.as_str()),
+        Some("/metrics")
+    );
 }
 
 #[test]
@@ -110,4 +133,3 @@ fn test_format_and_parse_options_builders() {
     assert_eq!(parse_opts.max_size, 1024 * 1024);
     assert_eq!(parse_opts.duplicate_keys, DuplicateKeyMode::Error);
 }
-

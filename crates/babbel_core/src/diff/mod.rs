@@ -61,12 +61,7 @@ fn diff_recursive(source: &Value, target: &Value, path: &str, ops: &mut Vec<Patc
 }
 
 /// Computes LCS-guided array diff operations that remain index-coherent when applied sequentially.
-fn diff_arrays_lcs(
-    src_items: &[Value],
-    tgt_items: &[Value],
-    path: &str,
-    ops: &mut Vec<PatchOp>,
-) {
+fn diff_arrays_lcs(src_items: &[Value], tgt_items: &[Value], path: &str, ops: &mut Vec<PatchOp>) {
     let m = src_items.len();
     let n = tgt_items.len();
 

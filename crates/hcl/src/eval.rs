@@ -88,10 +88,8 @@ impl HclEvalContext {
             "split" => {
                 let sep = arg_str(args, 0, "split")?;
                 let s = arg_str(args, 1, "split")?;
-                let parts: Vec<Value> = s
-                    .split(sep)
-                    .map(|p| Value::String(p.to_string()))
-                    .collect();
+                let parts: Vec<Value> =
+                    s.split(sep).map(|p| Value::String(p.to_string())).collect();
                 Value::Array(parts)
             }
             "join" => {
@@ -137,13 +135,19 @@ impl HclEvalContext {
 
             // ── Collection Functions ──
             "length" => {
-                let v = args.first().ok_or_else(|| HclError::Custom("length() requires 1 argument".into()))?;
+                let v = args
+                    .first()
+                    .ok_or_else(|| HclError::Custom("length() requires 1 argument".into()))?;
                 match v {
                     Value::String(s) => Value::Integer(s.chars().count() as i128),
                     Value::Array(a) => Value::Integer(a.len() as i128),
                     Value::Object(o) => Value::Integer(o.len() as i128),
                     Value::Bytes(b) => Value::Integer(b.len() as i128),
-                    _ => return Err(HclError::Custom("length() requires string, list, or map".into())),
+                    _ => {
+                        return Err(HclError::Custom(
+                            "length() requires string, list, or map".into(),
+                        ));
+                    }
                 }
             }
             "coalesce" => {
@@ -180,7 +184,9 @@ impl HclEvalContext {
             }
             "contains" => {
                 let arr = arg_array(args, 0, "contains")?;
-                let target = args.get(1).ok_or_else(|| HclError::Custom("contains() requires 2 arguments".into()))?;
+                let target = args
+                    .get(1)
+                    .ok_or_else(|| HclError::Custom("contains() requires 2 arguments".into()))?;
                 Value::Bool(arr.contains(target))
             }
             "distinct" => {
@@ -293,7 +299,11 @@ impl HclEvalContext {
                 let mut best: Option<Value> = None;
                 for arg in args {
                     if let Some(f) = arg.as_f64() {
-                        if best.as_ref().and_then(|b| b.as_f64()).is_none_or(|bf| f > bf) {
+                        if best
+                            .as_ref()
+                            .and_then(|b| b.as_f64())
+                            .is_none_or(|bf| f > bf)
+                        {
                             best = Some(arg.clone());
                         }
                     }
@@ -304,7 +314,11 @@ impl HclEvalContext {
                 let mut best: Option<Value> = None;
                 for arg in args {
                     if let Some(f) = arg.as_f64() {
-                        if best.as_ref().and_then(|b| b.as_f64()).is_none_or(|bf| f < bf) {
+                        if best
+                            .as_ref()
+                            .and_then(|b| b.as_f64())
+                            .is_none_or(|bf| f < bf)
+                        {
                             best = Some(arg.clone());
                         }
                     }
@@ -351,8 +365,9 @@ impl HclEvalContext {
                 let s = arg_str(args, 0, "base64decode")?;
                 let bytes = babbel_core::text::decode_base64(s)
                     .map_err(|_| HclError::Custom("invalid base64 character".into()))?;
-                let decoded = core::str::from_utf8(&bytes)
-                    .map_err(|_| HclError::Custom("base64decode result is not valid UTF-8".into()))?;
+                let decoded = core::str::from_utf8(&bytes).map_err(|_| {
+                    HclError::Custom("base64decode result is not valid UTF-8".into())
+                })?;
                 Value::String(decoded.to_string())
             }
 
@@ -369,9 +384,9 @@ fn arg_str<'a>(args: &'a [Value], idx: usize, fn_name: &str) -> Result<&'a str, 
 }
 
 fn arg_int(args: &[Value], idx: usize, fn_name: &str) -> Result<i64, HclError> {
-    args.get(idx)
-        .and_then(|v| v.as_i64())
-        .ok_or_else(|| HclError::Custom(format!("{}() argument {} must be an integer", fn_name, idx)))
+    args.get(idx).and_then(|v| v.as_i64()).ok_or_else(|| {
+        HclError::Custom(format!("{}() argument {} must be an integer", fn_name, idx))
+    })
 }
 
 fn arg_float(args: &[Value], idx: usize, fn_name: &str) -> Result<f64, HclError> {
@@ -391,9 +406,12 @@ fn arg_object<'a>(
     idx: usize,
     fn_name: &str,
 ) -> Result<&'a [(String, Value)], HclError> {
-    args.get(idx)
-        .and_then(|v| v.as_object())
-        .ok_or_else(|| HclError::Custom(format!("{}() argument {} must be a map/object", fn_name, idx)))
+    args.get(idx).and_then(|v| v.as_object()).ok_or_else(|| {
+        HclError::Custom(format!(
+            "{}() argument {} must be a map/object",
+            fn_name, idx
+        ))
+    })
 }
 
 fn val_to_str(v: &Value) -> String {
@@ -479,4 +497,3 @@ fn pow_f64(mut base: f64, exp: f64) -> f64 {
         base
     }
 }
-

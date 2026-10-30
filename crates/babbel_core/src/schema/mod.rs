@@ -772,7 +772,8 @@ impl CompiledSchema {
                 }
                 ValidationRule::Contains { schema, min, max } => {
                     if let Value::Array(items) = val {
-                        let matched_count = items.iter().filter(|item| schema.is_valid(item)).count();
+                        let matched_count =
+                            items.iter().filter(|item| schema.is_valid(item)).count();
                         if matched_count < *min {
                             errors.push(SchemaValidationError {
                                 pointer: pointer.to_string(),
@@ -938,7 +939,10 @@ fn validate_format_string(format: &str, s: &str) -> bool {
         }
         "ipv4" => {
             let parts: Vec<&str> = s.split('.').collect();
-            parts.len() == 4 && parts.iter().all(|p| !p.is_empty() && p.parse::<u8>().is_ok())
+            parts.len() == 4
+                && parts
+                    .iter()
+                    .all(|p| !p.is_empty() && p.parse::<u8>().is_ok())
         }
         "ipv6" => {
             if !s.contains(':') {
@@ -977,8 +981,12 @@ fn validate_format_string(format: &str, s: &str) -> bool {
                 && s.as_bytes()[4] == b'-'
                 && s.as_bytes()[7] == b'-'
                 && s[0..4].parse::<u16>().is_ok()
-                && s[5..7].parse::<u8>().map_or(false, |m| (1..=12).contains(&m))
-                && s[8..10].parse::<u8>().map_or(false, |d| (1..=31).contains(&d))
+                && s[5..7]
+                    .parse::<u8>()
+                    .map_or(false, |m| (1..=12).contains(&m))
+                && s[8..10]
+                    .parse::<u8>()
+                    .map_or(false, |d| (1..=31).contains(&d))
         }
         "time" => {
             s.len() >= 8
@@ -1140,10 +1148,7 @@ mod tests {
                     "properties".to_string(),
                     Value::Object(vec![(
                         "country".to_string(),
-                        Value::Object(vec![(
-                            "const".to_string(),
-                            Value::String("US".to_string()),
-                        )]),
+                        Value::Object(vec![("const".to_string(), Value::String("US".to_string()))]),
                     )]),
                 )]),
             ),

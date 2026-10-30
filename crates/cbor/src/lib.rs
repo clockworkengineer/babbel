@@ -84,7 +84,11 @@ mod tests {
             .collect();
         assert_eq!(keys, vec!["a", "z", "longer_key"]);
 
-        let seq_items = vec![Value::Integer(10), Value::String("seq".into()), Value::Bool(true)];
+        let seq_items = vec![
+            Value::Integer(10),
+            Value::String("seq".into()),
+            Value::Bool(true),
+        ];
         let seq_bytes = to_vec_seq(&seq_items).unwrap();
         let seq_decoded = from_bytes_seq(&seq_bytes).unwrap();
         assert_eq!(seq_decoded, seq_items);

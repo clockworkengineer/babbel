@@ -513,11 +513,12 @@ pub(crate) fn decode_escapes(
                                 col: start_col,
                             }
                         })?;
-                        let decoded = char::from_u32(code).ok_or_else(|| RonError::InvalidEscape {
-                            sequence: hex_str.to_string(),
-                            line: start_line,
-                            col: start_col,
-                        })?;
+                        let decoded =
+                            char::from_u32(code).ok_or_else(|| RonError::InvalidEscape {
+                                sequence: hex_str.to_string(),
+                                line: start_line,
+                                col: start_col,
+                            })?;
                         result.push(decoded);
                     } else {
                         if i + 4 > bytes.len() {
@@ -593,20 +594,18 @@ pub(crate) fn decode_escapes(
                     }
                     let hex_bytes = &bytes[i..i + 2];
                     i += 2;
-                    let hex_str = core::str::from_utf8(hex_bytes).map_err(|_| {
-                        RonError::InvalidEscape {
+                    let hex_str =
+                        core::str::from_utf8(hex_bytes).map_err(|_| RonError::InvalidEscape {
                             sequence: String::new(),
                             line: start_line,
                             col: start_col,
-                        }
-                    })?;
-                    let byte = u8::from_str_radix(hex_str, 16).map_err(|_| {
-                        RonError::InvalidEscape {
+                        })?;
+                    let byte =
+                        u8::from_str_radix(hex_str, 16).map_err(|_| RonError::InvalidEscape {
                             sequence: hex_str.to_string(),
                             line: start_line,
                             col: start_col,
-                        }
-                    })?;
+                        })?;
                     result.push(byte as char);
                 }
                 _ => {
