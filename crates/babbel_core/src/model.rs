@@ -652,6 +652,12 @@ impl ObjectBuilder {
         self
     }
 
+    /// Alias for [`insert`]. Sets a key-value entry in the object.
+    #[inline]
+    pub fn set(self, key: impl Into<alloc::string::String>, val: impl Into<Value>) -> Self {
+        self.insert(key, val)
+    }
+
     /// Builds the final [`Value::Object`].
     pub fn build(self) -> Value {
         Value::Object(self.entries)
