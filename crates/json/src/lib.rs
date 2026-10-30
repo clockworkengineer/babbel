@@ -124,6 +124,13 @@ pub use nodes::node::Numeric;
 pub use parser::config::ParserConfig;
 /// Convenience function to parse JSON from bytes
 pub use parser::default::from_bytes;
+
+/// Convenience function to parse JSON from a byte slice
+#[inline]
+pub fn from_slice(bytes: &[u8]) -> Result<Node, JsonError> {
+    from_bytes(bytes).map_err(JsonError::from)
+}
+
 /// Convenience function to parse JSON from a string
 pub use parser::default::from_str;
 /// Parses json data into a Node tree structure
@@ -161,6 +168,13 @@ pub use stringify::default::stringify;
 pub fn to_string(node: &Node) -> Result<String, JsonError> {
     let mut dest = babbel_core::io::Buffer::new();
     stringify(node, &mut dest).map_err(JsonError::from)?;
+    Ok(dest.to_string())
+}
+
+/// Serialize a JSON [`Node`] into a pretty-printed [`String`] with 2-space indentation.
+pub fn to_string_pretty(node: &Node) -> Result<String, JsonError> {
+    let mut dest = babbel_core::io::Buffer::new();
+    stringify_pretty(node, &mut dest, "  ").map_err(JsonError::from)?;
     Ok(dest.to_string())
 }
 

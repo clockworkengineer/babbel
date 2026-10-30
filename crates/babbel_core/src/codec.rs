@@ -50,6 +50,10 @@ pub struct FormatOptions {
     pub pretty: bool,
     /// Number of spaces for pretty indentation.
     pub indent: usize,
+    /// Whether to sort object keys deterministically.
+    pub sort_keys: bool,
+    /// Line ending style (LF vs CRLF).
+    pub crlf: bool,
 }
 
 impl Default for FormatOptions {
@@ -57,6 +61,8 @@ impl Default for FormatOptions {
         Self {
             pretty: false,
             indent: 2,
+            sort_keys: false,
+            crlf: false,
         }
     }
 }
@@ -67,6 +73,8 @@ impl FormatOptions {
         Self {
             pretty: false,
             indent: 0,
+            sort_keys: false,
+            crlf: false,
         }
     }
 
@@ -75,6 +83,8 @@ impl FormatOptions {
         Self {
             pretty: true,
             indent: 2,
+            sort_keys: false,
+            crlf: false,
         }
     }
 
@@ -82,6 +92,134 @@ impl FormatOptions {
     pub const fn with_indent(mut self, indent: usize) -> Self {
         self.pretty = true;
         self.indent = indent;
+        self
+    }
+
+    /// Enable or disable deterministic sorting of object keys.
+    pub const fn with_sort_keys(mut self, sort_keys: bool) -> Self {
+        self.sort_keys = sort_keys;
+        self
+    }
+
+    /// Enable or disable Windows-style CRLF line endings.
+    pub const fn with_crlf(mut self, crlf: bool) -> Self {
+        self.crlf = crlf;
+        self
+    }
+
+    /// Create a fluent [`FormatOptionsBuilder`].
+    pub const fn builder() -> FormatOptionsBuilder {
+        FormatOptionsBuilder::new()
+    }
+}
+
+/// Fluent builder for [`FormatOptions`].
+#[derive(Debug, Clone, Copy, Default)]
+pub struct FormatOptionsBuilder {
+    options: FormatOptions,
+}
+
+impl FormatOptionsBuilder {
+    /// Create a new builder with default formatting options.
+    pub const fn new() -> Self {
+        Self {
+            options: FormatOptions {
+                pretty: false,
+                indent: 2,
+                sort_keys: false,
+                crlf: false,
+            },
+        }
+    }
+
+    /// Set pretty-printing mode.
+    pub const fn pretty(mut self, pretty: bool) -> Self {
+        self.options.pretty = pretty;
+        self
+    }
+
+    /// Set indentation spaces.
+    pub const fn indent(mut self, indent: usize) -> Self {
+        self.options.indent = indent;
+        self
+    }
+
+    /// Set deterministic key sorting.
+    pub const fn sort_keys(mut self, sort_keys: bool) -> Self {
+        self.options.sort_keys = sort_keys;
+        self
+    }
+
+    /// Set CRLF line endings.
+    pub const fn crlf(mut self, crlf: bool) -> Self {
+        self.options.crlf = crlf;
+        self
+    }
+
+    /// Finalize into [`FormatOptions`].
+    pub const fn build(self) -> FormatOptions {
+        self.options
+    }
+}
+
+/// Strategy for handling duplicate keys during object / mapping parsing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum DuplicateKeyMode {
+    /// Overwrite previous value with last occurrence (standard behavior).
+    #[default]
+    UseLast,
+    /// Keep first occurrence and ignore subsequent duplicates.
+    UseFirst,
+    /// Fail immediately with an error on any duplicate key.
+    Error,
+}
+
+/// Universal configuration options for parsing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ParseOptions {
+    /// Maximum allowable recursion nesting depth.
+    pub max_depth: usize,
+    /// Maximum input size or memory limit in bytes.
+    pub max_size: usize,
+    /// Strategy for duplicate object keys.
+    pub duplicate_keys: DuplicateKeyMode,
+}
+
+impl Default for ParseOptions {
+    fn default() -> Self {
+        Self {
+            max_depth: 128,
+            max_size: 64 * 1024 * 1024, // 64 MB
+            duplicate_keys: DuplicateKeyMode::UseLast,
+        }
+    }
+}
+
+impl ParseOptions {
+    /// Create parse options with default limits.
+    pub const fn new() -> Self {
+        Self {
+            max_depth: 128,
+            max_size: 64 * 1024 * 1024,
+            duplicate_keys: DuplicateKeyMode::UseLast,
+        }
+    }
+
+    /// Set maximum allowable recursion depth.
+    pub const fn with_max_depth(mut self, max_depth: usize) -> Self {
+        self.max_depth = max_depth;
+        self
+    }
+
+    /// Set maximum input size in bytes.
+    pub const fn with_max_size(mut self, max_size: usize) -> Self {
+        self.max_size = max_size;
+        self
+    }
+
+    /// Set duplicate key resolution mode.
+    pub const fn with_duplicate_keys(mut self, mode: DuplicateKeyMode) -> Self {
+        self.duplicate_keys = mode;
         self
     }
 }

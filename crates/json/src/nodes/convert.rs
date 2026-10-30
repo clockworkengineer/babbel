@@ -332,3 +332,32 @@ impl From<Node> for babbel_core::model::Value {
         }
     }
 }
+
+impl From<&babbel_core::model::Value> for Node {
+    fn from(val: &babbel_core::model::Value) -> Self {
+        match val {
+            babbel_core::model::Value::Null => Node::None,
+            babbel_core::model::Value::Bool(b) => Node::Boolean(*b),
+            babbel_core::model::Value::Integer(i) => Node::Number(Numeric::Integer(*i as i64)),
+            babbel_core::model::Value::Float(f) => Node::Number(Numeric::Float(*f)),
+            babbel_core::model::Value::String(s) => Node::Str(s.clone()),
+            babbel_core::model::Value::Bytes(b) => Node::Str(alloc::format!("{:?}", b)),
+            babbel_core::model::Value::Array(arr) => {
+                Node::Array(arr.iter().map(Node::from).collect())
+            }
+            babbel_core::model::Value::Object(obj) => {
+                let map = obj
+                    .iter()
+                    .map(|(k, v)| (k.clone(), Node::from(v)))
+                    .collect();
+                Node::Object(map)
+            }
+        }
+    }
+}
+
+impl From<babbel_core::model::Value> for Node {
+    fn from(val: babbel_core::model::Value) -> Self {
+        Node::from(&val)
+    }
+}

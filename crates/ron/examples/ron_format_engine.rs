@@ -32,10 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Serialize using the FormatEngine trait
     println!("\nSerializing Value through FormatEngine::serialize_to_string()...");
-    let options = FormatOptions {
-        pretty: true,
-        indent: 2,
-    };
+    let options = FormatOptions::pretty();
     let ron_text = engine.serialize_to_string(&original, &options)?;
     println!("Serialized output:\n{}\n", ron_text);
 

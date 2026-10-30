@@ -50,3 +50,9 @@ pub use error::BsonError;
 pub use parser::{Decoder, DecoderConfig, from_bytes};
 pub use pull::{BsonPullEvent, BsonPullParser};
 pub use serializer::{serialize_to_dest, to_vec};
+
+/// Convenience alias parsing BSON from a byte slice into [`Value`].
+#[inline]
+pub fn from_slice(bytes: &[u8]) -> Result<Value, BsonError> {
+    from_bytes(bytes)
+}

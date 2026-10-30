@@ -43,6 +43,12 @@ pub fn from_bytes(bytes: &[u8]) -> Result<Value, HclError> {
     from_str(s)
 }
 
+/// Deserialize a universal Babbel [`Value`] from raw HCL byte slice.
+#[inline]
+pub fn from_slice(bytes: &[u8]) -> Result<Value, HclError> {
+    from_bytes(bytes)
+}
+
 /// Serialize a universal Babbel [`Value`] into an HCL byte vector (`Vec<u8>`).
 #[cfg(feature = "alloc")]
 pub fn to_vec(value: &Value) -> Result<alloc::vec::Vec<u8>, HclError> {

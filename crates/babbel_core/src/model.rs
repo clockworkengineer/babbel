@@ -228,6 +228,79 @@ impl Value {
         Some(current)
     }
 
+    /// Mutable dot-separated path navigation (e.g. `"server.database.port"` or `"users.0.name"`).
+    pub fn get_path_mut(&mut self, path: &str) -> Option<&mut Value> {
+        if path.is_empty() {
+            return Some(self);
+        }
+        let mut current = self;
+        for segment in path.split('.') {
+            if segment.is_empty() {
+                continue;
+            }
+            if let Ok(idx) = segment.parse::<usize>() {
+                match current {
+                    Value::Array(items) => {
+                        current = items.get_mut(idx)?;
+                        continue;
+                    }
+                    _ => {}
+                }
+            }
+            match current {
+                Value::Object(entries) => {
+                    let entry = entries.iter_mut().find(|(k, _)| k == segment)?;
+                    current = &mut entry.1;
+                }
+                _ => return None,
+            }
+        }
+        Some(current)
+    }
+
+    /// Creates a new fluent [`ObjectBuilder`].
+    pub fn object() -> ObjectBuilder {
+        ObjectBuilder::new()
+    }
+
+    /// Creates a new fluent [`ArrayBuilder`].
+    pub fn array() -> ArrayBuilder {
+        ArrayBuilder::new()
+    }
+
+    /// Sets or updates a key-value property on an object (converts to object if not already one).
+    pub fn set(&mut self, key: impl Into<alloc::string::String>, val: impl Into<Value>) -> &mut Self {
+        let key_str = key.into();
+        let val_item = val.into();
+        match self {
+            Value::Object(entries) => {
+                if let Some(entry) = entries.iter_mut().find(|(k, _)| k == &key_str) {
+                    entry.1 = val_item;
+                } else {
+                    entries.push((key_str, val_item));
+                }
+            }
+            _ => {
+                *self = Value::Object(alloc::vec![(key_str, val_item)]);
+            }
+        }
+        self
+    }
+
+    /// Pushes an item into an array (converts to array if not already one).
+    pub fn push(&mut self, val: impl Into<Value>) -> &mut Self {
+        let val_item = val.into();
+        match self {
+            Value::Array(items) => {
+                items.push(val_item);
+            }
+            _ => {
+                *self = Value::Array(alloc::vec![val_item]);
+            }
+        }
+        self
+    }
+
     /// Infallible RFC 6901 JSON pointer navigation (e.g. `"/server/port"` or `"/users/0/name"`).
     pub fn pointer(&self, pointer: &str) -> Option<&Value> {
         if pointer.is_empty() {
@@ -533,6 +606,76 @@ impl From<alloc::vec::Vec<(alloc::string::String, Value)>> for Value {
     }
 }
 
+/// Fluent builder for constructing [`Value::Object`].
+#[derive(Debug, Clone, Default)]
+pub struct ObjectBuilder {
+    entries: alloc::vec::Vec<(alloc::string::String, Value)>,
+}
+
+impl ObjectBuilder {
+    /// Creates a new, empty object builder.
+    pub fn new() -> Self {
+        Self {
+            entries: alloc::vec::Vec::new(),
+        }
+    }
+
+    /// Inserts a key-value entry into the object.
+    pub fn insert(mut self, key: impl Into<alloc::string::String>, val: impl Into<Value>) -> Self {
+        let key_str = key.into();
+        let val_item = val.into();
+        if let Some(entry) = self.entries.iter_mut().find(|(k, _)| k == &key_str) {
+            entry.1 = val_item;
+        } else {
+            self.entries.push((key_str, val_item));
+        }
+        self
+    }
+
+    /// Builds the final [`Value::Object`].
+    pub fn build(self) -> Value {
+        Value::Object(self.entries)
+    }
+}
+
+impl From<ObjectBuilder> for Value {
+    fn from(builder: ObjectBuilder) -> Self {
+        builder.build()
+    }
+}
+
+/// Fluent builder for constructing [`Value::Array`].
+#[derive(Debug, Clone, Default)]
+pub struct ArrayBuilder {
+    items: alloc::vec::Vec<Value>,
+}
+
+impl ArrayBuilder {
+    /// Creates a new, empty array builder.
+    pub fn new() -> Self {
+        Self {
+            items: alloc::vec::Vec::new(),
+        }
+    }
+
+    /// Appends an element to the array.
+    pub fn push(mut self, val: impl Into<Value>) -> Self {
+        self.items.push(val.into());
+        self
+    }
+
+    /// Builds the final [`Value::Array`].
+    pub fn build(self) -> Value {
+        Value::Array(self.items)
+    }
+}
+
+impl From<ArrayBuilder> for Value {
+    fn from(builder: ArrayBuilder) -> Self {
+        builder.build()
+    }
+}
+
 static NULL_VALUE: Value = Value::Null;
 
 impl core::ops::Index<&str> for Value {
@@ -700,5 +843,37 @@ mod tests {
         let mut xml_buf = crate::io::Buffer::new();
         val.serialize_xml(&mut xml_buf, Some("root"));
         assert!(xml_buf.to_string().starts_with("<root>"));
+    }
+
+    #[test]
+    fn test_fluent_builders_and_mutation() {
+        // Fluent ObjectBuilder
+        let obj: Value = Value::object()
+            .insert("service", "babbel")
+            .insert("port", 8080)
+            .insert(
+                "tags",
+                Value::array().push("fast").push("universal").build(),
+            )
+            .build();
+
+        assert_eq!(obj.get_path("service").and_then(|v| v.as_str()), Some("babbel"));
+        assert_eq!(obj.get_path("tags.0").and_then(|v| v.as_str()), Some("fast"));
+        assert_eq!(obj.get_path("tags.1").and_then(|v| v.as_str()), Some("universal"));
+
+        // Mutable path navigation and modification
+        let mut modified = obj;
+        if let Some(port) = modified.get_path_mut("port") {
+            *port = Value::Integer(9090);
+        }
+        assert_eq!(modified.get_path("port").and_then(|v| v.as_i64()), Some(9090));
+
+        // set and push helpers
+        modified.set("version", "0.3.0");
+        assert_eq!(modified.get_path("version").and_then(|v| v.as_str()), Some("0.3.0"));
+
+        let mut arr = Value::array().push(1).push(2).build();
+        arr.push(3);
+        assert_eq!(arr.get_index(2).and_then(|v| v.as_i64()), Some(3));
     }
 }

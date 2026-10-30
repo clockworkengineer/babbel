@@ -32,9 +32,17 @@ impl FormatEngine for JsonEngine {
         &self,
         value: &Value,
         destination: &mut dyn IDestination,
-        _options: &FormatOptions,
+        options: &FormatOptions,
     ) -> Result<(), BabbelError> {
-        value.serialize_json(destination);
+        if options.pretty {
+            let node = crate::Node::from(value.clone());
+            let indent_spaces = options.indent.max(1);
+            let indent_str: alloc::string::String = core::iter::repeat(' ').take(indent_spaces).collect();
+            crate::stringify::pretty::stringify_pretty(&node, destination, &indent_str)
+                .map_err(|e| BabbelError::syntax(e.to_string()).with_format("json"))?;
+        } else {
+            value.serialize_json(destination);
+        }
         Ok(())
     }
 }
@@ -118,9 +126,17 @@ impl FormatEngine for Json5Engine {
         &self,
         value: &Value,
         destination: &mut dyn IDestination,
-        _options: &FormatOptions,
+        options: &FormatOptions,
     ) -> Result<(), BabbelError> {
-        value.serialize_json(destination);
+        if options.pretty {
+            let node = crate::Node::from(value.clone());
+            let indent_spaces = options.indent.max(1);
+            let indent_str: alloc::string::String = core::iter::repeat(' ').take(indent_spaces).collect();
+            crate::stringify::pretty::stringify_pretty(&node, destination, &indent_str)
+                .map_err(|e| BabbelError::syntax(e.to_string()).with_format("json"))?;
+        } else {
+            value.serialize_json(destination);
+        }
         Ok(())
     }
 }

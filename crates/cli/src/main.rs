@@ -414,9 +414,10 @@ fn cmd_convert(args: ConvertArgs) -> Result<(), CliError> {
 
     let mut dest = Buffer::new();
     let pretty = if args.compact { false } else { args.pretty };
-    let options = FormatOptions {
-        pretty,
-        indent: args.indent,
+    let options = if pretty {
+        FormatOptions::pretty().with_indent(args.indent)
+    } else {
+        FormatOptions::compact()
     };
     dst_engine
         .serialize(&val, &mut dest, &options)
@@ -452,10 +453,7 @@ fn cmd_query(args: QueryArgs) -> Result<(), CliError> {
 
     let dst_engine = detect_engine(Some(&args.to), None)?;
     let mut dest = Buffer::new();
-    let options = FormatOptions {
-        pretty: true,
-        indent: args.indent,
-    };
+    let options = FormatOptions::pretty().with_indent(args.indent);
     dst_engine
         .serialize(&output_val, &mut dest, &options)
         .map_err(|e| CliError::Format(format!("failed to format query output: {}", e)))?;
@@ -604,10 +602,7 @@ fn cmd_set(args: SetArgs) -> Result<(), CliError> {
     };
 
     let mut dest = Buffer::new();
-    let options = FormatOptions {
-        pretty: true,
-        indent: args.indent,
-    };
+    let options = FormatOptions::pretty().with_indent(args.indent);
     dst_engine
         .serialize(&val, &mut dest, &options)
         .map_err(|e| CliError::Format(format!("failed to format output: {}", e)))?;
@@ -656,9 +651,10 @@ fn cmd_merge(args: MergeArgs) -> Result<(), CliError> {
     };
 
     let mut dest = Buffer::new();
-    let options = FormatOptions {
-        pretty: !args.compact,
-        indent: args.indent,
+    let options = if !args.compact {
+        FormatOptions::pretty().with_indent(args.indent)
+    } else {
+        FormatOptions::compact()
     };
     dst_engine
         .serialize(&base_val, &mut dest, &options)
@@ -679,10 +675,7 @@ fn cmd_schema(args: SchemaArgs) -> Result<(), CliError> {
     let dst_engine = detect_engine(Some(&args.to), None)?;
 
     let mut dest = Buffer::new();
-    let options = FormatOptions {
-        pretty: true,
-        indent: args.indent,
-    };
+    let options = FormatOptions::pretty().with_indent(args.indent);
     dst_engine
         .serialize(&schema_val, &mut dest, &options)
         .map_err(|e| CliError::Format(format!("failed to format schema: {}", e)))?;

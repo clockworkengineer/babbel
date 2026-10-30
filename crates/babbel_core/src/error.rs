@@ -122,6 +122,11 @@ impl BabbelError {
     pub fn custom(message: impl Into<String>) -> Self {
         Self::new(ErrorCode::Custom, message)
     }
+
+    /// Creates an unsupported format or operation error.
+    pub fn unsupported(message: impl Into<String>) -> Self {
+        Self::new(ErrorCode::UnsupportedType, message)
+    }
 }
 
 impl core::fmt::Display for BabbelError {

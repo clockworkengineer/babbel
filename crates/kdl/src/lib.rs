@@ -64,3 +64,14 @@ pub fn from_bytes(input: &[u8]) -> Result<Value, KdlError> {
     let s = core::str::from_utf8(input).map_err(|_| KdlError::InvalidUtf8)?;
     from_str(s)
 }
+
+/// Deserialize a universal Babbel [`Value`] from UTF-8 KDL bytes.
+#[inline]
+pub fn from_slice(input: &[u8]) -> Result<Value, KdlError> {
+    from_bytes(input)
+}
+
+/// Serialize a universal Babbel [`Value`] to a KDL byte vector.
+pub fn to_vec(value: &Value) -> Result<alloc::vec::Vec<u8>, KdlError> {
+    to_string(value).map(|s| s.into_bytes())
+}

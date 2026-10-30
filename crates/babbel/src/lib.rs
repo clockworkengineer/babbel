@@ -138,9 +138,10 @@ pub mod embedded {
 
 // Re-export text, CSV, and INI processing from core
 pub use babbel_core::{
-    ArrayVecDestination, BabbelError, CompactError, CsvFieldsIter, CsvOptions, CsvPullParser,
-    CsvRecord, DocumentWithFrontmatter, EmbeddedLimits, ErrorCode, FrontmatterFormat, IniEvent,
-    IniOptions, IniPullParser, Location, MemoryTracker, SliceDestination, Span, StackBuffer, Value,
+    ArrayBuilder, ArrayVecDestination, BabbelError, CompactError, CsvFieldsIter, CsvOptions,
+    CsvPullParser, CsvRecord, DocumentWithFrontmatter, DuplicateKeyMode, EmbeddedLimits, ErrorCode,
+    FormatOptionsBuilder, FrontmatterFormat, IniEvent, IniOptions, IniPullParser, Location,
+    MemoryTracker, ObjectBuilder, ParseOptions, SliceDestination, Span, StackBuffer, Value,
     csv, emit_csv, emit_ini, ini, parse_csv, parse_ini, sniff_delimiter, split_frontmatter, text,
 };
 
@@ -232,6 +233,89 @@ pub fn default_registry() -> babbel_core::FormatRegistry {
     registry
 }
 
+#[cfg(feature = "convert")]
+pub use convert::Format;
+
+/// Universal parse from string into [`Value`] using the specified format.
+#[cfg(feature = "convert")]
+pub fn from_str(format: Format, input: &str) -> Result<Value, BabbelError> {
+    let registry = default_registry();
+    let engine = registry
+        .get_by_id(format.as_str())
+        .ok_or_else(|| BabbelError::unsupported(alloc::format!("format '{}' is not registered", format.as_str())))?;
+    engine.parse_str(input)
+}
+
+/// Universal parse from byte slice into [`Value`] using the specified format.
+#[cfg(feature = "convert")]
+pub fn from_slice(format: Format, input: &[u8]) -> Result<Value, BabbelError> {
+    let registry = default_registry();
+    let engine = registry
+        .get_by_id(format.as_str())
+        .ok_or_else(|| BabbelError::unsupported(alloc::format!("format '{}' is not registered", format.as_str())))?;
+    engine.parse_bytes(input)
+}
+
+/// Universal serialize [`Value`] into compact UTF-8 string using the specified format.
+#[cfg(feature = "convert")]
+pub fn to_string(format: Format, value: &Value) -> Result<alloc::string::String, BabbelError> {
+    let registry = default_registry();
+    let engine = registry
+        .get_by_id(format.as_str())
+        .ok_or_else(|| BabbelError::unsupported(alloc::format!("format '{}' is not registered", format.as_str())))?;
+    engine.serialize_to_string(value, &FormatOptions::compact())
+}
+
+/// Universal serialize [`Value`] into pretty-printed UTF-8 string with default indentation.
+#[cfg(feature = "convert")]
+pub fn to_string_pretty(format: Format, value: &Value) -> Result<alloc::string::String, BabbelError> {
+    let registry = default_registry();
+    let engine = registry
+        .get_by_id(format.as_str())
+        .ok_or_else(|| BabbelError::unsupported(alloc::format!("format '{}' is not registered", format.as_str())))?;
+    engine.serialize_to_string(value, &FormatOptions::pretty())
+}
+
+/// Universal serialize [`Value`] into byte vector using the specified format.
+#[cfg(feature = "convert")]
+pub fn to_vec(format: Format, value: &Value) -> Result<alloc::vec::Vec<u8>, BabbelError> {
+    let registry = default_registry();
+    let engine = registry
+        .get_by_id(format.as_str())
+        .ok_or_else(|| BabbelError::unsupported(alloc::format!("format '{}' is not registered", format.as_str())))?;
+    engine.serialize_to_vec(value, &FormatOptions::compact())
+}
+
+/// Universal cross-format string conversion.
+#[cfg(feature = "convert")]
+pub fn convert(from: Format, to: Format, input: &str) -> Result<alloc::string::String, BabbelError> {
+    let val = from_str(from, input)?;
+    to_string(to, &val)
+}
+
+/// Universal cross-format byte conversion.
+#[cfg(feature = "convert")]
+pub fn convert_bytes(from: Format, to: Format, input: &[u8]) -> Result<alloc::vec::Vec<u8>, BabbelError> {
+    let val = from_slice(from, input)?;
+    to_vec(to, &val)
+}
+
+/// Parse input string based on file path extension.
+#[cfg(all(feature = "convert", feature = "std"))]
+pub fn from_file_str(path: impl AsRef<std::path::Path>, input: &str) -> Result<Value, BabbelError> {
+    let format = Format::from_path(&path)
+        .ok_or_else(|| BabbelError::unsupported("unrecognized or missing file extension"))?;
+    from_str(format, input)
+}
+
+/// Parse input byte slice based on file path extension.
+#[cfg(all(feature = "convert", feature = "std"))]
+pub fn from_file_bytes(path: impl AsRef<std::path::Path>, input: &[u8]) -> Result<Value, BabbelError> {
+    let format = Format::from_path(&path)
+        .ok_or_else(|| BabbelError::unsupported("unrecognized or missing file extension"))?;
+    from_slice(format, input)
+}
+
 #[macro_use]
 pub mod macros;
 
@@ -248,6 +332,12 @@ pub use babbel_core::{
 pub mod prelude {
     #[cfg(feature = "convert")]
     pub use crate::convert::*;
+    #[cfg(feature = "convert")]
+    pub use crate::{
+        convert, convert_bytes, from_slice, from_str, to_string, to_string_pretty, to_vec,
+    };
+    #[cfg(all(feature = "convert", feature = "std"))]
+    pub use crate::{from_file_bytes, from_file_str};
     #[cfg(feature = "alloc")]
     pub use crate::default_registry;
     pub use crate::value;
@@ -255,11 +345,11 @@ pub mod prelude {
     pub use babbel_core::FormatRegistry;
     pub use babbel_core::io::{Buffer, BufferDestination, BufferSource, IDestination, ISource};
     pub use babbel_core::{
-        BabbelError, CompiledSchema, ErrorCode, FormatCodec, FormatEmitter, FormatEngine,
-        FormatOptions, FormatParser, JsonPath, Location, Patch, PatchOp, SchemaValidationError,
-        Span, Value, apply_merge_patch, diff, diff_merge_patch, find_engine,
-        find_engine_by_extension, find_engine_by_mime, jsonpath_query, jsonpath_query_mut,
-        validate_schema,
+        ArrayBuilder, BabbelError, CompiledSchema, DuplicateKeyMode, ErrorCode, FormatCodec,
+        FormatEmitter, FormatEngine, FormatOptions, FormatOptionsBuilder, FormatParser, JsonPath,
+        Location, ObjectBuilder, ParseOptions, Patch, PatchOp, SchemaValidationError, Span, Value,
+        apply_merge_patch, diff, diff_merge_patch, find_engine, find_engine_by_extension,
+        find_engine_by_mime, jsonpath_query, jsonpath_query_mut, validate_schema,
     };
     #[cfg(feature = "serde")]
     pub use babbel_core::{

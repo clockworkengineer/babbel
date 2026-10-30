@@ -55,6 +55,12 @@ pub use serializer::{
     to_vec_seq,
 };
 
+/// Convenience alias parsing CBOR from a byte slice into [`Value`].
+#[inline]
+pub fn from_slice(bytes: &[u8]) -> Result<Value, CborError> {
+    from_bytes(bytes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

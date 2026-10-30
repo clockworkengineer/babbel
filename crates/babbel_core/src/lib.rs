@@ -50,9 +50,10 @@ pub use chars::{is_digit, is_hex_digit, is_newline, is_whitespace};
 #[cfg(feature = "alloc")]
 pub use codec::FormatRegistry;
 pub use codec::{
-    BencodeEmitter, CsvEngine, FormatCodec, FormatEmitter, FormatEngine, FormatOptions,
-    FormatParser, IniEngine, JsonEmitter, TomlEmitter, TsvEngine, XmlEmitter, YamlEmitter,
-    find_engine, find_engine_by_extension, find_engine_by_mime,
+    BencodeEmitter, CsvEngine, DuplicateKeyMode, FormatCodec, FormatEmitter, FormatEngine,
+    FormatOptions, FormatOptionsBuilder, FormatParser, IniEngine, JsonEmitter, ParseOptions,
+    TomlEmitter, TsvEngine, XmlEmitter, YamlEmitter, find_engine, find_engine_by_extension,
+    find_engine_by_mime,
 };
 pub use compression::{
     crc32_ieee, lz4_compress, lz4_decompress, snappy_compress, snappy_decompress,
@@ -83,7 +84,7 @@ pub use io::{
 };
 #[cfg(feature = "file-io")]
 pub use io::{FileDestination, FileSource};
-pub use model::{FormatVisitor, Value};
+pub use model::{ArrayBuilder, FormatVisitor, ObjectBuilder, Value};
 pub use num::{Numeric, format_float, format_integer};
 pub use patch::{Patch, PatchOp, apply_merge_patch};
 pub use query::{

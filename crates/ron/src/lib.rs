@@ -47,3 +47,9 @@ pub use engine::RonEngine;
 pub use error::RonError;
 pub use parser::{RonParser, from_bytes, from_str};
 pub use serializer::{RonSerializerConfig, serialize_to_dest, to_string, to_string_pretty, to_vec};
+
+/// Convenience alias parsing RON from a byte slice into [`Value`].
+#[inline]
+pub fn from_slice(bytes: &[u8]) -> Result<Value, RonError> {
+    from_bytes(bytes)
+}

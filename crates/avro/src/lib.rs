@@ -43,3 +43,9 @@ pub use ocf::{
 };
 pub use resolution::from_bytes_with_schemas;
 pub use schema::{AvroField, AvroSchema};
+
+/// Convenience alias parsing Avro from a byte slice into [`Value`].
+#[inline]
+pub fn from_slice(bytes: &[u8]) -> Result<Value, AvroError> {
+    from_bytes(bytes)
+}

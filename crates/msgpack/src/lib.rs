@@ -51,6 +51,12 @@ pub use serializer::{
     MsgPackTimestamp, decode_timestamp, encode_timestamp, serialize_to_dest, to_vec,
 };
 
+/// Convenience alias parsing MessagePack from a byte slice into [`Value`].
+#[inline]
+pub fn from_slice(bytes: &[u8]) -> Result<Value, MsgPackError> {
+    from_bytes(bytes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

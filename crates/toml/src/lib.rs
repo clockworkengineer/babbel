@@ -79,6 +79,11 @@ pub fn to_string_pretty(node: &Node) -> Result<String, TomlError> {
     Ok(dest.to_string())
 }
 
+/// Serializes a `Node` structure to a TOML byte vector.
+pub fn to_vec(node: &Node) -> Result<alloc::vec::Vec<u8>, TomlError> {
+    to_string(node).map(|s| s.into_bytes())
+}
+
 /// Serializes a `Node` structure into a destination buffer or stream.
 pub fn to_writer(node: &Node, dest: &mut dyn IDestination) -> Result<(), TomlError> {
     emit_to(node, dest)

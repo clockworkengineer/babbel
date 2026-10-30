@@ -87,6 +87,62 @@ impl Format {
             Self::JsonLines => "jsonlines",
         }
     }
+
+    /// Resolves a format identifier from a standard file extension.
+    pub fn from_extension(ext: &str) -> Option<Self> {
+        let trimmed = ext.trim_start_matches('.');
+        if trimmed.eq_ignore_ascii_case("json") {
+            Some(Self::Json)
+        } else if trimmed.eq_ignore_ascii_case("yaml") || trimmed.eq_ignore_ascii_case("yml") {
+            Some(Self::Yaml)
+        } else if trimmed.eq_ignore_ascii_case("xml") {
+            Some(Self::Xml)
+        } else if trimmed.eq_ignore_ascii_case("bencode") || trimmed.eq_ignore_ascii_case("torrent") {
+            Some(Self::Bencode)
+        } else if trimmed.eq_ignore_ascii_case("toml") {
+            Some(Self::Toml)
+        } else if trimmed.eq_ignore_ascii_case("msgpack") || trimmed.eq_ignore_ascii_case("mpk") {
+            Some(Self::MsgPack)
+        } else if trimmed.eq_ignore_ascii_case("cbor") {
+            Some(Self::Cbor)
+        } else if trimmed.eq_ignore_ascii_case("bson") {
+            Some(Self::Bson)
+        } else if trimmed.eq_ignore_ascii_case("ron") {
+            Some(Self::Ron)
+        } else if trimmed.eq_ignore_ascii_case("kdl") {
+            Some(Self::Kdl)
+        } else if trimmed.eq_ignore_ascii_case("parquet") || trimmed.eq_ignore_ascii_case("pq") {
+            Some(Self::Parquet)
+        } else if trimmed.eq_ignore_ascii_case("hcl") || trimmed.eq_ignore_ascii_case("tf") {
+            Some(Self::Hcl)
+        } else if trimmed.eq_ignore_ascii_case("avro") {
+            Some(Self::Avro)
+        } else if trimmed.eq_ignore_ascii_case("json5") {
+            Some(Self::Json5)
+        } else if trimmed.eq_ignore_ascii_case("csv") {
+            Some(Self::Csv)
+        } else if trimmed.eq_ignore_ascii_case("tsv") {
+            Some(Self::Tsv)
+        } else if trimmed.eq_ignore_ascii_case("ini")
+            || trimmed.eq_ignore_ascii_case("env")
+            || trimmed.eq_ignore_ascii_case("properties")
+        {
+            Some(Self::Ini)
+        } else if trimmed.eq_ignore_ascii_case("jsonl")
+            || trimmed.eq_ignore_ascii_case("ndjson")
+            || trimmed.eq_ignore_ascii_case("jsonlines")
+        {
+            Some(Self::JsonLines)
+        } else {
+            None
+        }
+    }
+
+    /// Resolves a format identifier from a file path.
+    pub fn from_path(path: impl AsRef<std::path::Path>) -> Option<Self> {
+        let ext = path.as_ref().extension()?.to_str()?;
+        Self::from_extension(ext)
+    }
 }
 
 /// Configuration options for cross-format conversions.
@@ -138,9 +194,10 @@ pub fn convert_format<F: FormatEngine + ?Sized, T: FormatEngine + ?Sized>(
 ) -> Result<String, BabbelError> {
     let value = from.parse_str(input)?;
     let mut dest = BufferDestination::new();
-    let format_opts = FormatOptions {
-        pretty: options.pretty,
-        indent: options.indent,
+    let format_opts = if options.pretty {
+        FormatOptions::pretty().with_indent(options.indent)
+    } else {
+        FormatOptions::compact()
     };
     to.serialize(&value, &mut dest, &format_opts)?;
     dest.into_string()
@@ -158,9 +215,10 @@ pub fn convert_format_bytes<F: FormatEngine + ?Sized, T: FormatEngine + ?Sized>(
 ) -> Result<Vec<u8>, BabbelError> {
     let value = from.parse_bytes(input)?;
     let mut dest = BufferDestination::new();
-    let format_opts = FormatOptions {
-        pretty: options.pretty,
-        indent: options.indent,
+    let format_opts = if options.pretty {
+        FormatOptions::pretty().with_indent(options.indent)
+    } else {
+        FormatOptions::compact()
     };
     to.serialize(&value, &mut dest, &format_opts)?;
     Ok(dest.into_vec())
