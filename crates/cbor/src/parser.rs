@@ -364,31 +364,37 @@ impl<'a> Decoder<'a> {
     }
 }
 
-/// Decodes IEEE 754 half-precision float bits into f64.
+/// Decodes IEEE 754 half-precision float bits into f64 using pure bit manipulation (no_std compatible).
 fn decode_f16(bits: u16) -> f64 {
-    let sign = (bits >> 15) & 1;
-    let exp = (bits >> 10) & 0x1f;
-    let mant = bits & 0x3ff;
+    let sign = ((bits as u64) & 0x8000) << 48;
+    let exp = ((bits >> 10) & 0x1f) as u64;
+    let mant = (bits & 0x3ff) as u64;
+
     if exp == 0 {
         if mant == 0 {
-            if sign == 1 { -0.0 } else { 0.0 }
+            f64::from_bits(sign)
         } else {
-            let val = (mant as f64) / 1024.0 * (2.0f64).powi(-14);
-            if sign == 1 { -val } else { val }
+            let mut m = mant;
+            let mut e = 0;
+            while (m & 0x400) == 0 {
+                m <<= 1;
+                e += 1;
+            }
+            m &= 0x3ff;
+            let f64_exp = ((1023 - 15 + 1) - e) << 52;
+            let f64_mant = m << 42;
+            f64::from_bits(sign | f64_exp | f64_mant)
         }
     } else if exp == 31 {
         if mant == 0 {
-            if sign == 1 {
-                f64::NEG_INFINITY
-            } else {
-                f64::INFINITY
-            }
+            f64::from_bits(sign | 0x7ff0_0000_0000_0000)
         } else {
-            f64::NAN
+            f64::from_bits(sign | 0x7ff8_0000_0000_0000 | (mant << 42))
         }
     } else {
-        let val = (1.0 + (mant as f64) / 1024.0) * (2.0f64).powi((exp as i32) - 15);
-        if sign == 1 { -val } else { val }
+        let f64_exp = ((((exp as i64) - 15 + 1023) as u64) & 0x7ff) << 52;
+        let f64_mant = mant << 42;
+        f64::from_bits(sign | f64_exp | f64_mant)
     }
 }
 

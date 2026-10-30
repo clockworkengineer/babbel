@@ -25,6 +25,39 @@
 //! - **`text`**: Document frontmatter extraction (`split_frontmatter`) and line indentation utilities.
 //! - **`convert`**: Universal $O(N)$ cross-format conversion matrix across 16 formats.
 //!
+//! ## Architectural Data Flow
+//!
+//! ```text
+//! Text / Bytes ──► FormatParser ──► Universal Value AST ──► FormatEmitter ──► Destination
+//!                        │                                        │
+//!                        ▼                                        ▼
+//!                  Error Snippet                            Buffer / File
+//! ```
+//!
+//! ## Universal Facade & Fluent Builders
+//!
+//! ```rust
+//! use babbel::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! // 1. Fluent AST construction
+//! let config = Value::object()
+//!     .set("service", "gateway")
+//!     .set("port", 8080)
+//!     .set("features", Value::array().push("metrics").push("tracing").build())
+//!     .build();
+//!
+//! // 2. Direct serialization across formats
+//! let json_text = babbel::to_string(Format::Json, &config)?;
+//! assert!(json_text.contains("\"service\":\"gateway\""));
+//!
+//! // 3. Universal cross-format conversion
+//! let yaml_text = babbel::convert(Format::Json, Format::Yaml, &json_text)?;
+//! assert!(yaml_text.contains("service: gateway"));
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! ## Quickstart
 //!
 //! ```rust

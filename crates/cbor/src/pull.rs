@@ -196,29 +196,34 @@ impl<'a> CborPullParser<'a> {
 }
 
 fn f16_to_f64(bits: u16) -> f64 {
-    let sign = (bits & 0x8000) != 0;
-    let exp = (bits & 0x7c00) >> 10;
-    let mant = bits & 0x03ff;
-
-    let s = if sign { -1.0 } else { 1.0 };
+    let sign = ((bits as u64) & 0x8000) << 48;
+    let exp = ((bits >> 10) & 0x1f) as u64;
+    let mant = (bits & 0x3ff) as u64;
 
     if exp == 0 {
         if mant == 0 {
-            if sign { -0.0 } else { 0.0 }
+            f64::from_bits(sign)
         } else {
-            s * (mant as f64) * (2.0f64.powi(-24))
-        }
-    } else if exp == 0x1f {
-        if mant == 0 {
-            if sign {
-                f64::NEG_INFINITY
-            } else {
-                f64::INFINITY
+            let mut m = mant;
+            let mut e = 0;
+            while (m & 0x400) == 0 {
+                m <<= 1;
+                e += 1;
             }
+            m &= 0x3ff;
+            let f64_exp = ((1023 - 15 + 1) - e) << 52;
+            let f64_mant = m << 42;
+            f64::from_bits(sign | f64_exp | f64_mant)
+        }
+    } else if exp == 31 {
+        if mant == 0 {
+            f64::from_bits(sign | 0x7ff0_0000_0000_0000)
         } else {
-            f64::NAN
+            f64::from_bits(sign | 0x7ff8_0000_0000_0000 | (mant << 42))
         }
     } else {
-        s * (1.0 + (mant as f64) / 1024.0) * (2.0f64.powi((exp as i32) - 15))
+        let f64_exp = ((((exp as i64) - 15 + 1023) as u64) & 0x7ff) << 52;
+        let f64_mant = mant << 42;
+        f64::from_bits(sign | f64_exp | f64_mant)
     }
 }
