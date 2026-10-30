@@ -126,19 +126,21 @@ mod tests {
 
     #[test]
     fn test_write_formatted_testfile021() -> Result<()> {
-        let path = test_file("formatted/testfile021.json");
+        let path = std::env::temp_dir().join("babbel_json_test_formatted_021.json");
         let test_content = "[true  , \"Out of time\",  7.89043e+18, true]";
         write_file_from_string(&path, test_content, Format::Utf8)?;
         assert_eq!(read_file_to_string(&path)?, test_content);
+        let _ = std::fs::remove_file(&path);
         Ok(())
     }
 
     #[test]
     fn test_write_formatted_testfile022() -> Result<()> {
-        let path = test_file("formatted/testfile022.json");
+        let path = std::env::temp_dir().join("babbel_json_test_formatted_022.json");
         let test_content = "[true  , \"Out of time\",  7.89043e+18, true]";
         write_file_from_string(&path, test_content, Format::Utf8bom)?;
         assert_eq!(read_file_to_string(&path)?, test_content);
+        let _ = std::fs::remove_file(&path);
         Ok(())
     }
 }
