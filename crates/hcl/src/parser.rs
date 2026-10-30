@@ -1791,19 +1791,19 @@ impl<'a> HclParser<'a> {
     }
 
     fn check_keyword(&self, kw: &str) -> bool {
+        let kw_char_count = kw.chars().count();
         let chars_left = self.chars.len() - self.idx;
-        if chars_left < kw.len() {
+        if chars_left < kw_char_count {
             return false;
         }
-        let kw_chars: Vec<char> = kw.chars().collect();
-        for i in 0..kw.len() {
-            if self.chars[self.idx + i].1 != kw_chars[i] {
+        for (i, c) in kw.chars().enumerate() {
+            if self.chars[self.idx + i].1 != c {
                 return false;
             }
         }
         // Ensure not part of longer identifier
-        if chars_left > kw.len() {
-            let next_c = self.chars[self.idx + kw.len()].1;
+        if chars_left > kw_char_count {
+            let next_c = self.chars[self.idx + kw_char_count].1;
             if Self::is_hcl_id_continue(next_c) {
                 return false;
             }

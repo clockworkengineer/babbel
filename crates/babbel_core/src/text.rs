@@ -3,6 +3,9 @@
 pub mod hex;
 pub use hex::{decode_hex, encode_hex, encode_hex_upper, hex_digit_value};
 
+pub mod base64;
+pub use base64::{decode_base64, encode_base64, encode_base64_url, is_valid_base64};
+
 use alloc::string::String;
 use alloc::vec::Vec;
 

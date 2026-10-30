@@ -436,112 +436,123 @@ pub(crate) fn decode_escapes(
     start_col: usize,
 ) -> Result<String, RonError> {
     let mut result = String::with_capacity(raw.len());
-    let chars: Vec<char> = raw.chars().collect();
+    let bytes = raw.as_bytes();
     let mut i = 0;
-    while i < chars.len() {
-        let ch = chars[i];
-        if ch == '\\' {
+
+    while i < bytes.len() {
+        let b = bytes[i];
+        if b == b'\\' {
             i += 1;
-            if i >= chars.len() {
+            if i >= bytes.len() {
                 return Err(RonError::UnexpectedEof);
             }
-            match chars[i] {
-                '"' => {
+            match bytes[i] {
+                b'"' => {
                     result.push('"');
                     i += 1;
                 }
-                '\\' => {
+                b'\\' => {
                     result.push('\\');
                     i += 1;
                 }
-                '/' => {
+                b'/' => {
                     result.push('/');
                     i += 1;
                 }
-                'b' => {
+                b'b' => {
                     result.push('\u{0008}');
                     i += 1;
                 }
-                'f' => {
+                b'f' => {
                     result.push('\u{000C}');
                     i += 1;
                 }
-                'n' => {
+                b'n' => {
                     result.push('\n');
                     i += 1;
                 }
-                'r' => {
+                b'r' => {
                     result.push('\r');
                     i += 1;
                 }
-                't' => {
+                b't' => {
                     result.push('\t');
                     i += 1;
                 }
-                '\'' => {
+                b'\'' => {
                     result.push('\'');
                     i += 1;
                 }
-                '0' => {
+                b'0' => {
                     result.push('\0');
                     i += 1;
                 }
-                'u' => {
+                b'u' => {
                     i += 1;
-                    if i < chars.len() && chars[i] == '{' {
+                    if i < bytes.len() && bytes[i] == b'{' {
                         i += 1;
-                        let mut hex = String::new();
-                        while i < chars.len() && chars[i] != '}' {
-                            hex.push(chars[i]);
+                        let hex_start = i;
+                        while i < bytes.len() && bytes[i] != b'}' {
                             i += 1;
                         }
-                        if i >= chars.len() || chars[i] != '}' {
+                        if i >= bytes.len() || bytes[i] != b'}' {
                             return Err(RonError::UnexpectedEof);
                         }
+                        let hex_str = core::str::from_utf8(&bytes[hex_start..i]).map_err(|_| {
+                            RonError::InvalidEscape {
+                                sequence: String::new(),
+                                line: start_line,
+                                col: start_col,
+                            }
+                        })?;
                         i += 1; // consume '}'
-                        let code =
-                            u32::from_str_radix(&hex, 16).map_err(|_| RonError::InvalidEscape {
-                                sequence: hex.clone(),
+                        let code = u32::from_str_radix(hex_str, 16).map_err(|_| {
+                            RonError::InvalidEscape {
+                                sequence: hex_str.to_string(),
                                 line: start_line,
                                 col: start_col,
-                            })?;
-                        let decoded =
-                            char::from_u32(code).ok_or_else(|| RonError::InvalidEscape {
-                                sequence: hex,
-                                line: start_line,
-                                col: start_col,
-                            })?;
+                            }
+                        })?;
+                        let decoded = char::from_u32(code).ok_or_else(|| RonError::InvalidEscape {
+                            sequence: hex_str.to_string(),
+                            line: start_line,
+                            col: start_col,
+                        })?;
                         result.push(decoded);
                     } else {
-                        if i + 4 > chars.len() {
+                        if i + 4 > bytes.len() {
+                            let rem = core::str::from_utf8(&bytes[i..]).unwrap_or("");
                             return Err(RonError::InvalidEscape {
-                                sequence: chars[i..].iter().collect(),
+                                sequence: rem.to_string(),
                                 line: start_line,
                                 col: start_col,
                             });
                         }
-                        let hex_str: String = chars[i..i + 4].iter().collect();
-                        if !hex_str.chars().all(|c| c.is_ascii_hexdigit()) {
+                        let hex_bytes = &bytes[i..i + 4];
+                        if !hex_bytes.iter().all(|b| b.is_ascii_hexdigit()) {
+                            let s = core::str::from_utf8(hex_bytes).unwrap_or("");
                             return Err(RonError::InvalidEscape {
-                                sequence: hex_str,
+                                sequence: s.to_string(),
                                 line: start_line,
                                 col: start_col,
                             });
                         }
+                        let hex_str = core::str::from_utf8(hex_bytes).unwrap();
                         i += 4;
-                        let code = u32::from_str_radix(&hex_str, 16).map_err(|_| {
+                        let code = u32::from_str_radix(hex_str, 16).map_err(|_| {
                             RonError::InvalidEscape {
-                                sequence: hex_str.clone(),
+                                sequence: hex_str.to_string(),
                                 line: start_line,
                                 col: start_col,
                             }
                         })?;
 
                         if (0xD800..=0xDBFF).contains(&code) {
-                            if i + 6 <= chars.len() && chars[i] == '\\' && chars[i + 1] == 'u' {
-                                let low_hex: String = chars[i + 2..i + 6].iter().collect();
-                                if low_hex.chars().all(|c| c.is_ascii_hexdigit()) {
-                                    let low_code = u32::from_str_radix(&low_hex, 16).unwrap_or(0);
+                            if i + 6 <= bytes.len() && bytes[i] == b'\\' && bytes[i + 1] == b'u' {
+                                let low_hex_bytes = &bytes[i + 2..i + 6];
+                                if low_hex_bytes.iter().all(|b| b.is_ascii_hexdigit()) {
+                                    let low_hex = core::str::from_utf8(low_hex_bytes).unwrap();
+                                    let low_code = u32::from_str_radix(low_hex, 16).unwrap_or(0);
                                     if (0xDC00..=0xDFFF).contains(&low_code) {
                                         i += 6;
                                         let combined = 0x10000
@@ -554,20 +565,20 @@ pub(crate) fn decode_escapes(
                                 }
                             }
                             return Err(RonError::InvalidEscape {
-                                sequence: hex_str,
+                                sequence: hex_str.to_string(),
                                 line: start_line,
                                 col: start_col,
                             });
                         } else if (0xDC00..=0xDFFF).contains(&code) {
                             return Err(RonError::InvalidEscape {
-                                sequence: hex_str,
+                                sequence: hex_str.to_string(),
                                 line: start_line,
                                 col: start_col,
                             });
                         } else {
                             let decoded =
                                 char::from_u32(code).ok_or_else(|| RonError::InvalidEscape {
-                                    sequence: hex_str.clone(),
+                                    sequence: hex_str.to_string(),
                                     line: start_line,
                                     col: start_col,
                                 })?;
@@ -575,39 +586,56 @@ pub(crate) fn decode_escapes(
                         }
                     }
                 }
-                'x' => {
+                b'x' => {
                     i += 1;
-                    if i + 2 > chars.len() {
+                    if i + 2 > bytes.len() {
                         return Err(RonError::UnexpectedEof);
                     }
-                    let hex_str: String = chars[i..i + 2].iter().collect();
+                    let hex_bytes = &bytes[i..i + 2];
                     i += 2;
-                    let byte =
-                        u8::from_str_radix(&hex_str, 16).map_err(|_| RonError::InvalidEscape {
-                            sequence: hex_str.clone(),
+                    let hex_str = core::str::from_utf8(hex_bytes).map_err(|_| {
+                        RonError::InvalidEscape {
+                            sequence: String::new(),
                             line: start_line,
                             col: start_col,
-                        })?;
+                        }
+                    })?;
+                    let byte = u8::from_str_radix(hex_str, 16).map_err(|_| {
+                        RonError::InvalidEscape {
+                            sequence: hex_str.to_string(),
+                            line: start_line,
+                            col: start_col,
+                        }
+                    })?;
                     result.push(byte as char);
                 }
-                other => {
+                _ => {
+                    let esc_char = raw[i..].chars().next().unwrap_or(' ');
                     return Err(RonError::InvalidEscape {
-                        sequence: other.to_string(),
+                        sequence: esc_char.to_string(),
                         line: start_line,
                         col: start_col,
                     });
                 }
             }
-        } else if (ch as u32) < 0x20 {
+        } else if b < 0x20 {
             return Err(RonError::UnexpectedChar {
-                ch,
+                ch: b as char,
                 line: start_line,
                 col: start_col,
             });
         } else {
-            result.push(ch);
-            i += 1;
+            let start = i;
+            while i < bytes.len() && bytes[i] != b'\\' && bytes[i] >= 0x20 {
+                i += 1;
+            }
+            let s = core::str::from_utf8(&bytes[start..i]).unwrap_or_else(|_| {
+                let valid = core::str::from_utf8(&bytes[start..]).unwrap_or("");
+                valid
+            });
+            result.push_str(s);
         }
     }
+
     Ok(result)
 }

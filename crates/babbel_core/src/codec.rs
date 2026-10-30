@@ -284,7 +284,8 @@ pub trait FormatEngine: Send + Sync {
         value: &Value,
         options: &FormatOptions,
     ) -> Result<alloc::string::String, BabbelError> {
-        let mut dest = crate::io::destinations::BufferDestination::new();
+        let capacity = value.estimated_size().max(32);
+        let mut dest = crate::io::destinations::BufferDestination::with_capacity(capacity);
         self.serialize(value, &mut dest, options)?;
         dest.into_string()
             .map_err(|_| BabbelError::encoding("output is not valid UTF-8"))
@@ -297,7 +298,8 @@ pub trait FormatEngine: Send + Sync {
         value: &Value,
         options: &FormatOptions,
     ) -> Result<alloc::vec::Vec<u8>, BabbelError> {
-        let mut dest = crate::io::destinations::BufferDestination::new();
+        let capacity = value.estimated_size().max(32);
+        let mut dest = crate::io::destinations::BufferDestination::with_capacity(capacity);
         self.serialize(value, &mut dest, options)?;
         Ok(dest.into_vec())
     }

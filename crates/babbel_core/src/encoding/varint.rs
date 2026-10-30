@@ -110,6 +110,28 @@ pub fn zigzag_decode_i64(n: u64) -> i64 {
     ((n >> 1) as i64) ^ (-((n & 1) as i64))
 }
 
+/// Encodes a signed 32-bit integer as a ZigZag LEB128 varint into `buf`.
+pub fn write_zigzag_i32(buf: &mut Vec<u8>, val: i32) {
+    write_varint_u32(buf, zigzag_encode_i32(val));
+}
+
+/// Decodes a signed 32-bit ZigZag LEB128 varint from `data` at `pos`.
+pub fn read_zigzag_i32(data: &[u8], pos: usize) -> Result<(i32, usize), ErrorCode> {
+    let (u, len) = read_varint_u32(data, pos)?;
+    Ok((zigzag_decode_i32(u), len))
+}
+
+/// Encodes a signed 64-bit integer as a ZigZag LEB128 varint into `buf`.
+pub fn write_zigzag_i64(buf: &mut Vec<u8>, val: i64) {
+    write_varint_u64(buf, zigzag_encode_i64(val));
+}
+
+/// Decodes a signed 64-bit ZigZag LEB128 varint from `data` at `pos`.
+pub fn read_zigzag_i64(data: &[u8], pos: usize) -> Result<(i64, usize), ErrorCode> {
+    let (u, len) = read_varint_u64(data, pos)?;
+    Ok((zigzag_decode_i64(u), len))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

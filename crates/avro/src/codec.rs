@@ -36,23 +36,15 @@ impl<'a> AvroDecoder<'a> {
 
     /// Read zigzag-encoded variable-length 64-bit integer.
     pub fn read_long(&mut self) -> Result<i64, AvroError> {
-        let mut n: u64 = 0;
-        let mut shift = 0;
-
-        loop {
-            if shift >= 64 {
-                return Err(AvroError::InvalidVarint);
-            }
-            let b = self.read_u8()?;
-            n |= ((b & 0x7F) as u64) << shift;
-            if (b & 0x80) == 0 {
-                break;
-            }
-            shift += 7;
-        }
-
-        // Zigzag decode: (n >> 1) ^ (-(n & 1))
-        let val = ((n >> 1) as i64) ^ (-((n & 1) as i64));
+        let (val, consumed) = babbel_core::encoding::varint::read_zigzag_i64(self.input, self.cursor)
+            .map_err(|e| match e {
+                babbel_core::error::ErrorCode::UnexpectedEof => AvroError::UnexpectedEof {
+                    expected: 1,
+                    available: self.input.len().saturating_sub(self.cursor),
+                },
+                _ => AvroError::InvalidVarint,
+            })?;
+        self.cursor += consumed;
         Ok(val)
     }
 
@@ -308,12 +300,7 @@ impl AvroEncoder {
 
     /// Write zigzag-encoded variable-length 64-bit integer.
     pub fn write_long(&mut self, val: i64) {
-        let mut n = ((val << 1) ^ (val >> 63)) as u64;
-        while (n & !0x7F) != 0 {
-            self.buf.push(((n & 0x7F) as u8) | 0x80);
-            n >>= 7;
-        }
-        self.buf.push((n & 0x7F) as u8);
+        babbel_core::encoding::varint::write_zigzag_i64(&mut self.buf, val);
     }
 
     /// Write 32-bit float in little-endian.

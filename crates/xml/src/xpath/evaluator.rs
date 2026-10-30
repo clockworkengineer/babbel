@@ -619,8 +619,7 @@ impl<'a> XPathEvaluator<'a> {
                     return Ok(XPathValue::String(String::new()));
                 }
                 let start_idx = (raw_start as i64) - 1;
-                let chars: Vec<char> = s.chars().collect();
-                if start_idx < 0 || (start_idx as usize) >= chars.len() {
+                if start_idx < 0 {
                     return Ok(XPathValue::String(String::new()));
                 }
                 let start = start_idx as usize;
@@ -632,10 +631,9 @@ impl<'a> XPathEvaluator<'a> {
                     }
                     raw_len as usize
                 } else {
-                    chars.len().saturating_sub(start)
+                    usize::MAX
                 };
-                let end = start.saturating_add(len).min(chars.len());
-                let sub: String = chars[start..end].iter().collect();
+                let sub: String = s.chars().skip(start).take(len).collect();
                 Ok(XPathValue::String(sub))
             }
             "substring-before" => {
@@ -684,14 +682,12 @@ impl<'a> XPathEvaluator<'a> {
                 let s1 = self.to_string(&self.evaluate_internal(&args[0], ctx, pos, size)?);
                 let from = self.to_string(&self.evaluate_internal(&args[1], ctx, pos, size)?);
                 let to = self.to_string(&self.evaluate_internal(&args[2], ctx, pos, size)?);
-                let from_chars: Vec<char> = from.chars().collect();
-                let to_chars: Vec<char> = to.chars().collect();
 
-                let mut result = String::new();
+                let mut result = String::with_capacity(s1.len());
                 for ch in s1.chars() {
-                    if let Some(pos_idx) = from_chars.iter().position(|&c| c == ch) {
-                        if pos_idx < to_chars.len() {
-                            result.push(to_chars[pos_idx]);
+                    if let Some(pos_idx) = from.chars().position(|c| c == ch) {
+                        if let Some(to_ch) = to.chars().nth(pos_idx) {
+                            result.push(to_ch);
                         }
                     } else {
                         result.push(ch);

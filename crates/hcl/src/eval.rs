@@ -112,19 +112,18 @@ impl HclEvalContext {
                 let s = arg_str(args, 0, "substr")?;
                 let offset = arg_int(args, 1, "substr")?;
                 let length = arg_int(args, 2, "substr")?;
-                let chars: Vec<char> = s.chars().collect();
-                let total = chars.len() as i64;
+                let total = s.chars().count() as i64;
                 let start = if offset < 0 {
                     (total + offset).max(0) as usize
                 } else {
-                    (offset as usize).min(chars.len())
+                    (offset as usize).min(total as usize)
                 };
                 let count = if length < 0 {
-                    chars.len().saturating_sub(start)
+                    (total as usize).saturating_sub(start)
                 } else {
-                    (length as usize).min(chars.len().saturating_sub(start))
+                    (length as usize).min((total as usize).saturating_sub(start))
                 };
-                let sub: String = chars[start..start + count].iter().collect();
+                let sub: String = s.chars().skip(start).take(count).collect();
                 Value::String(sub)
             }
             "strrev" => {
@@ -346,11 +345,12 @@ impl HclEvalContext {
             }
             "base64encode" => {
                 let s = arg_str(args, 0, "base64encode")?;
-                Value::String(base64_encode(s.as_bytes()))
+                Value::String(babbel_core::text::encode_base64(s.as_bytes()))
             }
             "base64decode" => {
                 let s = arg_str(args, 0, "base64decode")?;
-                let bytes = base64_decode(s)?;
+                let bytes = babbel_core::text::decode_base64(s)
+                    .map_err(|_| HclError::Custom("invalid base64 character".into()))?;
                 let decoded = core::str::from_utf8(&bytes)
                     .map_err(|_| HclError::Custom("base64decode result is not valid UTF-8".into()))?;
                 Value::String(decoded.to_string())
@@ -478,55 +478,5 @@ fn pow_f64(mut base: f64, exp: f64) -> f64 {
     } else {
         base
     }
-}
-
-fn base64_encode(bytes: &[u8]) -> String {
-    const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
-    for chunk in bytes.chunks(3) {
-        let b0 = chunk[0] as u32;
-        let b1 = chunk.get(1).copied().unwrap_or(0) as u32;
-        let b2 = chunk.get(2).copied().unwrap_or(0) as u32;
-        let n = (b0 << 16) | (b1 << 8) | b2;
-        out.push(TABLE[((n >> 18) & 0x3F) as usize] as char);
-        out.push(TABLE[((n >> 12) & 0x3F) as usize] as char);
-        if chunk.len() > 1 {
-            out.push(TABLE[((n >> 6) & 0x3F) as usize] as char);
-        } else {
-            out.push('=');
-        }
-        if chunk.len() > 2 {
-            out.push(TABLE[(n & 0x3F) as usize] as char);
-        } else {
-            out.push('=');
-        }
-    }
-    out
-}
-
-fn base64_decode(s: &str) -> Result<Vec<u8>, HclError> {
-    let mut out = Vec::new();
-    let mut buf = 0u32;
-    let mut bits = 0u8;
-    for b in s.bytes() {
-        if b.is_ascii_whitespace() || b == b'=' {
-            continue;
-        }
-        let val = match b {
-            b'A'..=b'Z' => b - b'A',
-            b'a'..=b'z' => b - b'a' + 26,
-            b'0'..=b'9' => b - b'0' + 52,
-            b'+' | b'-' => 62,
-            b'/' | b'_' => 63,
-            _ => return Err(HclError::Custom("invalid base64 character".into())),
-        };
-        buf = (buf << 6) | (val as u32);
-        bits += 6;
-        if bits >= 8 {
-            bits -= 8;
-            out.push(((buf >> bits) & 0xFF) as u8);
-        }
-    }
-    Ok(out)
 }
 

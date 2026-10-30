@@ -1,6 +1,7 @@
 //! Byte Order Mark (BOM), text encoding detection, and LEB128 varint utilities.
 
 pub mod varint;
+pub use crate::text::base64;
 
 #[cfg(not(feature = "std"))]
 use alloc::borrow::Cow;

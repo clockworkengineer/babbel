@@ -226,46 +226,13 @@ pub fn from_extended_json(val: &Value) -> Result<Value, BsonError> {
 }
 
 fn hex_to_bytes(s: &str) -> Result<Vec<u8>, BsonError> {
-    if s.len() % 2 != 0 {
-        return Err(BsonError::Custom(
-            "invalid hex string length for extended json",
-        ));
-    }
-    let mut bytes = Vec::with_capacity(s.len() / 2);
-    let chars: Vec<char> = s.chars().collect();
-    for chunk in chars.chunks(2) {
-        let hex_str: String = chunk.iter().collect();
-        let b = u8::from_str_radix(&hex_str, 16)
-            .map_err(|_| BsonError::Custom("invalid hex character in extended json"))?;
-        bytes.push(b);
-    }
-    Ok(bytes)
+    babbel_core::text::decode_hex(s)
+        .map_err(|_| BsonError::Custom("invalid hex in extended json"))
 }
 
 fn base64_to_bytes(s: &str) -> Result<Vec<u8>, BsonError> {
-    let mut out = Vec::new();
-    let mut buf = 0u32;
-    let mut bits = 0u8;
-    for b in s.bytes() {
-        if b.is_ascii_whitespace() || b == b'=' {
-            continue;
-        }
-        let val = match b {
-            b'A'..=b'Z' => b - b'A',
-            b'a'..=b'z' => b - b'a' + 26,
-            b'0'..=b'9' => b - b'0' + 52,
-            b'+' | b'-' => 62,
-            b'/' | b'_' => 63,
-            _ => return Err(BsonError::Custom("invalid base64 character in extended json")),
-        };
-        buf = (buf << 6) | (val as u32);
-        bits += 6;
-        if bits >= 8 {
-            bits -= 8;
-            out.push(((buf >> bits) & 0xFF) as u8);
-        }
-    }
-    Ok(out)
+    babbel_core::text::decode_base64(s)
+        .map_err(|_| BsonError::Custom("invalid base64 character in extended json"))
 }
 
 #[cfg(test)]

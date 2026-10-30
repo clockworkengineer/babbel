@@ -338,6 +338,26 @@ impl Value {
         crate::query::query(self, expr)
     }
 
+    /// Returns an estimated byte size hint for pre-allocating serialization buffers.
+    pub fn estimated_size(&self) -> usize {
+        match self {
+            Value::Null => 4,
+            Value::Bool(_) => 5,
+            Value::Integer(_) => 10,
+            Value::Float(_) => 12,
+            Value::String(s) => s.len() + 2,
+            Value::Bytes(b) => b.len() + 4,
+            Value::Array(arr) => {
+                let inner: usize = arr.iter().map(|item| item.estimated_size() + 2).sum();
+                inner + 2
+            }
+            Value::Object(obj) => {
+                let inner: usize = obj.iter().map(|(k, v)| k.len() + v.estimated_size() + 4).sum();
+                inner + 2
+            }
+        }
+    }
+
     /// Evaluates an RFC 9535 JSONPath expression on this value, returning all matching mutable references.
     pub fn jsonpath_mut<'a>(
         &'a mut self,
