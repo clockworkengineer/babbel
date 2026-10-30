@@ -164,11 +164,20 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_children(&mut self) -> Result<Vec<KdlNode>, KdlError> {
+        if self.depth >= self.max_depth {
+            return Err(KdlError::Syntax {
+                message: "Recursion limit exceeded".to_string(),
+                line: self.line,
+                col: self.col,
+            });
+        }
+        self.depth += 1;
         let mut nodes = Vec::new();
 
         loop {
             self.skip_whitespace_and_comments(true)?;
             if self.is_eof() {
+                self.depth -= 1;
                 return Err(KdlError::UnexpectedEof);
             }
 
@@ -182,14 +191,25 @@ impl<'a> Parser<'a> {
                 self.advance(); // /
                 self.advance(); // -
                 self.skip_whitespace_and_comments(true)?;
-                let _ = self.parse_node()?;
+                let res = self.parse_node();
+                if let Err(e) = res {
+                    self.depth -= 1;
+                    return Err(e);
+                }
                 continue;
             }
 
-            let node = self.parse_node()?;
+            let node = match self.parse_node() {
+                Ok(n) => n,
+                Err(e) => {
+                    self.depth -= 1;
+                    return Err(e);
+                }
+            };
             nodes.push(node);
         }
 
+        self.depth -= 1;
         Ok(nodes)
     }
 

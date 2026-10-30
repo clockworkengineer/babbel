@@ -334,6 +334,13 @@ impl<'a> Decoder<'a> {
                 limit: self.config.max_size,
             });
         }
+        let avail = self.remaining();
+        if len > avail {
+            return Err(MsgPackError::UnexpectedEof {
+                expected: len,
+                available: avail,
+            });
+        }
         let mut items = Vec::with_capacity(len.min(1024));
         for _ in 0..len {
             items.push(self.decode_value_depth(depth + 1)?);
@@ -346,6 +353,13 @@ impl<'a> Decoder<'a> {
             return Err(MsgPackError::SizeLimitExceeded {
                 size: len,
                 limit: self.config.max_size,
+            });
+        }
+        let avail = self.remaining();
+        if len > avail / 2 {
+            return Err(MsgPackError::UnexpectedEof {
+                expected: len.saturating_mul(2),
+                available: avail,
             });
         }
         let mut entries = Vec::with_capacity(len.min(1024));
@@ -372,4 +386,20 @@ pub fn from_bytes(bytes: &[u8]) -> Result<Value, MsgPackError> {
     let mut decoder = Decoder::new(bytes);
     let val = decoder.decode_value()?;
     Ok(val)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_msgpack_binary_bomb_protection() {
+        // array 32 claiming u32::MAX items on a 5-byte buffer
+        let array_bomb = [0xdd, 0xff, 0xff, 0xff, 0xff];
+        assert!(from_bytes(&array_bomb).is_err());
+
+        // map 32 claiming u32::MAX pairs on a 5-byte buffer
+        let map_bomb = [0xdf, 0xff, 0xff, 0xff, 0xff];
+        assert!(from_bytes(&map_bomb).is_err());
+    }
 }

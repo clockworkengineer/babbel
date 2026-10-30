@@ -76,6 +76,8 @@ impl ClassItem {
     }
 }
 
+const DEFAULT_STEP_BUDGET: usize = 100_000;
+
 impl Regex {
     /// Compile a regular expression pattern string.
     pub fn compile(pattern: &str) -> Result<Self, String> {
@@ -90,11 +92,15 @@ impl Regex {
     /// Returns `true` if the pattern matches anywhere within `text` (JSON Schema `pattern` & JSONPath `search()`).
     pub fn is_match(&self, text: &str) -> bool {
         let chars: Vec<char> = text.chars().collect();
+        let mut budget = DEFAULT_STEP_BUDGET;
         for start in 0..=chars.len() {
             let mut end_positions = Vec::new();
-            self.eval_node(&self.node, &chars, start, &mut end_positions);
+            self.eval_node(&self.node, &chars, start, &mut end_positions, &mut budget);
             if !end_positions.is_empty() {
                 return true;
+            }
+            if budget == 0 {
+                break;
             }
         }
         false
@@ -104,7 +110,8 @@ impl Regex {
     pub fn is_full_match(&self, text: &str) -> bool {
         let chars: Vec<char> = text.chars().collect();
         let mut end_positions = Vec::new();
-        self.eval_node(&self.node, &chars, 0, &mut end_positions);
+        let mut budget = DEFAULT_STEP_BUDGET;
+        self.eval_node(&self.node, &chars, 0, &mut end_positions, &mut budget);
         end_positions.contains(&chars.len())
     }
 
@@ -114,7 +121,13 @@ impl Regex {
         chars: &[char],
         pos: usize,
         out: &mut Vec<usize>,
+        budget: &mut usize,
     ) {
+        if *budget == 0 {
+            return;
+        }
+        *budget -= 1;
+
         match node {
             RegexNode::Empty => push_unique(out, pos),
             RegexNode::AnchorStart => {
@@ -167,7 +180,10 @@ impl Regex {
                 for sub in nodes {
                     let mut next_positions = Vec::new();
                     for p in current_positions {
-                        self.eval_node(sub, chars, p, &mut next_positions);
+                        self.eval_node(sub, chars, p, &mut next_positions, budget);
+                        if *budget == 0 {
+                            return;
+                        }
                     }
                     if next_positions.is_empty() {
                         return;
@@ -180,11 +196,14 @@ impl Regex {
             }
             RegexNode::Alt(branches) => {
                 for branch in branches {
-                    self.eval_node(branch, chars, pos, out);
+                    self.eval_node(branch, chars, pos, out, budget);
+                    if *budget == 0 {
+                        return;
+                    }
                 }
             }
             RegexNode::Repeat { inner, min, max } => {
-                self.eval_repeat(inner, chars, pos, 0, *min, *max, out);
+                self.eval_repeat(inner, chars, pos, 0, *min, *max, out, budget);
             }
         }
     }
@@ -198,7 +217,13 @@ impl Regex {
         min: usize,
         max: Option<usize>,
         out: &mut Vec<usize>,
+        budget: &mut usize,
     ) {
+        if *budget == 0 {
+            return;
+        }
+        *budget -= 1;
+
         if count >= min {
             push_unique(out, pos);
         }
@@ -209,13 +234,16 @@ impl Regex {
         }
 
         let mut next_positions = Vec::new();
-        self.eval_node(inner, chars, pos, &mut next_positions);
+        self.eval_node(inner, chars, pos, &mut next_positions, budget);
         for next_pos in next_positions {
             // Guard against infinite zero-width loops on unbounded repetitions
             if next_pos == pos && count >= min {
                 continue;
             }
-            self.eval_repeat(inner, chars, next_pos, count + 1, min, max, out);
+            self.eval_repeat(inner, chars, next_pos, count + 1, min, max, out, budget);
+            if *budget == 0 {
+                return;
+            }
         }
     }
 }
@@ -556,6 +584,16 @@ mod tests {
         assert!(!regex_is_match(r"^[^0-9]+$", "hello123"));
         assert!(regex_is_match(r"\bcat\b", "the cat sat"));
         assert!(!regex_is_match(r"\bcat\b", "wildcat"));
+    }
+
+    #[test]
+    fn test_regex_redos_step_budget_protection() {
+        // Classic catastrophic backtracking pattern: (a+)+$ against "aaaa...!"
+        let pattern = r"^(a+)+$";
+        let malicious_input = "aaaaaaaaaaaaaaaaaaaaaaaaaaaa!";
+        let re = Regex::compile(pattern).expect("compile regex");
+        // Must safely abort evaluation and return false without hanging or stack overflow
+        assert!(!re.is_full_match(malicious_input));
     }
 }
 

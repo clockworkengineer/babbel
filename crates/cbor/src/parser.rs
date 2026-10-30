@@ -231,6 +231,13 @@ impl<'a> Decoder<'a> {
                             limit: self.config.max_size,
                         });
                     }
+                    let avail = self.remaining();
+                    if len > avail {
+                        return Err(CborError::UnexpectedEof {
+                            expected: len,
+                            available: avail,
+                        });
+                    }
                     let mut items = Vec::with_capacity(len.min(1024));
                     for _ in 0..len {
                         items.push(self.decode_value_depth(depth + 1)?);
@@ -263,6 +270,13 @@ impl<'a> Decoder<'a> {
                         return Err(CborError::SizeLimitExceeded {
                             size: len,
                             limit: self.config.max_size,
+                        });
+                    }
+                    let avail = self.remaining();
+                    if len > avail / 2 {
+                        return Err(CborError::UnexpectedEof {
+                            expected: len.saturating_mul(2),
+                            available: avail,
                         });
                     }
                     let mut entries = Vec::with_capacity(len.min(1024));
@@ -393,4 +407,20 @@ pub fn from_bytes_seq(bytes: &[u8]) -> Result<Vec<Value>, CborError> {
         items.push(decoder.decode_value()?);
     }
     Ok(items)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cbor_binary_bomb_protection() {
+        // Major type 4 (array) with 8-byte length header claiming u64::MAX items
+        let array_bomb = [0x9B, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
+        assert!(from_bytes(&array_bomb).is_err());
+
+        // Major type 5 (map) with 8-byte length header claiming u64::MAX pairs
+        let map_bomb = [0xBB, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
+        assert!(from_bytes(&map_bomb).is_err());
+    }
 }

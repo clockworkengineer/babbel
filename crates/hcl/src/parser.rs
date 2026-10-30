@@ -21,6 +21,8 @@ pub struct HclParser<'a> {
     line: usize,
     col: usize,
     paren_depth: usize,
+    depth: usize,
+    max_depth: usize,
     has_unterminated_comment: bool,
     heredoc_saw_newline: bool,
     last_was_heredoc: bool,
@@ -97,6 +99,8 @@ impl<'a> HclParser<'a> {
             line: 1,
             col: 1,
             paren_depth: 0,
+            depth: 0,
+            max_depth: 128,
             has_unterminated_comment: false,
             heredoc_saw_newline: false,
             last_was_heredoc: false,
@@ -292,6 +296,10 @@ impl<'a> HclParser<'a> {
     }
 
     fn parse_block_body(&mut self, is_one_line: bool) -> Result<Value, HclError> {
+        if self.depth >= self.max_depth {
+            return Err(self.error("recursion limit exceeded".into()));
+        }
+        self.depth += 1;
         let mut entries = Vec::new();
         let mut defined_attrs: Vec<String> = Vec::new();
         let mut attr_count = 0;
@@ -305,6 +313,7 @@ impl<'a> HclParser<'a> {
                     || self.peek_char() == Some('#')
                     || (self.peek_char() == Some('/') && self.peek_ahead(1) == Some('/'))
                 {
+                    self.depth -= 1;
                     return Err(self.error(
                         "one-line block must close on the same line without newlines".into(),
                     ));
@@ -317,35 +326,48 @@ impl<'a> HclParser<'a> {
             }
 
             if self.is_eof() {
+                self.depth -= 1;
                 return Err(HclError::UnexpectedEof);
             }
 
             if self.peek_char() == Some('}') {
                 if !is_one_line && !last_ended_with_newline {
+                    self.depth -= 1;
                     return Err(self.error(
                         "closing brace of multi-line block must be on its own line".into(),
                     ));
                 }
                 self.bump(); // consume '}'
+                self.depth -= 1;
                 return Ok(Value::Object(entries));
             }
 
-            let (name, is_block, val, saw_nl) = self.parse_attribute_or_block_item(is_one_line)?;
+            let (name, is_block, val, saw_nl) = match self.parse_attribute_or_block_item(is_one_line) {
+                Ok(item) => item,
+                Err(e) => {
+                    self.depth -= 1;
+                    return Err(e);
+                }
+            };
             if is_one_line {
                 if is_block {
+                    self.depth -= 1;
                     return Err(self.error("one-line block cannot contain a block".into()));
                 }
                 attr_count += 1;
                 if attr_count > 1 {
+                    self.depth -= 1;
                     return Err(self.error("one-line block can only contain one attribute".into()));
                 }
                 if self.last_was_heredoc {
+                    self.depth -= 1;
                     return Err(self.error("one-line block cannot contain heredoc value".into()));
                 }
             }
 
             if !is_block {
                 if defined_attrs.contains(&name) {
+                    self.depth -= 1;
                     return Err(self.error(format!("Attribute '{}' redefined", name)));
                 }
                 defined_attrs.push(name.clone());
@@ -385,7 +407,13 @@ impl<'a> HclParser<'a> {
     }
 
     fn parse_expr(&mut self) -> Result<Value, HclError> {
-        self.parse_ternary_expr()
+        if self.depth >= self.max_depth {
+            return Err(self.error("recursion limit exceeded".into()));
+        }
+        self.depth += 1;
+        let res = self.parse_ternary_expr();
+        self.depth -= 1;
+        res
     }
 
     fn parse_ternary_expr(&mut self) -> Result<Value, HclError> {

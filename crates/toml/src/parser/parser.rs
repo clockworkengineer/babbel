@@ -20,6 +20,8 @@ pub struct Parser {
     explicit_tables: Vec<Vec<String>>,
     array_tables: Vec<Vec<String>>,
     static_keys: Vec<(Vec<String>, String)>,
+    depth: usize,
+    max_depth: usize,
 }
 
 impl Parser {
@@ -36,6 +38,8 @@ impl Parser {
             explicit_tables: Vec::new(),
             array_tables: Vec::new(),
             static_keys: Vec::new(),
+            depth: 0,
+            max_depth: 128,
         })
     }
 
@@ -358,6 +362,16 @@ impl Parser {
     }
 
     fn parse_array(&mut self) -> Result<Node, TomlError> {
+        let tok = self.peek().clone();
+        if self.depth >= self.max_depth {
+            return Err(TomlError::syntax(
+                "Recursion limit exceeded",
+                tok.line,
+                tok.column,
+                tok.position,
+            ));
+        }
+        self.depth += 1;
         // Eat '['
         self.advance();
         let mut items = Vec::new();
@@ -369,7 +383,13 @@ impl Parser {
                 break;
             }
 
-            let val = self.parse_value()?;
+            let val = match self.parse_value() {
+                Ok(v) => v,
+                Err(e) => {
+                    self.depth -= 1;
+                    return Err(e);
+                }
+            };
             items.push(val);
 
             self.skip_newlines();
@@ -380,20 +400,35 @@ impl Parser {
                 self.advance();
                 break;
             } else {
-                let tok = self.peek();
+                let (line, column, position) = {
+                    let tok = self.peek();
+                    (tok.line, tok.column, tok.position)
+                };
+                self.depth -= 1;
                 return Err(TomlError::syntax(
                     "Expected ',' or ']' inside array",
-                    tok.line,
-                    tok.column,
-                    tok.position,
+                    line,
+                    column,
+                    position,
                 ));
             }
         }
 
+        self.depth -= 1;
         Ok(Node::Array(items))
     }
 
     fn parse_inline_table(&mut self) -> Result<Node, TomlError> {
+        let tok = self.peek().clone();
+        if self.depth >= self.max_depth {
+            return Err(TomlError::syntax(
+                "Recursion limit exceeded",
+                tok.line,
+                tok.column,
+                tok.position,
+            ));
+        }
+        self.depth += 1;
         // Eat '{'
         self.advance();
         let mut entries = Vec::new();
@@ -405,10 +440,17 @@ impl Parser {
                 break;
             }
 
-            let key_path = self.parse_key_path()?;
+            let key_path = match self.parse_key_path() {
+                Ok(k) => k,
+                Err(e) => {
+                    self.depth -= 1;
+                    return Err(e);
+                }
+            };
             self.skip_newlines();
             let eq = self.advance().clone();
             if eq.token != Token::Equals {
+                self.depth -= 1;
                 return Err(TomlError::syntax(
                     "Expected '=' after key in inline table",
                     eq.line,
@@ -418,11 +460,18 @@ impl Parser {
             }
             self.skip_newlines();
 
-            let val = self.parse_value()?;
+            let val = match self.parse_value() {
+                Ok(v) => v,
+                Err(e) => {
+                    self.depth -= 1;
+                    return Err(e);
+                }
+            };
             // Simple inline insertion
             if key_path.len() == 1 {
                 let key = &key_path[0];
                 if entries.iter().any(|(k, _)| k == key) {
+                    self.depth -= 1;
                     return Err(TomlError::syntax(
                         format!("Duplicate key '{}' in inline table", key),
                         eq.line,
@@ -433,7 +482,10 @@ impl Parser {
                 entries.push((key.clone(), val));
             } else {
                 // Nested dotted key inside inline table
-                insert_nested_entry(&mut entries, &key_path, val)?;
+                if let Err(e) = insert_nested_entry(&mut entries, &key_path, val) {
+                    self.depth -= 1;
+                    return Err(e);
+                }
             }
 
             self.skip_newlines();
@@ -448,16 +500,21 @@ impl Parser {
                 self.advance();
                 break;
             } else {
-                let tok = self.peek();
+                let (line, column, position) = {
+                    let tok = self.peek();
+                    (tok.line, tok.column, tok.position)
+                };
+                self.depth -= 1;
                 return Err(TomlError::syntax(
                     "Expected ',' or '}' in inline table",
-                    tok.line,
-                    tok.column,
-                    tok.position,
+                    line,
+                    column,
+                    position,
                 ));
             }
         }
 
+        self.depth -= 1;
         Ok(Node::Table(entries))
     }
 }

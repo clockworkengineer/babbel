@@ -25,6 +25,8 @@ pub(crate) struct Parser<'a> {
     pub(crate) pos: usize,
     pub(crate) line: usize,
     pub(crate) col: usize,
+    pub(crate) depth: usize,
+    pub(crate) max_depth: usize,
     pub(crate) _marker: core::marker::PhantomData<&'a str>,
 }
 
@@ -35,6 +37,8 @@ impl<'a> Parser<'a> {
             pos: 0,
             line: 1,
             col: 1,
+            depth: 0,
+            max_depth: 128,
             _marker: core::marker::PhantomData,
         }
     }

@@ -152,6 +152,15 @@ impl<'a> AvroDecoder<'a> {
                     } else {
                         count
                     };
+                    let avail = self.input.len().saturating_sub(self.cursor);
+                    let count_usize = actual_count as usize;
+                    if count_usize > avail {
+                        return Err(AvroError::UnexpectedEof {
+                            expected: count_usize,
+                            available: avail,
+                        });
+                    }
+                    result.reserve(count_usize.min(1024));
                     for _ in 0..actual_count {
                         result.push(self.decode_with_schema(items)?);
                     }
@@ -169,6 +178,15 @@ impl<'a> AvroDecoder<'a> {
                     } else {
                         count
                     };
+                    let avail = self.input.len().saturating_sub(self.cursor);
+                    let count_usize = actual_count as usize;
+                    if count_usize > avail / 2 {
+                        return Err(AvroError::UnexpectedEof {
+                            expected: count_usize.saturating_mul(2),
+                            available: avail,
+                        });
+                    }
+                    entries.reserve(count_usize.min(1024));
                     for _ in 0..actual_count {
                         let key = self.read_string()?.to_string();
                         let val = self.decode_with_schema(values)?;
@@ -191,6 +209,15 @@ impl<'a> AvroDecoder<'a> {
         let mut count = self.read_long()?;
 
         while count > 0 {
+            let avail = self.input.len().saturating_sub(self.cursor);
+            let count_usize = count as usize;
+            if count_usize > avail {
+                return Err(AvroError::UnexpectedEof {
+                    expected: count_usize,
+                    available: avail,
+                });
+            }
+            items.reserve(count_usize.min(1024));
             for _ in 0..count {
                 items.push(self.decode_value()?);
             }
@@ -209,6 +236,15 @@ impl<'a> AvroDecoder<'a> {
         let mut count = self.read_long()?;
 
         while count > 0 {
+            let avail = self.input.len().saturating_sub(self.cursor);
+            let count_usize = count as usize;
+            if count_usize > avail / 2 {
+                return Err(AvroError::UnexpectedEof {
+                    expected: count_usize.saturating_mul(2),
+                    available: avail,
+                });
+            }
+            entries.reserve(count_usize.min(1024));
             for _ in 0..count {
                 let key = self.read_string()?.to_string();
                 let val = self.decode_value()?;

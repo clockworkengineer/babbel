@@ -737,6 +737,60 @@ fn test_avro_conformance_full_suite() {
     }
 
     // -------------------------------------------------------------------------
+    // 7. Security & Binary Bomb Robustness (PanicHookGuard)
+    // -------------------------------------------------------------------------
+    {
+        let cat = categories
+            .entry("7. Security & Binary Bomb Robustness")
+            .or_default();
+
+        let _panic_guard = babbel_core::testing::PanicHookGuard::new_silent();
+
+        // Test 1: Array binary bomb with giant length header on tiny buffer
+        cat.total += 1;
+        let array_bomb = vec![0xFE, 0xFF, 0xFF, 0xFF, 0x0F, 0x01]; // huge zigzag int
+        let array_schema = AvroSchema::Array {
+            items: Box::new(AvroSchema::Int),
+        };
+        match babbel_avro::from_bytes_with_schema(&array_bomb, &array_schema) {
+            Err(_) => cat.passed += 1,
+            Ok(_) => {
+                cat.failed += 1;
+                eprintln!("Expected Err for array bomb, got Ok");
+            }
+        }
+
+        // Test 2: Map binary bomb with giant length header on tiny buffer
+        cat.total += 1;
+        let map_bomb = vec![0xFE, 0xFF, 0xFF, 0xFF, 0x0F, 0x01];
+        let map_schema = AvroSchema::Map {
+            values: Box::new(AvroSchema::Int),
+        };
+        match babbel_avro::from_bytes_with_schema(&map_bomb, &map_schema) {
+            Err(_) => cat.passed += 1,
+            Ok(_) => {
+                cat.failed += 1;
+                eprintln!("Expected Err for map bomb, got Ok");
+            }
+        }
+
+        // Test 3: Truncated OCF frames of all lengths 0..32
+        for len in 0..32 {
+            cat.total += 1;
+            let truncated = vec![0xAA; len];
+            let res = std::panic::catch_unwind(|| {
+                let _ = from_bytes_ocf(&truncated);
+            });
+            if res.is_ok() {
+                cat.passed += 1;
+            } else {
+                cat.panics += 1;
+                cat.failed += 1;
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Print Conformance Report Table
     // -------------------------------------------------------------------------
     let elapsed = start_time.elapsed();
